@@ -35,6 +35,7 @@ from recidiviz.utils.environment import (
 from recidiviz.view_registry.deployed_source_table_repository import (
     build_source_table_repository_for_collected_schemata,
 )
+from recidiviz.view_registry.deployed_view_graphs import deployed_view_graph_registry
 
 
 class ValidateSourceTableDatasetsEntrypoint(EntrypointInterface):
@@ -66,4 +67,7 @@ class ValidateSourceTableDatasetsEntrypoint(EntrypointInterface):
         validate_clean_source_table_datasets(
             bq_client=BigQueryClientImpl(),
             source_table_repository=source_table_repository,
+            view_graph_output_addresses=deployed_view_graph_registry(
+                project_id
+            ).output_addresses,
         )

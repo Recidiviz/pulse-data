@@ -371,3 +371,10 @@ class BigQueryViewGraphRegistry:
         address, or None if no registered graph owns it.
         """
         return self._graph_name_by_address.get(address)
+
+    @property
+    def output_addresses(self) -> set[BigQueryAddress]:
+        """Returns the address of every view and materialized table any registered
+        graph deploys.
+        """
+        return set(self._graph_name_by_address)

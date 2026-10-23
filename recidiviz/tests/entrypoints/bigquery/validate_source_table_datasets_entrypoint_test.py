@@ -31,6 +31,7 @@ _ENTRYPOINT_MODULE = (
 )
 
 
+@patch(f"{_ENTRYPOINT_MODULE}.deployed_view_graph_registry")
 @patch(f"{_ENTRYPOINT_MODULE}.BigQueryClientImpl")
 @patch(f"{_ENTRYPOINT_MODULE}.build_source_table_repository_for_collected_schemata")
 @patch(f"{_ENTRYPOINT_MODULE}.validate_clean_source_table_datasets")
@@ -46,6 +47,7 @@ class ValidateSourceTableDatasetsEntrypointTest(unittest.TestCase):
         mock_validate: MagicMock,
         _mock_build_repository: MagicMock,
         _mock_bq_client: MagicMock,
+        _mock_registry: MagicMock,
     ) -> None:
         args = ValidateSourceTableDatasetsEntrypoint.get_parser().parse_args([])
         with self.assertRaisesRegex(
@@ -69,6 +71,7 @@ class ValidateSourceTableDatasetsEntrypointTest(unittest.TestCase):
         mock_validate: MagicMock,
         mock_build_repository: MagicMock,
         mock_bq_client: MagicMock,
+        mock_registry: MagicMock,
     ) -> None:
         args = ValidateSourceTableDatasetsEntrypoint.get_parser().parse_args([])
         ValidateSourceTableDatasetsEntrypoint.run_entrypoint(args=args)
@@ -80,4 +83,6 @@ class ValidateSourceTableDatasetsEntrypointTest(unittest.TestCase):
         mock_validate.assert_called_once_with(
             bq_client=mock_bq_client.return_value,
             source_table_repository=repository.filter_to_update_group.return_value,
+            view_graph_output_addresses=mock_registry.return_value.output_addresses,
         )
+        mock_registry.assert_called_once_with(_PROJECT_ID)

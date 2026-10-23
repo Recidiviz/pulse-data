@@ -98,6 +98,7 @@ class TestValidateCleanSourceTableDatasets(unittest.TestCase):
         validate_clean_source_table_datasets(
             bq_client=self.mock_bq_client,
             source_table_repository=repo,
+            view_graph_output_addresses=set(),
         )
 
     def test_raises_on_unexpected_tables(self) -> None:
@@ -115,6 +116,7 @@ class TestValidateCleanSourceTableDatasets(unittest.TestCase):
             validate_clean_source_table_datasets(
                 bq_client=self.mock_bq_client,
                 source_table_repository=repo,
+                view_graph_output_addresses=set(),
             )
         self.assertIn("unexpected tables", str(ctx.exception))
         self.assertIn("rogue_table", str(ctx.exception))
@@ -134,6 +136,7 @@ class TestValidateCleanSourceTableDatasets(unittest.TestCase):
             validate_clean_source_table_datasets(
                 bq_client=self.mock_bq_client,
                 source_table_repository=repo,
+                view_graph_output_addresses=set(),
             )
         self.assertIn("missing expected tables", str(ctx.exception))
         self.assertIn("table_b", str(ctx.exception))
@@ -153,6 +156,7 @@ class TestValidateCleanSourceTableDatasets(unittest.TestCase):
             validate_clean_source_table_datasets(
                 bq_client=self.mock_bq_client,
                 source_table_repository=repo,
+                view_graph_output_addresses=set(),
             )
         error_msg = str(ctx.exception)
         self.assertIn("unexpected tables", error_msg)
@@ -180,6 +184,7 @@ class TestValidateCleanSourceTableDatasets(unittest.TestCase):
         validate_clean_source_table_datasets(
             bq_client=self.mock_bq_client,
             source_table_repository=repo,
+            view_graph_output_addresses=set(),
         )
 
     def test_skips_empty_collections(self) -> None:
@@ -197,6 +202,7 @@ class TestValidateCleanSourceTableDatasets(unittest.TestCase):
         validate_clean_source_table_datasets(
             bq_client=self.mock_bq_client,
             source_table_repository=repo,
+            view_graph_output_addresses=set(),
         )
         self.mock_bq_client.list_tables.assert_not_called()
 
@@ -222,6 +228,7 @@ class TestValidateCleanSourceTableDatasets(unittest.TestCase):
         validate_clean_source_table_datasets(
             bq_client=self.mock_bq_client,
             source_table_repository=repo,
+            view_graph_output_addresses=set(),
         )
 
     def test_multiple_datasets_with_errors_in_one(self) -> None:
@@ -248,11 +255,123 @@ class TestValidateCleanSourceTableDatasets(unittest.TestCase):
             validate_clean_source_table_datasets(
                 bq_client=self.mock_bq_client,
                 source_table_repository=repo,
+                view_graph_output_addresses=set(),
             )
         error_msg = str(ctx.exception)
         self.assertIn("bad_dataset", error_msg)
         self.assertIn("surprise", error_msg)
         self.assertNotIn("good_dataset", error_msg)
+
+    def test_view_graph_outputs_are_expected(self) -> None:
+        repo = SourceTableRepository(
+            source_table_collections=[
+                _make_collection("boundary_dataset", ["my_view_materialized"]),
+            ]
+        )
+        self.mock_bq_client.list_tables.return_value = iter(
+            [
+                _make_table_list_item("my_view"),
+                _make_table_list_item("my_view_materialized"),
+            ]
+        )
+
+        validate_clean_source_table_datasets(
+            bq_client=self.mock_bq_client,
+            source_table_repository=repo,
+            view_graph_output_addresses={
+                BigQueryAddress(dataset_id="boundary_dataset", table_id="my_view"),
+                BigQueryAddress(
+                    dataset_id="boundary_dataset", table_id="my_view_materialized"
+                ),
+            },
+        )
+
+    def test_view_graph_outputs_are_not_required(self) -> None:
+        """The DAG that updates a view graph creates its views, which may happen
+        after a DAG that reads the graph's outputs has validated the dataset.
+        """
+        repo = SourceTableRepository(
+            source_table_collections=[
+                _make_collection("boundary_dataset", ["my_view_materialized"]),
+            ]
+        )
+        self.mock_bq_client.list_tables.return_value = iter(
+            [_make_table_list_item("my_view_materialized")]
+        )
+
+        validate_clean_source_table_datasets(
+            bq_client=self.mock_bq_client,
+            source_table_repository=repo,
+            view_graph_output_addresses={
+                BigQueryAddress(dataset_id="boundary_dataset", table_id="my_view"),
+                BigQueryAddress(
+                    dataset_id="boundary_dataset", table_id="my_view_materialized"
+                ),
+            },
+        )
+
+    def test_view_graph_output_with_unregistered_materialized_table_is_expected(
+        self,
+    ) -> None:
+        """No graph reads other_view_materialized, so the repository does not
+        register it, but the view graph still deploys it and its view into the
+        dataset.
+        """
+        repo = SourceTableRepository(
+            source_table_collections=[
+                _make_collection("boundary_dataset", ["my_view_materialized"]),
+            ]
+        )
+        self.mock_bq_client.list_tables.return_value = iter(
+            [
+                _make_table_list_item("my_view_materialized"),
+                _make_table_list_item("other_view"),
+                _make_table_list_item("other_view_materialized"),
+            ]
+        )
+
+        validate_clean_source_table_datasets(
+            bq_client=self.mock_bq_client,
+            source_table_repository=repo,
+            view_graph_output_addresses={
+                BigQueryAddress(
+                    dataset_id="boundary_dataset", table_id="my_view_materialized"
+                ),
+                BigQueryAddress(dataset_id="boundary_dataset", table_id="other_view"),
+                BigQueryAddress(
+                    dataset_id="boundary_dataset", table_id="other_view_materialized"
+                ),
+            },
+        )
+
+    def test_raises_on_stray_table_next_to_view_graph_outputs(self) -> None:
+        repo = SourceTableRepository(
+            source_table_collections=[
+                _make_collection("boundary_dataset", ["my_view_materialized"]),
+            ]
+        )
+        self.mock_bq_client.list_tables.return_value = iter(
+            [
+                _make_table_list_item("my_view"),
+                _make_table_list_item("my_view_materialized"),
+                _make_table_list_item("rogue_table"),
+            ]
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Dataset boundary_dataset contains unexpected tables: \['rogue_table'\]\n",
+        ):
+            validate_clean_source_table_datasets(
+                bq_client=self.mock_bq_client,
+                source_table_repository=repo,
+                view_graph_output_addresses={
+                    BigQueryAddress(dataset_id="boundary_dataset", table_id="my_view"),
+                    BigQueryAddress(
+                        dataset_id="boundary_dataset", table_id="my_view_materialized"
+                    ),
+                },
+            )
 
 
 class TestExemptionListNoOverlapWithConfigs(unittest.TestCase):

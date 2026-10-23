@@ -485,6 +485,52 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
             )
         )
 
+    def test_output_addresses(self) -> None:
+        registry = BigQueryViewGraphRegistry(
+            project_id=_PROJECT_ID,
+            view_graphs=[
+                _resolved_graph(
+                    _graph(
+                        "graph_1",
+                        [
+                            _view_builder(
+                                "dataset_1",
+                                "materialized_view",
+                                should_materialize=True,
+                            ),
+                            _view_builder("dataset_1", "unmaterialized_view"),
+                        ],
+                    )
+                ),
+                _resolved_graph(
+                    _graph(
+                        "graph_2",
+                        [
+                            _view_builder(
+                                "dataset_2", "other_view", should_materialize=True
+                            ),
+                        ],
+                    )
+                ),
+            ],
+            view_derived_source_table_collections=[],
+        )
+
+        self.assertEqual(
+            {
+                BigQueryAddress(dataset_id="dataset_1", table_id="materialized_view"),
+                BigQueryAddress(
+                    dataset_id="dataset_1", table_id="materialized_view_materialized"
+                ),
+                BigQueryAddress(dataset_id="dataset_1", table_id="unmaterialized_view"),
+                BigQueryAddress(dataset_id="dataset_2", table_id="other_view"),
+                BigQueryAddress(
+                    dataset_id="dataset_2", table_id="other_view_materialized"
+                ),
+            },
+            registry.output_addresses,
+        )
+
     def test_view_address_in_two_graphs_raises(self) -> None:
         with self.assertRaisesRegex(
             ValueError,

@@ -41,6 +41,7 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_source_table_repository import (
     build_source_table_repository_for_collected_schemata,
 )
+from recidiviz.view_registry.deployed_view_graphs import deployed_view_graph_registry
 
 
 def parse_args() -> argparse.Namespace:
@@ -71,6 +72,9 @@ def main(*, project_id: str, update_groups: list[SourceTableUpdateGroup]) -> Non
         source_table_repository = build_source_table_repository_for_collected_schemata(
             project_id=project_id,
         )
+        view_graph_output_addresses = deployed_view_graph_registry(
+            project_id
+        ).output_addresses
         bq_client = BigQueryClientImpl()
 
         failures_by_group: dict[SourceTableUpdateGroup, str] = {}
@@ -82,6 +86,7 @@ def main(*, project_id: str, update_groups: list[SourceTableUpdateGroup]) -> Non
                     source_table_repository=source_table_repository.filter_to_update_group(
                         group
                     ),
+                    view_graph_output_addresses=view_graph_output_addresses,
                 )
             except ValueError as e:
                 # Collect each group's validation error so one failing group does not

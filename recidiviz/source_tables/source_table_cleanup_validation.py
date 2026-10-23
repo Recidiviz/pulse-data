@@ -29,9 +29,21 @@ from recidiviz.source_tables.untracked_source_table_exemptions import (
 def validate_clean_source_table_datasets(
     bq_client: BigQueryClient,
     source_table_repository: SourceTableRepository,
+    view_graph_output_addresses: set[BigQueryAddress],
 ) -> None:
     """Validates that source table datasets contain exactly the tables we expect
     based on source table configs.
+
+    A view graph may deploy views and materialized tables into a source table
+    dataset. Any of those tables is allowed in the dataset but not required, since
+    the DAG that updates the view graph may run after the DAG that validates the
+    dataset.
+
+    Args:
+        bq_client: Client used to list the datasets and tables in BigQuery.
+        source_table_repository: The source tables expected in BigQuery.
+        view_graph_output_addresses: The address of every view and materialized
+            table the deployed view graphs write.
 
     Raises:
         ValueError: If any source table dataset contains unexpected tables or
@@ -51,6 +63,10 @@ def validate_clean_source_table_datasets(
         expected_source_tables_by_dataset[dataset_id].update(
             collection.source_tables_by_address
         )
+
+    view_graph_output_tables_by_dataset: dict[str, set[str]] = defaultdict(set)
+    for address in view_graph_output_addresses:
+        view_graph_output_tables_by_dataset[address.dataset_id].add(address.table_id)
 
     actual_datasets = {item.dataset_id for item in bq_client.list_datasets()}
 
@@ -80,7 +96,12 @@ def validate_clean_source_table_datasets(
         )
 
         # Find unexpected tables (in BQ but not in configs, excluding legacy)
-        unexpected_tables = actual_tables - expected_tables - legacy_tables
+        unexpected_tables = (
+            actual_tables
+            - expected_tables
+            - legacy_tables
+            - view_graph_output_tables_by_dataset[dataset_id]
+        )
         if unexpected_tables:
             validation_errors.append(
                 f"Dataset {dataset_id} contains unexpected tables: {sorted(unexpected_tables)}"
