@@ -4939,6 +4939,27 @@ DISTINCT_POPULATION_AT_ACHIEVEMENT_EARNED_CREDIT_CAP_FOR_REGISTERED_JII_TABLET_A
     ),
 )
 
+SUM_EARNED_CREDIT_WRITEBACK_DAYS_APPLIED = SumEventValueMetric(
+    name="sum_earned_credit_writeback_days_applied",
+    display_name="Sum of Earned Credit Writeback Days Applied",
+    description="Sum of days on credit rows that carry Recidiviz's writeback marker and whose current status in the state's system is Applied. This is the credit as it stands now, so it reflects staff edits made after the write, such as a row reduced to fewer days or split into rows where only some are Applied. Partially Applied rows are not counted yet. It differs from the Earned Credit Writeback Days Written metrics, which total what the state's system confirmed when each write was made",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT,
+        event_conditions_dict={"is_recidiviz_written": ["true"]},
+    ),
+    event_value_numeric="credits_earned",
+)
+
+DISTINCT_POPULATION_WITH_EARNED_CREDIT_WRITEBACK_DAYS_APPLIED = EventDistinctUnitCountMetric(
+    name="distinct_population_with_earned_credit_writeback_days_applied",
+    display_name="Distinct Population: With Earned Credit Writeback Days Applied",
+    description="Total distinct count of people with at least one credit row that carries Recidiviz's writeback marker and whose current status in the state's system is Applied. This is the credit as it stands now, after any later staff edits or splits, and Partially Applied rows are not counted yet. It differs from the Earned Credit Writeback Days Written metrics, which total what the state's system confirmed when each write was made",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT,
+        event_conditions_dict={"is_recidiviz_written": ["true"]},
+    ),
+)
+
 EARNED_CREDIT_WRITEBACK_ATTEMPT_EVENTS = EventCountMetric(
     name="earned_credit_writeback_attempt_events",
     display_name="Earned Credit Writeback Attempt Events",
