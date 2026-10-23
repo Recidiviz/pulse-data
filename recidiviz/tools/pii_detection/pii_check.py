@@ -13,30 +13,49 @@ import time
 from copy import copy
 from typing import Iterable, List
 
+import google.auth
 import requests
-from google import genai
+from google.auth.transport.requests import AuthorizedSession
 from tabulate import tabulate
 
-# NOTE: If you change the model, you may need to change update the token limit!
-MODEL_NAME = "gemini-3.5-flash"
-# Reported by the API itself when you go over: "The input token count exceeds the maximum
-# number of tokens allowed 1048576." Half of gemini-2.5-flash's 2,097,152 — the limit
-# shrank with the model upgrade, so this is not a value to raise back without re-probing.
-MODEL_INPUT_TOKEN_LIMIT = 1_048_576
-# Gemini 3.x is NOT served by regional endpoints: us-central1, us-east1, us-east4,
-# us-east5, us-west1, us-west4, us-south1 and northamerica-northeast1 all return
-# 404 NOT_FOUND for these model ids. Only the "us" multi-region and "global" endpoints
-# carry them. We use "us" rather than "global" so inference on partner diffs stays in
-# US regions instead of routing worldwide.
-MODEL_LOCATION = "us"
+# NOTE: If you change the model, re-check every limit below against it.
+MODEL_NAME = "openai/gpt-oss-120b-maas"
+# Vertex serves gpt-oss only from regional endpoints; the "us" multi-region returns 404
+# for it. us-central1 keeps inference on partner diffs in a US region.
+MODEL_LOCATION = "us-central1"
+# The API rejects longer requests with "The input (N tokens) is longer than the model's
+# context length (131072 tokens)." The context holds the prompt, the reasoning, and the
+# answer, so the input limit leaves room for MODEL_MAX_OUTPUT_TOKENS plus a margin for
+# estimate error.
+MODEL_CONTEXT_TOKEN_LIMIT = 131_072
+MODEL_MAX_OUTPUT_TOKENS = 24_000
+MODEL_INPUT_TOKEN_LIMIT = 100_000
+# At the default "medium" effort, a replay of 50 recent PRs showed the model flagging
+# synthetic test fixtures that the prompt says to ignore. "high" stopped that without
+# missing any of the planted PII.
+MODEL_REASONING_EFFORT = "high"
+# The gpt-oss tokenizer packs code diffs at about 2.2 characters per token, much denser
+# than the 4 characters per token typical of prose, so 2 keeps estimates on the safe side.
+CHARS_PER_TOKEN = 2
+CONTEXT_LENGTH_ERROR_TEXT = "longer than the model's context length"
+RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+MAX_ATTEMPTS = 3
+
+
+def model_endpoint(project: str) -> str:
+    """Returns the Vertex AI chat completions URL that serves MODEL_NAME for project."""
+    return (
+        f"https://{MODEL_LOCATION}-aiplatform.googleapis.com/v1/projects/{project}"
+        f"/locations/{MODEL_LOCATION}/endpoints/openapi/chat/completions"
+    )
 
 
 def estimate_tokens_from_chars(text: str) -> int:
-    """Estimate token count using Google's 1 token ≈ 4 characters guideline."""
-    return len(text) // 4
+    """Returns a conservative estimate of how many model tokens text uses."""
+    return len(text) // CHARS_PER_TOKEN
 
 
-FIND_PII_GEMINI_PROMPT = """
+FIND_PII_PROMPT = """
 Review the following code changes for Personally Identifiable Information (PII). For each potential piece of PII found, determine:
 - the type of PII (e.g., email address, phone number, name, address, IP address, standardized ID number like SSN),
 - a risk ranking of LOW, MEDIUM, or HIGH,
@@ -119,8 +138,9 @@ def extract_json_from_markdown(text: str) -> str:
     if text.startswith("[") or text.startswith("{"):
         return text
 
-    # Return empty array as fallback
-    return "[]"
+    # An answer with no JSON is not a clean result; raising fails the check instead of
+    # reporting a batch nobody could read as free of PII.
+    raise ValueError("Model answer contained neither JSON nor NO PII FOUND.")
 
 
 def write_output(name: str, value: str) -> None:
@@ -133,13 +153,16 @@ def write_output(name: str, value: str) -> None:
 
 def generate_found_pii_table(
     findings: List[dict],
+    *,
+    include_content: bool,
     include_links: bool = False,
     repo: str = "",
     head_sha: str = "",
 ) -> str:
     """
     Generates a markdown-formatted table of PII findings.
-    If include_links is True, adds GitHub file links to the table.
+    If include_content is False, leaves out the Content column, which holds the found
+    values themselves. If include_links is True, adds GitHub file links to the table.
     """
     table_data = []
     for item in findings:
@@ -152,27 +175,28 @@ def generate_found_pii_table(
             if file
             else ""
         )
-        table_data.append(
-            [
-                f"`{item['content']}`",
-                item["type"],
-                item["risk"],
-                item["rationale"],
-                item["context"],
-                file_link,
-            ]
-        )
+        row = [
+            item["type"],
+            item["risk"],
+            item["rationale"],
+            item["context"],
+            file_link,
+        ]
+        table_data.append([f"`{item['content']}`", *row] if include_content else row)
 
-    headers = ["Content", "Type", "Risk", "Rationale", "Context", "File"]
+    headers = ["Type", "Risk", "Rationale", "Context", "File"]
+    if include_content:
+        headers = ["Content", *headers]
     return tabulate(table_data, headers=headers, tablefmt="github")
 
 
 def print_table(findings: List[dict]) -> None:
     """
-    Prints a table of PII findings to the console.
+    Prints a table of PII findings to the console, without the found values, because
+    GitHub Actions keeps job logs and anyone with read access to the repo can open them.
     """
-    table = generate_found_pii_table(findings)
-    print("\n\033[33m📋 Gemini PII Findings:\033[0m")
+    table = generate_found_pii_table(findings, include_content=False)
+    print("\n\033[33m📋 PII findings (values are in the PR comment):\033[0m")
     print(table)
 
 
@@ -181,7 +205,11 @@ def build_markdown_comment(findings: List[dict], repo: str, head_sha: str) -> st
     Builds a markdown comment summarizing the PII findings.
     """
     table_md = generate_found_pii_table(
-        findings, include_links=True, repo=repo, head_sha=head_sha
+        findings,
+        include_content=True,
+        include_links=True,
+        repo=repo,
+        head_sha=head_sha,
     )
 
     return f"""<!-- pii-bot-comment -->
@@ -248,109 +276,137 @@ def _get_changed_file_path_to_diff(base_ref: str, head_ref: str) -> dict[str, st
     return file_to_diff
 
 
+def _split_file_diff(file_path: str, diff: str, max_tokens: int) -> list[str]:
+    """
+    Returns the diff for file_path as one or more "# File:" sections, each at most
+    max_tokens estimated tokens, cut at line boundaries. A single line longer than the
+    budget is cut into budget-sized pieces, so no part of the diff is dropped.
+    """
+    header = f"\n# File: {file_path}\n"
+    max_chars = (max_tokens - estimate_tokens_from_chars(header)) * CHARS_PER_TOKEN
+    if max_chars <= 0:
+        raise ValueError(f"No room for any diff content of {file_path} in a batch.")
+
+    sections: list[str] = []
+    current = ""
+    for line in diff.splitlines(keepends=True):
+        pieces = [line[i : i + max_chars] for i in range(0, len(line), max_chars)]
+        for piece in pieces:
+            if current and len(current) + len(piece) > max_chars:
+                sections.append(header + current)
+                current = ""
+            current += piece
+    if current:
+        sections.append(header + current)
+    return sections
+
+
 def generate_prompts(
     changed_file_to_diff: dict[str, str],
 ) -> Iterable[str]:
     """
     Generates one or more prompts for the model based on the changed files and their diffs.
-    We continually add diffs to the prompt until we reach the token limit.
-    If a single diff is larger than the token limit, we raise an error.
+    We continually add diffs to the prompt until we reach the token limit. A diff that
+    does not fit in one prompt on its own is split across prompts by line.
     """
-    prompt = copy(FIND_PII_GEMINI_PROMPT)
+    room_for_diffs = MODEL_INPUT_TOKEN_LIMIT - estimate_tokens_from_chars(
+        FIND_PII_PROMPT
+    )
+    prompt = copy(FIND_PII_PROMPT)
     for file_path, diff in changed_file_to_diff.items():
-        this_diff = f"\n# File: {file_path}\n{diff}"
-        if estimate_tokens_from_chars(this_diff) > MODEL_INPUT_TOKEN_LIMIT:
-            raise ValueError(
-                f"Diff for {file_path} exceeds the model's input token limit of {MODEL_INPUT_TOKEN_LIMIT} tokens."
-            )
-        if (
-            estimate_tokens_from_chars(prompt) + estimate_tokens_from_chars(this_diff)
-            > MODEL_INPUT_TOKEN_LIMIT
-        ):
-            # The diff that overflowed the batch starts the next one — dropping it here
-            # would silently exclude that file from the PII scan.
-            yield prompt
-            prompt = copy(FIND_PII_GEMINI_PROMPT) + this_diff
-        else:
-            prompt += this_diff
+        for this_diff in _split_file_diff(file_path, diff, room_for_diffs):
+            if (
+                estimate_tokens_from_chars(prompt)
+                + estimate_tokens_from_chars(this_diff)
+                > MODEL_INPUT_TOKEN_LIMIT
+            ):
+                # The diff that overflowed the batch starts the next one — dropping it
+                # here would silently exclude that file from the PII scan.
+                yield prompt
+                prompt = copy(FIND_PII_PROMPT) + this_diff
+            else:
+                prompt += this_diff
     # This case is if all unprompted diffs haven't reached the size limit by the end
-    if prompt != FIND_PII_GEMINI_PROMPT:
+    if prompt != FIND_PII_PROMPT:
         yield prompt
 
 
-def run_prompt_and_collect_findings(client: genai.Client, prompt: str) -> list[dict]:
+def run_prompt_and_collect_findings(
+    session: AuthorizedSession, endpoint: str, prompt: str
+) -> list[dict]:
     """
-    Runs a prompt against the Gemini model and collects PII findings.
-    Retries on transient errors with exponential backoff.
-    """
-    # Tokens, not characters: len() here compared a character count against a token
-    # limit, so this guard skipped batches ~4x smaller than the model actually accepts —
-    # and a skipped batch is a batch nobody scans for PII.
-    if estimate_tokens_from_chars(prompt) > MODEL_INPUT_TOKEN_LIMIT:
-        print(
-            f"::warning::Prompt exceeds the model's input token limit of {MODEL_INPUT_TOKEN_LIMIT} tokens. Skipping this batch."
-        )
-        return []
+    Runs a prompt against the model at endpoint and returns the PII findings.
 
-    # Retry with exponential backoff for transient errors
-    max_attempts = 3
-    for attempt in range(1, max_attempts + 1):
+    Retries rate limits, server errors, timeouts, and empty answers with exponential
+    backoff, and raises once MAX_ATTEMPTS is spent, so the check fails instead of
+    reporting a batch it never scanned as clean.
+    """
+    request_body = {
+        "model": MODEL_NAME,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": MODEL_MAX_OUTPUT_TOKENS,
+        "reasoning_effort": MODEL_REASONING_EFFORT,
+    }
+    last_error = ""
+    for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            # TODO(#55197): Update this to generate parsed json instead of us rolling our own. https://ai.google.dev/gemini-api/docs/migrate#json-response
-            response = client.models.generate_content(model=MODEL_NAME, contents=prompt)
-            gemini_output = response.text
-            print(f"📨 Gemini API Response (attempt {attempt}):")
-            print(f"Raw response: {repr(gemini_output)}")
-
-            if not gemini_output:
-                raise RuntimeError("Empty response from Gemini")
-
-            json_text = extract_json_from_markdown(gemini_output)
-            print(f"Extracted JSON: {repr(json_text)}")
-
-            findings = json.loads(json_text) or []
-            if not isinstance(findings, list):
-                raise ValueError(f"Unexpected type for findings: {type(findings)}")
-            return findings
-
-        except Exception as e:
-            error_msg = str(e).lower()
-
-            # Check for timeout/internal errors - retry these
-            if any(
-                keyword in error_msg for keyword in ["timeout", "internal error", "500"]
-            ):
-                if attempt < max_attempts:
-                    backoff_time = 2**attempt
-                    print(
-                        f"::warning::Gemini timeout/error on attempt {attempt}: {e}. Retrying in {backoff_time}s..."
-                    )
-                    time.sleep(backoff_time)
-                    continue
-
-                # Max retries exceeded for timeout - treat as no findings
+            response = session.post(endpoint, json=request_body, timeout=600)
+        except (requests.Timeout, requests.ConnectionError) as e:
+            last_error = f"{type(e).__name__}: {e}"
+        else:
+            if response.status_code == 200:
+                choice = response.json()["choices"][0]
+                model_output = choice["message"].get("content") or ""
+                # Do not print model_output: it repeats any PII it found, and GitHub
+                # Actions keeps job logs.
                 print(
-                    "::warning::Gemini consistently timing out. Treating as no PII found."
+                    f"📨 Model response (attempt {attempt}): {len(model_output)} characters,"
+                    f" finish_reason={choice.get('finish_reason')}"
                 )
-                return []
+                if model_output:
+                    # TODO(#55197): Request structured JSON output instead of parsing the model's text.
+                    json_text = extract_json_from_markdown(model_output)
+                    findings = json.loads(json_text) or []
+                    if not isinstance(findings, list):
+                        raise ValueError(
+                            f"Unexpected type for findings: {type(findings)}"
+                        )
+                    return findings
+                # The endpoint sometimes answers 200 with finish_reason "abort" and no
+                # content, which is a server-side failure worth retrying.
+                last_error = (
+                    f"empty response, finish_reason={choice.get('finish_reason')}"
+                )
+            elif response.status_code in RETRYABLE_STATUS_CODES:
+                last_error = f"HTTP {response.status_code}"
+            else:
+                raise RuntimeError(
+                    f"PII detection request failed with HTTP {response.status_code}:"
+                    f" {response.text[:500]}"
+                )
 
-            # For other errors (token limit, JSON parse, etc.), re-raise immediately
-            raise RuntimeError(
-                f"PII detection failed after {attempt} attempts: {e}"
-            ) from e
+        if attempt < MAX_ATTEMPTS:
+            backoff_time = 2**attempt
+            print(
+                f"::warning::Model call failed on attempt {attempt} ({last_error}). Retrying in {backoff_time}s..."
+            )
+            time.sleep(backoff_time)
 
-    # This should never be reached due to the logic above, but satisfies mypy
-    return []
+    raise RuntimeError(
+        f"PII detection failed after {MAX_ATTEMPTS} attempts: {last_error}"
+    )
 
 
 def main(head: str, pr_number: str) -> int:
     """
     Main function to analyze code changes for PII and update the pull request with findings.
     """
-    client = genai.Client(
-        vertexai=True,
-        project=os.environ.get("GOOGLE_CLOUD_PROJECT", "recidiviz-security"),
-        location=MODEL_LOCATION,
+    credentials, _ = google.auth.default(
+        scopes=["https://www.googleapis.com/auth/cloud-platform"]
+    )
+    session = AuthorizedSession(credentials)
+    endpoint = model_endpoint(
+        os.environ.get("GOOGLE_CLOUD_PROJECT", "recidiviz-security")
     )
 
     repo = os.environ["GITHUB_REPOSITORY"]
@@ -368,12 +424,10 @@ def main(head: str, pr_number: str) -> int:
     findings = []
     for prompt in generate_prompts(changed_file_to_diff):
         try:
-            findings.extend(run_prompt_and_collect_findings(client, prompt))
+            findings.extend(run_prompt_and_collect_findings(session, endpoint, prompt))
         except Exception as e:
-            error_msg = str(e).lower()
-
             # Handle token limit specifically
-            if "exceeds the maximum number of tokens" in error_msg:
+            if CONTEXT_LENGTH_ERROR_TEXT in str(e):
                 print(
                     "::warning::Input too large for PII detection; posting manual-inspect comment."
                 )
@@ -404,7 +458,6 @@ Please manually review these files for potential PII."""
     print("\033[33m⚠ Potential PII DETECTED (non-blocking).\033[0m")
     print_table(findings)
     write_output("pii_found", "true")
-    write_output("gemini_pii_findings", json.dumps(findings))
 
     markdown_body = build_markdown_comment(findings, repo, head)
     update_pr_comment(True, pr_number, markdown_body, repo, token)
