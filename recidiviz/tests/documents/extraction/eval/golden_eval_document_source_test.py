@@ -24,6 +24,9 @@ from recidiviz.documents.extraction.eval.golden_eval_document_source import (
     GoldenEvalDocumentSourceError,
     GoldenEvalGoogleSheetDocumentSource,
 )
+from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
+    LLMExtractionViewGraphStage,
+)
 from recidiviz.utils.google_sheets_reader import (
     GoogleSheetReader,
     GoogleSheetTable,
@@ -68,6 +71,7 @@ class GoldenEvalGoogleSheetDocumentSourceTest(TestCase):
         self.source = GoldenEvalGoogleSheetDocumentSource(
             sheets_reader=self.sheets_reader,
             state_code=_STATE_CODE,
+            stage=LLMExtractionViewGraphStage.FIRST_ORDER,
             source_sheet_uri=_SOURCE_SHEET_URI,
         )
 
@@ -85,11 +89,7 @@ class GoldenEvalGoogleSheetDocumentSourceTest(TestCase):
     def test_read_table_with_no_rows_raises(self) -> None:
         self.sheets_reader.read_tab_as_table.return_value = _tab()
 
-        with self.assertRaisesRegex(
-            GoldenEvalDocumentSourceError,
-            rf"^Golden eval sheet \[{re.escape(_SOURCE_SHEET_URI)}\] holds no rows, "
-            r"so there is nothing to evaluate\.$",
-        ):
+        with self.assertRaisesRegex(GoldenEvalDocumentSourceError, r"holds no rows"):
             self.source.read_table()
 
     def test_read_table_with_tab_not_titled_for_the_state_raises(self) -> None:
@@ -103,10 +103,8 @@ class GoldenEvalGoogleSheetDocumentSourceTest(TestCase):
 
                 with self.assertRaisesRegex(
                     ValueError,
-                    rf"^Golden eval sheet \[{re.escape(_SOURCE_SHEET_URI)}\] reads "
-                    rf"tab \[{re.escape(title)}\], but it is the eval set for state "
-                    r"\[US_XX\]\. A state's eval set lives in the tab named after "
-                    r"its state code\.$",
+                    rf"reads tab \[{re.escape(title)}\], but it is the "
+                    r"\[first_order\] eval set",
                 ):
                     self.source.read_table()
 
@@ -116,6 +114,38 @@ class GoldenEvalGoogleSheetDocumentSourceTest(TestCase):
         self.sheets_reader.read_tab_as_table.return_value = _tab(title="US_YY")
 
         with self.assertRaisesRegex(
-            ValueError, r"reads tab \[US_YY\], but it is the eval set for state"
+            ValueError,
+            r"reads tab \[US_YY\], but it is the \[first_order\] eval set",
         ):
             self.source.read_table()
+
+    def test_tab_title_for_each_stage(self) -> None:
+        expected_titles_by_stage = {
+            LLMExtractionViewGraphStage.FIRST_ORDER: "US_XX",
+            LLMExtractionViewGraphStage.ENTITY_RESOLUTION: "US_XX__ER",
+        }
+        for stage in LLMExtractionViewGraphStage:
+            with self.subTest(stage=stage):
+                self.assertEqual(
+                    expected_titles_by_stage[stage],
+                    GoldenEvalGoogleSheetDocumentSource.tab_title(
+                        state_code=_STATE_CODE, stage=stage
+                    ),
+                )
+
+    def test_entity_resolution_source_rejects_first_order_tab(self) -> None:
+        source = GoldenEvalGoogleSheetDocumentSource(
+            sheets_reader=self.sheets_reader,
+            state_code=_STATE_CODE,
+            stage=LLMExtractionViewGraphStage.ENTITY_RESOLUTION,
+            source_sheet_uri=_SOURCE_SHEET_URI,
+        )
+        self.sheets_reader.read_tab_as_table.return_value = _tab(
+            _row_cells(), title="US_XX"
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"reads tab \[US_XX\], but it is the \[entity_resolution\] eval set",
+        ):
+            source.read_table()

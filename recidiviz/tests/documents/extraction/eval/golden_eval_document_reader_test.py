@@ -286,6 +286,7 @@ class GoldenEvalDocumentReaderTest(TestCase):
         source = GoldenEvalGoogleSheetDocumentSource(
             sheets_reader=self.sheets_reader,
             state_code=StateCode.US_XX,
+            stage=LLMExtractionViewGraphStage.FIRST_ORDER,
             source_sheet_uri=_SOURCE_SHEET_URI,
         )
         self.reader = GoldenEvalDocumentReader.for_extractor(

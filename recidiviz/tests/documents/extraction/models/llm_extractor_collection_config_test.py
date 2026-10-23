@@ -286,6 +286,26 @@ class ParseAllCollectionConfigsTest(TestCase):
             collection.entity_groups_for_array_field(assignments),
         )
 
+    def test_fake_collection_resolver_fields(self) -> None:
+        collection = get_llm_extractor_collection_config(
+            _FAKE_COLLECTION_NAME, config_module=fake_config
+        )
+
+        # The location group resolves the top-level location field. The
+        # assignment and pay_rate groups both resolve sub-fields of assignments,
+        # which appears once.
+        self.assertEqual(
+            [
+                collection.output_schema.get_field("location"),
+                collection.output_schema.get_field("assignments"),
+            ],
+            collection.resolver_fields,
+        )
+        self.assertEqual(
+            {"assignments": {"assignment_name", "assignment_type", "rate_amount"}},
+            collection.resolver_sub_field_names_by_array_field_name,
+        )
+
 
 class EntityGroupConfigResolutionTest(TestCase):
     """EntityGroupConfig.from_yaml_dict resolution against the output schema."""
@@ -492,6 +512,8 @@ class LLMExtractorCollectionConfigTest(TestCase):
         assert isinstance(employers, ArrayOfStructLLMRequestOutputSchemaField)
         self.assertEqual([], collection.entity_groups_for_array_field(None))
         self.assertEqual([], collection.entity_groups_for_array_field(employers))
+        self.assertEqual([], collection.resolver_fields)
+        self.assertEqual({}, collection.resolver_sub_field_names_by_array_field_name)
 
     def test_non_upper_snake_case_name_raises(self) -> None:
         with self.assertRaisesRegex(ValueError, "must be UPPER_SNAKE_CASE"):

@@ -182,6 +182,7 @@ class GoldenEvalDocumentReader:
             source=GoldenEvalGoogleSheetDocumentSource(
                 sheets_reader=sheets_reader,
                 state_code=config.state_code,
+                stage=LLMExtractionViewGraphStage.FIRST_ORDER,
                 source_sheet_uri=config.golden_eval.config_for_stage(
                     LLMExtractionViewGraphStage.FIRST_ORDER
                 ).source_sheet_uri,

@@ -51,6 +51,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema import (
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     ArrayOfStructLLMRequestOutputSchemaField,
     ConfidenceLevel,
+    LLMRequestOutputSchemaField,
     ScalarValuedLLMRequestOutputSchemaField,
 )
 from recidiviz.documents.extraction.models.reference_data.llm_extractor_collection_reference_data_config import (
@@ -378,6 +379,38 @@ class LLMExtractorCollectionConfig:
             )
             == target_name
         ]
+
+    @property
+    def resolver_fields(self) -> list[LLMRequestOutputSchemaField]:
+        """Returns the output schema fields whose values entity resolution
+        resolves, in declaration order and without repeats: a group's
+        source_array_field when it has one, otherwise each of its entity_fields.
+        An ARRAY_OF_STRUCT field two groups resolve sub-fields of appears once.
+        """
+        fields_by_name: dict[str, LLMRequestOutputSchemaField] = {}
+        for entity_group in self.entity_groups:
+            if entity_group.source_array_field is not None:
+                fields_by_name[
+                    entity_group.source_array_field.name
+                ] = entity_group.source_array_field
+                continue
+            for entity_field in entity_group.entity_fields:
+                fields_by_name[entity_field.name] = entity_field
+        return list(fields_by_name.values())
+
+    @property
+    def resolver_sub_field_names_by_array_field_name(self) -> dict[str, set[str]]:
+        """Returns, for each ARRAY_OF_STRUCT field in resolver_fields, the names
+        of its sub-fields that any entity group resolves.
+        """
+        sub_field_names_by_array_field_name: dict[str, set[str]] = {}
+        for entity_group in self.entity_groups:
+            if entity_group.source_array_field is None:
+                continue
+            sub_field_names_by_array_field_name.setdefault(
+                entity_group.source_array_field.name, set()
+            ).update(entity_field.name for entity_field in entity_group.entity_fields)
+        return sub_field_names_by_array_field_name
 
     def generate_json_schema(self) -> JSONSchemaDict:
         """Returns the deterministic JSON output schema that will be provided to

@@ -15,8 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """One labeled test document from a collection's golden eval set, plus the values
-the extractor is expected to produce for it.
+the extractor is expected to produce for it: a GoldenEvalDocument for a
+first-order eval set, and its subclass GoldenEvalEntityResolutionDocument for an
+entity-resolution eval set.
 """
+import datetime
 from typing import Any
 
 import attr
@@ -39,7 +42,7 @@ class GoldenEvalDocument:
     """
 
     test_type: GoldenEvalTestType = attr.ib(
-        validator=attr.validators.in_(GoldenEvalTestType)
+        validator=attr.validators.instance_of(GoldenEvalTestType)
     )
     """Whether this is a minimal, targeted `unit` document or a realistic full
     `sample` document.
@@ -96,6 +99,56 @@ class GoldenEvalDocument:
         A field that is not expected to be present has no elements.
         """
         expected_value = self.expected_values[field_name]
+        if expected_value is None:
+            return []
+        return assert_type(expected_value, list)
+
+
+@attr.define(frozen=True, kw_only=True)
+class GoldenEvalEntityResolutionDocument(GoldenEvalDocument):
+    """One labeled test document from an entity-resolution golden eval set: a
+    first-order document plus the test group it is resolved within and the values
+    expected after entity resolution.
+
+    For example, two rows of test group 1 whose employers__expected cells hold
+    "The Home Depot / cashier" and "Home Depot / null" might both carry an
+    employers__expected__er cell of "The Home Depot / cashier", saying the two
+    mentions resolve to one entity with those values.
+    """
+
+    test_group_id: int = attr.ib(validator=attr_validators.is_positive_int)
+    """Small synthetic integer grouping the rows resolved together as one
+    person's documents. Never a real person id.
+    """
+
+    document_date: datetime.date = attr.ib(validator=attr_validators.is_date)
+    """The document's date, which orders a group's documents in the composite
+    document entity resolution reads.
+    """
+
+    expected_resolved_values: dict[str, Any] = attr.ib(
+        validator=attr_validators.is_dict_of(str, object)
+    )
+    """Expected value after entity resolution per resolver field (see
+    LLMExtractorCollectionConfig.resolver_fields), keyed by field name. For an
+    ARRAY_OF_STRUCT field resolved through a group's source_array_field, a list
+    of per-element dicts holding only the sub-fields entity groups resolve,
+    where element i is the resolved form of element i of
+    expected_values; None when the first-order value is None. For a top-level
+    entity field, the resolved scalar, or None.
+    """
+
+    def expected_resolved_scalar_value(self, field_name: str) -> Any:
+        """Returns the resolved value expected for top-level entity field
+        |field_name|; None means no value is expected.
+        """
+        return self.expected_resolved_values[field_name]
+
+    def expected_resolved_array_elements(self, field_name: str) -> list[dict[str, Any]]:
+        """Returns the resolved elements expected for ARRAY_OF_STRUCT field
+        |field_name|, empty when the field is not expected to be present.
+        """
+        expected_value = self.expected_resolved_values[field_name]
         if expected_value is None:
             return []
         return assert_type(expected_value, list)
