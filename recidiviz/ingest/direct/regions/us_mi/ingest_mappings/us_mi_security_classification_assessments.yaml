@@ -32,7 +32,25 @@ output:
                 - OffenderAssessmentId
           assessment_class: $literal_enum(StateAssessmentClass.RISK)
           assessment_type: $literal_enum(StateAssessmentType.MI_SECURITY_CLASS)
+          assessment_subtype:
+            $enum_mapping:
+              $raw_text: DecisionCategory
+              $mappings:
+                StateAssessmentSubtype.INITIAL:
+                  - "CSJ-480 Security Classification Male Initial"
+                  - "CSJ-482 Security Classification Female Initial"
+                StateAssessmentSubtype.REASSESSMENT:
+                  - "CSJ-481 Security Classification Male Review"
+                  - "CSJ-483 Security Classification Female Review"
           assessment_date: FinalizedDate
+          # MI records no approval step; a finalized screen took effect on its
+          # FinalizedDate.
+          assessment_decision:
+            $conditional:
+              - $if:
+                  $not_null: FinalizedDate
+                $then: $literal_enum(StateAssessmentDecision.APPROVED)
+          assessment_decision_date: FinalizedDate
           assessment_score: management_raw_score
           assessment_level:
             $enum_mapping:
