@@ -1,0 +1,40 @@
+address:
+  dataset_id: meetings_dashboards_db_us_ne
+  table_id: NoteApproval
+description: >
+  Note approval statuses for a meeting's generated outputs, synced from the meetings 
+  backend database. Append-only event log keyed by (meetingId, section, pipelineRunId).
+schema:
+  - name: id
+    description: Unique identifier for this approval.
+    type: STRING
+    mode: NULLABLE
+  - name: meetingId
+    description: Meeting.id of the meeting this approval belongs to.
+    type: STRING
+    mode: NULLABLE
+  - name: approverEmail
+    description: >
+      Email of the user who approved this note.
+    type: STRING
+    mode: NULLABLE
+  - name: createdAt
+    description: Timestamp when this approval was created.
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: section
+    description: >
+      The section of content being approved by a user (e.g. CASE_NOTES, ACTION_ITEMS).
+    type: STRING
+    mode: NULLABLE
+  - name: value
+    description: >
+      The status of this approval (either APPROVED or UNAPPROVED).
+    type: STRING
+    mode: NULLABLE
+  - name: pipelineRunId
+    description: >
+      NotetakingPipelineRun.id of the run that generated the section being approved.
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
