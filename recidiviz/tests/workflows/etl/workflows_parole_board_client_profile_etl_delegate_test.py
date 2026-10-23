@@ -52,7 +52,7 @@ class WorkflowsParoleBoardClientProfileETLDelegateTest(unittest.TestCase):
             '"demographics": {"resident_dob": "1980-02-03", "case_manager": "Ana Ruiz"}, '
             '"parole_hearings": [{"hearing_status": "SCHEDULED", '
             '"hearing_date": "2026-11-04"}], '
-            '"active_sentences": []}'
+            '"criminal_history": []}'
         )
 
         doc_id, document = delegate.transform_row(
@@ -71,7 +71,7 @@ class WorkflowsParoleBoardClientProfileETLDelegateTest(unittest.TestCase):
                 "paroleHearings": [
                     {"hearingStatus": "SCHEDULED", "hearingDate": "2026-11-04"}
                 ],
-                "activeSentences": [],
+                "criminalHistory": [],
             },
             document,
         )
