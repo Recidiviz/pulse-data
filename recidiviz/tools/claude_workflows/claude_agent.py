@@ -16,7 +16,7 @@
 # =============================================================================
 """General-purpose agentic loop for running a Claude agent with tools.
 
-Handles the Anthropic API interaction, tool dispatch, token tracking,
+Handles the Claude API interaction, tool dispatch, token tracking,
 iteration limits, and forced summarization when the iteration cap is hit.
 Callers supply the prompt, tool schemas, and tool handlers; this module owns
 the loop mechanics so they can be reused by future Claude-driven workflows
@@ -31,6 +31,8 @@ import anthropic
 logger = logging.getLogger(__name__)
 
 ToolHandler = Callable[[dict[str, Any]], str]
+
+ClaudeClient = anthropic.Anthropic | anthropic.AnthropicVertex
 
 # Reasoning depth for adaptive thinking, passed via `output_config.effort`.
 # Replaces the fixed `thinking.budget_tokens` knob, which is rejected by
@@ -111,7 +113,7 @@ def _extract_text(response: anthropic.types.Message) -> str | None:
 
 def run_agent_loop(
     *,
-    api_key: str,
+    client: ClaudeClient,
     system_prompt: str,
     user_message: str,
     tools: list[dict[str, Any]],
@@ -123,7 +125,9 @@ def run_agent_loop(
     """Run a Claude agentic loop until the model stops or hits the iteration cap.
 
     Args:
-        api_key: Anthropic API key.
+        client: Client the loop sends every turn through, for example an
+            AnthropicVertex client. Model IDs in config must use that
+            platform's names.
         system_prompt: System prompt text. Sent with ephemeral cache_control.
         user_message: Initial user message to start the conversation.
         tools: Anthropic tool definitions (list of dicts with name/description/input_schema).
@@ -140,7 +144,6 @@ def run_agent_loop(
     Returns:
         AgentResult with the final text, token counts, and metadata flags.
     """
-    client = anthropic.Anthropic(api_key=api_key)
     messages: list[dict[str, Any]] = [{"role": "user", "content": user_message}]
     usage = _UsageTracker()
 
@@ -233,6 +236,7 @@ __all__ = [
     "AgentConfig",
     "AgentFailure",
     "AgentResult",
+    "ClaudeClient",
     "ToolHandler",
     "run_agent_loop",
 ]

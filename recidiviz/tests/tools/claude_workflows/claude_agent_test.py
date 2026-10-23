@@ -18,7 +18,7 @@
 import unittest
 from contextlib import contextmanager
 from typing import Any, Iterator
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from anthropic import types
 
@@ -101,8 +101,8 @@ def _make_multi_tool_message(
 def _mock_anthropic_client(
     responses: list[types.Message],
 ) -> Iterator[MagicMock]:
-    """Patch anthropic.Anthropic so that successive stream calls return
-    the given responses in order via get_final_message()."""
+    """Yield a mock client whose successive stream calls return the given
+    responses in order via get_final_message()."""
     mock_client = MagicMock()
     streams = []
     for resp in responses:
@@ -113,12 +113,7 @@ def _mock_anthropic_client(
         streams.append(stream_cm)
 
     mock_client.messages.stream.side_effect = streams
-
-    with patch(
-        "recidiviz.tools.claude_workflows.claude_agent.anthropic.Anthropic",
-        return_value=mock_client,
-    ):
-        yield mock_client
+    yield mock_client
 
 
 def _run(
@@ -127,9 +122,9 @@ def _run(
     config: AgentConfig | None = None,
     failure_types: tuple[type[AgentFailure], ...] = (AgentFailure,),
 ) -> AgentResult:
-    with _mock_anthropic_client(responses):
+    with _mock_anthropic_client(responses) as mock_client:
         return run_agent_loop(
-            api_key="fake-key",
+            client=mock_client,
             system_prompt="You are a test agent.",
             user_message="Test input",
             tools=[],
@@ -207,7 +202,7 @@ class TestRunAgentLoopToolDispatch(unittest.TestCase):
         ]
         with _mock_anthropic_client(responses) as mock_client:
             result = run_agent_loop(
-                api_key="fake-key",
+                client=mock_client,
                 system_prompt="test",
                 user_message="test",
                 tools=[],

@@ -32,17 +32,15 @@ steps:
       - "FORCE_RERUN=${_FORCE_RERUN}"
       - "PRODUCT_AREAS=${_PRODUCT_AREAS}"
       - "STATE_CODE=${_STATE_CODE}"
-    secretEnv: [ANTHROPIC_API_KEY]
     id: run
 
 # The Linear API key (linear_deploy_script_api_key) is NOT injected here: the
-# run step reads it directly from Secret Manager via get_secret using the build
-# SA, the same way it reads github_deploy_script_pat for helperbot comments. It
+# run step reads it directly from Secret Manager via linear_client_from_secret
+# using the build SA, the same way github_helperbot_client reads
+# github_deploy_script_pat for helperbot comments. It
 # only needs the SA's secretAccessor grant (pg-diagnosis.tf), not env injection.
 availableSecrets:
   secretManager:
-    - versionName: projects/$PROJECT_ID/secrets/pg_diagnosis_claude_api_key/versions/latest
-      env: ANTHROPIC_API_KEY
     - versionName: projects/$PROJECT_ID/secrets/github_deploy_script_pat/versions/latest
       env: GITHUB_TOKEN
 

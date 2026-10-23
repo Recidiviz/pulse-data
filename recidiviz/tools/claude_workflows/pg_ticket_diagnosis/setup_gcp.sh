@@ -39,30 +39,7 @@ else
   fi
 fi
 
-# 2. The Anthropic API key for the agent loop.
-echo "==> Provisioning Anthropic API key..."
-SECRET_NAME="pg_diagnosis_claude_api_key"
-if secret_has_version "$SECRET_NAME"; then
-  echo "    $SECRET_NAME already has a version."
-  read -rp "    Add a new version? (y/N): " REGEN
-  if [[ ! "$REGEN" =~ ^[Yy]$ ]]; then
-    echo "    Skipping."
-    REGEN=""
-  fi
-else
-  REGEN="y"
-fi
-if [[ "$REGEN" =~ ^[Yy]$ ]]; then
-  echo "    Paste your Anthropic API key, then press Enter:"
-  read -rs SECRET_VALUE
-  if echo -n "$SECRET_VALUE" | gcloud secrets versions add "$SECRET_NAME" --data-file=- --project="$PROJECT_ID"; then
-    echo "    Stored."
-  else
-    echo "    FAILED — has pg-diagnosis.tf been applied to $PROJECT_ID yet?"
-  fi
-fi
-
-# 3. Summary. The remaining secrets the agent reads
+# 2. Summary. The remaining secrets the agent reads
 # (github_deploy_script_pat, linear_deploy_script_api_key) are owned and
 # provisioned by the deploy scripts; pg-diagnosis.tf only grants the agent SA
 # access to them. The Linear key must be a read-capable Linear API key — to

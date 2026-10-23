@@ -14,10 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Standalone script for diagnosing PG bug tickets using an Anthropic agentic loop.
+"""Standalone script for diagnosing PG bug tickets using a Claude agentic loop.
 
-Intended to run as a Cloud Build step. Reads issue metadata and secrets
-from environment variables, runs the agent, and posts the diagnosis to GitHub.
+Intended to run as a Cloud Build step. Reads issue metadata from environment
+variables, runs the agent, and posts the diagnosis to GitHub. Claude runs on
+Vertex AI in the GCP project the build runs in, using the build service
+account's credentials.
 
 Features:
 - Reads the ticket's PII from the private Google Doc linked in its body, falling
@@ -79,7 +81,7 @@ import google.auth
 import google.auth.transport.requests
 import requests
 from google.auth import impersonated_credentials
-from google.cloud import bigquery, secretmanager
+from google.cloud import bigquery
 
 from recidiviz.case_triage.edovo.external_id_matching import (
     PERSON_EXTERNAL_ID_ADDRESS,
@@ -100,6 +102,7 @@ from recidiviz.tools.claude_workflows.claude_agent import (
     AgentConfig,
     AgentFailure,
     AgentResult,
+    ClaudeClient,
     run_agent_loop,
 )
 from recidiviz.tools.claude_workflows.pg_ticket_diagnosis.pii_doc_parser_utils import (
@@ -114,9 +117,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 MAX_AGENT_ITERATIONS = 40
-MODEL = "claude-opus-4-8"
+# Vertex AI model IDs. Dated snapshots take an "@" before the date.
+MODEL = "claude-opus-5-5"
 SCRUB_MODEL = "claude-haiku-5-5"
 STATE_CODE_MODEL = "claude-haiku-5-5"
+# The "us" multi-region keeps inference in US regions; "global" can route
+# requests outside the US.
+VERTEX_REGION = "us"
 AGENT_TIMEZONE = ZoneInfo("US/Eastern")
 
 # Marker used to replace redacted PII in posted comments. Both the deterministic
@@ -229,27 +236,6 @@ def get_env(name: str) -> str:
     if not value:
         raise RuntimeError(f"Missing required environment variable: {name}")
     return value
-
-
-def get_secret(name: str, gcp_project: str) -> str:
-    """Read a secret from env vars (Cloud Build) or fall back to Secret Manager (local)."""
-    env_map = {
-        "pg_diagnosis_claude_api_key": "ANTHROPIC_API_KEY",
-        "pg_diagnosis_github_token": "GITHUB_TOKEN",  # nosec B105 - env var name, not a credential
-    }
-    env_name = env_map.get(name, name)
-    value = os.environ.get(env_name)
-    if value:
-        return value
-
-    # Secret Manager fallback for local invocations where env vars aren't set.
-    sm_map = {
-        "pg_diagnosis_github_token": "github_deploy_script_pat",  # nosec B105 - Secret Manager resource name, not a credential
-    }
-    client = secretmanager.SecretManagerServiceClient()
-    sm_name = sm_map.get(name, name)
-    path = f"projects/{gcp_project}/secrets/{sm_name}/versions/latest"
-    return client.access_secret_version(name=path).payload.data.decode()
 
 
 DIAGNOSIS_MARKER = "<!-- pg-diagnosis-agent -->"
@@ -1057,14 +1043,13 @@ _STATE_CODE_RESPONSE_SCHEMA = {
 
 
 def _infer_state_code_from_ticket(
-    *, issue_title: str, issue_body: str, anthropic_api_key: str
+    *, issue_title: str, issue_body: str, client: ClaudeClient
 ) -> StateCode:
     """Returns the state a model reads off the ticket's title and body.
 
     Raises StateCodeUndeterminedError when the ticket names no state or more
     than one, or when the model returns no answer.
     """
-    client = anthropic.Anthropic(api_key=anthropic_api_key)
     response = client.messages.create(
         model=STATE_CODE_MODEL,
         max_tokens=1_000,
@@ -1112,7 +1097,7 @@ def determine_state_code(
     labeled_state_code: StateCode | None,
     issue_title: str,
     issue_body: str,
-    anthropic_api_key: str,
+    client: ClaudeClient,
 ) -> StateCode:
     """Returns the state whose data the agent should query for this ticket.
 
@@ -1129,7 +1114,7 @@ def determine_state_code(
         else _infer_state_code_from_ticket(
             issue_title=issue_title,
             issue_body=issue_body,
-            anthropic_api_key=anthropic_api_key,
+            client=client,
         )
     )
     if ticket_state_code in FORBIDDEN_STATE_CODES:
@@ -1287,7 +1272,7 @@ def run_agent(
     product_areas: list[str],
     config: RuntimeConfig,
     state_code: StateCode,
-    anthropic_api_key: str,
+    client: ClaudeClient,
     ctx: DiagnosisContext,
     linear_id: str | None,
     pii_doc_id: str | None,
@@ -1298,7 +1283,7 @@ def run_agent(
     already-reported failure apart from a run that finished normally.
     """
     return run_agent_loop(
-        api_key=anthropic_api_key,
+        client=client,
         system_prompt=_build_system_prompt(config, state_code, product_areas),
         user_message=(
             f"**Issue #{issue.number}**\n\n"
@@ -1324,10 +1309,10 @@ def run_agent(
 # ── main ─────────────────────────────────────────────────────────────────────
 
 
-def scrub_pii_from_comment(text: str, anthropic_api_key: str) -> str:
+def scrub_pii_from_comment(text: str, client: ClaudeClient) -> str:
     """Run a Haiku pass over the draft comment to redact names and external IDs.
 
-    Runs as a separate Anthropic call (independent of the main agent loop) so
+    Runs as a separate Claude call (independent of the main agent loop) so
     this acts as a final guardrail before the comment is posted publicly.
     person_ids (internal Recidiviz numeric IDs, typically 18-19 digits) and
     officer/user email addresses are preserved; client names and state-issued
@@ -1335,7 +1320,6 @@ def scrub_pii_from_comment(text: str, anthropic_api_key: str) -> str:
     — the caller should let the exception propagate rather than post an
     un-scrubbed comment.
     """
-    client = anthropic.Anthropic(api_key=anthropic_api_key)
     system = (
         "You are a PII scrubber. You will be given a draft comment about to be "
         "posted on a public GitHub issue. Redact personally identifying "
@@ -1428,7 +1412,9 @@ def main() -> None:
     linear_id = resolve_linear_id_for_issue(issue)
     logger.info("Linear ID for %s: %s", issue, linear_id)
 
-    anthropic_api_key = get_secret("pg_diagnosis_claude_api_key", config.gcp_project)
+    client = anthropic.AnthropicVertex(
+        project_id=config.gcp_project, region=VERTEX_REGION
+    )
     ctx = DiagnosisContext()
     try:
         try:
@@ -1436,7 +1422,7 @@ def main() -> None:
                 labeled_state_code=config.labeled_state_code,
                 issue_title=issue_content.title,
                 issue_body=issue_content.body,
-                anthropic_api_key=anthropic_api_key,
+                client=client,
             )
         except DiagnosisFailure as e:
             logger.warning("Not diagnosing %s: %s", issue, e)
@@ -1451,7 +1437,7 @@ def main() -> None:
             product_areas=product_areas,
             config=config,
             state_code=state_code,
-            anthropic_api_key=anthropic_api_key,
+            client=client,
             ctx=ctx,
             linear_id=linear_id,
             pii_doc_id=issue_content.pii_doc_id,
@@ -1480,7 +1466,7 @@ def main() -> None:
 
         comment = f"{result.text}{result.footer()}"
         logger.info("Scrubbing PII from comment before posting...")
-        scrubbed = scrub_pii_from_comment(comment, anthropic_api_key)
+        scrubbed = scrub_pii_from_comment(comment, client)
         scrubbed = ctx.scrub_known_external_ids(scrubbed)
         # Truncate the diagnosis (not the footer) so the Cloud Build logs link
         # always survives the 65k-char comment cap, even on long diagnoses.

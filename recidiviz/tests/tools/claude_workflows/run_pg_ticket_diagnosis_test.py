@@ -312,7 +312,7 @@ class TestFetchPiiForIssue(unittest.TestCase):
         "STATE_CODE": "US_TX",
     },
 )
-@mock.patch(f"{_MODULE}.get_secret", mock.MagicMock(return_value="fake-api-key"))
+@mock.patch(f"{_MODULE}.anthropic.AnthropicVertex", mock.MagicMock())
 @mock.patch(
     f"{_MODULE}.issue_has_successful_diagnosis", mock.MagicMock(return_value=False)
 )
@@ -457,7 +457,7 @@ class TestMainDeduplication(unittest.TestCase):
 
     @mock.patch(f"{_MODULE}._post_marked_comment")
     @mock.patch(f"{_MODULE}.run_agent")
-    @mock.patch(f"{_MODULE}.get_secret", return_value="fake-api-key")
+    @mock.patch(f"{_MODULE}.anthropic.AnthropicVertex")
     @mock.patch(f"{_MODULE}.resolve_linear_id_for_issue", return_value=None)
     @mock.patch(
         f"{_MODULE}.fetch_issue_content",
@@ -471,7 +471,7 @@ class TestMainDeduplication(unittest.TestCase):
         _mock_has_diagnosis: mock.MagicMock,
         _mock_fetch: mock.MagicMock,
         _mock_linear: mock.MagicMock,
-        _mock_secret: mock.MagicMock,
+        mock_vertex: mock.MagicMock,
         mock_run_agent: mock.MagicMock,
         mock_post: mock.MagicMock,
     ) -> None:
@@ -479,6 +479,9 @@ class TestMainDeduplication(unittest.TestCase):
 
         run_pg.main()
 
+        mock_vertex.assert_called_once_with(
+            project_id="recidiviz-staging", region=run_pg.VERTEX_REGION
+        )
         mock_run_agent.assert_called_once()
         mock_post.assert_called_once()
         self.assertNotIn("marker", mock_post.call_args.kwargs)
@@ -716,18 +719,18 @@ class TestLoadRuntimeConfigStateCode(unittest.TestCase):
         )
 
 
-def _mock_model_reporting(
+def _mock_client_reporting(
     reported_state_code: str | None, *, stop_reason: str = "end_turn"
 ) -> mock.MagicMock:
-    """Returns an anthropic.Anthropic stub whose model reports reported_state_code."""
+    """Returns a Claude client stub whose model reports reported_state_code."""
     text_block = mock.MagicMock(
         type="text", text=json.dumps({"state_code": reported_state_code})
     )
-    mock_anthropic = mock.MagicMock()
-    mock_anthropic.return_value.messages.create.return_value = mock.MagicMock(
+    mock_client = mock.MagicMock()
+    mock_client.messages.create.return_value = mock.MagicMock(
         content=[text_block], stop_reason=stop_reason
     )
-    return mock_anthropic
+    return mock_client
 
 
 class TestDetermineStateCode(unittest.TestCase):
@@ -736,58 +739,57 @@ class TestDetermineStateCode(unittest.TestCase):
     def _determine(
         self,
         labeled_state_code: StateCode | None,
-        mock_anthropic: mock.MagicMock,
+        mock_client: mock.MagicMock,
     ) -> StateCode:
-        with mock.patch(f"{_MODULE}.anthropic.Anthropic", mock_anthropic):
-            return run_pg.determine_state_code(
-                labeled_state_code=labeled_state_code,
-                issue_title="[US_PO] Client missing from caseload",
-                issue_body=_BODY_WITHOUT_BANNER,
-                anthropic_api_key="fake-api-key",
-            )
+        return run_pg.determine_state_code(
+            labeled_state_code=labeled_state_code,
+            issue_title="[US_PO] Client missing from caseload",
+            issue_body=_BODY_WITHOUT_BANNER,
+            client=mock_client,
+        )
 
     def test_region_label_wins_without_asking_the_model(self) -> None:
         # On issue #99565 the title read [US_PO] (the officer's role typed into
         # the state bracket), but the Region label had the right state.
-        mock_anthropic = _mock_model_reporting("US_TX")
-        self.assertEqual(
-            StateCode.US_TX, self._determine(StateCode.US_TX, mock_anthropic)
-        )
-        mock_anthropic.assert_not_called()
+        mock_client = _mock_client_reporting("US_TX")
+        self.assertEqual(StateCode.US_TX, self._determine(StateCode.US_TX, mock_client))
+        mock_client.messages.create.assert_not_called()
 
     def test_idaho_label_maps_to_us_ix(self) -> None:
         self.assertEqual(
             StateCode.US_IX,
-            self._determine(StateCode.US_ID, _mock_model_reporting(None)),
+            self._determine(StateCode.US_ID, _mock_client_reporting(None)),
         )
 
     def test_forbidden_label_raises(self) -> None:
         with self.assertRaisesRegex(run_pg.ForbiddenStateError, "US_ME"):
-            self._determine(StateCode.US_ME, _mock_model_reporting(None))
+            self._determine(StateCode.US_ME, _mock_client_reporting(None))
 
     def test_asks_the_model_when_there_is_no_label(self) -> None:
-        mock_anthropic = _mock_model_reporting("US_TX")
-        self.assertEqual(StateCode.US_TX, self._determine(None, mock_anthropic))
-        mock_anthropic.return_value.messages.create.assert_called_once()
+        mock_client = _mock_client_reporting("US_TX")
+        self.assertEqual(StateCode.US_TX, self._determine(None, mock_client))
+        mock_client.messages.create.assert_called_once()
 
     def test_idaho_model_answer_maps_to_us_ix(self) -> None:
         self.assertEqual(
-            StateCode.US_IX, self._determine(None, _mock_model_reporting("US_ID"))
+            StateCode.US_IX, self._determine(None, _mock_client_reporting("US_ID"))
         )
 
     def test_forbidden_model_answer_raises(self) -> None:
         with self.assertRaisesRegex(run_pg.ForbiddenStateError, "US_CA"):
-            self._determine(None, _mock_model_reporting("US_CA"))
+            self._determine(None, _mock_client_reporting("US_CA"))
 
     def test_model_finding_no_state_raises(self) -> None:
         with self.assertRaises(run_pg.StateCodeUndeterminedError):
-            self._determine(None, _mock_model_reporting(None))
+            self._determine(None, _mock_client_reporting(None))
 
     def test_model_stopping_before_answering_raises(self) -> None:
         with self.assertRaisesRegex(
             run_pg.StateCodeUndeterminedError, r"\[max_tokens\]"
         ):
-            self._determine(None, _mock_model_reporting(None, stop_reason="max_tokens"))
+            self._determine(
+                None, _mock_client_reporting(None, stop_reason="max_tokens")
+            )
 
 
 @mock.patch.dict(
@@ -801,7 +803,6 @@ class TestDetermineStateCode(unittest.TestCase):
         "STATE_CODE": "US_ME",
     },
 )
-@mock.patch(f"{_MODULE}.get_secret", mock.MagicMock(return_value="fake-api-key"))
 @mock.patch(
     f"{_MODULE}.issue_has_successful_diagnosis", mock.MagicMock(return_value=False)
 )
@@ -819,6 +820,7 @@ class TestDetermineStateCode(unittest.TestCase):
 class TestMainStateCodeGuards(unittest.TestCase):
     """Tests that main() stops before the agent runs when the ticket's state is off limits or unknown."""
 
+    @mock.patch(f"{_MODULE}.anthropic.AnthropicVertex", mock.MagicMock())
     @mock.patch(f"{_MODULE}._post_marked_comment")
     @mock.patch(f"{_MODULE}.run_agent")
     def test_refuses_and_explains_itself(
@@ -831,7 +833,10 @@ class TestMainStateCodeGuards(unittest.TestCase):
         self.assertIn("US_ME", posted)
 
     @mock.patch.dict(os.environ, {"STATE_CODE": ""})
-    @mock.patch(f"{_MODULE}.anthropic.Anthropic", _mock_model_reporting("US_ME"))
+    @mock.patch(
+        f"{_MODULE}.anthropic.AnthropicVertex",
+        mock.MagicMock(return_value=_mock_client_reporting("US_ME")),
+    )
     @mock.patch(f"{_MODULE}._post_marked_comment")
     @mock.patch(f"{_MODULE}.run_agent")
     def test_refuses_a_state_the_model_read_off_the_ticket(
@@ -842,7 +847,10 @@ class TestMainStateCodeGuards(unittest.TestCase):
         self.assertIn("we don't query this state's data", mock_post.call_args.args[1])
 
     @mock.patch.dict(os.environ, {"STATE_CODE": ""})
-    @mock.patch(f"{_MODULE}.anthropic.Anthropic", _mock_model_reporting(None))
+    @mock.patch(
+        f"{_MODULE}.anthropic.AnthropicVertex",
+        mock.MagicMock(return_value=_mock_client_reporting(None)),
+    )
     @mock.patch(f"{_MODULE}._post_marked_comment")
     @mock.patch(f"{_MODULE}.run_agent")
     def test_stops_when_the_state_is_undetermined(
@@ -861,11 +869,11 @@ class TestMainStateCodeGuards(unittest.TestCase):
     def test_reports_a_state_code_model_outage(
         self, mock_run_agent: mock.MagicMock, mock_post: mock.MagicMock
     ) -> None:
-        mock_anthropic = mock.MagicMock()
-        mock_anthropic.return_value.messages.create.side_effect = RuntimeError(
+        mock_vertex = mock.MagicMock()
+        mock_vertex.return_value.messages.create.side_effect = RuntimeError(
             "API overloaded"
         )
-        with mock.patch(f"{_MODULE}.anthropic.Anthropic", mock_anthropic):
+        with mock.patch(f"{_MODULE}.anthropic.AnthropicVertex", mock_vertex):
             with self.assertRaises(SystemExit):
                 run_pg.main()
         mock_run_agent.assert_not_called()

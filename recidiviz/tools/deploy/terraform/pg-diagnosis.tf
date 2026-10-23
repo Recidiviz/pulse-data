@@ -30,6 +30,8 @@ locals {
   pg_diagnosis_runtime_roles = [
     # Pulls the private appengine/default image the run step executes in.
     "roles/artifactregistry.reader",
+    # Calls Claude on Vertex AI in this project.
+    "roles/aiplatform.user",
     "roles/bigquery.dataViewer",
     "roles/bigquery.jobUser",
     "roles/cloudbuild.builds.editor",
@@ -93,8 +95,9 @@ resource "google_service_account_iam_member" "pg_diagnosis_self_impersonation" {
   member             = "serviceAccount:${local.pg_diagnosis_sa_email}"
 }
 
-# Anthropic API key for the agent loop. The value is provisioned manually via
-# setup_gcp.sh; Terraform manages only the secret container.
+# Unused: the agent calls Claude on Vertex AI and does not read this key, and
+# Terraform grants no access to it. Removing this resource makes the next
+# apply destroy the secret and its stored versions.
 resource "google_secret_manager_secret" "pg_diagnosis_claude_api_key" {
   count     = local.pg_diagnosis_enabled ? 1 : 0
   secret_id = "pg_diagnosis_claude_api_key"
@@ -124,22 +127,18 @@ resource "google_secret_manager_secret" "github_pg_diagnosis_webhook" {
 }
 
 # Secret-level access for the secrets the agent reads at runtime:
-# pg_diagnosis_claude_api_key via build env injection, and
-# github_deploy_script_pat (helperbot comments) / linear_deploy_script_api_key
-# (Linear ID resolution) directly from Secret Manager via get_secret. The
-# latter two secrets are owned by the deploy scripts; only our SA's membership
-# is managed here.
+# github_deploy_script_pat (helperbot comments, plus the clone step's build env
+# injection) and linear_deploy_script_api_key (Linear ID resolution, read
+# directly from Secret Manager via linear_client_from_secret). Both secrets are
+# owned by the deploy scripts; only our SA's membership is managed here.
 resource "google_secret_manager_secret_iam_member" "pg_diagnosis_secret_access" {
   for_each = local.pg_diagnosis_enabled ? toset([
-    "pg_diagnosis_claude_api_key",
     "github_deploy_script_pat",
     "linear_deploy_script_api_key",
   ]) : toset([])
   secret_id = each.key
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${local.pg_diagnosis_sa_email}"
-
-  depends_on = [google_secret_manager_secret.pg_diagnosis_claude_api_key]
 }
 
 # The Cloud Build service agent resolves the trigger's webhook secret when a
@@ -305,7 +304,6 @@ import {
 
 import {
   for_each = local.pg_diagnosis_enabled ? toset([
-    "pg_diagnosis_claude_api_key",
     "github_deploy_script_pat",
     "linear_deploy_script_api_key",
   ]) : toset([])
