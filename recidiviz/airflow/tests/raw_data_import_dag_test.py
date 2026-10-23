@@ -284,12 +284,64 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             # import-pipeline structure under test.
             if "warm_pool" in leaf.task_id:
                 continue
-            assert "maybe_trigger_dag_rerun" in leaf.task_id
-            assert len(leaf.upstream_task_ids) == 3
-            assert any(
-                "release_raw_data_resource_locks" in tid
-                for tid in leaf.upstream_task_ids
-            )
+            # Every state branch ends with maybe_trigger_dag_rerun; primary branches
+            # additionally end with trigger_identity_ingest_dag. Both run only after
+            # the resource locks are released, trigger_identity_ingest_dag via the
+            # has_attempted_file_imports short circuit that gates it.
+            if "trigger_identity_ingest_dag" in leaf.task_id:
+                assert len(leaf.upstream_task_ids) == 1
+                (gate_task_id,) = leaf.upstream_task_ids
+                assert "has_attempted_file_imports" in gate_task_id
+                gate = branch_end_and_one_before.get_task(gate_task_id)
+                assert any(
+                    "release_raw_data_resource_locks" in tid
+                    for tid in gate.upstream_task_ids
+                )
+            else:
+                assert "maybe_trigger_dag_rerun" in leaf.task_id
+                assert len(leaf.upstream_task_ids) == 3
+                assert any(
+                    "release_raw_data_resource_locks" in tid
+                    for tid in leaf.upstream_task_ids
+                )
+
+    def test_trigger_identity_ingest_dag_only_on_primary_branches(self) -> None:
+        """Tests that trigger_identity_ingest_dag is wired onto every primary import
+        branch and no secondary import branch, gated by the has_attempted_file_imports short
+        circuit, which itself runs after the resource locks are released.
+        """
+        dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
+
+        primary_branch_prefixes = set()
+        secondary_branch_prefixes = set()
+        branches_with_identity_trigger = set()
+        for task in dag.tasks:
+            if "_primary_import_branch." in task.task_id:
+                primary_branch_prefixes.add(
+                    task.task_id.split("_primary_import_branch.")[0]
+                    + "_primary_import_branch"
+                )
+            if "_secondary_import_branch." in task.task_id:
+                secondary_branch_prefixes.add(
+                    task.task_id.split("_secondary_import_branch.")[0]
+                    + "_secondary_import_branch"
+                )
+            if task.task_id.endswith(".trigger_identity_ingest_dag"):
+                assert "_secondary_import_branch." not in task.task_id
+                branch_prefix = task.task_id[: -len(".trigger_identity_ingest_dag")]
+                assert task.upstream_task_ids == {
+                    f"{branch_prefix}.has_attempted_file_imports"
+                }
+                gate = dag.get_task(f"{branch_prefix}.has_attempted_file_imports")
+                assert any(
+                    "release_raw_data_resource_locks" in tid
+                    for tid in gate.upstream_task_ids
+                )
+                branches_with_identity_trigger.add(branch_prefix)
+
+        assert primary_branch_prefixes
+        assert secondary_branch_prefixes
+        assert branches_with_identity_trigger == primary_branch_prefixes
 
     def test_step_2_sequencing(self) -> None:
         dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
@@ -298,47 +350,47 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             include_upstream=False,
             include_downstream=True,
         )
-        step_2_task_ids = [
-            ["get_all_unprocessed_gcs_file_metadata"],
-            ["get_all_unprocessed_bq_file_metadata"],
-            [
-                "raise_operations_registration_errors",
-                "verify_big_query_postgres_alignment",
-            ],
-            [
-                "raise_operations_registration_errors",
-                "verify_raw_data_pruning_metadata",
-            ],
-            [
-                "has_files_to_import",
-                "raise_operations_registration_errors",
-                "get_files_to_import_this_run",
-            ],
-            [
-                "split_by_pre_import_normalization_type",
-                "read_and_verify_column_headers",
-                "coalesce_results_and_errors",
-                "maybe_trigger_dag_rerun",
-                "write_import_start",
-            ],
-            [
-                "write_import_completions",
-                "load_and_prep_paths_for_batch",
-                "read_and_verify_column_headers",
-            ],
-            [
-                "coalesce_results_and_errors",
-                "raise_header_verification_errors",
-                "split_by_pre_import_normalization_type",
-            ],
-        ]
-
         for root in step_2_root.roots:
             # Warm-pool setup/teardown travel with the subset; not part of the
             # import-pipeline structure under test.
             if "warm_pool" in root.task_id:
                 continue
             assert "list_normalized_unprocessed_gcs_file_paths" in root.task_id
+            get_files_downstream = [
+                "split_by_pre_import_normalization_type",
+                "read_and_verify_column_headers",
+                "coalesce_results_and_errors",
+                "maybe_trigger_dag_rerun",
+                "write_import_start",
+            ]
+            step_2_task_ids = [
+                ["get_all_unprocessed_gcs_file_metadata"],
+                ["get_all_unprocessed_bq_file_metadata"],
+                [
+                    "raise_operations_registration_errors",
+                    "verify_big_query_postgres_alignment",
+                ],
+                [
+                    "raise_operations_registration_errors",
+                    "verify_raw_data_pruning_metadata",
+                ],
+                [
+                    "has_files_to_import",
+                    "raise_operations_registration_errors",
+                    "get_files_to_import_this_run",
+                ],
+                get_files_downstream,
+                [
+                    "write_import_completions",
+                    "load_and_prep_paths_for_batch",
+                    "read_and_verify_column_headers",
+                ],
+                [
+                    "coalesce_results_and_errors",
+                    "raise_header_verification_errors",
+                    "split_by_pre_import_normalization_type",
+                ],
+            ]
             curr_task = root
             for step_2_task_id in step_2_task_ids:
                 next_task = None
@@ -456,40 +508,53 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             include_upstream=False,
             include_downstream=True,
         )
-        ordered_step_5_task_ids_paths = [
-            [
-                [
-                    "branch_end",
-                    "move_successfully_imported_paths_to_storage",
-                    "maybe_trigger_dag_rerun",
-                    "write_import_completions",
-                ],
-                ["write_file_processed_time"],
-                ["ensure_release_resource_locks_release_if_acquired"],
-                ["branch_end", "release_raw_data_resource_locks"],
-                ["maybe_trigger_dag_rerun"],
-                ["branch_end"],
-            ],
-            [
-                [
-                    "branch_end",
-                    "write_import_completions",
-                    "maybe_trigger_dag_rerun",
-                    "move_successfully_imported_paths_to_storage",
-                ],
-                ["ensure_release_resource_locks_release_if_acquired"],
-                ["branch_end", "release_raw_data_resource_locks"],
-                ["maybe_trigger_dag_rerun"],
-                ["branch_end"],
-            ],
-        ]
-
         for root in step_5_root.roots:
             # Warm-pool setup/teardown travel with the subset; not part of the
             # import-pipeline structure under test.
             if "warm_pool" in root.task_id:
                 continue
             assert "coalesce_results_and_errors" in root.task_id
+            is_primary = "primary_import_branch" in root.task_id
+            # On primary branches, coalesce_results_and_errors additionally feeds the
+            # has_attempted_file_imports short circuit that gates trigger_identity_ingest_dag,
+            # and release_raw_data_resource_locks additionally fans out to it.
+            coalesce_extra_downstream = (
+                ["has_attempted_file_imports"] if is_primary else []
+            )
+            release_locks_downstream = (
+                ["has_attempted_file_imports", "maybe_trigger_dag_rerun"]
+                if is_primary
+                else ["maybe_trigger_dag_rerun"]
+            )
+            ordered_step_5_task_ids_paths = [
+                [
+                    [
+                        "branch_end",
+                        "move_successfully_imported_paths_to_storage",
+                        "maybe_trigger_dag_rerun",
+                        *coalesce_extra_downstream,
+                        "write_import_completions",
+                    ],
+                    ["write_file_processed_time"],
+                    ["ensure_release_resource_locks_release_if_acquired"],
+                    ["branch_end", "release_raw_data_resource_locks"],
+                    release_locks_downstream,
+                    ["branch_end"],
+                ],
+                [
+                    [
+                        "branch_end",
+                        "write_import_completions",
+                        "maybe_trigger_dag_rerun",
+                        *coalesce_extra_downstream,
+                        "move_successfully_imported_paths_to_storage",
+                    ],
+                    ["ensure_release_resource_locks_release_if_acquired"],
+                    ["branch_end", "release_raw_data_resource_locks"],
+                    release_locks_downstream,
+                    ["branch_end"],
+                ],
+            ]
             for step_5_path in ordered_step_5_task_ids_paths:
                 curr_task = root
                 for step_5_task_ids in step_5_path:
@@ -2694,6 +2759,9 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
                 "recidiviz.ingest.direct.raw_data.raw_file_configs.direct_ingest_regions_module",
                 "recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector.regions",
+                # trigger_identity_ingest_dag looks up the region at runtime to check
+                # for launchable identity ingest views.
+                "recidiviz.ingest.direct.direct_ingest_regions.direct_ingest_regions_module",
             ]
         ]
 
@@ -3016,6 +3084,9 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ],
                 expected_skipped_task_id_regexes=[
                     r".*_secondary_import_branch\..*",
+                    # nothing was imported, so has_attempted_file_imports short-circuits the
+                    # identity trigger
+                    r".*_primary_import_branch\.trigger_identity_ingest_dag",
                 ],
             )
             # failed state will only happen when resource releasing failed
@@ -3049,6 +3120,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.us_xx_primary_import_branch.cleanup_and_storage.write_import_completions",
                     "raw_data_branching.us_xx_primary_import_branch.cleanup_and_storage.write_file_processed_time",
                     "raw_data_branching.us_xx_primary_import_branch.maybe_trigger_dag_rerun",
+                    # no new files were imported, so identity clustering is not triggered
+                    "raw_data_branching.us_xx_primary_import_branch.trigger_identity_ingest_dag",
                     # other branches
                     r"raw_data_branching.us_ll_primary_import_branch.*",
                     r".*_secondary_import_branch\..*",
@@ -3759,6 +3832,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r"raw_data_branching\.us_ll_primary_import_branch\.pre_import_normalization\..*",
                     "raw_data_branching.us_ll_primary_import_branch.coalesce_import_ready_files",
                     "raw_data_branching.us_ll_primary_import_branch.maybe_trigger_dag_rerun",
+                    # us_ll imported no new files, so identity clustering is not triggered
+                    "raw_data_branching.us_ll_primary_import_branch.trigger_identity_ingest_dag",
                     r"raw_data_branching\.us_ll_primary_import_branch\.big_query_load\..*",
                     r"raw_data_branching\.us_ll_primary_import_branch\.cleanup_and_storage\.write_import_completions",
                     r"raw_data_branching\.us_ll_primary_import_branch\.cleanup_and_storage\.write_file_processed_time",

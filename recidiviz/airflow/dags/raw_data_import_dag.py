@@ -90,6 +90,7 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     CHUNKING_ERRORS,
     CHUNKING_RESULTS,
     FILE_IDS_TO_HEADERS,
+    FILE_IMPORTS,
     HAS_FILE_IMPORT_ERRORS,
     HEADER_VERIFICATION_ERRORS,
     IMPORT_READY_FILES,
@@ -112,9 +113,11 @@ from recidiviz.airflow.dags.raw_data.release_resource_lock_sql_query_generator i
     ReleaseRawDataResourceLockSqlQueryGenerator,
 )
 from recidiviz.airflow.dags.raw_data.sequencing_tasks import (
+    has_attempted_file_imports,
     has_files_to_import,
     maybe_trigger_dag_rerun,
     successfully_acquired_all_locks,
+    trigger_identity_ingest_dag,
 )
 from recidiviz.airflow.dags.raw_data.verify_big_query_postgres_alignment_sql_query_generator import (
     VerifyBigQueryPostgresAlignmentSQLQueryGenerator,
@@ -588,6 +591,21 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         )
 
         release_locks >> maybe_new_dag_rerun
+
+        # On a primary import, re-run identity clustering for this tenant against the
+        # freshly imported data. The has_attempted_file_imports short circuit skips the trigger
+        # when the run imported nothing (no new data to cluster on), and the task itself
+        # no-ops for states without launchable identity ingest views, so we don't spawn
+        # identity DAG runs that would only short-circuit.
+        if raw_data_instance is DirectIngestInstance.PRIMARY:
+            trigger_identity_ingest = trigger_identity_ingest_dag(
+                region_code=state_code.value,
+            )
+            (
+                release_locks
+                >> has_attempted_file_imports(clean_and_storage_jobs[FILE_IMPORTS])
+                >> trigger_identity_ingest
+            )
 
     return [
         raw_data_branch,
