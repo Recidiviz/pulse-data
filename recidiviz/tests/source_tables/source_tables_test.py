@@ -135,7 +135,6 @@ COMMON_VESTIGES = [
     "intercom_export.tickets",
     "intercom_export.tour_step_failure",
     "intercom_export.tour_step_view",
-    "intercom_export.unsubscribe",
 ]
 
 # these are source tables which are in use, but not necessarily used by the main view graph

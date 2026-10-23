@@ -3088,6 +3088,52 @@ AVG_CSAT_SCORE = EventValueMetric(
     event_count_metric=CSAT_RESPONSES,
 )
 
+INTERCOM_EMAILS_SENT = EventCountMetric(
+    name="intercom_emails_sent",
+    display_name="Intercom Emails Sent",
+    description="Total number of emails sent to provisioned users via Intercom",
+    event_selector=EventSelector(
+        event_type=EventType.INTERCOM_EMAIL_SENT,
+        event_conditions_dict={"is_user_role_type_unknown": ["false"]},
+    ),
+)
+
+INTERCOM_MONTHLY_LOGIN_EMAILS_SENT = EventCountMetric(
+    name="intercom_monthly_login_emails_sent",
+    display_name="Intercom Monthly Login Emails Sent",
+    description="Total number of monthly login reminder emails sent to provisioned users via Intercom",
+    event_selector=EventSelector(
+        event_type=EventType.INTERCOM_EMAIL_SENT,
+        event_conditions_dict={
+            "is_monthly_login_email": ["true"],
+            "is_user_role_type_unknown": ["false"],
+        },
+    ),
+)
+
+INTERCOM_WEEKLY_DIGEST_EMAILS_SENT = EventCountMetric(
+    name="intercom_weekly_digest_emails_sent",
+    display_name="Intercom Weekly Digest Emails Sent",
+    description="Total number of weekly digest emails sent to provisioned users via Intercom",
+    event_selector=EventSelector(
+        event_type=EventType.INTERCOM_EMAIL_SENT,
+        event_conditions_dict={
+            "is_weekly_digest_email": ["true"],
+            "is_user_role_type_unknown": ["false"],
+        },
+    ),
+)
+
+DISTINCT_USERS_UNSUBSCRIBED_FROM_INTERCOM = EventDistinctUnitCountMetric(
+    name="distinct_users_unsubscribed_from_intercom",
+    display_name="Distinct Users Unsubscribed From Intercom",
+    description="Number of distinct provisioned users who unsubscribed from Intercom emails",
+    event_selector=EventSelector(
+        event_type=EventType.INTERCOM_EMAIL_UNSUBSCRIBE,
+        event_conditions_dict={"is_user_role_type_unknown": ["false"]},
+    ),
+)
+
 DISTINCT_JII_TABLET_APP_PROVISIONED_USERS = SpanDistinctUnitCountMetric(
     name="distinct_jii_tablet_app_provisioned_users",
     display_name="Distinct JII Tablet App Provisioned Users",

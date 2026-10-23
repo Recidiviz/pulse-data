@@ -104,4 +104,8 @@ GLOBAL_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.CSAT_NEGATIVE_RESPONSES,
     metric_config.AVG_CSAT_SCORE,
     metric_config.DISTINCT_USERS_WITH_CSAT_RESPONSES,
+    metric_config.INTERCOM_EMAILS_SENT,
+    metric_config.INTERCOM_MONTHLY_LOGIN_EMAILS_SENT,
+    metric_config.INTERCOM_WEEKLY_DIGEST_EMAILS_SENT,
+    metric_config.DISTINCT_USERS_UNSUBSCRIBED_FROM_INTERCOM,
 ]
