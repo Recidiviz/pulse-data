@@ -131,11 +131,28 @@ class SourcedEmailSchema(SourcedAttributeValueSchema):
 
 
 class ExternalIdSchema(CamelCaseSchema):
-    """Serialized external identifier. The default identity form excludes `is_active`."""
+    """Serialized external identifier. The default identity form excludes
+    is_active, is_current_display_id_for_type, and is_stable_id_for_type."""
 
     external_id = fields.Str()
     id_type = fields.Enum(IdentifierType)
     is_active = fields.Bool()
+    is_current_display_id_for_type = fields.Bool(allow_none=True)
+    is_stable_id_for_type = fields.Bool(allow_none=True)
+
+
+# Internal selection bookkeeping stripped from external IDs in the default
+# serialized identity form; retained in the full form. The display/stable flags
+# are excluded for now because nothing populates them yet, so in the default
+# form they would be null noise on every id.
+# TODO(OBT-51932): Once import populates the flags, surface
+# is_current_display_id_for_type and is_stable_id_for_type here
+# (is_active stays excluded from the default form regardless).
+EXTERNAL_ID_INTERNAL_FLAGS = (
+    "is_active",
+    "is_current_display_id_for_type",
+    "is_stable_id_for_type",
+)
 
 
 class IdentityAttributesSchema(CamelCaseSchema):
@@ -247,7 +264,9 @@ class IdentitySchema(CamelCaseSchema):
     person_type = fields.Enum(PersonType, required=True)
     status = fields.Enum(IdentityStatus, required=True)
     merged_into = fields.UUID(allow_none=True)
-    external_ids = fields.List(fields.Nested(ExternalIdSchema(exclude=("is_active",))))
+    external_ids = fields.List(
+        fields.Nested(ExternalIdSchema(exclude=EXTERNAL_ID_INTERNAL_FLAGS))
+    )
     attributes = fields.Nested(IdentityAttributesSchema())
 
 

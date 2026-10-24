@@ -240,7 +240,11 @@ class BuildIdentityRowsMappingTest(IdentityDatabaseTestCase):
                 skip_demographic_guard=False,
                 external_ids=[
                     types.ExternalId(
-                        external_id="A123", id_type=_ID_TYPE, is_active=True
+                        external_id="A123",
+                        id_type=_ID_TYPE,
+                        is_active=True,
+                        is_current_display_id_for_type=None,
+                        is_stable_id_for_type=None,
                     )
                 ],
                 attributes=types.IdentityAttributes(
@@ -375,7 +379,13 @@ class BuildIdentityRowsMappingTest(IdentityDatabaseTestCase):
                 last_cluster_hash=cluster.cluster_hash,
                 skip_demographic_guard=False,
                 external_ids=[
-                    types.ExternalId(external_id="S9", id_type=_ID_TYPE, is_active=True)
+                    types.ExternalId(
+                        external_id="S9",
+                        id_type=_ID_TYPE,
+                        is_active=True,
+                        is_current_display_id_for_type=None,
+                        is_stable_id_for_type=None,
+                    )
                 ],
                 attributes=types.IdentityAttributes(
                     names=[],

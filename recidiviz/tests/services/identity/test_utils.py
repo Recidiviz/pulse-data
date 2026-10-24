@@ -184,12 +184,18 @@ def build_full_identity() -> types.IdentityHistory:
         last_updated_utc=UPDATED,
         external_ids=[
             types.ExternalId(
-                external_id="A123", id_type=IdentifierType.US_OZ_LOTR_ID, is_active=True
+                external_id="A123",
+                id_type=IdentifierType.US_OZ_LOTR_ID,
+                is_active=True,
+                is_current_display_id_for_type=False,
+                is_stable_id_for_type=False,
             ),
             types.ExternalId(
                 external_id="OLD9",
                 id_type=IdentifierType.US_OZ_LOTR_ID,
                 is_active=False,
+                is_current_display_id_for_type=False,
+                is_stable_id_for_type=False,
             ),
         ],
         attributes=types.IdentityAttributes(
@@ -312,6 +318,8 @@ def build_full_identity() -> types.IdentityHistory:
                                 external_id="OLD9",
                                 id_type=IdentifierType.US_OZ_LOTR_ID,
                                 is_active=True,
+                                is_current_display_id_for_type=None,
+                                is_stable_id_for_type=None,
                             )
                         ],
                         attributes=[
@@ -408,6 +416,8 @@ def insert_external_id(
     external_id: str,
     id_type: IdentifierType = IdentifierType.US_OZ_KDS_PERSON_ID,
     is_active: bool = True,
+    is_current_display_id_for_type: bool | None = None,
+    is_stable_id_for_type: bool | None = None,
 ) -> None:
     """Inserts an ExternalId row directly into the identity schema."""
     with SessionFactory.using_database(_IDENTITY_DATABASE_KEY) as session:
@@ -417,6 +427,8 @@ def insert_external_id(
                 external_id=external_id,
                 id_type=id_type,
                 is_active=is_active,
+                is_current_display_id_for_type=is_current_display_id_for_type,
+                is_stable_id_for_type=is_stable_id_for_type,
             )
         )
 

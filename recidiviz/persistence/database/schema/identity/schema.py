@@ -207,6 +207,26 @@ class ExternalId(IdentityBase):
             unique=True,
             postgresql_where=sql.text("is_active = TRUE"),
         ),
+        # At most one active row per (recidiviz_id, id_type) may carry each
+        # selection flag. Inactive rows keep their historical flag values freely.
+        Index(
+            "uq_external_ids_current_display_id_for_type",
+            "recidiviz_id",
+            "id_type",
+            unique=True,
+            postgresql_where=sql.text(
+                "is_active = TRUE AND is_current_display_id_for_type = TRUE"
+            ),
+        ),
+        Index(
+            "uq_external_ids_stable_id_for_type",
+            "recidiviz_id",
+            "id_type",
+            unique=True,
+            postgresql_where=sql.text(
+                "is_active = TRUE AND is_stable_id_for_type = TRUE"
+            ),
+        ),
     )
 
     external_id = Column(
@@ -238,6 +258,30 @@ class ExternalId(IdentityBase):
         comment=(
             "FALSE for external IDs left behind by splits (kept for audit "
             "history but no longer associated with the identity for lookups)."
+        ),
+    )
+
+    is_current_display_id_for_type = Column(
+        Boolean,
+        nullable=True,
+        comment=(
+            "TRUE if this is the external ID that should be displayed for "
+            "this person and id_type. NULL when display/stable id selection "
+            "has never run for this identity; selection sets TRUE or FALSE on "
+            "every row it assesses. At most one active row per "
+            "(recidiviz_id, id_type) may be TRUE."
+        ),
+    )
+
+    is_stable_id_for_type = Column(
+        Boolean,
+        nullable=True,
+        comment=(
+            "TRUE if this is the stable external ID for this person and "
+            "id_type. NULL when display/stable id selection has never run for "
+            "this identity; selection sets TRUE or FALSE on every row it "
+            "assesses. At most one active row per (recidiviz_id, id_type) may "
+            "be TRUE."
         ),
     )
 

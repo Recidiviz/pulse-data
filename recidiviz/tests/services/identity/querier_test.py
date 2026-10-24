@@ -239,6 +239,8 @@ class IdentityServiceQuerierTest(IdentityDatabaseTestCase):
                     external_id="OZ123",
                     id_type=IdentifierType.US_OZ_KDS_PERSON_ID,
                     is_active=True,
+                    is_current_display_id_for_type=None,
+                    is_stable_id_for_type=None,
                 )
             ],
             identity.external_ids,
@@ -356,6 +358,8 @@ class IdentityServiceQuerierTest(IdentityDatabaseTestCase):
                                         external_id="OZ999",
                                         id_type=IdentifierType.US_OZ_LOTR_ID,
                                         is_active=True,
+                                        is_current_display_id_for_type=None,
+                                        is_stable_id_for_type=None,
                                     )
                                 ],
                                 attributes=[
@@ -524,11 +528,41 @@ class CreateIdentityTest(IdentityDatabaseTestCase):
                     external_id="NEW1",
                     id_type=IdentifierType.US_OZ_KDS_PERSON_ID,
                     is_active=True,
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
                 )
             ]
         )
         created = IdentityServiceQuerier().create_identity(identity)
         self.assertEqual(identity, created)
+
+    def test_create_identity_persists_display_and_stable_flags(self) -> None:
+        """The display/stable id flags survive the domain -> ORM -> domain round
+        trip, so a non-default (True) value is written and read back."""
+        identity = _new_identity_to_create(
+            external_ids=[
+                ExternalId(
+                    external_id="NEW1",
+                    id_type=IdentifierType.US_OZ_KDS_PERSON_ID,
+                    is_active=True,
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
+                )
+            ]
+        )
+        created = IdentityServiceQuerier().create_identity(identity)
+        self.assertEqual(
+            [
+                ExternalId(
+                    external_id="NEW1",
+                    id_type=IdentifierType.US_OZ_KDS_PERSON_ID,
+                    is_active=True,
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=True,
+                )
+            ],
+            created.external_ids,
+        )
 
     def test_create_identity_with_demographics_round_trips(self) -> None:
         base = _new_identity_to_create()
@@ -642,6 +676,8 @@ class CreateIdentityTest(IdentityDatabaseTestCase):
                     external_id="NEW1",
                     id_type=IdentifierType.US_OZ_KDS_PERSON_ID,
                     is_active=True,
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
                 )
             ]
         )
@@ -663,6 +699,8 @@ class CreateIdentityTest(IdentityDatabaseTestCase):
                     external_id="NEW1",
                     id_type=IdentifierType.US_OZ_KDS_PERSON_ID,
                     is_active=True,
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
                 )
             ]
         )

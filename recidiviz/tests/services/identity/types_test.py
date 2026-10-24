@@ -123,16 +123,22 @@ class ExternalIdTest(unittest.TestCase):
             external_id="ABC123",
             id_type=IdentifierType.US_OZ_LOTR_ID,
             is_active=True,
+            is_current_display_id_for_type=True,
+            is_stable_id_for_type=False,
         )
         self.assertEqual("ABC123", ext_id.external_id)
         self.assertIs(IdentifierType.US_OZ_LOTR_ID, ext_id.id_type)
         self.assertTrue(ext_id.is_active)
+        self.assertTrue(ext_id.is_current_display_id_for_type)
+        self.assertFalse(ext_id.is_stable_id_for_type)
 
     def test_inactive_constructs(self) -> None:
         ext_id = ExternalId(
             external_id="OLD9",
             id_type=IdentifierType.US_OZ_LOTR_ID,
             is_active=False,
+            is_current_display_id_for_type=False,
+            is_stable_id_for_type=False,
         )
         self.assertFalse(ext_id.is_active)
 
@@ -487,7 +493,11 @@ class IdentityDomainTypesTest(unittest.TestCase):
 
     def test_active_identity_with_external_ids_and_attributes(self) -> None:
         ext_id = ExternalId(
-            external_id="A123", id_type=IdentifierType.US_OZ_LOTR_ID, is_active=True
+            external_id="A123",
+            id_type=IdentifierType.US_OZ_LOTR_ID,
+            is_active=True,
+            is_current_display_id_for_type=False,
+            is_stable_id_for_type=False,
         )
         email_sv = _sourced(
             Email(address="frodo@fake.com", address_hash="hashfrodofakecom")
@@ -653,6 +663,8 @@ class SplitEventTest(unittest.TestCase):
                     external_id="OLD9",
                     id_type=IdentifierType.US_OZ_LOTR_ID,
                     is_active=True,
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=False,
                 )
             ],
             attributes=[
@@ -853,6 +865,8 @@ class IdentityFromRequestDictTest(unittest.TestCase):
                     external_id="A123",
                     id_type=IdentifierType.US_OZ_LOTR_ID,
                     is_active=True,
+                    is_current_display_id_for_type=None,
+                    is_stable_id_for_type=None,
                 )
             ],
             attributes=IdentityAttributes(

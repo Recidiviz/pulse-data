@@ -59,22 +59,38 @@ class IdentityDomainTypesTest(unittest.TestCase):
 class BuildingBlockSchemaTest(unittest.TestCase):
     """Value, sourced, and external-id schemas serialize to camelCase with enums by name."""
 
-    def test_external_id_schema_includes_is_active(self) -> None:
+    def test_external_id_schema_full_form_includes_internal_flags(self) -> None:
         external_id = types.ExternalId(
-            external_id="A123", id_type=IdentifierType.US_OZ_LOTR_ID, is_active=True
+            external_id="A123",
+            id_type=IdentifierType.US_OZ_LOTR_ID,
+            is_active=True,
+            is_current_display_id_for_type=True,
+            is_stable_id_for_type=False,
         )
         self.assertEqual(
-            {"externalId": "A123", "idType": "US_OZ_LOTR_ID", "isActive": True},
+            {
+                "externalId": "A123",
+                "idType": "US_OZ_LOTR_ID",
+                "isActive": True,
+                "isCurrentDisplayIdForType": True,
+                "isStableIdForType": False,
+            },
             api_schemas.ExternalIdSchema().dump(external_id),
         )
 
-    def test_external_id_schema_can_exclude_is_active(self) -> None:
+    def test_external_id_schema_default_form_excludes_internal_flags(self) -> None:
         external_id = types.ExternalId(
-            external_id="A123", id_type=IdentifierType.US_OZ_LOTR_ID, is_active=True
+            external_id="A123",
+            id_type=IdentifierType.US_OZ_LOTR_ID,
+            is_active=True,
+            is_current_display_id_for_type=True,
+            is_stable_id_for_type=True,
         )
         self.assertEqual(
             {"externalId": "A123", "idType": "US_OZ_LOTR_ID"},
-            api_schemas.ExternalIdSchema(exclude=("is_active",)).dump(external_id),
+            api_schemas.ExternalIdSchema(
+                exclude=api_schemas.EXTERNAL_ID_INTERNAL_FLAGS
+            ).dump(external_id),
         )
 
     def test_sourced_phone_number_schema(self) -> None:
@@ -227,8 +243,10 @@ class IdentitySchemaTest(unittest.TestCase):
         # internal reconciliation bookkeeping is omitted in the default form
         self.assertNotIn("lastClusterHash", dumped)
         self.assertNotIn("skipDemographicGuard", dumped)
-        # external IDs omit is_active in the default form
+        # external IDs omit the internal selection flags in the default form
         self.assertNotIn("isActive", dumped["externalIds"][0])
+        self.assertNotIn("isCurrentDisplayIdForType", dumped["externalIds"][0])
+        self.assertNotIn("isStableIdForType", dumped["externalIds"][0])
         # attributes are the default (collapsed) form
         self.assertIn("dateOfBirth", dumped["attributes"])
         self.assertNotIn("datesOfBirth", dumped["attributes"])
@@ -238,6 +256,8 @@ class IdentitySchemaTest(unittest.TestCase):
         # emits more fields; audit history lives on IdentityHistorySchema instead.
         dumped = api_schemas.IdentityFullSchema().dump(self.identity)
         self.assertTrue(dumped["externalIds"][0]["isActive"])
+        self.assertFalse(dumped["externalIds"][0]["isCurrentDisplayIdForType"])
+        self.assertFalse(dumped["externalIds"][0]["isStableIdForType"])
         self.assertIn("datesOfBirth", dumped["attributes"])
         self.assertNotIn("dateOfBirth", dumped["attributes"])
         self.assertEqual("cluster-hash-abc", dumped["lastClusterHash"])

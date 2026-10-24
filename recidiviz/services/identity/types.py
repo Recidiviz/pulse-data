@@ -354,6 +354,20 @@ class ExternalId:
     """False for external IDs left behind by splits (kept for audit history
     but no longer associated with the identity for lookups)."""
 
+    is_current_display_id_for_type: bool | None = attr.ib(
+        validator=attr_validators.is_opt_bool
+    )
+    """True if this is the external ID that should be displayed for this
+    person and id_type. None when display/stable id selection has never run
+    for this identity; selection sets True or False on every id it assesses.
+    At most one active id per (recidiviz_id, id_type) may be True."""
+
+    is_stable_id_for_type: bool | None = attr.ib(validator=attr_validators.is_opt_bool)
+    """True if this is the stable external ID for this person and id_type.
+    None when display/stable id selection has never run for this identity;
+    selection sets True or False on every id it assesses. At most one active
+    id per (recidiviz_id, id_type) may be True."""
+
 
 # ---------------------------------------------------------------------------
 # Attributes container
@@ -627,6 +641,16 @@ class Identity:
                     external_id=external_id["external_id"],
                     id_type=external_id["id_type"],
                     is_active=True,
+                    # Display/stable id selection runs only in the import
+                    # passes, not on this create endpoint, so the flags are
+                    # left unset, as setting them to False would wrongly
+                    # read as a selection that assessed these ids and
+                    # chose others.
+                    # TODO(OBT-50191): When the create paths converge on
+                    # create_identity, run the import's display/stable
+                    # selection here too.
+                    is_current_display_id_for_type=None,
+                    is_stable_id_for_type=None,
                 )
                 for external_id in params["external_ids"]
             ],

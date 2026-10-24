@@ -50,6 +50,8 @@ def _to_external_id(row: schema.ExternalId) -> types.ExternalId:
         external_id=row.external_id,
         id_type=row.id_type,
         is_active=row.is_active,
+        is_current_display_id_for_type=row.is_current_display_id_for_type,
+        is_stable_id_for_type=row.is_stable_id_for_type,
     )
 
 
@@ -216,6 +218,8 @@ def _to_child_rows(identity: types.Identity) -> list[DatabaseEntity]:
             external_id=external_id.external_id,
             id_type=external_id.id_type,
             is_active=external_id.is_active,
+            is_current_display_id_for_type=external_id.is_current_display_id_for_type,
+            is_stable_id_for_type=external_id.is_stable_id_for_type,
         )
         for external_id in identity.external_ids
     ]
@@ -362,6 +366,10 @@ def _to_split_event(row: schema.SplitEvent) -> types.SplitEvent:
                         # The moved-external-id audit table records no is_active
                         # flag; a moved ID is active on its new identity.
                         is_active=True,
+                        # The audit table records no display/stable flags
+                        # either; the next import computes them.
+                        is_current_display_id_for_type=None,
+                        is_stable_id_for_type=None,
                     )
                     for moved in moved_external_ids[new_identity.new_recidiviz_id]
                 ],
