@@ -56,6 +56,9 @@ fi
 # Round to the nearest hour by adding 30 minutes then truncating: anything
 # with minute >= 30 rolls up, anything with minute < 30 stays. Requires GNU
 # `date -d` (present in the google/cloud-sdk:stable container).
+# This run id format is recognized by is_cloud_scheduler_run() in
+# recidiviz/airflow/dags/utils/cloud_scheduler_run.py, and DAG behavior keys
+# off it. Schedule ids must stay lowercase [a-z0-9-]. Update both together.
 RUN_ID="${SCHEDULE_ID}--$(date -u -d '+30 minutes' +%Y-%m-%dT%H)"
 echo "Triggering ${DAG_ID} with run_id=${RUN_ID}"
 

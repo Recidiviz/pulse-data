@@ -217,8 +217,16 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         initialize_dag = dag.task_group_dict["initialize_dag"]
 
         self.assertIn(
-            "rekey_legacy_tables_to_cmek",
+            "rekey_only_on_cloud_scheduler_runs",
             initialize_dag.downstream_task_ids,
+        )
+        self.assertEqual(
+            {"rekey_legacy_tables_to_cmek"},
+            dag.get_task("rekey_only_on_cloud_scheduler_runs").downstream_task_ids,
+        )
+        self.assertEqual(
+            {"rekey_barrier"},
+            dag.get_task("rekey_legacy_tables_to_cmek").downstream_task_ids,
         )
 
     def test_schema_update_gates_state_branches(self) -> None:
@@ -2984,6 +2992,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.acquire_raw_data_resource_locks",
                 ],
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # everything but first and last should be skipped
                     r".*_primary_import_branch\.(?!acquire_raw_data_resource_locks|successfully_acquired_all_locks)",
                     # non-primary branches
@@ -2991,7 +3000,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.branch_end",  # ew, dont make it skip this
                 ],
                 expected_success_task_id_regexes=[
-                    "rekey_legacy_tables_to_cmek",
+                    "rekey_only_on_cloud_scheduler_runs",
                     "rekey_barrier",
                     r".*_primary_import_branch.successfully_acquired_all_locks",
                     r"initialize_dag..*",
@@ -3022,6 +3031,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY"},
                 expected_failure_task_id_regexes=[],
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # everything but first and last should be skipped
                     r".*_primary_import_branch\.(?!acquire_raw_data_resource_locks|successfully_acquired_all_locks)",
                     # non-primary branches
@@ -3029,7 +3039,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.branch_end",  # ew, dont make it skip this
                 ],
                 expected_success_task_id_regexes=[
-                    "rekey_legacy_tables_to_cmek",
+                    "rekey_only_on_cloud_scheduler_runs",
                     "rekey_barrier",
                     r".*_primary_import_branch\.acquire_raw_data_resource_locks",
                     r".*_primary_import_branch.successfully_acquired_all_locks",
@@ -3083,6 +3093,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.branch_end",
                 ],
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     r".*_secondary_import_branch\..*",
                     # nothing was imported, so has_attempted_file_imports short-circuits the
                     # identity trigger
@@ -3106,6 +3117,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # step 2 tasks
                     "raw_data_branching.us_xx_primary_import_branch.write_import_start",
                     "raw_data_branching.us_xx_primary_import_branch.get_files_to_import_this_run",
@@ -3173,6 +3185,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
                 ],
@@ -3284,6 +3297,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
@@ -3389,6 +3403,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "SECONDARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".us_ll_secondary_import_branch\..*",
                     r"..*primary_import_branch\..*",
@@ -3479,6 +3494,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "SECONDARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".us_ll_secondary_import_branch\..*",
                     r"..*primary_import_branch\..*",
@@ -3589,6 +3605,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
                 ],
@@ -3708,6 +3725,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
                 ],
@@ -3822,6 +3840,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     r".*_secondary_import_branch\..*",
                     # us_ll primary had no files
                     "raw_data_branching.us_ll_primary_import_branch.write_import_start",
@@ -3934,6 +3953,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     r".*_secondary_import_branch\..*",
                     # us_ll primary had no pre-import norm
                     r"raw_data_branching.us_ll_primary_import_branch.pre_import_normalization.(?!generate_file_chunking_pod_arguments)",
@@ -4063,6 +4083,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors"
                 ],
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
@@ -4175,6 +4196,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors"
                 ],
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
@@ -4278,6 +4300,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # noooooone!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
@@ -4407,6 +4430,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors"
                 ],
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
@@ -4519,6 +4543,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors"
                 ],
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
@@ -4618,6 +4643,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # noooooone!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
@@ -4744,6 +4770,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.us_xx_primary_import_branch.big_query_load.raise_load_prep_errors"
                 ],
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
@@ -4862,6 +4889,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.us_xx_primary_import_branch.big_query_load.raise_load_prep_errors"
                 ],
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
@@ -4965,6 +4993,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # noooooone!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
@@ -5098,6 +5127,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.us_xx_primary_import_branch.big_query_load.raise_append_errors"
                 ],
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
@@ -5196,6 +5226,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.us_xx_primary_import_branch.big_query_load.raise_append_errors"
                 ],
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
@@ -5295,6 +5326,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # noooooone!
                 expected_skipped_task_id_regexes=[
+                    "rekey_legacy_tables_to_cmek",
                     # branches that did not run
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",

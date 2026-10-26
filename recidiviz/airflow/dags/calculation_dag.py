@@ -24,6 +24,7 @@ from typing import Dict, Iterable, List, Optional
 from airflow.decorators import dag
 from airflow.models import BaseOperator
 from airflow.operators.empty import EmptyOperator
+from airflow.operators.python import ShortCircuitOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
@@ -55,6 +56,7 @@ from recidiviz.airflow.dags.utils.branching_by_key import (
     create_branching_by_key,
     select_all_branches,
 )
+from recidiviz.airflow.dags.utils.cloud_scheduler_run import is_cloud_scheduler_run
 from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
     build_dataflow_pipeline_task_group,
 )
@@ -307,10 +309,18 @@ def create_calculation_dag() -> None:
             "--scope=calculation_outputs",
         ],
     )
+    # Only the nightly Cloud Scheduler run pays the re-key budget. A run someone
+    # starts by hand skips straight to the barrier.
+    rekey_only_on_cloud_scheduler_runs = ShortCircuitOperator(
+        task_id="rekey_only_on_cloud_scheduler_runs",
+        python_callable=is_cloud_scheduler_run,
+        op_kwargs={"run_id": "{{ run_id }}"},
+        ignore_downstream_trigger_rules=False,
+    )
     rekey_barrier = EmptyOperator(
         task_id="rekey_barrier", trigger_rule=TriggerRule.ALL_DONE
     )
-    rekey_legacy_tables_to_cmek >> rekey_barrier
+    rekey_only_on_cloud_scheduler_runs >> rekey_legacy_tables_to_cmek >> rekey_barrier
 
     # --- step 1: pre-ingest steps -----------------------------------
     # Here we initialize the DAG and update the BQ table schemas
@@ -350,7 +360,7 @@ def create_calculation_dag() -> None:
     # Keep the direct initialize_dag edge so update_big_query_table_schemata
     # gates on initialization once TODO(OBT-46918) flips it to ALL_SUCCESS; the
     # ALL_DONE rekey_barrier succeeds even when initialize_dag fails.
-    initialize_dag >> rekey_legacy_tables_to_cmek
+    initialize_dag >> rekey_only_on_cloud_scheduler_runs
     initialize_dag >> update_big_query_table_schemata
     rekey_barrier >> update_big_query_table_schemata
     update_big_query_table_schemata >> bq_refresh

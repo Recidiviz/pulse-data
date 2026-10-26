@@ -21,6 +21,7 @@ from typing import List
 
 from airflow.decorators import dag
 from airflow.operators.empty import EmptyOperator
+from airflow.operators.python import ShortCircuitOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 
@@ -138,6 +139,7 @@ from recidiviz.airflow.dags.utils.branching_by_key import (
     DAGNode,
     create_branching_by_key,
 )
+from recidiviz.airflow.dags.utils.cloud_scheduler_run import is_cloud_scheduler_run
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
@@ -640,10 +642,18 @@ def create_raw_data_import_dag() -> None:
             "--scope=raw_data",
         ],
     )
+    # Only the nightly Cloud Scheduler run pays the re-key budget. A run someone
+    # starts by hand skips straight to the barrier.
+    rekey_only_on_cloud_scheduler_runs = ShortCircuitOperator(
+        task_id="rekey_only_on_cloud_scheduler_runs",
+        python_callable=is_cloud_scheduler_run,
+        op_kwargs={"run_id": "{{ run_id }}"},
+        ignore_downstream_trigger_rules=False,
+    )
     rekey_barrier = EmptyOperator(
         task_id="rekey_barrier", trigger_rule=TriggerRule.ALL_DONE
     )
-    rekey_legacy_tables_to_cmek >> rekey_barrier
+    rekey_only_on_cloud_scheduler_runs >> rekey_legacy_tables_to_cmek >> rekey_barrier
 
     # --- step 0: pipeline initialization ---------------------------------------------
     # inputs: dag parameters
@@ -694,7 +704,7 @@ def create_raw_data_import_dag() -> None:
     initialize_raw_data = initialize_raw_data_dag_group()
     # update_big_query_table_schemata needs its direct initialize_raw_data edge:
     # the ALL_DONE barrier succeeds even when initialize_raw_data fails.
-    initialize_raw_data >> rekey_legacy_tables_to_cmek
+    initialize_raw_data >> rekey_only_on_cloud_scheduler_runs
     rekey_barrier >> update_big_query_table_schemata
     (
         initialize_raw_data

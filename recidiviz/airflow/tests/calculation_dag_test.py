@@ -223,8 +223,16 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         initialize_dag = dag.task_group_dict["initialize_dag"]
 
         self.assertIn(
-            "rekey_legacy_tables_to_cmek",
+            "rekey_only_on_cloud_scheduler_runs",
             initialize_dag.downstream_task_ids,
+        )
+        self.assertEqual(
+            {"rekey_legacy_tables_to_cmek"},
+            dag.get_task("rekey_only_on_cloud_scheduler_runs").downstream_task_ids,
+        )
+        self.assertEqual(
+            {"rekey_barrier"},
+            dag.get_task("rekey_legacy_tables_to_cmek").downstream_task_ids,
         )
 
     def test_update_all_views_branch_upstream_of_all_exports(
@@ -692,8 +700,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 dag,
                 session=session,
                 run_conf={},
+                expected_skipped_task_id_regexes=["rekey_legacy_tables_to_cmek"],
                 expected_success_task_id_regexes=[
-                    "rekey_legacy_tables_to_cmek",
+                    "rekey_only_on_cloud_scheduler_runs",
                     "rekey_barrier",
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
@@ -741,9 +750,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^metric_exports.state_specific_metric_exports.branch_end",
                 ],
                 # No downstream processes are skipped!
-                expected_skipped_task_id_regexes=[],
+                expected_skipped_task_id_regexes=["rekey_legacy_tables_to_cmek"],
                 expected_success_task_id_regexes=[
-                    "rekey_legacy_tables_to_cmek",
+                    "rekey_only_on_cloud_scheduler_runs",
                     "rekey_barrier",
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
@@ -793,8 +802,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^metric_exports\.state_specific_metric_exports\.US_XX_metric_exports\.",
                     r"^metric_exports.state_specific_metric_exports.branch_end",
                 ],
+                expected_skipped_task_id_regexes=["rekey_legacy_tables_to_cmek"],
                 expected_success_task_id_regexes=[
-                    "rekey_legacy_tables_to_cmek",
+                    "rekey_only_on_cloud_scheduler_runs",
                     "rekey_barrier",
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
@@ -857,8 +867,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     # succeed, so this is upstream_failed too.
                     r"^dataset_cleanup",
                 ],
+                expected_skipped_task_id_regexes=["rekey_legacy_tables_to_cmek"],
                 expected_success_task_id_regexes=[
-                    "rekey_legacy_tables_to_cmek",
+                    "rekey_only_on_cloud_scheduler_runs",
                     "rekey_barrier",
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
@@ -957,8 +968,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[
                     r"bq_refresh.refresh_bq_dataset_",
                 ],
+                expected_skipped_task_id_regexes=["rekey_legacy_tables_to_cmek"],
                 expected_success_task_id_regexes=[
-                    "rekey_legacy_tables_to_cmek",
+                    "rekey_only_on_cloud_scheduler_runs",
                     "rekey_barrier",
                     r"^initialize_dag.*",
                     r"^update_big_query_table_schemata",
@@ -989,6 +1001,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"^initialize_dag.verify_parameters",
                 ],
                 expected_skipped_task_id_regexes=[
+                    "rekey_only_on_cloud_scheduler_runs",
                     # The re-key is downstream of initialize_dag, whose failed
                     # parameter check skips everything downstream.
                     "rekey_legacy_tables_to_cmek",
