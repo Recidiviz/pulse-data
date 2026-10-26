@@ -17,6 +17,7 @@
 """Code-level default values applied when parsing LLM extractor configs, for
 fields a `collection.yaml` / `extractor.yaml` may omit.
 """
+
 from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
     ConfidenceLevel,
 )
@@ -26,7 +27,7 @@ DEFAULT_MINIMUM_CONFIDENCE_LEVEL = ConfidenceLevel.INFERRED
 `collection.yaml` does not declare one.
 """
 
-DEFAULT_MAX_TRANSIENT_RETRY_COUNT = 3
+DEFAULT_MAX_TRANSIENT_RETRY_COUNT = 1
 """The number of times a document that fails with a transient error is retried,
 applied when an `extractor.yaml` does not declare its own override.
 """
