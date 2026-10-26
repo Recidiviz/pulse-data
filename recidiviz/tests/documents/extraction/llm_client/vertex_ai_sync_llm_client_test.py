@@ -533,6 +533,20 @@ class VertexAISyncLLMClientTest(TestCase):
                 self.assertIsNone(result.result_json)
                 self.assertEqual(expected_type, result.error_type)
 
+    def test_int_str_conversion_overflow_is_malformed_response(self) -> None:
+        # Generate the real overflow error by attempting to convert a very long all-digit string to int.
+        try:
+            int("1" * 5000)
+            overflow_error: Exception = RuntimeError("int conversion did not overflow")
+        except ValueError as e:
+            overflow_error = e
+        self.mock_generate_content.side_effect = overflow_error
+
+        result = self._execute()
+
+        self.assertIsNone(result.result_json)
+        self.assertEqual(LLMRequestErrorType.MALFORMED_RESPONSE, result.error_type)
+
     def test_response_with_no_candidates_is_empty(self) -> None:
         # A response with no candidates at all has no finish reason and classifies
         # as an empty response.

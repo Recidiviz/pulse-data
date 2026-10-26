@@ -19,6 +19,7 @@ google-genai SDK."""
 
 import json
 import logging
+import re
 
 import httpx
 from google import genai
@@ -68,6 +69,12 @@ _CANCELLED_CODE = 499
 # other 5xx server error (500, 502, 503, ...) is a transient SERVER_ERROR.
 _GATEWAY_TIMEOUT_CODE = 504
 
+# Error message reads "Exceeds the limit (4300 digits) for integer string
+# conversion: ...".
+_INT_STR_CONVERSION_ERROR_REGEX = re.compile(
+    r"Exceeds the limit \(\d+ digits\) for integer string conversion"
+)
+
 # Vertex FinishReason values that indicate the response was blocked by a
 # content/safety filter, as opposed to merely coming back empty.
 _CONTENT_FILTER_FINISH_REASONS = frozenset(
@@ -105,6 +112,12 @@ def _error_type_for_exception(error: Exception) -> LLMRequestErrorType:
     # load (OSError/EBADF, "Bad file descriptor").
     if isinstance(error, (httpx.TransportError, OSError)):
         return LLMRequestErrorType.SERVER_ERROR
+    # When the model emits an all-digit token longer than CPython's int<->str
+    # conversion limit, the SDK raises a ValueError deserializing the response.
+    if isinstance(error, ValueError) and _INT_STR_CONVERSION_ERROR_REGEX.search(
+        str(error)
+    ):
+        return LLMRequestErrorType.MALFORMED_RESPONSE
     return LLMRequestErrorType.UNKNOWN_ERROR
 
 
