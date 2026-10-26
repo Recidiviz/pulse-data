@@ -35,9 +35,10 @@ The dry run prints the full transformed table and shows what GCS commands would
 be run, without uploading anything.
 
 **Verify the output looks correct:**
-- The row count matches the number of individual DPO offices in the xlsx (should
-  be ~130–160 rows; excludes region header rows like "REGION I" and totals rows
-  like "Region I Totals")
+- The row count matches the number of individual DPO offices in the xlsx. The
+  file lists only offices above the 25% non-case-carrying threshold, so expect
+  roughly 15–40 rows. Region header rows like "REGION I" and region totals rows
+  like "Region I Totals" are expected in the xlsx and are excluded from the output
 - `OFFC_REGION` and `OFFC_DISTRICT` are zero-padded 2-digit numbers (e.g., `01`,
   `12`)
 - `PERCENTAGE_NON_CASE_CARRYING` values are formatted as percentages (e.g.,
