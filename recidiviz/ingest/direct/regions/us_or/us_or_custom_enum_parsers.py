@@ -35,16 +35,14 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 )
 
 
-def parse_housing_unit_type(  # TODO(#21278): Update when schema change request for additional types of solitary is in.
+def parse_housing_unit_type(
     raw_text: str,
 ) -> Optional[StateIncarcerationPeriodHousingUnitType]:
     """
     Maps |housing_unit|, to its corresponding StateIncarcerationPeriodHousingUnitType.
-    # make task and link to edit these when more housing unit types
 
     DSU stays are meant to be for a specific amount of time (SEG is also a DSU unit)
     ASU and AHU are also specified amount of times.
-    Will remap SEG to other solitary confinement when additional enums available.
 
     IMU and BHU are more program completion based, and can result in long stays.
     MHI and ICH are mental health special housing units and length of stay is not specified.
