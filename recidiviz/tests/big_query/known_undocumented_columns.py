@@ -16216,7 +16216,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "ineligible_criteria",
         "is_almost_eligible",
         "is_eligible",
-        "metadata_almost_eligible_for_jii_app",
         "metadata_is_eligible_for_more_than_30_days",
         "metadata_latest_good_time_restoration_or_denial_date",
         "metadata_next_month_after_latest_good_time_restoration_or_denial_date",
