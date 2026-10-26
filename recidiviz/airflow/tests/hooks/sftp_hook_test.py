@@ -218,6 +218,16 @@ class RecidivizSFTPHookTest(unittest.TestCase):
         self.mock_transport.auth_publickey.assert_not_called()
         self.mock_transport._send_message.assert_not_called()
 
+    def test_inherited_methods_use_overridden_get_conn(self) -> None:
+        self.connection = self._build_connection(extra={})
+        self.mock_client.listdir.return_value = ["a", "b"]
+
+        entries = self._build_hook().list_directory("/some/dir")
+
+        self.assertEqual(["a", "b"], entries)
+        self.mock_client.listdir.assert_called_once_with("/some/dir")
+        self.mock_transport.auth_password.assert_called_once_with(_LOGIN, _PASSWORD)
+
     def test_get_conn_empty_private_key_uses_password(self) -> None:
         self.connection = self._build_connection(extra={"private_key": ""})
 

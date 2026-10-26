@@ -680,17 +680,19 @@ wheels = [
 
 [[package]]
 name = "apache-airflow-providers-sftp"
-version = "4.9.1"
+version = "5.8.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "aiofiles" },
     { name = "apache-airflow" },
+    { name = "apache-airflow-providers-common-compat" },
     { name = "apache-airflow-providers-ssh" },
     { name = "asyncssh" },
     { name = "paramiko" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b7/a6/10a0ff296f230157793d6ed3317de805db9fd5a7870f52961045806403b4/apache_airflow_providers_sftp-4.9.1.tar.gz", hash = "sha256:fe98925ad83bab8228075af4decf16f86d3cfce538b0fc6692225da0663f7b68", size = 19971, upload-time = "2024-04-13T18:12:42.743Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fd/de/13768912df5467eed89670acfefc206a390500585f637ead5d8650dc1ab8/apache_airflow_providers_sftp-5.8.1.tar.gz", hash = "sha256:64df30a21d15029c416cd9e8394fe1cae509e959cad355e84e4dccbf4f321d29", size = 97538, upload-time = "2026-06-07T09:44:30.464Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b8/e1/492e625645dbc37dcd1aff6f8966032231988eba41b04a908d00a928a551/apache_airflow_providers_sftp-4.9.1-py3-none-any.whl", hash = "sha256:b651b0ced589d0d718d63e566d7760ce7c9289466ffe0934e2edba8b298bb128", size = 29913, upload-time = "2024-04-13T18:11:55.836Z" },
+    { url = "https://files.pythonhosted.org/packages/23/a2/12a7bd5e2a5c0adf06c177a91c64f391d0e84ee33573649b35d6ede5aa13/apache_airflow_providers_sftp-5.8.1-py3-none-any.whl", hash = "sha256:3e9a93ef50310a120cacd502b50acfc8d714d0669d8cb1c6b41c09fe38cdd890", size = 43192, upload-time = "2026-06-07T09:43:21.191Z" },
 ]
 
 [[package]]
@@ -6457,7 +6459,7 @@ requires-dist = [
     { name = "apache-airflow-providers-postgres", specifier = "==7.1.0" },
     { name = "apache-airflow-providers-redis", specifier = "==4.7.0" },
     { name = "apache-airflow-providers-sendgrid", specifier = "==4.2.4" },
-    { name = "apache-airflow-providers-sftp", specifier = "==4.9.1" },
+    { name = "apache-airflow-providers-sftp", specifier = "==5.8.1" },
     { name = "apache-airflow-providers-smtp", specifier = "==3.1.0" },
     { name = "apache-airflow-providers-sqlite", specifier = "==4.3.3" },
     { name = "apache-airflow-providers-ssh", specifier = "==5.0.4" },

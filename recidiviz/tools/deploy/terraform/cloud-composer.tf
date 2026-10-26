@@ -107,7 +107,7 @@ resource "google_composer_environment" "default_v2" {
       }
       pypi_packages = {
         "us"                                    = "==3.1.1"
-        "apache-airflow-providers-sftp"         = "==4.9.1"
+        "apache-airflow-providers-sftp"         = "==5.8.1"
         "python-levenshtein"                    = "==0.25.1"
         "dateparser"                            = "==1.2.0"
         "apache-airflow-providers-github"       = "==2.6.2"

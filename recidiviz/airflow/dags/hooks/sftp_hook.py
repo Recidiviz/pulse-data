@@ -17,7 +17,8 @@
 """A custom SFTPHook that supports two-factor authenticated SFTP servers."""
 import io
 import logging
-from typing import Any, Dict, Optional
+from contextlib import contextmanager
+from typing import Any, Dict, Iterator, Optional
 
 import paramiko
 from airflow.providers.sftp.hooks.sftp import SFTPHook
@@ -49,9 +50,9 @@ class RecidivizSFTPHook(SFTPHook):
         *,
         ssh_conn_id: str,
         transport_kwargs: Dict[str, Any],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> None:
-        super().__init__(ssh_conn_id=ssh_conn_id, ssh_hook=None, **kwargs)
+        super().__init__(ssh_conn_id=ssh_conn_id, **kwargs)
         self.conn: Optional[paramiko.SFTPClient] = None
         self._transport_kwargs = transport_kwargs
 
@@ -65,6 +66,15 @@ class RecidivizSFTPHook(SFTPHook):
 
         for logger in paramiko_loggers:
             logger.setLevel(logging.DEBUG)
+
+    @contextmanager
+    def get_managed_conn(self) -> Iterator[paramiko.SFTPClient]:
+        """The base class's managed connection builds its own SSH client, bypassing
+        our get_conn() override. Route it through get_conn() so that the base class's
+        helper methods (e.g. list_directory) use our two-factor authenticated, host key
+        audited connection.
+        """
+        yield self.get_conn()
 
     def get_conn(self) -> paramiko.SFTPClient:  # type: ignore[override]
         """Retrieves the SFTP connection. This is overridden from the base class in order
