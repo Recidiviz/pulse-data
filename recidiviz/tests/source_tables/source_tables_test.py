@@ -51,9 +51,6 @@ COMMON_VESTIGES = [
     "view_update_metadata.rematerialization_tracker",
     "view_update_metadata.view_update_tracker",
     "view_update_metadata.per_view_update_stats",
-    # Run metadata that the Cloud SQL to BQ refresh appends to; no deployed view
-    # reads it.
-    "cloud_sql_to_bq_refresh.refresh_status",
     # This is used from time to time for oneoff validation
     "static_reference_tables.us_tn_standards_due",
     # TODO(#16661): Remove this section once US_ID fully deprecated
