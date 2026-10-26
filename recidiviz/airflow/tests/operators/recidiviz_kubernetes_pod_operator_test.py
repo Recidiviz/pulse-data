@@ -219,6 +219,24 @@ class TestBuildPodRequestObjLabels(unittest.TestCase):
         self.assertEqual("3", labels["map_index"])
         self.assertIn("recidiviz.org/entrypoint", labels)
 
+    def test_dry_run_forwarded_to_kubernetes_pod_operator(self, _: Any) -> None:
+        """KubernetesPodOperator.dry_run() calls build_pod_request_obj(dry_run=True),
+        so our override must accept the keyword and pass it through."""
+        operator = RecidivizKubernetesPodOperator(
+            task_id="raw_data_chunk_normalization",
+            arguments=["--entrypoint=RawDataChunkNormalizationEntrypoint"],
+        )
+        base_pod = k8s.V1Pod(
+            metadata=k8s.V1ObjectMeta(name="recidiviz-kubernetes-pod", labels={})
+        )
+        with patch.object(
+            RecidivizKubernetesPodOperator.__bases__[0],
+            "build_pod_request_obj",
+            return_value=base_pod,
+        ) as mock_build_pod_request_obj:
+            operator.build_pod_request_obj(dry_run=True)
+        mock_build_pod_request_obj.assert_called_once_with(None, dry_run=True)
+
 
 class TestPodTaskExecutionTimeoutSerialization(AirflowIntegrationTest):
     """Regression tests: get_kubernetes_pod_kwargs must OMIT execution_timeout

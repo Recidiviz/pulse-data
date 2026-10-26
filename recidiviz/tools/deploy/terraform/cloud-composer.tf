@@ -106,14 +106,16 @@ resource "google_composer_environment" "default_v2" {
         "SENDGRID_MAIL_SENDER" = var.project_id == "recidiviz-staging" ? "Airflow Alerts (staging)" : "Airflow Alerts (production)"
       }
       pypi_packages = {
-        "us"                              = "==3.1.1"
-        "apache-airflow-providers-sftp"   = "==4.9.1"
-        "python-levenshtein"              = "==0.25.1"
-        "dateparser"                      = "==1.2.0"
-        "apache-airflow-providers-github" = "==2.6.2"
-        "pygithub"                        = "==2.5.0"
+        "us"                                    = "==3.1.1"
+        "apache-airflow-providers-sftp"         = "==4.9.1"
+        "python-levenshtein"                    = "==0.25.1"
+        "dateparser"                            = "==1.2.0"
+        "apache-airflow-providers-github"       = "==2.6.2"
+        "pygithub"                              = "==2.5.0"
+        "opentelemetry-exporter-gcp-monitoring" = "==1.15.0a0"
+        "opentelemetry-exporter-gcp-trace"      = "==1.15.0"
       }
-      image_version = "composer-2.15.3-airflow-2.10.5"
+      image_version = "composer-2.17.15-airflow-2.11.1"
     }
 
     private_environment_config {

@@ -57,6 +57,7 @@ from recidiviz.utils.environment import (
     TASK_ID,
     get_environment_for_project,
 )
+from recidiviz.utils.types import assert_type
 
 COMPOSER_USER_WORKLOADS = "composer-user-workloads"
 
@@ -287,7 +288,8 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
                 f"No [{PLATFORM_VERSION_XCOM_KEY}] XCom value found for task "
                 f"[{metadata_task_id}]"
             )
-        self.env_vars.append(
+        env_vars = assert_type(self.env_vars, list)
+        env_vars.append(
             k8s.V1EnvVar(name=DATA_PLATFORM_VERSION, value=platform_version)
         )
 
@@ -298,11 +300,13 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
             )
         )
         # Make task instance metadata accessible from the pod
-        self.env_vars.extend(self._get_ti_metadata(context))
+        env_vars.extend(self._get_ti_metadata(context))
 
         return super().execute(context)
 
-    def build_pod_request_obj(self, context: Optional[Context] = None) -> k8s.V1Pod:
+    def build_pod_request_obj(
+        self, context: Optional[Context] = None, *, dry_run: bool = False
+    ) -> k8s.V1Pod:
         """Surface the entrypoint identity as pod labels so the container's
         CPU/memory metrics can be filtered by entrypoint, state, etc. in Cloud
         Monitoring (e.g. metadata.user_labels."recidiviz.org/entrypoint").
@@ -316,7 +320,7 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
         metadata directly guarantees the labels are present for both mapped and
         non-mapped tasks.
         """
-        pod = super().build_pod_request_obj(context)
+        pod = super().build_pod_request_obj(context, dry_run=dry_run)
 
         pod.metadata.labels = {
             **(pod.metadata.labels or {}),

@@ -89,7 +89,9 @@ class SFTPGcsToGcsOperator(GCSToGCSOperator):
             self.ingest_bucket, normalized_file_name
         )
 
-    def execute(self, context: Context) -> Dict[str, Union[str, int]]:
+    def execute(  # type: ignore[override]
+        self, context: Context
+    ) -> Dict[str, Union[str, int]]:
         super().execute(context)
         # TODO(#53587) Define custom types for operator XCom outputs
         return {
