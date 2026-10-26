@@ -167,6 +167,38 @@ class TestValidPipelineParameters(unittest.TestCase):
                 max_num_workers=0,
             )
 
+    def test_staging_launch_body_names_regional_cmek_key(self) -> None:
+        parameters = MetricsPipelineParameters(
+            project="recidiviz-staging",
+            region="us-east5",
+            state_code="US_XX",
+            pipeline="incarceration_metrics",
+            metric_types="INCARCERATION_ADMISSION",
+        )
+        self.assertEqual(
+            "projects/cmek-82ade411-5705-4461-b2cb-9/locations/us-east5/keyRings/"
+            "dataflow-cmek/cryptoKeys/recidiviz-staging-dataflow",
+            parameters.flex_template_launch_body()["launchParameter"]["environment"][
+                "kmsKeyName"
+            ],
+        )
+
+    def test_production_launch_body_has_no_cmek_key(self) -> None:
+        for project in ["recidiviz-123", self.PROJECT_ID]:
+            parameters = MetricsPipelineParameters(
+                project=project,
+                region="us-east5",
+                state_code="US_XX",
+                pipeline="incarceration_metrics",
+                metric_types="INCARCERATION_ADMISSION",
+            )
+            self.assertNotIn(
+                "kmsKeyName",
+                parameters.flex_template_launch_body()["launchParameter"][
+                    "environment"
+                ],
+            )
+
     def test_valid_get_input_dataset_property_names(self) -> None:
         for pipeline_params_subclass in ALL_PARAMETERS_SUBCLASSES:
             # These are values that can be passed as a keyword to the class

@@ -256,6 +256,54 @@ class TestRecidivizDataflowFlexTemplateOperator(AirflowIntegrationTest):
         }
         return service
 
+    @patch(
+        "recidiviz.airflow.dags.operators.recidiviz_dataflow_operator.time.sleep",
+        return_value=1,
+    )
+    def test_fallback_region_rewrites_cmek_key(self, _sleep_patch: MagicMock) -> None:
+        task = RecidivizDataflowFlexTemplateOperator(
+            task_id="fallback_task",
+            project_id="test-project",
+            body={
+                "launchParameter": {
+                    "jobName": "test-job",
+                    "environment": {
+                        "subnetwork": (
+                            "https://www.googleapis.com/compute/v1/projects/"
+                            "test-project/regions/us-central1/subnetworks/default"
+                        ),
+                        "kmsKeyName": (
+                            "projects/key-project/locations/us-central1/keyRings/"
+                            "dataflow-cmek/cryptoKeys/test-project-dataflow"
+                        ),
+                    },
+                }
+            },
+            location="us-central1",
+            fallback_regions=["us-central1", "us-east5"],
+        )
+        self.mock_hook.is_job_dataflow_running.return_value = False
+        self.mock_hook.start_flex_template.side_effect = Exception("Job has failed!")
+        self.mock_get_job.return_value = {
+            "currentState": DataflowJobStatus.JOB_STATE_FAILED,
+            "id": "2023-09-18_07_09_47-16912541725945987225",
+            "createTime": "2023-09-18T14:09:47.864426Z",
+        }
+        self.mock_logs_client.list_entries.return_value = [
+            MagicMock(payload="ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS")
+        ]
+
+        with self.assertRaises(Exception):
+            _ = execute_task(self.dag, task)
+
+        retry_kwargs = self.mock_hook.start_flex_template.call_args.kwargs
+        self.assertEqual("us-east5", retry_kwargs["location"])
+        self.assertEqual(
+            "projects/key-project/locations/us-east5/keyRings/dataflow-cmek/"
+            "cryptoKeys/test-project-dataflow",
+            retry_kwargs["body"]["launchParameter"]["environment"]["kmsKeyName"],
+        )
+
     def _machine_type_task(
         self, fallback_regions: list[str]
     ) -> RecidivizDataflowFlexTemplateOperator:

@@ -52,7 +52,11 @@ from recidiviz.common import attr_validators
 from recidiviz.common.attr_converters import optional_json_str_to_dict
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.utils import format_resource_label
-from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS, in_test
+from recidiviz.utils.environment import (
+    DATA_PLATFORM_GCP_PROJECTS,
+    GCP_PROJECT_STAGING,
+    in_test,
+)
 from recidiviz.utils.params import str_matches_regex_type
 from recidiviz.utils.types import assert_type
 
@@ -61,6 +65,30 @@ PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME = "output_sandbox_prefix"
 PIPELINE_SANDBOX_USERNAME_ARG_NAME = "sandbox_username"
 
 PipelineParametersT = TypeVar("PipelineParametersT", bound="PipelineParameters")
+
+# Dataflow encrypts worker disks, Shuffle state, and Streaming Engine state with
+# the key that the launch body names; the temp and staging buckets carry their own
+# bucket-level keys. Dataflow only accepts a key in the job's own region,
+# so the key project holds one "dataflow-cmek" key ring per pipeline region, with
+# the key rings and keys managed in recidiviz/tools/deploy/terraform/dataflow-cmek.tf.
+# Keyed by GCP project so production launches carry no key until it migrates into
+# the CJIS folder (Recidiviz/zenhub-tasks#2335).
+DATAFLOW_CMEK_KEY_PROJECT_BY_GCP_PROJECT: Dict[str, str] = {
+    GCP_PROJECT_STAGING: "cmek-82ade411-5705-4461-b2cb-9",
+}
+DATAFLOW_CMEK_KEY_RING = "dataflow-cmek"
+
+
+def dataflow_cmek_key_name(project_id: str, region: str) -> Optional[str]:
+    """Returns the full resource name of the Dataflow CMEK key for project_id in
+    region, or None when the project has no Dataflow CMEK key project."""
+    key_project = DATAFLOW_CMEK_KEY_PROJECT_BY_GCP_PROJECT.get(project_id)
+    if key_project is None:
+        return None
+    return (
+        f"projects/{key_project}/locations/{region}/keyRings/"
+        f"{DATAFLOW_CMEK_KEY_RING}/cryptoKeys/{project_id}-dataflow"
+    )
 
 
 @attr.define(kw_only=True)
@@ -548,6 +576,9 @@ class PipelineParameters:
         ).uri()
 
     def flex_template_launch_body(self) -> Dict[str, Any]:
+        """Returns the request body for the Dataflow flexTemplates.launch call,
+        including the worker environment and, for projects with a Dataflow CMEK
+        key project, the key in this pipeline's region."""
         project_id = self.project
         environment: Dict[str, Any] = {
             "additionalUserLabels": self.resource_labels,
@@ -574,6 +605,9 @@ class PipelineParameters:
             environment["workerZone"] = self.worker_zone
         if self.max_num_workers is not None:
             environment["maxWorkers"] = self.max_num_workers
+        kms_key_name = dataflow_cmek_key_name(project_id, self.region)
+        if kms_key_name is not None:
+            environment["kmsKeyName"] = kms_key_name
         return {
             "launchParameter": {
                 "containerSpecGcsPath": self.template_gcs_path(project_id),

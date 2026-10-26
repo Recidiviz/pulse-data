@@ -122,8 +122,8 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
     def _switch_to_fallback_region(self) -> str | None:
         """Samples a fallback region other than the current one where the launch
         body's machine type is available, rewrites the body's region-specific
-        `subnetwork` to it, and updates `self.location` so the next launch targets
-        the new region. Returns the new region, or None if no fallback region is
+        `subnetwork` and `kmsKeyName` to it, and updates `self.location` so the
+        next launch targets the new region. Returns the new region, or None if no fallback region is
         available."""
         # `location` is defined by the base operator's __init__; pylint doesn't see that
         # and flags the read below because we reassign it at the end of this method.
@@ -152,6 +152,12 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
         if "subnetwork" in environment:
             environment["subnetwork"] = environment["subnetwork"].replace(
                 f"/regions/{current_region}/", f"/regions/{new_region}/"
+            )
+        # Dataflow rejects a key outside the job's region; every pipeline region
+        # has its own key under the same key ring and key names.
+        if "kmsKeyName" in environment:
+            environment["kmsKeyName"] = environment["kmsKeyName"].replace(
+                f"/locations/{current_region}/", f"/locations/{new_region}/"
             )
         logging.info(
             "Retrying in region [%s] (was [%s]) due to capacity exhaustion.",
