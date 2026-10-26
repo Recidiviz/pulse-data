@@ -13,3 +13,4 @@ functions-framework==3.6.0
 cloudevents==1.10.1
 us==3.1.1
 py7zr==1.1.3
+brotli==1.2.1
