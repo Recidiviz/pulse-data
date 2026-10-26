@@ -17,6 +17,8 @@
 """
 Helper SQL queries for Idaho
 """
+
+from enum import Enum
 from typing import List, Optional
 
 from google.cloud import bigquery
@@ -35,6 +37,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SENTENCE_SESSIONS_DATASET,
+    SESSIONS_DATASET,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_release_district_spans import (
     ADDRESS_RELEASE_DISTRICT_COLUMN_NAME,
@@ -60,6 +63,9 @@ from recidiviz.calculator.query.state.views.tasks.tasks_criteria_utils import (
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     current_violent_statutes_being_served,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.observations.span_observation_big_query_view_builder import fix_indent
@@ -109,6 +115,20 @@ US_IX_PSI_LSIR_ASSESSMENTS_QUERY = f"""
         AND lsir.assessment_type = 'LSIR'
         AND lsir.assessment_class = 'RISK'
 """
+
+
+class UsIxPlacementMatrixFacility(Enum):
+    """Facilities on page 2 of the IDOC Placement Matrix
+    spelled to match housing_unit_sessions.facility entries.
+    """
+
+    ICIO = "IDAHO CORRECTIONAL INSTITUTION-OROFINO"
+    ISCC = "IDAHO STATE CORRECTIONAL CENTER"
+    ISCI = "IDAHO STATE CORRECTIONAL INSTITUTION"
+    # CAPP was renamed to Mountain View Transformation Center
+    MVTC = "MOUNTAIN VIEW TRANSFORMATION CENTER"
+    NICI = "NORTH IDAHO CORRECTIONAL INSTITUTION"
+
 
 # Community Reentry Centers (CRCs) - work release facilities where residents
 # can transition back into the community
@@ -170,6 +190,162 @@ DETAINER_TYPE_LST_CLD = [
 ]
 
 IX_STATE_CODE_WHERE_CLAUSE = "WHERE state_code = 'US_IX'"
+FACILITY_START_DATE_COLUMN_NAME = "facility_start_date"
+
+
+def ix_facility_spans_query(facility: UsIxPlacementMatrixFacility) -> str:
+    """Returns spans of time someone is housed at a facility."""
+    return fix_indent(
+        f"""
+WITH facility_housing_unit_sessions AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
+    WHERE state_code = 'US_IX'
+        AND facility = '{facility.value}'
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+FROM (
+{fix_indent(aggregate_adjacent_spans(table_name="facility_housing_unit_sessions"), indent_level=4)}
+)
+""",
+        indent_level=0,
+    )
+
+
+def us_ix_not_in_facility_criteria_view_builder(
+    *,
+    criteria_name: str,
+    description: str,
+    facility: UsIxPlacementMatrixFacility,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """Returns a criteria builder that is met whenever someone is not housed at a
+    facility. Each stay at the facility is a span that does not meet the criteria.
+    """
+
+    query_template = fix_indent(
+        f"""
+WITH facility_spans AS (
+{fix_indent(ix_facility_spans_query(facility=facility), indent_level=4)}
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    FALSE AS meets_criteria,
+    TO_JSON(STRUCT(start_date AS {FACILITY_START_DATE_COLUMN_NAME})) AS reason,
+    start_date AS {FACILITY_START_DATE_COLUMN_NAME},
+FROM facility_spans
+""",
+        indent_level=0,
+    )
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=StateCode.US_IX,
+        criteria_name=criteria_name,
+        criteria_spans_query_template=query_template,
+        description=description,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name=FACILITY_START_DATE_COLUMN_NAME,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date the person's current stay at the facility began",
+            ),
+        ],
+    )
+
+
+def us_ix_incarceration_purpose_criteria_view_builder(
+    *,
+    criteria_name: str,
+    description: str,
+    purpose: StateSpecializedPurposeForIncarceration,
+    purpose_raw_text: str | None,
+    stay_label: str,
+    stay_start_date_field_name: str,
+    stay_end_date_field_name: str,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """Returns a criteria builder whose spans cover each continuous stay in
+    incarceration periods with the given specialized purpose, removing zero-day spans.
+    """
+    raw_text_clause = (
+        ""
+        if purpose_raw_text is None
+        else f"AND specialized_purpose_for_incarceration_raw_text = '{purpose_raw_text}'"
+    )
+    query_template = fix_indent(
+        f"""
+WITH purpose_periods AS (
+    SELECT
+        state_code,
+        person_id,
+        admission_date AS start_date,
+        release_date AS end_date,
+        specialized_purpose_for_incarceration_raw_text,
+    FROM `{{project_id}}.us_ix_normalized_state.state_incarceration_period`
+    WHERE specialized_purpose_for_incarceration = '{purpose.value}'
+        {raw_text_clause}
+        -- Filter out zero-day periods from source data
+        AND admission_date IS DISTINCT FROM release_date
+),
+{create_sub_sessions_with_attributes(table_name="purpose_periods")},
+-- Filter out any zero-day spans created by sub_sessions
+purpose_spans AS (
+    SELECT DISTINCT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+    FROM sub_sessions_with_attributes
+    WHERE start_date IS DISTINCT FROM end_date
+),
+purpose_stays AS (
+{fix_indent(aggregate_adjacent_spans(table_name="purpose_spans"), indent_level=4)}
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    TRUE AS meets_criteria,
+    TO_JSON(STRUCT(
+        end_date AS {stay_end_date_field_name},
+        start_date AS {stay_start_date_field_name}
+    )) AS reason,
+    end_date AS {stay_end_date_field_name},
+    start_date AS {stay_start_date_field_name},
+FROM purpose_stays
+""",
+        indent_level=0,
+    )
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=StateCode.US_IX,
+        criteria_name=criteria_name,
+        criteria_spans_query_template=query_template,
+        description=description,
+        meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name=stay_end_date_field_name,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description=f"End date of the {stay_label} stay",
+            ),
+            ReasonsField(
+                name=stay_start_date_field_name,
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description=f"Start date of the {stay_label} stay",
+            ),
+        ],
+    )
 
 
 def ix_crc_facilities_in_location_sessions(
@@ -180,7 +356,7 @@ def ix_crc_facilities_in_location_sessions(
     Returns a SQL query that returns spans of time where someone is in a CRC facility in Idaho.
 
     Args:
-        crc_facilities (str): String of CRC facilities to query.
+        crc_facilities_list (list): List of CRC facilities to query.
         additional_columns (str): Additional columns to select. Defaults to ''.
 
     Returns:

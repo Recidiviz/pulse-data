@@ -175,6 +175,7 @@ class TaskCompletionEventType(Enum):
     CASE_TYPE_DOWNGRADE_FROM_ELECTRONIC_MONITORING = (
         "CASE_TYPE_DOWNGRADE_FROM_ELECTRONIC_MONITORING"
     )
+    TRANSFER_PRISON_FACILITY = "TRANSFER_PRISON_FACILITY"
 
     @property
     def system_type(self) -> WorkflowsSystemType:
@@ -198,6 +199,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_2026_POLICY_COMPLETED,
             TaskCompletionEventType.GOOD_TIME_REINSTATED,
+            TaskCompletionEventType.TRANSFER_PRISON_FACILITY,
             TaskCompletionEventType.RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION,
             TaskCompletionEventType.RELEASE_TO_LIMITED_SUPERVISION,
             TaskCompletionEventType.RELEASE_TO_PAROLE,
@@ -275,6 +277,7 @@ class TaskCompletionEventType(Enum):
         if self in [
             TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE_2026_POLICY,
             TaskCompletionEventType.FACE_TO_FACE_CONTACT,
+            TaskCompletionEventType.TRANSFER_PRISON_FACILITY,
             # TODO(#78423): A periodic supervision-level review is not by
             # itself a downgrade — the review may or may not result in one.
             # Once we have a real review-completion source, consider whether
@@ -414,6 +417,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
             TaskCompletionEventType.FACE_TO_FACE_CONTACT,
             TaskCompletionEventType.CUSTODY_LEVEL_UPGRADE_2026_POLICY,
+            TaskCompletionEventType.TRANSFER_PRISON_FACILITY,
             TaskCompletionEventType.SUPERVISION_LEVEL_REVIEW,
         ]:
             return False
@@ -460,6 +464,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.GRANTED_INSTITUTIONAL_WORKER_STATUS,
             TaskCompletionEventType.GRANTED_WORK_RELEASE,
             TaskCompletionEventType.KUDOS_SMS_SENT,
+            TaskCompletionEventType.TRANSFER_PRISON_FACILITY,
             TaskCompletionEventType.OVERRIDE_TO_CONDITIONAL_LOW_RISK_SUPERVISION,
             TaskCompletionEventType.OVERRIDE_TO_LOW_SUPERVISION,
             TaskCompletionEventType.RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION,
