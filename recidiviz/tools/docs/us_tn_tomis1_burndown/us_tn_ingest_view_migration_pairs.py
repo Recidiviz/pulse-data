@@ -48,8 +48,8 @@ US_TN_INGEST_VIEW_MIGRATION_PAIRS: dict[str, str | None] = {
     "diversion_sentence": None,
     "diversion_sentence_length": None,
     "drug_screen": None,
-    "isc_sentence": None,
-    "isc_sentence_length": None,
+    "isc_sentence": "isc_sentence_v2",
+    "isc_sentence_length": "isc_sentence_length_v2",
     "sentence_and_charge": None,
     "sentence_length": None,
 }

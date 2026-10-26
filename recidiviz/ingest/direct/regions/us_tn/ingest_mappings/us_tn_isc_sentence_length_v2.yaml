@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in
+# `view_isc_sentence_length_v2` to the same StateSentenceLength shape as
+# `us_tn_isc_sentence_length.yaml` (TOMIS 1.0).
+manifest_language: 1.0.0
+launch_env:
+  $env: is_local # TODO(TN-1957): change this to feature__tomis_2_0_enabled
+input_columns:
+  OffenderID: STRING
+  PERSON_ID: STRING
+
+  # Form the unique ID for sentences. Must match view_isc_sentence_v2.py.
+  Jurisdiction: STRING
+  CaseYear: STRING
+  CaseNumber: STRING
+  CountNumber: STRING
+  # TODO(TN-1956): remove once MiCase fixes CASE_NUMBER truncation; see
+  # view_isc_sentence_v2.py for why this is needed as a disambiguator.
+  SENTENCE_ID: STRING
+
+  LastUpdateDate: DATE
+  ExpirationDate: DATE
+  # TODO(TN-1957): always NULL today; see view_isc_sentence_length_v2.py.
+  ReleaseEligibilityDate: DATE
+
+unused_columns: []
+variables:
+  - sentence_external_id:
+      $concat:
+        $separator: "@@"
+        $values:
+          - OffenderID
+          - Jurisdiction
+          - CaseYear
+          - CaseNumber
+          - CountNumber
+          - SENTENCE_ID
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_TN_PERSON_ID")
+      - $conditional:
+          - $if:
+              $not_null: OffenderID
+            $then:
+              StatePersonExternalId:
+                external_id: OffenderID
+                id_type: $literal("US_TN_DOC")
+    sentences:
+      - StateSentence:
+          external_id: $variable(sentence_external_id)
+          sentence_lengths:
+            - StateSentenceLength:
+                length_update_datetime: LastUpdateDate
+                parole_eligibility_date_external: ReleaseEligibilityDate
+                # ISC sentences have a single ExpirationDate with no
+                # min/max distinction. We map to max since that is what
+                # downstream criteria reference.
+                projected_completion_date_max_external: ExpirationDate

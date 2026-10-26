@@ -1,0 +1,118 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in
+# `view_isc_sentence_v2` (MiCase / TOMIS 2.0 source tables) to the same
+# StateSentence / StateChargeV2 / StateSentenceStatusSnapshot shape as
+# `us_tn_isc_sentence.yaml` (TOMIS 1.0). See the "Migration Spec: isc_sentence"
+# Notion page for the full rewrite spec and the open questions referenced
+# below.
+manifest_language: 1.0.0
+# Runs in tests/local only until the open questions below are resolved and
+# this view is deliberately promoted to staging/production.
+launch_env:
+  $env: is_local # TODO(TN-1956): change this to feature__tomis_2_0_enabled
+input_columns:
+  OffenderID: STRING
+  PERSON_ID: STRING
+
+  # Form the unique ID for charges and sentences.
+  Jurisdiction: STRING
+  CaseYear: STRING
+  CaseNumber: STRING
+  CountNumber: STRING
+  # TODO(TN-1956): remove once MiCase fixes CASE_NUMBER truncation; see
+  # view_isc_sentence_v2.py for why this is needed as a disambiguator.
+  SENTENCE_ID: STRING
+
+  # StateSentence information
+  SentenceImposedDate: DATE
+  ISCSentencyType: STRING
+
+  # StateChargeV2 information
+  OffenseDate: DATE
+  ConvictedOffense: STRING
+  AssaultiveOffenseFlag: STRING
+  SexOffenderFlag: STRING
+
+  # StateSentenceStatusSnapshot
+  ExpirationDate: DATE
+  assume_completed: STRING
+
+unused_columns: []
+variables:
+  - sentence_external_id:
+      $concat:
+        $separator: "@@"
+        $values:
+          - OffenderID
+          - Jurisdiction
+          - CaseYear
+          - CaseNumber
+          - CountNumber
+          - SENTENCE_ID
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_TN_PERSON_ID")
+      - $conditional:
+          - $if:
+              $not_null: OffenderID
+            $then:
+              StatePersonExternalId:
+                external_id: OffenderID
+                id_type: $literal("US_TN_DOC")
+    sentences:
+      - StateSentence:
+          external_id: $variable(sentence_external_id)
+          sentence_type:
+            $enum_mapping:
+              $raw_text: ISCSentencyType
+              $mappings:
+                StateSentenceType.PROBATION:
+                  - PROB
+                StateSentenceType.PAROLE:
+                  - PAR
+                StateSentenceType.STATE_PRISON:
+                  - CUST
+          imposed_date: SentenceImposedDate
+          # All of these sentences are from other US states or Puerto Rico.
+          sentencing_authority: $literal_enum(StateSentencingAuthority.OTHER_STATE)
+          # Tag ISC sentences with SENTENCE_SOURCE so downstream consumers
+          # can distinguish them from other TN sentence types.
+          # SENTENCE_IMPOSED_DATE stores the original imposed date for
+          # consumers that read it directly from sentence_metadata rather
+          # than the imposed_date field. CASE_NUMBER is also stored here
+          # for consumers that read it directly from sentence_metadata.
+          sentence_metadata:
+            $normalized_values_json_dict:
+              SENTENCE_SOURCE: $literal("ISC")
+              SENTENCE_IMPOSED_DATE: SentenceImposedDate
+              CASE_NUMBER: CaseNumber
+          # We have very little information about charges for ISC sentences,
+          # as all other charge information is found from judgement orders.
+          charges:
+            - StateChargeV2:
+                external_id: $variable(sentence_external_id)
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
+                offense_date: OffenseDate
+                description: ConvictedOffense
+                is_violent:
+                  $equal:
+                    - AssaultiveOffenseFlag
+                    - $literal("Y")
+                is_sex_offense:
+                  $equal:
+                    - SexOffenderFlag
+                    - $literal("Y")
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                status_update_datetime: SentenceImposedDate
+                status: $literal_enum(StateSentenceStatus.SERVING)
+            - $conditional:
+                - $if:
+                    $equal: [assume_completed, $literal("Y")]
+                  $then:
+                    StateSentenceStatusSnapshot:
+                      status_update_datetime: ExpirationDate
+                      status: $literal_enum(StateSentenceStatus.COMPLETED)
