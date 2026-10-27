@@ -1103,6 +1103,8 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_mi_ingest_view_results.incarceration_incident",
     "us_mi_ingest_view_results.incarceration_incident_COMS_2026",
     "us_mi_ingest_view_results.incarceration_incident_restrictions",
+    "us_mi_ingest_view_results.incarceration_periods_COMS_2026",
+    "us_mi_ingest_view_results.incarceration_periods_LEGACY",
     "us_mi_ingest_view_results.incarceration_periods_v3",
     "us_mi_ingest_view_results.person_external_ids",
     "us_mi_ingest_view_results.program_assignment_coms",

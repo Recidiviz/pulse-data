@@ -1,0 +1,351 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_persons` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: feature__coms_2026_enabled
+input_columns:
+  Offender_Number: STRING
+  period_start: DATETIME
+  period_end: DATETIME
+  Movement_Code_Description: STRING
+  Movement_Code_Description_start_reason: STRING
+  Movement_Code_Description_end_reason: STRING
+  Movement_From_Type: STRING
+  Movement_To_Type: STRING
+  Movement_To: STRING
+  Facility: STRING
+  Region: STRING
+  Housing_Unit: STRING
+  Tier: STRING
+  Room: STRING
+  Room_Type: STRING
+  Security_Level: STRING
+  Bed: STRING
+  Segregation_Type: STRING
+  Modifier: STRING
+  Modifier_Start_Reason: STRING
+  next_Modifier: STRING
+  Supervision_Status: STRING
+  Status_Start_Reason: STRING
+  Status_End_Reason: STRING
+  period_id: INTEGER
+unused_columns:
+  - Movement_From_Type
+  - Room
+  - Room_Type
+  - Modifier
+  - Movement_Code_Description
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - Offender_Number
+                - period_id
+          # TODO(MI-8599): Confirm we are only ingest in-state prison statuses after we get real data
+          incarceration_type:
+            $enum_mapping:
+              $raw_text: Supervision_Status
+              $mappings:
+                StateIncarcerationType.STATE_PRISON:
+                  - "Prison"
+          county_code: Region
+          facility:
+            $conditional:
+              # TODO(MI-8599): Validate using Movement_To vs Facility when we get real data
+              - $if:
+                  $in:
+                    $value: Movement_To_Type
+                    $options:
+                      - $literal("Jail")
+                      - $literal("Facility")
+                $then: Movement_To
+          # TODO(MI-8599): Confirm housing_unit formatting for RH form based on what values come through in real data
+          housing_unit:
+            $concat:
+              $values:
+                - Housing_Unit
+                - Tier
+                - Bed
+          admission_date: period_start
+          admission_reason:
+            $conditional:
+              # If we see a modifier start reason that indicates an admission reason event, use modifier to map
+              - $if:
+                  $in:
+                    $value: Modifier_Start_Reason
+                    $options:
+                      - $literal("Released on Bond")
+                      - $literal("Out On WRIT")
+                      - $literal("Hospital")
+                      - $literal("Commitment Order Pending Sentencing- Murder 1st")
+                $then:
+                  $enum_mapping:
+                    $raw_text: Modifier_Start_Reason
+                    $mappings:
+                      StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE:
+                        - "Released on Bond"
+                        - "Out On WRIT"
+                        - "Hospital"
+                      StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
+                        - "Commitment Order Pending Sentencing- Murder 1st"
+              # else rely on movement reasons to map admission reason where we see a movement recorded
+              - $else_if:
+                  $not_null: Movement_Code_Description_start_reason
+                $then:
+                  $enum_mapping:
+                    $raw_text: Movement_Code_Description_start_reason
+                    $mappings:
+                      StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                        - "New Commitment"
+                        - "New Commitment - SAI Only"
+                        - "New Commitment - HYTA Prisoner"
+                        - "New Commitment - Murder 1st Pending Sentence"
+                        - "New Commitment - While Under Sentence"
+                        - "Intake"
+                      StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                        - "New Commitment - Probation Technical Violator"
+                        - "Returned - As Parole Technical Rule Violator - Violation Sustained"
+                        - "New Commitment - Probationer w/ New Sentence"
+                        - "New Commitment - Parole Viol. w/ New Sentence"
+                        - "New Commitment - Escaper w/ New Sentence"
+                      StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                        - "Returned - Escaper Returned to the Institution"
+                      StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
+                        - "Returned - From Temporary Release"
+                        - "Returned - From Court"
+                      StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                        - "Interstate Parolee Sentenced in Michigan"
+                        - "Returned - Other Criminal Justice Agencies"
+                      StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
+                        - "Held Under Custody"
+                        - "Held Under Custody - Probationer"
+                        - "Failure To Appear For Sentencing"
+                        - "Returned - While on Parole Pending Revocation Hearing"
+                      StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                        - "Transfer Between Facilities"
+                        - "Transfer Between Offices in Michigan"
+                        - "Overnight Transfer Hold"
+                      StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                        # TODO(MI-8599): Do we actually see this as start reasons? Check in real data
+                        - "Paroled in Custody"
+                        - "Reparoled While on Same Term"
+                      StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                        - "Interstate Compact Case - Rejected for Supervision"
+                        - "Interstate Compact Transfer Request Rescinded"
+                        - "Interest Closed for Interstate Order"
+              # if there's no movement recorded but we do see a prison status start on this date, map to NEW_ADMISSION
+              - $else_if:
+                  $not_null: Status_Start_Reason
+                $then: $literal_enum(StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
+              # otherwise, if we see no start reason, then this period must have been created due to a change to another attribute
+              # or internal transfer in these cases, map to STATUS_CHANGE
+              - $else: $literal_enum(StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE)
+          release_date: period_end
+          release_reason:
+            $conditional:
+              # If we see a next modifer reason that indicates a release reason event, use next modifier value to map
+              - $if:
+                  $in:
+                    $value: next_Modifier
+                    $options:
+                      - $literal("Released on Bond")
+                      - $literal("Out On WRIT")
+                      - $literal("Hospital")
+                      - $literal("Commitment Order Pending Sentencing- Murder 1st")
+                $then:
+                  $enum_mapping:
+                    $raw_text: next_Modifier
+                    $mappings:
+                      StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
+                        - "Released on Bond"
+                        - "Out On WRIT"
+                        - "Hospital"
+                      StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
+                        - "Commitment Order Pending Sentencing- Murder 1st"
+              # if we see a status end reason that indicates a release reason event, use the status end reason to map
+              - $else_if:
+                  $and:
+                    - $not_null: Status_End_Reason
+                    - $not:
+                        $in:
+                          $value: Status_End_Reason
+                          $options:
+                            - $literal("Client Number Reassignment")
+                            - $literal("Legacy Migration")
+                            - $literal("Other")
+                            - $literal("Case Manager Changed")
+                $then:
+                  $enum_mapping:
+                    $raw_text: Status_End_Reason
+                    $mappings:
+                      StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                        - "Discharge"
+                        - "Expiration of Sentence"
+                        - "Interstate Case Closed by Sending State"
+                      StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                        - "Parole Granted"
+                      StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
+                        - "Court Resentenced to Probation"
+                      StateIncarcerationPeriodReleaseReason.PARDONED:
+                        - "Pardoned"
+                      StateIncarcerationPeriodReleaseReason.COMMUTED:
+                        - "Commuted"
+                      StateIncarcerationPeriodReleaseReason.DEATH:
+                        - "Death"
+                      StateIncarcerationPeriodReleaseReason.VACATED:
+                        - "Acquitted/Dismissed"
+                        - "Dismissed by Court"
+                      StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                        - "Deported"
+                      StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
+                        - "Medical"
+              # else if the period is not open,
+              - $else_if:
+                  $not_null: period_end
+                $then:
+                  $conditional:
+                    # map based on movements if available
+                    - $if:
+                        $not_null: Movement_Code_Description_end_reason
+                      $then:
+                        $enum_mapping:
+                          $raw_text: Movement_Code_Description_end_reason
+                          $mappings:
+                            StateIncarcerationPeriodReleaseReason.ESCAPE:
+                              - "Escape from MDOC"
+                              - "Escape after Release to Outside Agency"
+                            StateIncarcerationPeriodReleaseReason.DEATH:
+                              - "Death on Temporary Release"
+                              - "Death in Institution"
+                              - "Death on Parole"
+                              - "Death on Escape"
+                              - "Death on Probation"
+                            StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                              - "Paroled"
+                              - "Reinstated on Parole"
+                              - "Reinstated on Parole - While at Large/No Parole Revocation"
+                              - "Reparoled While on Same Term"
+                            StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
+                              - "Court Resentenced to Probation"
+                              - "Reinstated on Probation"
+                              - "Discharged - From Prison on Max - Transfer for Probation"
+                              - "Discharged - From Prison Under HYTA & Continued on Probation"
+                            StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                              - "Discharged - On the Maximum"
+                              - "Discharged - While at DMH"
+                              - "Discharged - From Parole"
+                              - "Discharged - Early from Parole"
+                              - "Discharged - Administratively from Parole"
+                              - "Discharged - From Prison Under HYTA Without Probation"
+                              - "Discharged - Court Discharged with Time Served"
+                              - "Discharged - Due to Commitment to DHHS Only"
+                            StateIncarcerationPeriodReleaseReason.VACATED:
+                              - "Conviction Reversed by Court"
+                              - "Discharged - Court - Nolle Prosequi"
+                              - "Dismissed by Court"
+                            StateIncarcerationPeriodReleaseReason.PARDONED:
+                              - "Discharged - Pardoned"
+                            StateIncarcerationPeriodReleaseReason.COMMUTED:
+                              - "Charge Reduced to Misdemeanor"
+                            StateIncarcerationPeriodReleaseReason.TRANSFER:
+                              - "Transfer Between Facilities"
+                              - "Transfer Between Offices in Michigan"
+                              - "Overnight Transfer Hold"
+                            StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                              - "Transferred Out of State"
+                              - "Discharged - Transfer to Foreign Country"
+                            StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
+                              - "Temporary Release - Outside Hospital"
+                              - "Released - To Court on Writ"
+                              - "Released - Court Released on Bond"
+                              - "Released - Other Criminal Justice Agencies"
+                            StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE:
+                              - "Returned - From Temporary Release"
+                              - "Returned - From Court"
+                            StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE:
+                              - "Returned - Escaper Returned to the Institution"
+                            StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
+                              - "Sentenced to Jail Only"
+                              - "Paroled in Custody"
+                            StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                              # TODO(MI-8599) Check how this shows up in real data
+                              - "Interstate Compact Case - Rejected for Supervision"
+                              - "Interstate Compact Transfer Request Rescinded"
+                              - "Interest Closed for Interstate Order"
+                              # TODO(MI-8599) Should not show up? check with real data
+                              - "Returned - As Parole Technical Rule Violator - Violation Sustained"
+                              - "Returned - While on Parole Pending Revocation Hearing"
+                              - "Returned - To Court from Bond"
+                              - "Absconder from Parole"
+                              - "Absconder from Probation"
+                              - "Interstate Parolee Sentenced in Michigan"
+                    # else map to a STATUS_CHANGE if we don't see a movement for it
+                    # since that means an internal transfer or attribute change.
+                    - $else: $literal_enum(StateIncarcerationPeriodReleaseReason.STATUS_CHANGE)
+          specialized_purpose_for_incarceration:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: Facility
+                    $options:
+                      - $literal("SAI SPECIAL ALTERNATIVE INCARCERATION")
+                      - $literal("SAI SPECIAL ALTERNATIVE INCARCERATION WOMEN'S")
+                $then: $literal_enum(StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON)
+              # TODO(MI-8599): This follows the custom in the original IP ingest.  Verify with the
+              #                raw data how often this comes up and the reporting station name formatting.
+              - $else_if:
+                  $and:
+                    # - $equal:
+                    #     - reporting_station_name
+                    #     - $literal("HU#6")
+                    - $equal:
+                        - Facility
+                        - $literal("MACOMB PAROLE VIOLATION UNIT")
+                    - $not_in:
+                        $value: Movement_Code_Description_start_reason
+                        $options:
+                          - $literal("New Commitment - Probation Technical Violator")
+                          - $literal("Returned - As Parole Technical Rule Violator - Violation Sustained")
+                          - $literal("New Commitment - Probationer w/ New Sentence")
+                          - $literal("New Commitment - Parole Viol. w/ New Sentence")
+                          - $literal("New Commitment - Escaper w/ New Sentence")
+                $then: $literal_enum(StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD)
+          custodial_authority: $literal_enum(StateCustodialAuthority.STATE_PRISON)
+          custody_level:
+            $enum_mapping:
+              $raw_text: Security_Level
+              $mappings:
+                StateIncarcerationPeriodCustodyLevel.MINIMUM:
+                  - "Security level I"
+                  - "Security level IS"
+                StateIncarcerationPeriodCustodyLevel.RESTRICTIVE_MINIMUM:
+                  - "Security level II"
+                StateIncarcerationPeriodCustodyLevel.CLOSE:
+                  - "Security level IV"
+                StateIncarcerationPeriodCustodyLevel.MAXIMUM:
+                  - "Security level V"
+          housing_unit_type:
+            $conditional:
+              # Map based on designated seg type first
+              - $if:
+                  $not_null: Segregation_Type
+                $then:
+                  $enum_mapping:
+                    $raw_text: Segregation_Type
+                    $mappings:
+                      StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT:
+                        - "Adminstrative segregation"
+                      StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
+                        - "Temporary segregation"
+                      StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT:
+                        - "Detention"
+              # TODO(MI-8599): Add mapping based on bed_type once we get the real data (hopefully this includes MENTAL_HEALTH_SOLITARY_CONFINEMENT)
+              - $else: $literal_enum(StateIncarcerationPeriodHousingUnitType.GENERAL)
