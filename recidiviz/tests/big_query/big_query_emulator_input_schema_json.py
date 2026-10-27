@@ -20,12 +20,14 @@ Generates a JSON file that can be used to seed the emulator with source tables
 import json
 import logging
 import os
-from typing import Literal
+from typing import Any, Literal, Sequence
 
 import attr
 from google.cloud.bigquery import SchemaField
 from more_itertools import one
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.common import attr_validators
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
 
@@ -62,6 +64,9 @@ class TableJSON:
 
     id: str
     columns: list[ColumnJSON]
+    # Rows the emulator populates the table with as it boots. Left None for a
+    # table that should be created empty.
+    data: list[dict[str, Any]] | None = attr.ib(default=None)
 
 
 @attr.s(auto_attribs=True)
@@ -95,6 +100,33 @@ class ProjectJSON:
 
     def add_table(self, dataset_id: str, table_yaml: TableJSON) -> None:
         self.add_dataset(dataset_id).tables.append(table_yaml)
+
+
+@attr.define(frozen=True, kw_only=True)
+class SeededTable:
+    """A table the emulator creates and fills with data as it boots, rather than one
+    a test creates and loads over HTTP.
+
+    Use for a large fixture that every test in a class reads and none of them
+    writes: seeding moves the cost from once per test to once per emulator.
+    """
+
+    address: BigQueryAddress = attr.ib(
+        validator=attr.validators.instance_of(BigQueryAddress)
+    )
+    """Address the table is created at."""
+
+    schema: list[SchemaField] = attr.ib(
+        validator=[
+            attr_validators.is_non_empty_list_of(SchemaField),
+        ]
+    )
+    """Schema the table is created with."""
+
+    rows: list[dict[str, Any]] = attr.ib(validator=attr_validators.is_list)
+    """Rows the table is populated with, keyed by column name. Values must already
+    be JSON-serializable and typed to match |schema| - the emulator reads them as
+    written, with no client-side conversion in between."""
 
 
 def build_column_from_schema_field(schema_field: SchemaField) -> ColumnJSON:
@@ -133,22 +165,71 @@ def _update_with_all_source_table_schemas(
         )
 
 
+def _update_with_seeded_tables(
+    project_json: ProjectJSON, seeded_tables: Sequence[SeededTable]
+) -> None:
+    """Adds each seeded table, schema and rows together, to a ProjectJSON instance."""
+    for seeded_table in seeded_tables:
+        project_json.add_table(
+            seeded_table.address.dataset_id,
+            TableJSON(
+                id=seeded_table.address.table_id,
+                columns=[
+                    build_column_from_schema_field(column)
+                    for column in seeded_table.schema
+                ],
+                data=seeded_table.rows,
+            ),
+        )
+
+
+def _project_json_as_dict(project_json: ProjectJSON) -> dict[str, Any]:
+    """Returns the JSON-ready dict form of |project_json|.
+
+    Seeded row data is spliced in after the attrs conversion rather than passed
+    through it. attrs recurses into every row and rebuilds it, which for a
+    multi-megabyte fixture costs several times more than serializing the rows does.
+    Excluding the field also keeps tables that seed no data byte-identical to what
+    this module produced before seeding existed.
+    """
+    rows_by_address = {
+        (dataset.id, table.id): table.data
+        for dataset in project_json.datasets
+        for table in dataset.tables
+        if table.data is not None
+    }
+    project_dict: dict[str, Any] = attr.asdict(
+        project_json, filter=attr.filters.exclude(attr.fields(TableJSON).data)
+    )
+    for dataset_dict in project_dict["datasets"]:
+        for table_dict in dataset_dict["tables"]:
+            address = (dataset_dict["id"], table_dict["id"])
+            if address in rows_by_address:
+                table_dict["data"] = rows_by_address[address]
+    return project_dict
+
+
 def write_emulator_source_tables_json(
-    source_table_collections: list[SourceTableCollection], file_name: str
+    *,
+    source_table_collections: list[SourceTableCollection],
+    file_name: str,
+    seeded_tables: Sequence[SeededTable] = (),
 ) -> str:
     """Given a set of source table collections, generate an emulator-compatible json input schema and write it to
-    disk"""
+    disk. Any |seeded_tables| are written alongside them, with their rows, so the
+    emulator comes up with those tables already populated."""
     project_json = ProjectJSON(id=BQ_EMULATOR_PROJECT_ID, datasets=[])
     _update_with_all_source_table_schemas(
         project_json, source_table_collections=source_table_collections
     )
+    _update_with_seeded_tables(project_json, seeded_tables)
 
     source_table_file = os.path.join(SOURCE_TABLES_FIXTURES_DIR, file_name)
     if not os.path.exists(SOURCE_TABLES_FIXTURES_DIR):
         os.mkdir(SOURCE_TABLES_FIXTURES_DIR)
 
     with open(source_table_file, "w", encoding="utf-8") as f:
-        f.write(json.dumps({"projects": [attr.asdict(project_json)]}))
+        f.write(json.dumps({"projects": [_project_json_as_dict(project_json)]}))
 
     logging.info("Wrote source table output to %s!", source_table_file)
 

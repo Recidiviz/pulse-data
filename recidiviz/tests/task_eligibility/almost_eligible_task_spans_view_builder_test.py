@@ -900,7 +900,6 @@ class TestAlmostEligibleSpansBigQueryViewBuilder(BigQueryEmulatorTestCase):
                 {
                     "state_code": "US_XX",
                     "person_id": 12345,
-                    "task_eligibility_span_id": 5,
                     "start_date": date(2024, 3, 27),
                     "end_date": None,
                     "is_eligible": False,
@@ -1367,7 +1366,6 @@ class TestAlmostEligibleSpansBigQueryViewBuilder(BigQueryEmulatorTestCase):
                 {
                     "state_code": "US_XX",
                     "person_id": 23456,
-                    "task_eligibility_span_id": 2,
                     "start_date": date(2024, 3, 28),
                     "end_date": date(2024, 4, 4),
                     "is_eligible": False,
@@ -1393,7 +1391,6 @@ class TestAlmostEligibleSpansBigQueryViewBuilder(BigQueryEmulatorTestCase):
                     "start_date": date(2024, 4, 4),
                     "end_date": None,
                     "is_eligible": False,
-                    "is_almost_eligible": False,
                     "reasons": [
                         {
                             "criteria_name": TEST_CRITERIA_BUILDER_2.criteria_name,

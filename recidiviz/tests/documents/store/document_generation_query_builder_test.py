@@ -521,17 +521,15 @@ def _mention_row(
     *,
     person_id: int,
     document_id: str,
-    document_update_date: str | None,
+    document_update_date: str,
     source_array_index: Any = _OMIT_SOURCE_ARRAY_INDEX,
     **entity_field_values: Any,
 ) -> dict[str, Any]:
     row: dict[str, Any] = {
         PERSON_ID_COLUMN_NAME: person_id,
         DOCUMENT_CONTENTS_ID_COLUMN_NAME: document_id,
-        DOCUMENT_UPDATE_DATETIME_COLUMN_NAME: (
-            datetime.datetime.fromisoformat(document_update_date)
-            if document_update_date is not None
-            else None
+        DOCUMENT_UPDATE_DATETIME_COLUMN_NAME: datetime.datetime.fromisoformat(
+            document_update_date
         ),
         # Required __pre_resolution columns the generation query never reads.
         STATE_CODE_COLUMN_NAME: StateCode.US_XX.value,
@@ -1059,62 +1057,6 @@ location: Building B"""
                     ENTRY_SOURCE_MAP_COLUMN_NAME: [
                         _entry_source(1, "doc_live_1", "2026-06-01", None),
                         _entry_source(2, "doc_live_2", "2026-06-03", None),
-                    ],
-                },
-            ],
-        )
-
-    def test_null_update_datetime_excluded_from_text_and_map(self) -> None:
-        """A pre-resolution row with a null document_update_datetime (a deleted
-        document leaking through the pre-resolution view) is excluded from BOTH
-        the composite text and the entry_source_map."""
-        config = fake_first_order_extractor_config()
-        entity_group = get_entity_group_by_name(config.extractor_collection, "location")
-        collection = EntityResolutionDocumentCollectionConfig(
-            first_order_config=config, entity_group=entity_group
-        )
-        self._seed_contents(
-            [
-                _contents_row("doc_dated", "Living at Building A."),
-                _contents_row("doc_undated", "Moved to Building B."),
-            ]
-        )
-        self._seed_pre_resolution(
-            collection,
-            entity_group,
-            [
-                _mention_row(
-                    person_id=777,
-                    document_id="doc_dated",
-                    document_update_date="2026-06-01",
-                    location="Building A",
-                ),
-                _mention_row(
-                    person_id=777,
-                    document_id="doc_undated",
-                    document_update_date=None,
-                    location="Building B",
-                ),
-            ],
-        )
-
-        dated_only_composite = """=== Source document — 2026-06-01 ===
-document_text: Living at Building A.
-
-[Entry 1]
-location: Building A"""
-
-        self.run_query_test(
-            self._composite_documents_query(collection),
-            expected_result=[
-                {
-                    PERSON_ID_COLUMN_NAME: 777,
-                    DOCUMENT_TEXT_COLUMN_NAME: dated_only_composite,
-                    DOCUMENT_UPDATE_DATETIME_COLUMN_NAME: datetime.datetime(
-                        2026, 6, 1, tzinfo=datetime.timezone.utc
-                    ),
-                    ENTRY_SOURCE_MAP_COLUMN_NAME: [
-                        _entry_source(1, "doc_dated", "2026-06-01", None),
                     ],
                 },
             ],

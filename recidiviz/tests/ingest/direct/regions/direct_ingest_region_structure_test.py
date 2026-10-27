@@ -147,6 +147,11 @@ UNTESTED_INGEST_VIEWS = {
     },
 }
 
+AUXILIARY_INGEST_UNIT_TEST_NAMES = [
+    "test_validate_view_output_schema",
+    "test_validate_view_query_linting",
+]
+
 
 @pytest.mark.uses_db
 class DirectIngestRegionDirStructureBase:
@@ -983,7 +988,7 @@ def get_fixtures_used_by_ingest_view_tests(
             if not method.startswith("test_"):
                 continue
 
-            if method == "test_validate_view_output_schema":
+            if method in AUXILIARY_INGEST_UNIT_TEST_NAMES:
                 continue
 
             (
@@ -1119,7 +1124,7 @@ def test_ingest_view_and_mapping_structure(state_code: StateCode) -> None:
         for method in dir(mapping_test):
             if (
                 not method.startswith("test_")
-                or method == "test_validate_view_output_schema"
+                or method in AUXILIARY_INGEST_UNIT_TEST_NAMES
             ):
                 continue
             (

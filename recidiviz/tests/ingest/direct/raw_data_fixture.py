@@ -17,8 +17,10 @@
 """This module consolidates operations on raw data fixtures for direct ingest."""
 
 import os
+from typing import Any, Callable
 
 import pandas as pd
+from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -31,10 +33,29 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     RAW_DATA_METADATA_COLUMNS,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.tests.big_query.big_query_emulator_input_schema_json import SeededTable
 from recidiviz.tests.ingest.direct.fixture_util import (
     fixture_path_for_raw_file_config,
     load_dataframe_from_path,
 )
+
+# Fixture CSVs are read as strings, but the emulator reads the values in its source
+# table file as written, with no client-side conversion in between. Each BigQuery type
+# a raw data table can use therefore needs a function turning the fixture's string into
+# the JSON value that type implies.
+_SEEDED_JSON_VALUE_BUILDERS: dict[str, Callable[[str], Any]] = {
+    bigquery.enums.SqlTypeNames.STRING.value: str,
+    bigquery.enums.SqlTypeNames.DATETIME.value: str,
+    bigquery.enums.SqlTypeNames.INTEGER.value: int,
+    bigquery.enums.SqlTypeNames.BOOLEAN.value: lambda value: value.strip().lower()
+    == "true",
+}
+
+# Seeded rows, keyed by the fixture path they were read from. A shared code file is
+# multi-megabyte and identical for every test class in its state, so parsing it once
+# per process rather than once per class is worth holding on to. Callers must not
+# mutate what they get back.
+_SEEDED_ROWS_BY_FIXTURE_PATH: dict[str, list[dict[str, Any]]] = {}
 
 
 class RawDataFixture:
@@ -110,6 +131,75 @@ class RawDataFixture:
                 f"{raw_fixture_path} has multiple file_id values per update_datetime"
             )
         return df
+
+    def to_seeded_table(self, *, test_identifier: str, dataset_id: str) -> SeededTable:
+        """Returns this fixture's data for |test_identifier| as a table the emulator
+        creates and fills as it boots, at |dataset_id|, rather than one loaded over
+        HTTP during the test.
+
+        Tests that share an emulator each get their own dataset, so |dataset_id| is
+        what keeps one test's raw data from being visible to another's query.
+        """
+        raw_fixture_path = fixture_path_for_raw_file_config(
+            self.state_code, self.raw_file_config, test_identifier
+        )
+        if raw_fixture_path not in _SEEDED_ROWS_BY_FIXTURE_PATH:
+            _SEEDED_ROWS_BY_FIXTURE_PATH[raw_fixture_path] = self._build_seeded_rows(
+                test_identifier
+            )
+
+        return SeededTable(
+            address=BigQueryAddress(
+                dataset_id=dataset_id, table_id=self.raw_file_config.file_tag
+            ),
+            schema=self.schema,
+            rows=_SEEDED_ROWS_BY_FIXTURE_PATH[raw_fixture_path],
+        )
+
+    def to_empty_seeded_table(self, *, dataset_id: str) -> SeededTable:
+        """Returns this fixture's table, with its schema but no rows, for the emulator
+        to create at |dataset_id| as it boots."""
+        return SeededTable(
+            address=BigQueryAddress(
+                dataset_id=dataset_id, table_id=self.raw_file_config.file_tag
+            ),
+            schema=self.schema,
+            rows=[],
+        )
+
+    def _build_seeded_rows(self, test_identifier: str) -> list[dict[str, Any]]:
+        """Returns this fixture's rows with each value converted to the JSON type its
+        column's BigQuery type implies."""
+        schema = self.schema
+        if unsupported := {
+            column.name
+            for column in schema
+            if column.field_type not in _SEEDED_JSON_VALUE_BUILDERS
+        }:
+            raise ValueError(
+                f"Cannot seed fixture for raw file [{self.raw_file_config.file_tag}]: "
+                f"columns {sorted(unsupported)} have types that have no JSON "
+                f"conversion defined."
+            )
+        value_builders = {
+            column.name: _SEEDED_JSON_VALUE_BUILDERS[column.field_type]
+            for column in schema
+        }
+
+        df = self.read_fixture_file_into_dataframe(test_identifier)
+        if unknown_columns := set(df.columns) - set(value_builders):
+            raise ValueError(
+                f"Fixture for raw file [{self.raw_file_config.file_tag}] has columns "
+                f"{sorted(unknown_columns)} that are not in its BigQuery schema."
+            )
+
+        return [
+            {
+                name: None if value is None else value_builders[name](value)
+                for name, value in row.items()
+            }
+            for row in df.to_dict("records")
+        ]
 
     def write_dataframe_into_fixture_file(
         self, df: pd.DataFrame, test_identifier: str

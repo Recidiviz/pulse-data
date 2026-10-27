@@ -21,7 +21,7 @@ from datetime import date
 import numpy
 import pandas as pd
 import pandas_gbq
-from google.api_core.exceptions import InternalServerError
+import pytest
 from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
 
@@ -408,20 +408,15 @@ FROM UNNEST([STRUCT(1 AS a, 2 AS b)]);""",
         )
 
     def test_create_table_as_select_timestamp_nested_in_repeated_record(self) -> None:
-        """Documents a bigquery-emulator bug: an ARRAY<STRUCT<TIMESTAMP>> value
-        can be produced by a plain SELECT (see
-        test_timestamp_nested_in_repeated_record) and scanned from streamed
-        rows, but once written to a table by a CREATE TABLE AS SELECT (e.g.
-        BigQueryClient.create_table_from_query), any query that produces
-        the struct's TIMESTAMP from the stored value fails with `failed to
-        convert <float> to time.Time type`. Real BigQuery round-trips this
-        fine.
+        """An ARRAY<STRUCT<TIMESTAMP>> value can be produced by a plain SELECT
+        (see test_timestamp_nested_in_repeated_record) and, once written to a
+        table by a CREATE TABLE AS SELECT (e.g. BigQueryClient.create_table_from_query),
+        read back with the struct's TIMESTAMP intact.
         """
         address = BigQueryAddress(
             dataset_id="ctas_repro", table_id="array_struct_timestamp"
         )
         self.bq_client.create_dataset_if_necessary(address.dataset_id)
-        # The CTAS itself succeeds; only reads of the stored value break.
         self.bq_client.create_table_from_query(
             address=address,
             query="SELECT [STRUCT(TIMESTAMP '2026-01-10 00:00:00+00' AS ts)] AS arr",
@@ -430,16 +425,15 @@ FROM UNNEST([STRUCT(1 AS a, 2 AS b)]);""",
         )
 
         stored_table = f"`{self.project_id}.{address.dataset_id}.{address.table_id}`"
-        # TODO(OBT-42814): Change these assertions to expect a successful round
-        # trip once the emulator fixes this bug.
-        with self.assertRaisesRegex(
-            Exception, r"failed to convert .* to time\.Time type"
-        ):
-            self.query(f"SELECT arr FROM {stored_table}")
-        with self.assertRaisesRegex(
-            Exception, r"failed to convert .* to time\.Time type"
-        ):
-            self.query(f"SELECT e.ts FROM {stored_table} t, UNNEST(t.arr) AS e")
+        expected_dt = datetime.datetime(2026, 1, 10, tzinfo=datetime.timezone.utc)
+        self.run_query_test(
+            f"SELECT arr FROM {stored_table}",
+            expected_result=[{"arr": [{"ts": expected_dt}]}],
+        )
+        self.run_query_test(
+            f"SELECT e.ts FROM {stored_table} t, UNNEST(t.arr) AS e",
+            expected_result=[{"ts": expected_dt}],
+        )
 
     def test_safe_parse_date_valid(self) -> None:
         self.run_query_test(
@@ -596,7 +590,7 @@ GROUP BY b;
                 bigquery.SchemaField(
                     "a",
                     field_type=bigquery.enums.SqlTypeNames.INTEGER.value,
-                    mode="REQUIRED",
+                    mode="NULLABLE",
                 ),
                 bigquery.SchemaField(
                     "b",
@@ -692,7 +686,7 @@ GROUP BY b;
                 bigquery.SchemaField(
                     "a",
                     field_type=bigquery.enums.SqlTypeNames.INTEGER.value,
-                    mode="REQUIRED",
+                    mode="NULLABLE",
                 ),
                 bigquery.SchemaField(
                     "b",
@@ -763,11 +757,10 @@ FROM UNNEST([
         self.run_query_test(
             "SELECT CAST(null AS INT64)", expected_result=[{"$col1": None}]
         )
-        # TODO(#33060) This should not raise an error.
-        with self.assertRaises(InternalServerError):
-            self.run_query_test(
-                "SELECT CAST(null AS INTEGER)", expected_result=[{"$col1": None}]
-            )
+
+        self.run_query_test(
+            "SELECT CAST(null AS INTEGER)", expected_result=[{"$col1": None}]
+        )
 
     def test_drop_view(self) -> None:
         """Ensures we can run DROP VIEW statements on the emulator."""
@@ -916,34 +909,6 @@ FROM UNNEST([
             ],
         )
 
-    def test_information_schema_schemata(self) -> None:
-        """Tests querying INFORMATION_SCHEMA.SCHEMATA to list datasets."""
-        # TODO(https://github.com/goccy/bigquery-emulator/issues/48): Update this test
-        #  once INFORMATION_SCHEMA is supported in the emulator.
-        client = self.bq_client.client
-
-        # Create some datasets
-        client.create_dataset("test_dataset_1")
-        client.create_dataset("test_dataset_2")
-        client.create_dataset("another_dataset")
-
-        # Query INFORMATION_SCHEMA.SCHEMATA to list all datasets
-        query = f"SELECT schema_name FROM `{self.project_id}`.INFORMATION_SCHEMA.SCHEMATA ORDER BY schema_name"
-
-        # This is what SHOULD work once the emulator supports INFORMATION_SCHEMA:
-        # results = list(client.query(query).result())
-        # dataset_names = [row.schema_name for row in results]
-        # self.assertIn("test_dataset_1", dataset_names)
-        # self.assertIn("test_dataset_2", dataset_names)
-        # self.assertIn("another_dataset", dataset_names)
-
-        # But currently the emulator does not support INFORMATION_SCHEMA
-        with self.assertRaisesRegex(
-            InternalServerError,
-            r"Table not found:.*INFORMATION_SCHEMA\.SCHEMATA",
-        ):
-            list(client.query(query).result())
-
     def test_canonicalize_nested_columns(self) -> None:
         """Nested columns (Python lists, the numpy arrays the emulator returns
         REPEATED columns as, and STRUCT dicts) are rewritten to JSON strings with
@@ -1009,3 +974,25 @@ GROUP BY b
             self.compare_expected_and_result_dfs(
                 expected=wrong_expected, results=results
             )
+
+
+@pytest.mark.skip(reason="The emulator does not support INFORMATION_SCHEMA yet")
+class TestInformationSchema(BigQueryEmulatorTestCase):
+    def test_information_schema_schemata(self) -> None:
+        """Tests querying INFORMATION_SCHEMA.SCHEMATA to list datasets."""
+        client = self.bq_client.client
+
+        # Create some datasets
+        client.create_dataset("test_dataset_1")
+        client.create_dataset("test_dataset_2")
+        client.create_dataset("another_dataset")
+
+        # Query INFORMATION_SCHEMA.SCHEMATA to list all datasets
+        query = f"SELECT schema_name FROM `{self.project_id}`.INFORMATION_SCHEMA.SCHEMATA ORDER BY schema_name"
+
+        # This is what SHOULD work once the emulator supports INFORMATION_SCHEMA:
+        results = list(client.query(query).result())
+        dataset_names = [row.schema_name for row in results]
+        self.assertIn("test_dataset_1", dataset_names)
+        self.assertIn("test_dataset_2", dataset_names)
+        self.assertIn("another_dataset", dataset_names)

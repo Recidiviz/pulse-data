@@ -179,6 +179,9 @@ def client(project_id: str, region: str) -> bigquery.Client:
         # pylint: disable=protected-access
         new_client._http.mount("https://", adapter)
         new_client._http._auth_request.session.mount("https://", adapter)
+        # The BQ emulator is reached over plain http:// so also mount the adapter there
+        new_client._http.mount("http://", adapter)
+        new_client._http._auth_request.session.mount("http://", adapter)
 
         _clients_by_project_id_by_region[project_id][region] = new_client
     return _clients_by_project_id_by_region[project_id][region]

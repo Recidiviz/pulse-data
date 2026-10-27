@@ -125,6 +125,7 @@ class GenerateIngestViewResults(beam.PTransform):
             query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                 raw_data_source_instance=raw_data_source_instance,
                 raw_data_datetime_upper_bound=upper_bound_datetime_inclusive,
+                parent_address_overrides=None,
             )
         ).rstrip(" ;")
         return StrictStringFormatter().format(

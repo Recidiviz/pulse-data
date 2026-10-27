@@ -224,6 +224,7 @@ def _materialize_twice_and_return_num_different_rows(
         query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
             raw_data_datetime_upper_bound=current_datetime,
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
+            parent_address_overrides=None,
         )
     )
 

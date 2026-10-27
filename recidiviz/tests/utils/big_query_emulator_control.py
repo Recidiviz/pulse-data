@@ -29,6 +29,7 @@ import argparse
 import logging
 import os
 import time
+from functools import cached_property
 from typing import Callable
 
 import attr
@@ -41,13 +42,42 @@ from recidiviz.tests.test_setup_utils import (
     get_bq_emulator_port,
 )
 
-# TODO(#20786): Migrate back to the goccy version by removing the comment about PAT and replacing recidiviz with
-#  goccy below.
-EMULATOR_IMAGE_REPOSITORY = "ghcr.io/recidiviz/bigquery-emulator"
-EMULATOR_VERSION = "0.6.6-recidiviz.2.1"
-EMULATOR_IMAGE = f"{EMULATOR_IMAGE_REPOSITORY}:{EMULATOR_VERSION}"
 
-EMULATOR_ENTRYPOINT = "/bin/bigquery-emulator"
+@attr.s(auto_attribs=True, frozen=True)
+class EmulatorImage:
+    repository: str
+    version: str
+
+    @cached_property
+    def name(self) -> str:
+        return f"{self.repository}:{self.version}"
+
+
+GO_EMULATOR = EmulatorImage(
+    repository="ghcr.io/recidiviz/bigquery-emulator",
+    version="0.6.6-recidiviz.2.1",
+)
+
+ZIGQUERY = EmulatorImage(
+    repository="ghcr.io/recidiviz/zigquery",
+    version="v0.0.6",
+)
+
+# Every emulator we drive announces readiness with this line. The address it
+# reports differs between builds — 0.6.6 prints `0.0.0.0:<port>` and 0.8.1
+# prints `[::]:<port>` — so match only the part they share.
+EMULATOR_READY_LOG_LINE = "REST server listening at"
+
+# Owner read/write, world read, so the container's non-root user can read files
+# mounted into it.
+_MOUNTED_FILE_MODE = 0o644
+
+# How many trailing log lines to include when the emulator exits during boot.
+_EXITED_LOG_TAIL_LINES = 50
+
+
+class EmulatorExitedError(RuntimeError):
+    """Raised when the emulator container exits before it is ready."""
 
 
 def _exponential_backoff(
@@ -73,16 +103,17 @@ class BigQueryEmulatorControl:
     """Tooling for starting the BigQuery emulator via the Docker API"""
 
     docker_client: DockerClient = attr.ib()
+    image: EmulatorImage = attr.ib()
+    container: Container | None = attr.ib(default=None)
+    name: str = attr.ib(factory=lambda: f"recidiviz-bq-emulator-{os.urandom(15).hex()}")
     port: int = attr.ib(factory=get_bq_emulator_port)
     grpc_port: int = attr.ib(factory=get_bq_emulator_grpc_port)
-    container: Container | None = attr.ib(default=None)
-    """The running emulator container, or None when no emulator is running."""
 
     def pull_image(self) -> None:
         try:
-            self.docker_client.images.get(EMULATOR_IMAGE)
+            self.docker_client.images.get(self.image.name)
         except errors.APIError:
-            self.docker_client.images.pull(EMULATOR_IMAGE_REPOSITORY, EMULATOR_VERSION)
+            self.docker_client.images.pull(self.image.repository, self.image.version)
 
     def start_emulator(self, input_schema_json_path: str | None = None) -> None:
         """Starts the emulator container. Optionally mounts source tables volume"""
@@ -90,17 +121,28 @@ class BigQueryEmulatorControl:
             raise ValueError(
                 f"Emulator container [{self.container.name}] is already running"
             )
-        base_command = (
-            f"{EMULATOR_ENTRYPOINT} --project={BQ_EMULATOR_PROJECT_ID} "
-            f"--log-level=info --database=:memory: --port={self.port} "
-            f"--grpc-port={self.grpc_port}"
-        )
+
+        base_command = [
+            f"--project={BQ_EMULATOR_PROJECT_ID}",
+            "--log-level=info",
+            "--database=:memory:",
+            f"--port={self.port}",
+            f"--grpc-port={self.grpc_port}",
+        ]
+
+        if self.image == GO_EMULATOR:
+            base_command.insert(0, "/bin/bigquery-emulator")
 
         volumes: dict[str, dict[str, str]] = {}
 
         if input_schema_json_path:
+            # The zigquery image runs as a non-root user, and on Linux a bind
+            # mount keeps host permissions, so a file only its host owner can read
+            # (e.g. one from tempfile, which creates files 0600) fails to open
+            # with AccessDenied.
+            os.chmod(input_schema_json_path, _MOUNTED_FILE_MODE)
             file_name = os.path.basename(input_schema_json_path)
-            base_command += f" --data-from-json=/fixtures/{file_name}"
+            base_command.append(f"--data-from-json=/fixtures/{file_name}")
             volumes = {
                 os.path.dirname(input_schema_json_path): {
                     "bind": "/fixtures",
@@ -108,40 +150,72 @@ class BigQueryEmulatorControl:
                 }
             }
 
-        container_name = f"recidiviz-bq-emulator-{os.urandom(15).hex()}"
-        self.container = self.docker_client.containers.run(
-            EMULATOR_IMAGE,
-            command=base_command,
-            name=container_name,
-            auto_remove=True,
-            ports={self.port: self.port, self.grpc_port: self.grpc_port},
-            detach=True,
-            volumes=volumes,
-        )
+        try:
+            self.container = self.docker_client.containers.run(
+                self.image.name,
+                command=base_command,
+                name=self.name,
+                ports={self.port: self.port, self.grpc_port: self.grpc_port},
+                detach=True,
+                volumes=volumes,
+            )
+        except errors.APIError:
+            # Docker creates the container before starting it, so a start failure
+            # (e.g. the port is already allocated) leaves a created container
+            # holding this name, which would block every later start.
+            try:
+                self.docker_client.containers.get(self.name).remove(force=True)
+            except errors.NotFound:
+                pass
+            raise
 
         start_time = time.perf_counter()
 
         try:
             # Exponential backoff, starting at 100ms, ending at 2.3s for a total of ~65 seconds
             _exponential_backoff(
-                success_condition=lambda: "REST server listening at 0.0.0.0"
-                in self.get_logs(),
+                success_condition=self._is_ready,
                 delay_ms=100,
                 max_tries=44,
                 exponent=1.1,
             )
         except TimeoutError as e:
+            self.stop_emulator()
             raise TimeoutError(
                 "Expected emulator to start in less than 60 seconds"
             ) from e
+        except EmulatorExitedError:
+            self.stop_emulator()
+            raise
 
         print(f"Emulator started  in {time.perf_counter() - start_time}s")
 
-    def get_logs(self) -> str:
-        if self.container is None:
-            raise ValueError("Expected a container in order to print logs")
+    def _is_ready(self) -> bool:
+        """Returns whether the emulator has announced readiness. Raises if the
+        container exited before doing so, so a crash during boot fails fast with
+        its exit details instead of waiting out the full backoff."""
+        container = self._get_container()
+        logs = self.get_logs()
+        if EMULATOR_READY_LOG_LINE in logs:
+            return True
+        container.reload()
+        if container.status != "exited":
+            return False
+        state = container.attrs["State"]
+        raise EmulatorExitedError(
+            f"Emulator container [{container.name}] exited during boot with exit "
+            f"code [{state['ExitCode']}] (OOMKilled: [{state['OOMKilled']}]). "
+            f"Last {_EXITED_LOG_TAIL_LINES} log lines:\n"
+            + "\n".join(logs.splitlines()[-_EXITED_LOG_TAIL_LINES:])
+        )
 
-        logs = self.docker_client.containers.get(self.container.id).logs()
+    def _get_container(self) -> Container:
+        if self.container is None:
+            raise ValueError("Expected a running emulator container")
+        return self.docker_client.containers.get(self.container.id)
+
+    def get_logs(self) -> str:
+        logs = self._get_container().logs()
 
         if isinstance(logs, bytes):
             return logs.decode("utf-8")
@@ -150,25 +224,42 @@ class BigQueryEmulatorControl:
 
         raise ValueError("expected str or bytes type from Docker logs")
 
+    def is_running(self) -> bool:
+        """Returns whether the emulator container is started and has not exited."""
+        if self.container is None:
+            return False
+        container = self._get_container()
+        container.reload()
+        return container.status == "running"
+
     def stop_emulator(self) -> None:
+        """Kills and removes the emulator container. Containers are not
+        auto-removed, so that a container that crashes keeps its logs and exit
+        state around for _is_ready to report."""
         if self.container is None:
             return
-        self.docker_client.containers.get(self.container.id).stop()
+        try:
+            self.docker_client.containers.get(self.container.id).remove(force=True)
+        except errors.NotFound:
+            # Already removed, e.g. by prune_all or a manual `docker rm`.
+            pass
         self.container = None
 
     def prune_all(self) -> None:
         for container in self.docker_client.containers.list(
-            filters={
-                "status": "running",
-                "ancestor": EMULATOR_IMAGE,
-            }
+            all=True,
+            filters={"ancestor": self.image.name},
         ):
-            logging.info("Stopping container: %s", container.name)
-            container.stop()
+            logging.info("Removing container: %s", container.name)
+            container.remove(force=True)
 
     @classmethod
-    def build(cls) -> "BigQueryEmulatorControl":
-        return BigQueryEmulatorControl(docker_client=DockerClient.from_env())
+    def build(cls, use_zigquery: bool = True) -> "BigQueryEmulatorControl":
+        image = ZIGQUERY if use_zigquery else GO_EMULATOR
+        logging.info("Emulator implementation [docker]: %s", image.name)
+        return BigQueryEmulatorControl(
+            image=image, docker_client=DockerClient.from_env()
+        )
 
 
 ACTION_START = "start"
@@ -184,7 +275,7 @@ def _cli_action(action: str) -> None:
         control.prune_all()
     elif action == ACTION_PULL_IMAGE:
         control.pull_image()
-        logging.info("Pulled image: %s", EMULATOR_IMAGE)
+        logging.info("Pulled image: %s", control.image.name)
     else:
         raise ValueError(f"Unknown action {action}")
 

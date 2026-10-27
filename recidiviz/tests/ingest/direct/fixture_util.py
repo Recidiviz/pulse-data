@@ -83,16 +83,30 @@ def fixture_path_for_address(
     )
 
 
+SHARED_CODE_FILE_FIXTURE_NAME = "__SHARED_CODE_FILE__"
+
+# TODO(#40114) Update code file fixtures for these states and remove this exemption
+STATES_WITHOUT_SHARED_CODE_FILE_FIXTURES = {StateCode.US_PA}
+
+
+def uses_shared_code_file_fixture(
+    state_code: StateCode, raw_file_config: DirectIngestRawFileConfig
+) -> bool:
+    """Returns True if this raw file's fixture data is the single code file fixture
+    shared by every test in the state, rather than a per-test fixture."""
+    return (
+        raw_file_config.is_code_file
+        and state_code not in STATES_WITHOUT_SHARED_CODE_FILE_FIXTURES
+    )
+
+
 def fixture_path_for_raw_file_config(
     state_code: StateCode,
     raw_file_config: DirectIngestRawFileConfig,
     file_name: str,
 ) -> str:
-    if raw_file_config.is_code_file and state_code not in {
-        # TODO(#40114) Update code file fixtures and remove this exemption
-        StateCode.US_PA,
-    }:
-        file_name = "__SHARED_CODE_FILE__"
+    if uses_shared_code_file_fixture(state_code, raw_file_config):
+        file_name = SHARED_CODE_FILE_FIXTURE_NAME
     return os.path.join(
         DIRECT_INGEST_FIXTURES_ROOT,
         state_code.value.lower(),

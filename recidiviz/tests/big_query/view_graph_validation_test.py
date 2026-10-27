@@ -217,9 +217,11 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
     def tearDownClass(cls) -> None:
         """Prints each view graph's emulator logs, then stops the last emulator so
         the base class does not print its logs a second time."""
-        cls._print_emulator_logs_by_graph()
-        cls.control.stop_emulator()
-        super().tearDownClass()
+        try:
+            cls._print_emulator_logs_by_graph()
+        finally:
+            cls.control.stop_emulator()
+            super().tearDownClass()
 
     @classmethod
     def _print_emulator_logs_by_graph(cls) -> None:
@@ -314,6 +316,13 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             patched_client,
             "apply_row_level_permissions",
             new=lambda table: None,
+        ).start()
+        # Nothing exists in the emulator before this test runs, so every delete is a
+        # no-op round trip we can skip.
+        patch.object(
+            patched_client,
+            "delete_table",
+            new=lambda address, *, not_found_ok=False: None,
         ).start()
 
         self.view_update_client_patcher = patch(

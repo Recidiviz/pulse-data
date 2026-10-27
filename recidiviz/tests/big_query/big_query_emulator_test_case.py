@@ -23,10 +23,10 @@ import json
 import os
 import tempfile
 import unittest
-from collections import Counter
+from collections import Counter, defaultdict
 from concurrent import futures
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Sequence
 from unittest.mock import Mock, patch
 
 import db_dtypes
@@ -38,6 +38,7 @@ import requests
 from google.api_core.exceptions import GoogleAPICallError, from_http_response
 from google.cloud import bigquery
 from google.cloud.bigquery import _helpers as bq_client_helpers
+from google.cloud.bigquery import _pandas_helpers as bq_pandas_helpers
 from google.cloud.bigquery_storage_v1 import BigQueryReadClient
 from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
     BigQueryReadGrpcTransport,
@@ -57,6 +58,7 @@ from recidiviz.big_query.big_query_results_contents_handle import (
 from recidiviz.big_query.big_query_schema_utils import strip_pseudocolumns_from_schema
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_input_schema_json import (
+    SeededTable,
     write_emulator_source_tables_json,
 )
 from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
@@ -64,6 +66,9 @@ from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
 from recidiviz.tests.utils.big_query_emulator_control import BigQueryEmulatorControl
 from recidiviz.tests.utils.big_query_emulator_log_parser import (
     BigQueryEmulatorLogParser,
+)
+from recidiviz.tests.utils.big_query_emulator_stats_formatter import (
+    format_emulator_stats,
 )
 from recidiviz.utils import environment, metadata
 
@@ -100,6 +105,10 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
     into issues, you should post in #platform-team.
     """
 
+    # This can be set to False in the case of a feature the Go-based emulator supports
+    # that zigquery does not
+    use_zigquery = True
+
     control: BigQueryEmulatorControl
 
     # Deletes all tables / views in the emulator after each test
@@ -115,6 +124,11 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
     # If the test failed, output the emulator logs prior to exiting
     show_emulator_logs_on_failure = False
 
+    # Addresses of the tables the emulator was seeded with at startup. These outlive
+    # each test, so the per-test teardown leaves them in place. Populated by
+    # setUpClass from get_seeded_tables().
+    seeded_table_addresses: frozenset[BigQueryAddress] = frozenset()
+
     # Subclasses that boot the emulator themselves, e.g. with
     # restart_emulator_with_source_tables, can set this to False to skip the
     # class-level boot
@@ -125,8 +139,20 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         return []
 
     @classmethod
+    def get_seeded_tables(cls) -> list[SeededTable]:
+        """Returns tables the emulator should create and fill with data as it boots,
+        instead of every test creating and loading them over HTTP.
+
+        Seeded tables are shared by every test in the class and are not wiped between
+        tests, so only seed data that no test writes to.
+        """
+        return []
+
+    @classmethod
     def _write_source_tables_json(
-        cls, source_tables: list[SourceTableCollection]
+        cls,
+        source_tables: list[SourceTableCollection],
+        seeded_tables: Sequence[SeededTable],
     ) -> str:
         """Returns the path of a new JSON file in the fixtures directory describing
         these collections' tables, for the emulator to load at boot.
@@ -137,24 +163,93 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
             return write_emulator_source_tables_json(
                 source_table_collections=source_tables,
                 file_name=file.name,
+                seeded_tables=seeded_tables,
             )
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.control = BigQueryEmulatorControl.build()
+        cls.control = BigQueryEmulatorControl.build(use_zigquery=cls.use_zigquery)
         cls.control.pull_image()
 
         if not cls.start_emulator_automatically:
             return
 
-        input_schema_json_path = None
-        if cls.input_json_schema_path is not None:
-            input_schema_json_path = cls.input_json_schema_path
-        elif source_tables := cls.get_source_tables():
-            input_schema_json_path = cls._write_source_tables_json(source_tables)
-            cls.input_json_schema_path = input_schema_json_path
+        seeded_tables = cls.get_seeded_tables()
+        cls.seeded_table_addresses = frozenset(
+            seeded_table.address for seeded_table in seeded_tables
+        )
 
-        cls.control.start_emulator(input_schema_json_path=input_schema_json_path)
+        input_json_schema_path = None
+        if cls.input_json_schema_path is not None:
+            if seeded_tables:
+                raise ValueError(
+                    f"Class [{cls.__name__}] returns seeded tables but also sets "
+                    f"input_json_schema_path [{cls.input_json_schema_path}]. Seeded "
+                    f"tables are written into the input schema file, so a prebuilt "
+                    f"one cannot be reused."
+                )
+            input_json_schema_path = cls.input_json_schema_path
+        elif (source_tables := cls.get_source_tables()) or seeded_tables:
+            cls.input_json_schema_path = (
+                input_json_schema_path
+            ) = cls._write_source_tables_json(
+                source_tables,
+                seeded_tables,
+            )
+
+        cls.control.start_emulator(input_schema_json_path=input_json_schema_path)
+        try:
+            cls._check_seeded_tables_were_populated(seeded_tables)
+        except Exception:
+            # Print the emulator logs, which list the rows that failed to load
+            print(cls.control.get_logs())
+
+            # A setUpClass that raises means tearDownClass never runs, which would
+            # leave the emulator we just started holding its port for the rest of the
+            # session - and every later test talking to whichever stale emulator the
+            # kernel hands them.
+            cls.control.stop_emulator()
+            raise
+
+    @classmethod
+    def _check_seeded_tables_were_populated(
+        cls, seeded_tables: Sequence[SeededTable]
+    ) -> None:
+        """Raises if the emulator came up without the rows it was seeded with.
+
+        Row seeding is optional in the source table file format, and an emulator that
+        does not implement it creates the table from the schema and drops the rows
+        without complaint. Tests would then run against fixture tables that are
+        silently empty, and fail somewhere far from the cause.
+        """
+        for seeded_table in seeded_tables:
+            if not seeded_table.rows:
+                continue
+            address = seeded_table.address.to_project_specific_address(
+                BQ_EMULATOR_PROJECT_ID
+            )
+            response = requests.post(
+                f"http://0.0.0.0:{cls.control.port}/projects/"
+                f"{BQ_EMULATOR_PROJECT_ID}/queries",
+                json={
+                    "query": address.select_query("SELECT COUNT(*)"),
+                    "useLegacySql": False,
+                },
+                timeout=60,
+            ).json()
+            if not (rows := response.get("rows")):
+                raise RuntimeError(
+                    f"Could not count rows in seeded table "
+                    f"[{seeded_table.address.to_str()}]: {response}"
+                )
+            if (seeded_row_count := int(one(one(rows)["f"])["v"])) != len(
+                seeded_table.rows
+            ):
+                raise RuntimeError(
+                    f"Emulator seeded [{seeded_row_count}] rows into [{seeded_table.address.to_str()}], "
+                    f"but it was given [{len(seeded_table.rows)}]. "
+                    f"A required field was likely omitted from a fixture. Check the emulator logs."
+                )
 
     def restart_emulator_with_source_tables(
         self, source_tables: list[SourceTableCollection]
@@ -164,7 +259,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         only way to replace its loaded source tables mid-test.
         """
         self.control.stop_emulator()
-        input_schema_json_path = self._write_source_tables_json(source_tables)
+        input_schema_json_path = self._write_source_tables_json(source_tables, [])
         try:
             self.control.start_emulator(input_schema_json_path=input_schema_json_path)
         finally:
@@ -213,6 +308,18 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
             side_effect=_create_bqstorage_client,
         )
         self.bqstorage_patcher.start()
+
+        # _download_table_bqstorage polls its single download-worker thread every 200ms.
+        # With one stream — all the emulator ever offers — that first poll almost always
+        # loses the race against the worker's OS-thread startup and eats the full 200ms
+        # before the second pass finds the frame already there, dwarfing the
+        # ~10ms it actually takes the emulator to answer.
+        # This is a private constant in a third-party library, so a google-cloud-bigquery
+        # upgrade could move or remove it without notice.
+        self.progress_interval_patcher = patch.object(
+            bq_pandas_helpers, "_PROGRESS_INTERVAL", 0.005
+        )
+        self.progress_interval_patcher.start()
 
         # The BQ python client always requests REST results with
         # formatOptions.useInt64Timestamp=true and parses TIMESTAMP cells
@@ -268,28 +375,48 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         self.read_gbq_patcher.stop()
         self.to_gbq_patcher.stop()
         self.bqstorage_patcher.stop()
+        self.progress_interval_patcher.stop()
         self.timestamp_parsing_patcher.stop()
         self.get_table_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:
-        if cls.control.container is not None:
-            logs = cls.control.get_logs()
+        try:
+            if cls.control.container is not None:
+                try:
+                    cls._print_emulator_stats_and_logs()
+                finally:
+                    # Reporting is diagnostics only. If it raises, the container must
+                    # still be removed, or it keeps holding this worker's port and
+                    # every later test class on the worker fails to start an emulator.
+                    cls.control.stop_emulator()
+        finally:
+            if cls.input_json_schema_path and cls.delete_json_input_schema_on_teardown:
+                os.remove(cls.input_json_schema_path)
 
+    @classmethod
+    def _print_emulator_stats_and_logs(cls) -> None:
+        """Prints the running emulator's query stats, and its logs when
+        show_emulator_logs_on_failure is set."""
+        logs = cls.control.get_logs()
+
+        print(f"\n\nStats for {cls.__name__}")
+        print("=" * 80)
+        if cls.use_zigquery and not cls.control.is_running():
+            print("Emulator is not running, so no stats are available.")
+        elif cls.use_zigquery:
+            stats = requests.get(
+                f"http://localhost:{cls.control.port}/debug/stats", timeout=10
+            ).json()
+            print(format_emulator_stats(stats))
+        else:
             parser = BigQueryEmulatorLogParser()
             parser.parse_logs(logs)
-            print(f"\n\nStats for {cls.__name__}")
-            print("=" * 80)
             parser.print_stats(n=10)
-            print("=" * 80)
+        print("=" * 80)
 
-            if cls.show_emulator_logs_on_failure:
-                print(logs)
-
-            cls.control.stop_emulator()
-
-        if cls.input_json_schema_path and cls.delete_json_input_schema_on_teardown:
-            os.remove(cls.input_json_schema_path)
+        if cls.show_emulator_logs_on_failure:
+            print(logs)
 
     def query(self, query: str) -> pd.DataFrame:
         return self.bq_client.run_query_async(
@@ -330,7 +457,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
                     ),
                 )
                 for dataset_list_item in self.bq_client.list_datasets()
-                for table_list_item in self.bq_client.list_tables(
+                for table_list_item in self.bq_client.list_tables_excluding_views(
                     dataset_list_item.dataset_id
                 )
             ]
@@ -339,22 +466,51 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
             future.result()
 
     def _wipe_emulator_data(self) -> None:
-        """Fully deletes all tables and datasets loaded into the emulator."""
+        """Deletes all tables and datasets loaded into the emulator, other than the
+        tables it was seeded with at startup.
+
+        Seeded tables are read-only fixture data shared by every test in the class,
+        so dropping them here would mean reloading them for the next test - which is
+        the cost seeding exists to avoid.
+        """
+        seeded_table_ids_by_dataset: dict[str, set[str]] = defaultdict(set)
+        for address in self.seeded_table_addresses:
+            seeded_table_ids_by_dataset[address.dataset_id].add(address.table_id)
+
         with futures.ThreadPoolExecutor(
             # Conservatively allow only half as many workers as allowed connections.
             # Lower this number if we see "urllib3.connectionpool:Connection pool is
             # full, discarding connection" errors.
             max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
         ) as executor:
-            to_delete = [
-                executor.submit(
-                    self.bq_client.delete_dataset,
-                    dataset_list_item.dataset_id,
-                    delete_contents=True,
-                    not_found_ok=True,
+            to_delete = []
+            for dataset_list_item in self.bq_client.list_datasets():
+                dataset_id = dataset_list_item.dataset_id
+                if dataset_id not in seeded_table_ids_by_dataset:
+                    to_delete.append(
+                        executor.submit(
+                            self.bq_client.delete_dataset,
+                            dataset_id,
+                            delete_contents=True,
+                            not_found_ok=True,
+                        )
+                    )
+                    continue
+                # The dataset holds seeded tables, so it has to stay - drop only the
+                # tables this test added to it.
+                seeded_table_ids = seeded_table_ids_by_dataset[dataset_id]
+                to_delete.extend(
+                    executor.submit(
+                        self.bq_client.delete_table,
+                        BigQueryAddress(
+                            dataset_id=dataset_id,
+                            table_id=table_list_item.table_id,
+                        ),
+                        not_found_ok=True,
+                    )
+                    for table_list_item in self.bq_client.list_tables(dataset_id)
+                    if table_list_item.table_id not in seeded_table_ids
                 )
-                for dataset_list_item in self.bq_client.list_datasets()
-            ]
 
         for future in futures.as_completed(to_delete):
             future.result()

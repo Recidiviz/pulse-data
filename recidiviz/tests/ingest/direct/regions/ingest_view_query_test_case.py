@@ -25,6 +25,7 @@ import logging
 
 import pandas as pd
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_sqlglot_helpers import get_undocumented_ctes
 from recidiviz.common.constants.states import StateCode
@@ -36,9 +37,6 @@ from recidiviz.ingest.direct.external_id_type_helpers import (
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
-    RawDataTableBigQuerySchemaBuilder,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -48,19 +46,20 @@ from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
+from recidiviz.tests.big_query.big_query_emulator_input_schema_json import SeededTable
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.big_query.sqlglot_helpers import (
     check_query_is_not_ordered_outside_of_windows,
 )
-from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
-    DirectIngestRawDataFixtureLoader,
-)
 from recidiviz.tests.ingest.direct.fixture_util import (
+    SHARED_CODE_FILE_FIXTURE_NAME,
     fixture_path_for_address,
     ingest_mapping_output_fixture_path,
+    uses_shared_code_file_fixture,
 )
+from recidiviz.tests.ingest.direct.raw_data_fixture import RawDataFixture
 from recidiviz.tests.ingest.direct.regions.base_ingest_test_cases import (
     BaseStateIngestTestCase,
 )
@@ -83,6 +82,7 @@ def lint_ingest_view_query(
         query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_data_datetime_upper_bound=query_run_dt,
+            parent_address_overrides=None,
         )
     )
     check_ingest_view_ctes_are_documented(query, ingest_view, state_code)
@@ -152,6 +152,15 @@ class StateIngestViewAndMappingTestCase(
     # __test__ = True to run.
     __test__ = False
 
+    # Every raw table each test reads is seeded into that test's own dataset when the
+    # emulator boots, so no test writes to the emulator and there is nothing to clean
+    # up between them. Wiping would only mean reseeding for the next test.
+    wipe_emulator_data_on_teardown = False
+
+    # Dataset prefix holding the empty raw tables test_validate_view_output_schema runs
+    # against, kept separate from any test's own data.
+    EMPTY_RAW_DATA_PREFIX = "empty_raw_data"
+
     @classmethod
     @abc.abstractmethod
     def state_code(cls) -> StateCode:
@@ -162,13 +171,118 @@ class StateIngestViewAndMappingTestCase(
     def ingest_view_builder(cls) -> DirectIngestViewQueryBuilder:
         """Returns the ingest view builder this test covers."""
 
+    @classmethod
+    def raw_data_dataset_id(cls) -> str:
+        """Returns the dataset the view's raw data would live in in production."""
+        return raw_tables_dataset_for_region(
+            state_code=cls.state_code(), instance=DirectIngestInstance.PRIMARY
+        )
+
+    @classmethod
+    def raw_data_dataset_id_for_prefix(cls, prefix: str) -> str:
+        """Returns the dataset holding the raw data belonging to |prefix| alone."""
+        return BigQueryAddressOverrides.format_sandbox_dataset(
+            prefix, cls.raw_data_dataset_id()
+        )
+
+    @classmethod
+    def characteristics_under_test(cls) -> list[str]:
+        """Returns the characteristic of every ingest view test defined on this class,
+        i.e. the `x` of each `test_<view name>__for__<x>` method."""
+        characteristics = sorted(
+            {
+                cls.get_ingest_view_name_and_characteristic(name)[1]
+                for name in dir(cls)
+                if cls.INGEST_TEST_NAME_REGEX.match(name)
+                and callable(getattr(cls, name))
+            }
+        )
+        if cls.EMPTY_RAW_DATA_PREFIX in characteristics:
+            raise ValueError(
+                f"Class [{cls.__name__}] has a test for characteristic "
+                f"[{cls.EMPTY_RAW_DATA_PREFIX}], which is reserved for the empty raw "
+                f"data seeded for test_validate_view_output_schema. Rename the test."
+            )
+        return characteristics
+
+    @classmethod
+    def _fixtures_by_file_tag(
+        cls, *, shared_code_files: bool
+    ) -> dict[str, RawDataFixture]:
+        """Returns this view's raw data dependencies, keyed by file tag, restricted to
+        either the ones whose fixture is shared across tests or the ones whose is not.
+        """
+        return {
+            dependency.raw_file_config.file_tag: RawDataFixture(
+                dependency.raw_file_config
+            )
+            for dependency in cls.ingest_view_builder().raw_table_dependency_configs
+            if uses_shared_code_file_fixture(
+                cls.state_code(), dependency.raw_file_config
+            )
+            is shared_code_files
+        }
+
+    @classmethod
+    def get_seeded_tables(cls) -> list[SeededTable]:
+        """Returns every raw table every test in this class reads, for the emulator to
+        create and populate as it boots.
+
+        Tables whose fixture varies by test are seeded once per test, each into its own
+        dataset, and read by way of the address overrides built in
+        raw_data_address_overrides(). Shared code files do not vary, so they are seeded
+        once into the region's real raw data dataset and left un-overridden - copying
+        them per test would mean seeding the same multi-megabyte fixture several times
+        over.
+
+        Together this lets one emulator serve the whole class without any test loading
+        fixtures over HTTP or cleaning up after itself.
+        """
+        seeded_tables = [
+            fixture.to_seeded_table(
+                test_identifier=SHARED_CODE_FILE_FIXTURE_NAME,
+                dataset_id=cls.raw_data_dataset_id(),
+            )
+            for fixture in cls._fixtures_by_file_tag(shared_code_files=True).values()
+        ]
+        per_test_fixtures = cls._fixtures_by_file_tag(shared_code_files=False)
+        seeded_tables.extend(
+            fixture.to_seeded_table(
+                test_identifier=characteristic,
+                dataset_id=cls.raw_data_dataset_id_for_prefix(characteristic),
+            )
+            for characteristic in cls.characteristics_under_test()
+            for fixture in per_test_fixtures.values()
+        )
+        # test_validate_view_output_schema runs the view against empty raw tables.
+        seeded_tables.extend(
+            fixture.to_empty_seeded_table(
+                dataset_id=cls.raw_data_dataset_id_for_prefix(cls.EMPTY_RAW_DATA_PREFIX)
+            )
+            for fixture in per_test_fixtures.values()
+        )
+        return seeded_tables
+
+    @classmethod
+    def raw_data_address_overrides(cls, prefix: str) -> BigQueryAddressOverrides:
+        """Returns overrides pointing the raw tables whose data varies by test at the
+        dataset seeded for |prefix|, so the query reads only that test's data.
+
+        Shared code files are deliberately left out: they are seeded once, in the real
+        raw data dataset, which is where an un-overridden query already looks for them.
+        """
+        builder = BigQueryAddressOverrides.Builder(sandbox_prefix=prefix)
+        raw_data_dataset_id = cls.raw_data_dataset_id()
+        for file_tag in cls._fixtures_by_file_tag(shared_code_files=False):
+            builder.register_sandbox_override_for_address(
+                BigQueryAddress(dataset_id=raw_data_dataset_id, table_id=file_tag)
+            )
+        return builder.build()
+
     def setUp(self) -> None:
         super().setUp()
         # Is replaced in some downstream tests
         self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
-        self.raw_fixture_delegate = DirectIngestRawDataFixtureLoader(
-            self.state_code(), emulator_test=self
-        )
         self.ingest_view_manifest_compiler = self.build_ingest_view_manifest_compiler()
 
     def test_validate_view_output_schema(self) -> None:
@@ -180,29 +294,15 @@ class StateIngestViewAndMappingTestCase(
           supported by ingest mappings).
         """
         ingest_view_name = self.ingest_view_builder().ingest_view_name
-        raw_table_dataset = raw_tables_dataset_for_region(
-            state_code=self.state_code(),
-            instance=DirectIngestInstance.PRIMARY,
-        )
-        self.bq_client.create_dataset_if_necessary(dataset_id=raw_table_dataset)
-
-        raw_table_file_tags_to_load = {
-            d.file_tag: d.raw_file_config
-            for d in self.ingest_view_builder().raw_table_dependency_configs
-        }
-
-        for file_tag, raw_config in raw_table_file_tags_to_load.items():
-            schema = RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
-                raw_file_config=raw_config
-            )
-            address = BigQueryAddress(dataset_id=raw_table_dataset, table_id=file_tag)
-
-            self.create_mock_table(address, schema)
-
+        # The empty copies of this view's raw tables were created when the emulator
+        # booted - see get_seeded_tables().
         view_query = self.ingest_view_builder().build_query(
             query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_data_datetime_upper_bound=self.query_run_dt,
+                parent_address_overrides=self.raw_data_address_overrides(
+                    self.EMPTY_RAW_DATA_PREFIX
+                ),
             )
         )
         query_job = self.bq_client.run_query_async(
@@ -258,16 +358,9 @@ class StateIngestViewAndMappingTestCase(
         if ingest_view_name != expected_ingest_view_name:
             self.fail(f"Test must begin with `test_{expected_ingest_view_name}`")
 
-        lint_ingest_view_query(
-            self.ingest_view_builder(), self.query_run_dt, self.state_code()
-        )
-
-        self.raw_fixture_delegate.load_raw_fixtures_to_emulator(
-            [self.ingest_view_builder()],
-            characteristic,
-            create_tables=True,
-        )
-        results = self._run_ingest_view_query()
+        # This test's raw data was seeded into its own dataset when the emulator
+        # booted - see get_seeded_tables().
+        results = self._run_ingest_view_query(characteristic)
 
         expected_output_fixture_path = fixture_path_for_address(
             self.state_code(),
@@ -295,12 +388,16 @@ class StateIngestViewAndMappingTestCase(
             characteristic=characteristic,
         )
 
-    def _run_ingest_view_query(self) -> pd.DataFrame:
-        """Uses the ingest view query run by Dataflow pipelines to query raw data."""
+    def _run_ingest_view_query(self, characteristic: str) -> pd.DataFrame:
+        """Uses the ingest view query run by Dataflow pipelines to query the raw data
+        seeded for |characteristic|."""
         view_query = self.ingest_view_builder().build_query(
             query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_data_datetime_upper_bound=self.query_run_dt,
+                parent_address_overrides=self.raw_data_address_overrides(
+                    characteristic
+                ),
             )
         )
         query_job = self.bq_client.run_query_async(
@@ -417,3 +514,8 @@ class StateIngestViewAndMappingTestCase(
             )
             actual_trees = tree_buffer.getvalue()
         self.assertEqual(actual_trees, expected_trees)
+
+    def test_validate_view_query_linting(self) -> None:
+        lint_ingest_view_query(
+            self.ingest_view_builder(), self.query_run_dt, self.state_code()
+        )

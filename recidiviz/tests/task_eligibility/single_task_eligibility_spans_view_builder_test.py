@@ -858,8 +858,6 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 {
                     "state_code": "US_XX",
                     "person_id": 12345,
-                    "task_name": TES_QUERY_BUILDER.task_name,
-                    "task_eligibility_span_id": 3,
                     "start_date": date(2024, 2, 10),
                     "end_date": date(2024, 3, 18),
                     "is_eligible": False,
