@@ -87,6 +87,7 @@ output:
                       StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
                         - "G02 // Supervision Transfer"
                         - "G10 // Caseload Reassignment"
+                        - "G16 // Caseload Transfer"
                         - "S11 // EM Started/Continued"
                         - "S12 // EM Ended"
                         - "G14 // Returned to Community"
@@ -174,6 +175,7 @@ output:
                               - "G01 // Intake Parole Case"
                               - "G02 // Supervision Transfer"
                               - "G10 // Caseload Reassignment"
+                              - "G16 // Caseload Transfer"
                               - "S11 // EM Started/Continued"
                               - "S12 // EM Ended"
                               - "S60 // Appeared in Court"
