@@ -759,6 +759,125 @@ class TestUsIaEarlyDischargeStatusTracker(TestCase):
                 _TEST_MESSAGE_ID, mock_firestore
             )
 
+    def test_get_charges_blocking_resubmission_doc_missing_returns_empty(
+        self,
+    ) -> None:
+        tracker, mock_firestore = self._tracker()
+        mock_doc = MagicMock()
+        mock_doc.exists = False
+        mock_firestore.get_document.return_value.get.return_value = mock_doc
+
+        self.assertEqual(tracker.get_charges_blocking_resubmission(), {})
+
+    def test_get_charges_blocking_resubmission_no_charges_map_returns_empty(
+        self,
+    ) -> None:
+        tracker, mock_firestore = self._tracker()
+        mock_doc = MagicMock()
+        mock_doc.exists = True
+        mock_doc.to_dict.return_value = {}
+        mock_firestore.get_document.return_value.get.return_value = mock_doc
+
+        self.assertEqual(tracker.get_charges_blocking_resubmission(), {})
+
+    def test_get_charges_blocking_resubmission_in_progress_blocks(self) -> None:
+        tracker, mock_firestore = self._tracker()
+        mock_doc = MagicMock()
+        mock_doc.exists = True
+        mock_doc.to_dict.return_value = {
+            "charges": {
+                "CHG789": {
+                    "iconSubmissionStatus": ExternalSystemRequestStatus.IN_PROGRESS.value
+                },
+                "CHG790": {
+                    "iconSubmissionStatus": ExternalSystemRequestStatus.IN_PROGRESS.value
+                },
+            }
+        }
+        mock_firestore.get_document.return_value.get.return_value = mock_doc
+
+        self.assertEqual(
+            tracker.get_charges_blocking_resubmission(),
+            {
+                "CHG789": ExternalSystemRequestStatus.IN_PROGRESS.value,
+                "CHG790": ExternalSystemRequestStatus.IN_PROGRESS.value,
+            },
+        )
+
+    def test_get_charges_blocking_resubmission_success_blocks(self) -> None:
+        tracker, mock_firestore = self._tracker()
+        mock_doc = MagicMock()
+        mock_doc.exists = True
+        mock_doc.to_dict.return_value = {
+            "charges": {
+                "CHG789": {
+                    "iconSubmissionStatus": ExternalSystemRequestStatus.SUCCESS.value
+                },
+                "CHG790": {
+                    "iconSubmissionStatus": ExternalSystemRequestStatus.SUCCESS.value
+                },
+            }
+        }
+        mock_firestore.get_document.return_value.get.return_value = mock_doc
+
+        self.assertEqual(
+            tracker.get_charges_blocking_resubmission(),
+            {
+                "CHG789": ExternalSystemRequestStatus.SUCCESS.value,
+                "CHG790": ExternalSystemRequestStatus.SUCCESS.value,
+            },
+        )
+
+    def test_get_charges_blocking_resubmission_failure_does_not_block(self) -> None:
+        tracker, mock_firestore = self._tracker()
+        mock_doc = MagicMock()
+        mock_doc.exists = True
+        mock_doc.to_dict.return_value = {
+            "charges": {
+                "CHG789": {
+                    "iconSubmissionStatus": ExternalSystemRequestStatus.FAILURE.value
+                },
+                "CHG790": {
+                    "iconSubmissionStatus": ExternalSystemRequestStatus.FAILURE.value
+                },
+            }
+        }
+        mock_firestore.get_document.return_value.get.return_value = mock_doc
+
+        self.assertEqual(tracker.get_charges_blocking_resubmission(), {})
+
+    def test_get_charges_blocking_resubmission_no_prior_submission_does_not_block(
+        self,
+    ) -> None:
+        tracker, mock_firestore = self._tracker()
+        mock_doc = MagicMock()
+        mock_doc.exists = True
+        mock_doc.to_dict.return_value = {"charges": {}}
+        mock_firestore.get_document.return_value.get.return_value = mock_doc
+
+        self.assertEqual(tracker.get_charges_blocking_resubmission(), {})
+
+    def test_get_charges_blocking_resubmission_mixed_statuses(self) -> None:
+        tracker, mock_firestore = self._tracker()
+        mock_doc = MagicMock()
+        mock_doc.exists = True
+        mock_doc.to_dict.return_value = {
+            "charges": {
+                "CHG789": {
+                    "iconSubmissionStatus": ExternalSystemRequestStatus.IN_PROGRESS.value
+                },
+                "CHG790": {
+                    "iconSubmissionStatus": ExternalSystemRequestStatus.FAILURE.value
+                },
+            }
+        }
+        mock_firestore.get_document.return_value.get.return_value = mock_doc
+
+        self.assertEqual(
+            tracker.get_charges_blocking_resubmission(),
+            {"CHG789": ExternalSystemRequestStatus.IN_PROGRESS.value},
+        )
+
     def test_firestore_path_uses_correct_state_prefix(self) -> None:
         tracker, mock_firestore = self._tracker()
         tracker.set_status(ExternalSystemRequestStatus.IN_PROGRESS)

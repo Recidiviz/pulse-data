@@ -2290,6 +2290,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
         expected_payload = {**self._IA_REQUEST_BODY, "should_queue_task": False}
         mock_executor.return_value.to_cloud_task_payload.return_value = expected_payload
+        mock_executor.return_value.create_status_tracker.return_value.get_charges_blocking_resubmission.return_value = (
+            {}
+        )
 
         with self.test_app.test_request_context():
             response = self.test_client.post(
@@ -2325,6 +2328,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "us_ia", "po@ia.gov", routes={"workflowsSupervision": True}
         )
         body = {**self._IA_REQUEST_BODY, "shouldQueueTask": False}
+        mock_executor.return_value.create_status_tracker.return_value.get_charges_blocking_resubmission.return_value = (
+            {}
+        )
 
         with self.test_app.test_request_context():
             response = self.test_client.post(
@@ -2406,6 +2412,30 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         mock_executor.assert_not_called()
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.UsIaEarlyDischargeWritebackExecutor",
+        autospec=True,
+    )
+    def test_submit_early_discharge_form_blocking_charges_returns_409(
+        self, mock_executor: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_ia", "po@ia.gov", routes={"workflowsSupervision": True}
+        )
+        mock_executor.return_value.create_status_tracker.return_value.get_charges_blocking_resubmission.return_value = {
+            "CHG789": ExternalSystemRequestStatus.IN_PROGRESS.value
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_IA/submit_early_discharge_form",
+                headers={"Origin": "http://localhost:3000"},
+                json=self._IA_REQUEST_BODY,
+            )
+
+        mock_executor.return_value.execute.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.CONFLICT)
 
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.UsIaEarlyDischargeWritebackExecutor",

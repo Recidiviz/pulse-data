@@ -444,6 +444,27 @@ class UsIaEarlyDischargeStatusTracker(WritebackStatusTracker):
             firestore_client=firestore_client,
         )
 
+    def get_charges_blocking_resubmission(self) -> dict[str, str]:
+        """Returns a map of charge_id to current status for charges that cannot be resubmitted.
+
+        Only charges with FAILURE status (or no prior submission) may be resubmitted.
+        IN_PROGRESS and SUCCESS charges block resubmission.
+        """
+        doc = self.firestore_client.get_document(self.firestore_path).get()
+        if not doc.exists:
+            return {}
+        charges: dict = (doc.to_dict() or {}).get("charges", {})
+        blocking_statuses = {
+            ExternalSystemRequestStatus.IN_PROGRESS.value,
+            ExternalSystemRequestStatus.SUCCESS.value,
+        }
+        result = {}
+        for charge_id in self.charge_ids:
+            status = charges.get(charge_id, {}).get("iconSubmissionStatus")
+            if status in blocking_statuses:
+                result[charge_id] = status
+        return result
+
     def record_pending_message_id(self, message_id: str) -> None:
         """Write a submission record so the callback endpoint can look up this submission by message ID."""
         self.firestore_client.set_document(

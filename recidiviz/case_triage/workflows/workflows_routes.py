@@ -1016,18 +1016,22 @@ def create_workflows_api_blueprint() -> Blueprint:
                 f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
             )
 
+        executor = UsIaEarlyDischargeWritebackExecutor(parsed_request_body)
+        blocking = executor.create_status_tracker().get_charges_blocking_resubmission()
+        if blocking:
+            return jsonify_response(
+                f"Cannot resubmit charges with active or successful status: {blocking}",
+                HTTPStatus.CONFLICT,
+            )
+
         if parsed_request_body.should_queue_task:
             return handle_writeback_enqueue(
-                writeback_executor=UsIaEarlyDischargeWritebackExecutor(
-                    parsed_request_body
-                ),
+                writeback_executor=executor,
                 base_url=cloud_run_metadata.url,
                 handler_path="/workflows/external_request/US_IA/handle_early_discharge_form",
                 service_account_email=cloud_run_metadata.service_account_email,
             )
-        return handle_writeback(
-            writeback_executor=UsIaEarlyDischargeWritebackExecutor(parsed_request_body)
-        )
+        return handle_writeback(writeback_executor=executor)
 
     @workflows_api.post("/external_request/<state>/handle_early_discharge_form")
     @requires_pydantic_schema(UsIaEarlyDischargeRequestData)
