@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+launch_env:
+  $env: feature__coms_2026_enabled
+input_columns:
+  OMNI_Staff_Omni_Employee_Id: STRING
+  RecId: STRING
+  First_Name: STRING
+  Middle_Name: STRING
+  Last_Name: STRING
+  Email: STRING
+  Job_Title: STRING
+  Work_Unit_Code: STRING
+  Status: STRING
+  period_start: DATETIME
+  period_end: DATETIME
+  period_id: INTEGER
+unused_columns:
+  - Status
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: OMNI_Staff_Omni_Employee_Id
+          id_type: $literal("US_MI_OMNI_USER")
+      - $conditional:
+          - $if:
+              $not_null: RecId
+            $then:
+              StateStaffExternalId:
+                external_id: RecId
+                id_type: $literal("US_MI_COMPAS_USER")
+    full_name:
+      $person_name:
+        $given_names: First_Name
+        $middle_names: Middle_Name
+        $surname: Last_Name
+    email: Email
+    # if this period has a non-NULL Job_Title value, create a role period
+    # TODO(MI-8680): Confirm Job_Title are similar enough to Position values from OMNI that we can use the same parser
+    role_periods:
+      - $conditional:
+          - $if:
+              $not_null: Job_Title
+            $then:
+              StateStaffRolePeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("COMS-2026-")
+                      - OMNI_Staff_Omni_Employee_Id
+                      - period_id
+                start_date: period_start
+                end_date: period_end
+                role_type:
+                  $enum_mapping:
+                    $raw_text: Job_Title
+                    $custom_parser: us_mi_custom_enum_parsers.parse_staff_role_type
+                role_subtype:
+                  $enum_mapping:
+                    $raw_text: Job_Title
+                    $custom_parser: us_mi_custom_enum_parsers.parse_staff_role_subtype
+    # if this period has a non-NULL Work_Unit_Code value, create a location period
+    location_periods:
+      - $conditional:
+          - $if:
+              $not_null: Work_Unit_Code
+            $then:
+              StateStaffLocationPeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("COMS-2026-")
+                      - OMNI_Staff_Omni_Employee_Id
+                      - period_id
+                start_date: period_start
+                end_date: period_end
+                location_external_id:
+                  $concat:
+                    $values:
+                      - $literal("COMS-")
+                      - Work_Unit_Code
