@@ -25,6 +25,7 @@ my_flat_field:
             arg_2: <expression>
 """
 import datetime
+import re
 from re import findall, search
 from typing import Optional
 
@@ -35,6 +36,30 @@ from recidiviz.common.str_field_utils import (
 from recidiviz.ingest.direct.regions.us_mi.constants import (
     CLASSIFICATION_2026_VIOLENT_OFFENSE_NUMBERS,
 )
+from recidiviz.ingest.direct.regions.us_mi.us_mi_custom_enum_parsers import (
+    map_admission_reason_based_on_COMS_status_start,
+)
+
+# Must match the separator view_supervision_periods_COMS_2026 uses when it builds
+# modifiers_list with STRING_AGG.
+COMS_MODIFIERS_LIST_SEPARATOR = ","
+
+_IN_CUSTODY_COMS_MODIFIERS = frozenset(
+    {
+        "MPVU",
+        "Pending Revocation Hearing",
+        "Paroled to Custody",
+        "In Prison",
+        "In Jail",
+        "Paroled to Custody (Fed/Outstate)",
+        "#2 Warrant Issued Sentenced Over 90 Days",
+        "#2 Warrant Issued",
+    }
+)
+
+_ABSCONDED_COMS_MODIFIER = "Absconded"
+
+_ABSCONSION_OR_ESCAPE_REGEX = re.compile(r"ABSCONDED|ESCAPED")
 
 nonbondable_offense_code = [
     "007",  # Assault and Battery (Prisoner victim)
@@ -187,6 +212,38 @@ def parse_offense_type_ids(offense_type_ids: str, result_field: str) -> bool:
 def is_coms_level(supervision_level_value: str) -> bool:
     """Returns True if the supervsion level is coming from COMS (based on the fact it has multiple parts separated by underscores)"""
     return len(supervision_level_value.split("_")) > 1
+
+
+def _split_coms_modifiers_list(modifiers_list: str) -> set[str]:
+    return set(modifiers_list.split(COMS_MODIFIERS_LIST_SEPARATOR))
+
+
+def has_in_custody_modifier(modifiers_list: str) -> bool:
+    """Returns whether modifiers_list, a comma-separated list of COMS modifiers,
+    includes a modifier that means the person is in custody."""
+    return bool(_split_coms_modifiers_list(modifiers_list) & _IN_CUSTODY_COMS_MODIFIERS)
+
+
+def has_absconded_modifier(modifiers_list: str) -> bool:
+    """Returns whether modifiers_list, a comma-separated list of COMS modifiers,
+    includes the Absconded modifier."""
+    return _ABSCONDED_COMS_MODIFIER in _split_coms_modifiers_list(modifiers_list)
+
+
+def has_absconsion_or_escape_modifier(modifiers_list: str) -> bool:
+    """Returns whether modifiers_list, a comma-separated list of COMS modifiers,
+    includes a modifier that mentions absconding or escaping."""
+    return _ABSCONSION_OR_ESCAPE_REGEX.search(modifiers_list.upper()) is not None
+
+
+def can_map_admission_reason_from_COMS_status_start(status_start_reasons: str) -> bool:
+    """Returns whether map_admission_reason_based_on_COMS_status_start maps
+    status_start_reasons to an admission reason, so the mapping can fall back to
+    movement data when it doesn't."""
+    return (
+        map_admission_reason_based_on_COMS_status_start(status_start_reasons)
+        is not None
+    )
 
 
 def supervision_type_info_from_COMS(supervision_level: str, modifier: str) -> bool:

@@ -1125,6 +1125,8 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_mi_ingest_view_results.state_staff_role_location_period_LEGACY",
     "us_mi_ingest_view_results.state_staff_role_period_COMS",
     "us_mi_ingest_view_results.state_staff_supervisor_period",
+    "us_mi_ingest_view_results.supervision_periods_COMS_2026",
+    "us_mi_ingest_view_results.supervision_periods_LEGACY",
     "us_mi_ingest_view_results.supervision_periods_v2",
     "us_mi_ingest_view_results.supervision_violations",
     "us_mi_ingest_view_results.supervision_violations_coms",
