@@ -14,5 +14,12 @@ exclusions:
   - validation_name: case_insights_record_sentencing_charge_record_offense_mismatch
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Sentencing assistant case insights are not configured/launched for this state
+  - validation_name: in_custody_sps_have_associated_ip
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: >-
+      CO marks people held in county jail with SUPVSTATUS "AR // Arrested", which maps
+      to supervision level IN_CUSTODY. CO does not ingest county jail stays as
+      incarceration periods, so these supervision periods have no matching
+      incarceration period by design.
 max_allowed_error_overrides: []
 num_allowed_rows_overrides: []

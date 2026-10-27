@@ -36,7 +36,7 @@ output:
                   $equal:
                     - REASONSUPVEVENT
                     - $literal("24 // Absconder-Warrant Issued") # TODO(#53644): Get this value into supervision_type_raw_text
-                $then: $literal_enum(StateSupervisionPeriodSupervisionType.BENCH_WARRANT)
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
               - $else_if:
                   $equal:
                     - REASONSUPVEVENT
@@ -49,8 +49,6 @@ output:
                       StateSupervisionPeriodSupervisionType.ABSCONSION:
                         - "AB // AWOL (Absconded)"
                         - "AW // AWOL"
-                      StateSupervisionPeriodSupervisionType.BENCH_WARRANT:
-                        - "AR // Arrested"
                       StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
                         - "IN // Inmate Receiving Parole Services"
                         - "SP // Inmate Receiving TSP"
@@ -58,6 +56,8 @@ output:
                         - "DP // Deported"
                       StateSupervisionPeriodSupervisionType.PAROLE:
                         - "AC // Active"
+                        # Arrested people are held in county jail and stay on supervision.
+                        - "AR // Arrested"
                         - "EM // On Electronic Monitoring"
                       StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
                         - "DT // Detained"
@@ -220,6 +220,16 @@ output:
           supervision_level:
             $conditional:
               - $if:
+                  $equal:
+                    - SUPVSTATUS
+                    - $literal("AR // Arrested")
+                $then:
+                  $enum_mapping:
+                    $raw_text: SUPVSTATUS
+                    $mappings:
+                      StateSupervisionLevel.IN_CUSTODY:
+                        - "AR // Arrested"
+              - $else_if:
                   $in:
                     $value: SUPVTYPE
                     $options:
@@ -245,6 +255,18 @@ output:
                         - "5 // Intensive Supervision Program (ISP)"
                       StateSupervisionLevel.UNASSIGNED:
                         - "9 // Unassigned"
+          # ISP-Inmate people also have an open incarceration period, so their supervision
+          # sessions are labeled SUPERVISION_OUT_OF_STATE, and the Workflows client record
+          # keeps those sessions only with supervision custodial authority. Other inmate
+          # supervision types (e.g. 1G, 1R) are left unset until CDOC confirms they should
+          # appear as clients. See TODO(#53644) in view_SupervisionPeriod.py for the rest.
+          custodial_authority:
+            $conditional:
+              - $if:
+                  $equal:
+                    - SUPVTYPE
+                    - $literal("1N // ISP-Inmate")
+                $then: $literal_enum(StateCustodialAuthority.SUPERVISION_AUTHORITY)
           supervising_officer_staff_external_id: PPOFFICERID
           supervising_officer_staff_external_id_type:
             $conditional:
