@@ -20,6 +20,7 @@ Git repository manager for handling common git operations.
 import logging
 import os
 import re
+import shlex
 from pathlib import Path
 
 import attr
@@ -29,6 +30,23 @@ from recidiviz.tools.utils.script_helpers import run_command
 _GITHUB_REMOTE_URL_REGEX = re.compile(
     r"(?:https://github\.com/|git@github\.com:)(?P<slug>[^/]+/[^/]+?)(?:\.git)?$"
 )
+
+# Holds the token that GitManager.clone_repo authenticates with. The credential
+# helper below reads it at request time, so the token never appears in a command
+# line, a remote URL, or the clone's .git/config.
+_GITHUB_TOKEN_ENV_VAR = "RECIDIVIZ_GIT_MANAGER_GITHUB_TOKEN"  # nosec B105
+
+# Answers a git credential request with the token as the password. GitHub
+# accepts classic PATs, fine-grained PATs, and GitHub App installation tokens in
+# this form.
+_GITHUB_TOKEN_CREDENTIAL_HELPER = (
+    "!f() { echo username=x-access-token; "
+    f'echo "password=${_GITHUB_TOKEN_ENV_VAR}"; }}; f'
+)
+
+# Registers the helper for github.com only, so git never offers the token to
+# another host, such as one a clone redirects to.
+_GITHUB_CREDENTIAL_HELPER_CONFIG_KEY = "credential.https://github.com.helper"
 
 
 @attr.define
@@ -51,20 +69,26 @@ class GitManager:
 
     @classmethod
     def _clone_repo_and_create_manager(
-        cls, repo_url: str, repo_root: Path
+        cls, repo_url: str, repo_root: Path, git_config_entries: list[str]
     ) -> "GitManager":
         """Clone the given repository and return a GitManager for it.
 
         Args:
             repo_url: URL of the repository to clone
             repo_root: Local path to clone the repository into
+            git_config_entries: "key=value" settings that git clone writes into
+                the new repository's .git/config, in order, so later fetches and
+                pushes use them too
         """
         if os.path.exists(repo_root):
             raise ValueError(
                 f"Cannot clone repository into {repo_root} - path already exists."
             )
 
-        run_command(f"git clone {repo_url} {repo_root}")
+        config_args = "".join(
+            f" -c {shlex.quote(entry)}" for entry in git_config_entries
+        )
+        run_command(f"git clone{config_args} {repo_url} {repo_root}")
 
         return cls(repo_root=repo_root)
 
@@ -74,6 +98,11 @@ class GitManager:
     ) -> "GitManager":
         """Clone the given repository and return a GitManager for it.
 
+        Sets the RECIDIVIZ_GIT_MANAGER_GITHUB_TOKEN environment variable for the
+        rest of this process. The clone's credential helper reads the token from
+        that variable, so later fetches and pushes from the returned GitManager
+        authenticate too.
+
         Args:
             github_token: GitHub token for authentication
             repo_name: Name of the repository (e.g., "Recidiviz/looker")
@@ -82,10 +111,17 @@ class GitManager:
         Returns:
             GitManager: An instance of GitManager for the cloned repository.
         """
-        repo_url = f"https://{github_token}@github.com/{repo_name}.git"
+        os.environ[_GITHUB_TOKEN_ENV_VAR] = github_token
 
         return cls._clone_repo_and_create_manager(
-            repo_url=repo_url, repo_root=repo_root
+            repo_url=f"https://github.com/{repo_name}.git",
+            repo_root=repo_root,
+            git_config_entries=[
+                # An empty value clears any credential helpers configured
+                # globally, so only the token helper answers.
+                "credential.helper=",
+                f"{_GITHUB_CREDENTIAL_HELPER_CONFIG_KEY}={_GITHUB_TOKEN_CREDENTIAL_HELPER}",
+            ],
         )
 
     @classmethod
@@ -104,7 +140,7 @@ class GitManager:
         repo_url = f"https://github.com/{repo_name}.git"
 
         return cls._clone_repo_and_create_manager(
-            repo_url=repo_url, repo_root=repo_root
+            repo_url=repo_url, repo_root=repo_root, git_config_entries=[]
         )
 
     def _delete_remote_branch(self, branch_name: str) -> None:
