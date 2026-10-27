@@ -49,6 +49,9 @@ from recidiviz.calculator.query.state.views.analyst_data.notion_linear_roadmap_l
 from recidiviz.calculator.query.state.views.analyst_data.us_co.us_co_certificate_awards_to_sentence_credits import (
     US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_sentencing_assessment_report_compliance_rate import (
+    US_MO_SENTENCING_ASSESSMENT_REPORT_COMPLIANCE_RATE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
 )
@@ -224,6 +227,12 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
     US_CO_WORK_ENGAGEMENT_VIEW_BUILDER.address: (
         "CO Work Credit Writeback File #1 for new Earned Credit Policy. Work tracked in TODO(OBT-37777)."
         "(Shalin Brahmbhatt, 2026-08-26)"
+    ),
+    US_MO_SENTENCING_ASSESSMENT_REPORT_COMPLIANCE_RATE_VIEW_BUILDER.address: (
+        "New MO SAR/PSR report-level compliance-rate metric, part of the "
+        "[US_MO] Rollout Analysis Plan. Queried directly for DA/PM reporting "
+        "rather than a tracked downstream BQ view. Tracked in TODO(MO-19). "
+        "(Regina Medina, 2026-09-26)"
     ),
     **{
         builder.address: (
