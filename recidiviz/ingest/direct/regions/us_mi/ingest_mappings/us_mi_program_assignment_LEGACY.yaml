@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_program_assignment_LEGACY` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: feature__coms_2026_enabled
+input_columns:
+  Program_Recommendation_Id: STRING
+  leg_sequence_num: INTEGER
+  Offender_Number: STRING
+  Program: STRING
+  Program_Status: STRING
+  Program_End_Reason: STRING
+  Referral_Date: DATE
+  Start_Date: DATE
+  End_Date: DATE
+  Program_Status_Date: DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id:
+            $concat:
+              $values:
+                - $literal("COMS")
+                - Program_Recommendation_Id
+                - leg_sequence_num
+          program_id: Program
+          referral_date: Referral_Date
+          start_date: Start_Date
+          discharge_date: End_Date
+          # Keeps the program name and raw status values in their original casing
+          # for the Workflows records that show them to staff. The recommendation id
+          # groups the legs of one recommendation.
+          referral_metadata:
+            $json_dict:
+              PROGRAM_RECOMMENDATION_ID: Program_Recommendation_Id
+              PROGRAM: Program
+              PROGRAM_STATUS: Program_Status
+              PROGRAM_END_REASON: Program_End_Reason
+              PROGRAM_STATUS_DATE: Program_Status_Date
+          participation_status:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - Program_Status
+                    - Program_End_Reason
+                  $separator: "##"
+              $mappings:
+                StateProgramAssignmentParticipationStatus.IN_PROGRESS:
+                  - "Active##NONE"
+                  - "Active##COMS Migration"
+                  # A few Active or Waiting legs carry a stray end reason; the
+                  # status wins.
+                  - "Active##Completed"
+                StateProgramAssignmentParticipationStatus.PENDING:
+                  - "Waiting##NONE"
+                  - "Waiting##Transferred"
+                  - "Waiting##Involuntary Termination"
+                  - "Waiting##COMS Migration"
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                  - "Closed##Completed"
+                  - "Closed##GED/HSE Verified"
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                  - "Closed##Segregation/Misconduct"
+                  - "Closed##Involuntary Termination"
+                  - "Closed##Removal for Behavior"
+                  - "Closed##Lack of Progress/Participation"
+                  - "Closed##Voluntary Termination"
+                StateProgramAssignmentParticipationStatus.REFUSED:
+                  - "Closed##Refusal/Decline"
+                StateProgramAssignmentParticipationStatus.DENIED:
+                  - "Closed##Does Not Meet Criteria"
+                  - "Closed##Treatment Denied"
+                  - "Closed##MSAPP Non-Admission/Amenability"
+                StateProgramAssignmentParticipationStatus.DECEASED:
+                  - "Closed##Death"
+                StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                  - "Closed##Transferred"
+                  - "Closed##Discontinued Program"
+                  - "Closed##Paroled"
+                  - "Closed##Discharged"
+                  - "Closed##Medical/Psych Reason"
+                  - "Closed##Delay"
+                  - "Closed##SORA Needed"
+                  # Waived, Exempt and Override release the person from the
+                  # requirement without them finishing the program.
+                  - "Closed##Waived"
+                  - "Closed##Exempt"
+                  - "Closed##Override"
+                StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN:
+                  # Every column but the id and person is NULL on these rows.
+                  - "NONE##NONE"
+                  - "NONE##COMS Migration"

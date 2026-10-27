@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_program_assignment_COMS_2026` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: feature__coms_2026_enabled
+input_columns:
+  Interventions_Id: STRING
+  Offender_Number: STRING
+  Program_Type: STRING
+  Service_Type: STRING
+  End_Reason: STRING
+  Eligible_Date: DATE
+  Start_Date: DATE
+  End_Date: DATE
+  Entered_Date: DATE
+unused_columns: []
+variables:
+  # TODO(MI-8681): Check whether any rows have an End_Date but no End_Reason. This
+  # variable marks those rows IN_PROGRESS even though they carry a discharge date.
+  - in_progress_status:
+      $and:
+        - $is_null: End_Reason
+        - $not_null: Start_Date
+  - pending_status:
+      $and:
+        - $is_null: End_Reason
+        - $is_null: Start_Date
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id:
+            $concat:
+              $values:
+                - $literal("COMS")
+                - Interventions_Id
+          program_id:
+            $concat:
+              $values:
+                - Program_Type
+                - Service_Type
+          referral_date: Eligible_Date
+          start_date: Start_Date
+          discharge_date: End_Date
+          referral_metadata:
+            $json_dict:
+              PROGRAM_RECOMMENDATION_ID: Interventions_Id
+              PROGRAM:
+                $concat:
+                  $values:
+                    - Program_Type
+                    - Service_Type
+              # TODO(MI-8681): Confirm this mapping is correct with the real data.  Then decide whether
+              # we keep this language or not.
+              PROGRAM_STATUS:
+                $conditional:
+                  - $if: $variable(in_progress_status)
+                    $then: $literal("Active")
+                  - $else_if: $variable(pending_status)
+                    $then: $literal("Waiting")
+                  - $else: $literal("Closed")
+              PROGRAM_END_REASON: End_Reason
+              PROGRAM_STATUS_DATE: Entered_Date
+          participation_status:
+            $conditional:
+              - $if: $variable(in_progress_status)
+                $then: $literal_enum(StateProgramAssignmentParticipationStatus.IN_PROGRESS)
+              - $else_if: $variable(pending_status)
+                $then: $literal_enum(StateProgramAssignmentParticipationStatus.PENDING)
+              # TODO(MI-8681): Confirm these are all the end reason values in the real data
+              - $else:
+                  $enum_mapping:
+                    $raw_text: End_Reason
+                    $mappings:
+                      StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                        - "CFA-Completed"
+                        - "Successful Completion"
+                      StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                        - "CFA-Segregation/Misconduct"
+                        - "CFA-Involuntary Termination"
+                        - "CFA-Removal for Behavior"
+                        - "CFA-Lack of Progress/Participation"
+                      StateProgramAssignmentParticipationStatus.REFUSED:
+                        - "CFA-Refusal/Decline"
+                        - "Refused to Participate"
+                      StateProgramAssignmentParticipationStatus.DENIED:
+                        - "CFA-Does Not Meet Criteria"
+                      StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                        - "CFA-Transferred"
+                        - "CFA-Discontinued Program"
+                        - "Program Ended/Closed"
+                        - "CFA-Paroled"
+                        - "CFA-Discharged"
+                        - "CFA-Delay"
+                        - "CFA-SORA Needed"
+                        # Waived, Exempt and Override release the person from the
+                        # requirement without them finishing the program.
+                        - "CFA-Waived"
+                        - "CFA-Exempt"
+                        - "CFA-Override"
