@@ -2268,8 +2268,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         "officerExternalId": "STAFF01",
         "supervisorExternalId": "SUP99",
         "chargeIds": ["CHG789"],
-        "region": "District 1",
-        "workUnit": "Unit A",
         "narrative": "Released early per policy.",
     }
 

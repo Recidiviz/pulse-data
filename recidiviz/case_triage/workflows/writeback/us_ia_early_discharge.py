@@ -135,20 +135,13 @@ class UsIaEarlyDischargeRequestData(WritebackRequestData):
     supervisor_external_id: str
     # List of charge ids submitted on the form
     charge_ids: list[str]
-    # District (region) associated with the supervision case.
-    region: str
-    # Work unit associated with the supervision case.
-    work_unit: str
     # Progress of Supervision/Restitution Status/Recommendations Narrative
-    # TODO(OBT-42080): Revise if narrative is confirmed to be optional on the IA early discharge form.
     narrative: str
 
     @field_validator(
         "person_external_id",
         "officer_external_id",
         "supervisor_external_id",
-        "region",
-        "work_unit",
         "narrative",
     )
     @classmethod
@@ -178,10 +171,6 @@ class McpEarlyDischargeXmlRequest(BaseModel):
     staff_supervisor_id: str
     # Charge IDs (one ChargeIdentification element per entry).
     charge_identification: list[str]
-    # Region name (JudicialOfficialFirm LocationLocale).
-    case_region: str
-    # Work unit name (JudicialOfficialFirm OrganizationUnitName).
-    case_work_unit: str
     # Narrative (CaseOfficialCaseStatusText).
     # TODO(OBT-42080): Revise if narrative becomes optional on the IA early discharge form.
     case_status_notes: str
@@ -212,8 +201,6 @@ class McpEarlyDischargeXmlRequest(BaseModel):
             staff_manager_id=staff_manager_id,
             staff_supervisor_id=request_data.supervisor_external_id,
             charge_identification=request_data.charge_ids,
-            case_region=request_data.region,
-            case_work_unit=request_data.work_unit,
             case_status_notes=request_data.narrative,
             message_id=str(uuid.uuid4()),
         )
@@ -251,14 +238,6 @@ class McpEarlyDischargeXmlRequest(BaseModel):
                 (core, "PersonHumanResourceIdentification", [
                     (core, "IdentificationID", self.staff_manager_id),
                 ]),
-            ]),
-            (j, "JudicialOfficialFirm", [
-                (core, "OrganizationLocation", [
-                    (core, "LocationLocale", [
-                        (core, "LocaleDistrictName", self.case_region),
-                    ]),
-                ]),
-                (core, "OrganizationUnitName", self.case_work_unit),
             ]),
             (j, "CaseOfficialCaseStatusText", self.case_status_notes),
         ]  # fmt: skip

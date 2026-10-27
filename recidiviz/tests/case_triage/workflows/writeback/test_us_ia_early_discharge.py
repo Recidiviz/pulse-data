@@ -58,8 +58,6 @@ PERSON_EXTERNAL_ID = "A123456"
 STAFF_ID = "STAFF01"
 STAFF_SUPERVISOR_ID = "SUP99"
 CHARGE_IDENTIFICATION = ["CHG789", "CHG790"]
-CASE_REGION = "District 1"
-CASE_WORK_UNIT = "Unit A"
 _TEST_MESSAGE_ID = "test-message-id-1234"
 
 
@@ -102,8 +100,6 @@ def _make_request_data(**overrides: object) -> UsIaEarlyDischargeRequestData:
             "officer_external_id": STAFF_ID,
             "supervisor_external_id": STAFF_SUPERVISOR_ID,
             "charge_ids": CHARGE_IDENTIFICATION,
-            "region": CASE_REGION,
-            "work_unit": CASE_WORK_UNIT,
             "narrative": "Released early per policy.",
             **overrides,
         }
@@ -132,8 +128,6 @@ class TestUsIaEarlyDischargeRequestData(TestCase):
                 "officerExternalId": STAFF_ID,
                 "supervisorExternalId": STAFF_SUPERVISOR_ID,
                 "chargeIds": CHARGE_IDENTIFICATION,
-                "region": CASE_REGION,
-                "workUnit": CASE_WORK_UNIT,
                 "narrative": "Released early per policy.",
             }
         )
@@ -147,8 +141,6 @@ class TestUsIaEarlyDischargeRequestData(TestCase):
                 "officer_external_id": STAFF_ID,
                 "supervisor_external_id": STAFF_SUPERVISOR_ID,
                 "charge_ids": CHARGE_IDENTIFICATION,
-                "region": CASE_REGION,
-                "work_unit": CASE_WORK_UNIT,
                 "narrative": "Released early per policy.",
             }
         )
@@ -173,8 +165,6 @@ class TestUsIaEarlyDischargeRequestData(TestCase):
             "person_external_id",
             "officer_external_id",
             "supervisor_external_id",
-            "region",
-            "work_unit",
             "narrative",
         ):
             with self.subTest(field=field):
@@ -260,15 +250,6 @@ class TestMcpEarlyDischargeXmlRequest(TestCase):
             f"/{{{_NS_NIEM_CORE}}}IdentificationID"
         )
         self.assertEqual([el.text for el in charge_id_els], CHARGE_IDENTIFICATION)
-
-    def test_case_region_and_work_unit(self) -> None:
-        root = self._build_and_parse()
-        district = root.find(f".//{{{_NS_NIEM_CORE}}}LocaleDistrictName")
-        unit = root.find(f".//{{{_NS_NIEM_CORE}}}OrganizationUnitName")
-        self.assertIsNotNone(district)
-        self.assertEqual(district.text, CASE_REGION)  # type: ignore[union-attr]
-        self.assertIsNotNone(unit)
-        self.assertEqual(unit.text, CASE_WORK_UNIT)  # type: ignore[union-attr]
 
     def test_narrative_present_when_provided(self) -> None:
         root = self._build_and_parse(narrative="Good behavior noted.")
