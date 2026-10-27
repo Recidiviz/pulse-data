@@ -14,18 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helper functions for launching sandbox Dataflow pipelines from a local script."""
+"""Helper functions for launching sandbox Dataflow pipelines from a local script, and
+for waiting until they finish."""
+import datetime
 import glob
 import json
 import os
 import time
 from typing import Set, Type
 
+import attr
 import google.auth
 import google.auth.transport.requests
 import requests
+from googleapiclient.discovery import Resource, build
+from googleapiclient.errors import HttpError
 
 from recidiviz import pipelines
+from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.flex_pipeline_runner import pipeline_cls_for_pipeline_name
@@ -33,6 +39,54 @@ from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils.environment import get_environment_for_project
 from recidiviz.utils.types import assert_type
+
+# Values of the Dataflow API's JobState enum, which Google documents at
+# https://docs.cloud.google.com/dataflow/docs/reference/rest/v1b3/projects.jobs#Job.JobState
+# That page marks five states as terminal: JOB_STATE_DONE, the only success, and the
+# four below, which a job can end in without succeeding. The rest are states a job
+# passes through on the way to one of those five.
+_DATAFLOW_JOB_STATE_DONE = "JOB_STATE_DONE"
+_DATAFLOW_JOB_STATES_ENDED_WITHOUT_SUCCESS = frozenset(
+    {
+        "JOB_STATE_FAILED",
+        "JOB_STATE_CANCELLED",
+        "JOB_STATE_DRAINED",
+        "JOB_STATE_UPDATED",
+    }
+)
+_DATAFLOW_JOB_POLL_INTERVAL_SECONDS = 60
+# Stops the wait if a stage's jobs still aren't Done after this long, so a stuck job
+# can't leave the script waiting forever. A judgment call, set well past how long a
+# stage normally runs. The jobs themselves keep running in Dataflow.
+_DATAFLOW_JOB_WAIT_LIMIT = datetime.timedelta(hours=6)
+# Reading a job's state needs this permission; launching a job does not, so an account
+# can start pipelines it then cannot watch.
+_DATAFLOW_JOB_GET_PERMISSION = "dataflow.jobs.get"
+_DATAFLOW_ACCESS_FIX = (
+    f"the account needs the {_DATAFLOW_JOB_GET_PERMISSION} permission on the project. "
+    "Ask the Data Platform team for access that includes it, then rerun."
+)
+
+
+@attr.define(frozen=True, kw_only=True)
+class LaunchedDataflowJob:
+    """A Dataflow job a sandbox script launched, as the launch call reported it."""
+
+    job_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Dataflow's id for the job, which the jobs.get and jobs.cancel calls take."""
+
+    job_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """The name the pipeline parameters gave the job."""
+
+    region: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """The region the job runs in."""
+
+    def console_url(self, project_id: str) -> str:
+        """Returns the Dataflow console page for this job."""
+        return (
+            f"https://console.cloud.google.com/dataflow/jobs/{self.region}/"
+            f"{self.job_id}?project={project_id}"
+        )
 
 
 def fetch_google_auth_token() -> str:
@@ -161,8 +215,12 @@ def push_sandbox_dataflow_pipeline_docker_image(
     )
 
 
-def run_sandbox_dataflow_pipeline(params: PipelineParameters, skip_build: bool) -> None:
-    """Runs the pipeline designated by the given |params|."""
+def run_sandbox_dataflow_pipeline(
+    params: PipelineParameters, skip_build: bool
+) -> LaunchedDataflowJob | None:
+    """Launches the pipeline designated by the given |params| and returns the job
+    Dataflow created for it, or None when Dataflow refuses the launch, after printing
+    Dataflow's response."""
     if not params.is_sandbox_pipeline:
         raise ValueError(
             f"Parameters should only be for a sandbox pipeline (e.g. an "
@@ -218,10 +276,105 @@ def run_sandbox_dataflow_pipeline(params: PipelineParameters, skip_build: bool) 
         timeout=60,
     )
 
-    if response.ok:
-        print(
-            f"Job {params.job_name} successfully launched - go to https://console.cloud.google.com/dataflow/jobs?project={params.project} to monitor job progress"
-        )
-    else:
+    if not response.ok:
         print("Job launch failed..")
         print(response.text)
+        return None
+    print(
+        f"Job {params.job_name} successfully launched - go to https://console.cloud.google.com/dataflow/jobs?project={params.project} to monitor job progress"
+    )
+    return LaunchedDataflowJob(
+        job_id=assert_type(response.json()["job"]["id"], str),
+        job_name=params.job_name,
+        region=params.region,
+    )
+
+
+def _current_dataflow_job_state(
+    dataflow: Resource, *, project_id: str, job: LaunchedDataflowJob
+) -> str:
+    """Returns the job's current JobState value from the Dataflow API."""
+    try:
+        job_info = (
+            dataflow.projects()
+            .locations()
+            .jobs()
+            .get(projectId=project_id, location=job.region, jobId=job.job_id)
+            # Retries 5xx responses and network errors with backoff, so one blip
+            # during an hours-long wait doesn't stop the run while its jobs keep going.
+            .execute(num_retries=5)
+        )
+    except HttpError as e:
+        if e.resp.status == 403:
+            raise RuntimeError(
+                f"Cannot read Dataflow job [{job.job_name}] in [{project_id}]: "
+                f"{_DATAFLOW_ACCESS_FIX} Dataflow said: [{e}]"
+            ) from e
+        raise
+    return assert_type(job_info["currentState"], str)
+
+
+def check_can_poll_sandbox_dataflow_jobs(project_id: str) -> None:
+    """Raises unless the account can read Dataflow jobs in the project. Waiting for
+    sandbox pipelines needs that, and launching them does not, so a run that cannot
+    read them would otherwise fail only once its first pipeline is already running."""
+    credentials, _ = google.auth.default()
+    resource_manager = build(
+        "cloudresourcemanager", "v1", credentials=credentials, cache_discovery=False
+    )
+    response = (
+        resource_manager.projects()
+        .testIamPermissions(
+            resource=project_id, body={"permissions": [_DATAFLOW_JOB_GET_PERMISSION]}
+        )
+        .execute()
+    )
+    # The response omits the key entirely when none of the permissions are held.
+    if _DATAFLOW_JOB_GET_PERMISSION not in response.get("permissions", []):
+        raise RuntimeError(
+            f"Cannot read Dataflow jobs in [{project_id}]: {_DATAFLOW_ACCESS_FIX}"
+        )
+
+
+def wait_for_sandbox_dataflow_jobs(
+    *, project_id: str, jobs: list[LaunchedDataflowJob]
+) -> None:
+    """Returns once every job has succeeded, polling the Dataflow API once a minute and
+    printing each job's state as it changes. Raises when a job ends without succeeding,
+    when the account cannot read the jobs, or when the jobs are still running after
+    the wait limit."""
+    credentials, _ = google.auth.default()
+    dataflow = build("dataflow", "v1b3", credentials=credentials, cache_discovery=False)
+    states_by_job_id: dict[str, str | None] = {job.job_id: None for job in jobs}
+    deadline = time.time() + _DATAFLOW_JOB_WAIT_LIMIT.total_seconds()
+    while True:
+        for job in jobs:
+            if states_by_job_id[job.job_id] == _DATAFLOW_JOB_STATE_DONE:
+                continue
+            state = _current_dataflow_job_state(
+                dataflow, project_id=project_id, job=job
+            )
+            if state != states_by_job_id[job.job_id]:
+                print(f"Job {job.job_name}: {state}")
+                states_by_job_id[job.job_id] = state
+            if state in _DATAFLOW_JOB_STATES_ENDED_WITHOUT_SUCCESS:
+                raise RuntimeError(
+                    f"Dataflow job [{job.job_name}] ended in state [{state}]. See "
+                    f"{job.console_url(project_id)}"
+                )
+        if all(
+            state == _DATAFLOW_JOB_STATE_DONE for state in states_by_job_id.values()
+        ):
+            return
+        if time.time() > deadline:
+            still_running = sorted(
+                job.job_name
+                for job in jobs
+                if states_by_job_id[job.job_id] != _DATAFLOW_JOB_STATE_DONE
+            )
+            raise RuntimeError(
+                f"Dataflow jobs {still_running} are still running after "
+                f"{_DATAFLOW_JOB_WAIT_LIMIT}. Check them in the console at "
+                f"https://console.cloud.google.com/dataflow/jobs?project={project_id}"
+            )
+        time.sleep(_DATAFLOW_JOB_POLL_INTERVAL_SECONDS)

@@ -45,6 +45,15 @@ python -m recidiviz.tools.load_end_to_end_data_sandbox \
     --sandbox_prefix my_prefix \
     --raw_data_source_instance SECONDARY \
     --load_up_to_datasets sessions
+
+# Answer the questions about what will run up front, then leave. Every later step
+# proceeds on its own, and the script waits for each Dataflow pipeline itself
+# instead of asking whether it has completed.
+python -m recidiviz.tools.load_end_to_end_data_sandbox \
+    --state_code US_XX \
+    --sandbox_prefix my_prefix \
+    --load_up_to_datasets sessions \
+    --unattended
 """
 import argparse
 import json
@@ -101,13 +110,17 @@ from recidiviz.tools.ingest.development.sandbox_pipeline_utils import (
 from recidiviz.tools.load_views_to_sandbox import (
     collect_changed_views_and_descendants_to_load,
     load_collected_views_to_sandbox,
+    validate_sandbox_prefix_state_codes,
 )
 from recidiviz.tools.utils.arg_parsers import str_to_address_list
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
+    LaunchedDataflowJob,
+    check_can_poll_sandbox_dataflow_jobs,
     get_all_reference_query_input_datasets_for_pipeline,
     get_sandbox_pipeline_username,
     push_sandbox_dataflow_pipeline_docker_image,
     run_sandbox_dataflow_pipeline,
+    wait_for_sandbox_dataflow_jobs,
 )
 from recidiviz.tools.utils.script_helpers import (
     prompt_for_confirmation,
@@ -352,6 +365,48 @@ def _get_params_summary(params_list: list[PipelineParameters]) -> str:
     )
 
 
+def _proceed_with_step(step_description: str, *, unattended: bool) -> bool:
+    """Returns whether to run the step: always on an unattended run, otherwise
+    whatever the person answers."""
+    if unattended:
+        print(step_description)
+        return True
+    return prompt_for_step(step_description)
+
+
+def _wait_for_pipelines(
+    *,
+    project_id: str,
+    launched_jobs_by_name: dict[str, LaunchedDataflowJob | None],
+    completion_question: str,
+    unattended: bool,
+) -> None:
+    """Returns once the launched pipelines have finished. On an unattended run this polls
+    Dataflow, and raises if Dataflow refused any launch; otherwise it asks the person
+    until they answer yes, as the script always has."""
+    if not unattended:
+        while not prompt_for_confirmation(completion_question, exit_on_cancel=False):
+            continue
+        return
+    refused_job_names = sorted(
+        job_name for job_name, job in launched_jobs_by_name.items() if job is None
+    )
+    if refused_job_names:
+        raise RuntimeError(
+            f"Dataflow refused to launch {refused_job_names}; its response is printed "
+            f"above. Any other jobs in this stage launched and keep running; check "
+            f"them at https://console.cloud.google.com/dataflow/jobs?project="
+            f"{project_id} before rerunning. Fix the cause and rerun."
+        )
+    wait_for_sandbox_dataflow_jobs(
+        project_id=project_id,
+        jobs=[
+            assert_type(job, LaunchedDataflowJob)
+            for job in launched_jobs_by_name.values()
+        ],
+    )
+
+
 def load_end_to_end_sandbox(
     *,
     project_id: str,
@@ -365,10 +420,24 @@ def load_end_to_end_sandbox(
     changed_datasets_to_ignore: list[str] | None,
     changed_addresses_to_include: list[BigQueryAddress] | None,
     changed_addresses_to_ignore: list[BigQueryAddress] | None,
+    unattended: bool,
 ) -> None:
     """Loads data into a BigQuery / GCS sandbox that reflects all local changes that
     impact Dataflow pipelines or BigQuery views.
+
+    With unattended set, the questions about what will run (the pipeline summary and
+    the views to load) are still asked up front; after that every step runs, the
+    script waits for each Dataflow pipeline itself, and a refused launch stops the run.
+    Without it, the script asks at every step as it always has.
     """
+    if unattended and export_names:
+        raise ValueError(
+            "Exports overwrite what the staging products display and require a person "
+            "to confirm they notified the state channel; run them without "
+            "--unattended."
+        )
+    if unattended:
+        check_can_poll_sandbox_dataflow_jobs(project_id)
     print("\n~~~~~~~~~~~~~~~~~~~~~~ [PREPARING SANDBOX LOAD] ~~~~~~~~~~~~~~~~~~~~~~\n")
 
     sandbox_username = get_sandbox_pipeline_username()
@@ -452,15 +521,17 @@ def load_end_to_end_sandbox(
             "\n~~~~~~~~~~~~~~~~~~~~~~ [STARTING SANDBOX LOAD] ~~~~~~~~~~~~~~~~~~~~~~\n"
         )
 
-        if prompt_for_step(
-            "Will upload Docker image with Dataflow pipeline code changes."
+        if _proceed_with_step(
+            "Will upload Docker image with Dataflow pipeline code changes.",
+            unattended=unattended,
         ):
             push_sandbox_dataflow_pipeline_docker_image(
                 project_id=project_id, sandbox_username=sandbox_username
             )
 
-        if prompt_for_step(
-            "Will create sandbox datasets for Dataflow pipelines output."
+        if _proceed_with_step(
+            "Will create sandbox datasets for Dataflow pipelines output.",
+            unattended=unattended,
         ):
             create_or_update_dataflow_sandbox(
                 sandbox_dataset_prefix=output_sandbox_prefix,
@@ -473,32 +544,47 @@ def load_end_to_end_sandbox(
                 state_code_filter=state_code,
             )
 
-        if prompt_for_step("Will start the sandbox ingest Dataflow pipeline."):
-            run_sandbox_dataflow_pipeline(ingest_pipeline_params, skip_build=True)
-
-            while not prompt_for_confirmation(
-                "The ingest pipeline will take some time to run. Has it completed?",
-                exit_on_cancel=False,
-            ):
-                continue
+        if _proceed_with_step(
+            "Will start the sandbox ingest Dataflow pipeline.",
+            unattended=unattended,
+        ):
+            ingest_job = run_sandbox_dataflow_pipeline(
+                ingest_pipeline_params, skip_build=True
+            )
+            _wait_for_pipelines(
+                project_id=project_id,
+                launched_jobs_by_name={ingest_pipeline_params.job_name: ingest_job},
+                completion_question=(
+                    "The ingest pipeline will take some time to run. Has it completed?"
+                ),
+                unattended=unattended,
+            )
 
         if post_ingest_pipeline_params:
-            if prompt_for_step(
-                "Will run the sandbox metric/supplemental Dataflow pipelines."
+            if _proceed_with_step(
+                "Will run the sandbox metric/supplemental Dataflow pipelines.",
+                unattended=unattended,
             ):
-                for params in post_ingest_pipeline_params:
-                    run_sandbox_dataflow_pipeline(params, skip_build=True)
+                post_ingest_jobs_by_name = {
+                    params.job_name: run_sandbox_dataflow_pipeline(
+                        params, skip_build=True
+                    )
+                    for params in post_ingest_pipeline_params
+                }
+                _wait_for_pipelines(
+                    project_id=project_id,
+                    launched_jobs_by_name=post_ingest_jobs_by_name,
+                    completion_question=(
+                        "The metric/supplemental pipeline(s) will take some time to "
+                        "run. Have they completed?"
+                    ),
+                    unattended=unattended,
+                )
 
-                while not prompt_for_confirmation(
-                    "The metric/supplemental pipeline(s) will take some time to run. "
-                    "Have they completed?",
-                    exit_on_cancel=False,
-                ):
-                    continue
-
-        if prompt_for_step(
+        if _proceed_with_step(
             f"Will load the [{len(view_builders_to_load)}] collected BigQuery views to "
-            f"a sandbox."
+            f"a sandbox.",
+            unattended=unattended,
         ):
             load_collected_views_to_sandbox(
                 sandbox_dataset_prefix=output_sandbox_prefix,
@@ -629,6 +715,16 @@ def parse_arguments() -> argparse.Namespace:
         ),
         type=str_to_list,
     )
+    parser.add_argument(
+        "--unattended",
+        action="store_true",
+        help="Answer the questions about what will run up front, then leave. Every "
+        "later step proceeds on its own and the script waits for each Dataflow "
+        "pipeline itself instead of asking whether it has completed. Before starting "
+        "it checks the sandbox prefix and that your account can read Dataflow jobs, "
+        "and it stops if Dataflow refuses a launch. Cannot be combined with "
+        "--exports, which needs a person at the end.",
+    )
     ignored_changes_type_group = parser.add_mutually_exclusive_group(required=False)
     ignored_changes_type_group.add_argument(
         "--changed_datasets_to_ignore",
@@ -703,6 +799,23 @@ def parse_arguments() -> argparse.Namespace:
             "Can only specify --exports for --project_id=recidiviz-staging. "
             "Overwriting buckets with sandbox data in prod is disallowed."
         )
+
+    if parsed_args.exports and parsed_args.unattended:
+        raise argparse.ArgumentTypeError(
+            "Cannot specify --exports with --unattended. Exports overwrite what "
+            "the staging products display and require a person to confirm they "
+            "notified the state channel."
+        )
+
+    if parsed_args.unattended:
+        # The view stage checks this too, but only after the pipelines have run, by
+        # which time nobody may be watching.
+        try:
+            validate_sandbox_prefix_state_codes(
+                parsed_args.sandbox_prefix, parsed_args.state_code
+            )
+        except ValueError as e:
+            parser.error(str(e))
     return parsed_args
 
 
@@ -722,6 +835,7 @@ def main() -> None:
         changed_datasets_to_ignore=args.changed_datasets_to_ignore,
         changed_addresses_to_include=args.changed_addresses_to_include,
         changed_addresses_to_ignore=args.changed_addresses_to_ignore,
+        unattended=args.unattended,
     )
 
 
