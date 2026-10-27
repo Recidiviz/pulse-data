@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_IncarcerationIncident` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: feature__coms_2026_enabled
+input_columns:
+  Offender_Number: STRING
+  Misconduct_Id: STRING
+  Sanction_Id: STRING
+  Violation_Date: DATE
+  Hearing_Date: DATE
+  Report_Date: DATE
+  Sanction_Start_Date: DATE
+  Sanction_End_Date: DATE
+  Sanction_Length: INTEGER
+  charge_descriptions: STRING
+  charge_codes: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id: Misconduct_Id
+          incident_date: Violation_Date
+          incident_type:
+            $enum_mapping:
+              $raw_text: charge_descriptions
+              $custom_parser: us_mi_custom_enum_parsers.map_incident_type
+          # TODO(MI-8608): Confirm incident_severity is always hydrated (we shouldn't get class iii anymore)
+          incident_severity:
+            $conditional:
+              - $if:
+                  $equal:
+                    - $literal("True")
+                    - $custom:
+                        $function: us_mi_custom_parsers.parse_class_i
+                        $args:
+                          offense_codes: charge_codes
+                $then: $literal_enum(StateIncarcerationIncidentSeverity.HIGHEST)
+              - $else_if:
+                  $equal:
+                    - $literal("True")
+                    - $custom:
+                        $function: us_mi_custom_parsers.parse_class_ii
+                        $args:
+                          offense_codes: charge_codes
+                $then: $literal_enum(StateIncarcerationIncidentSeverity.SECOND_HIGHEST)
+          is_violent:
+            $custom:
+              $function: us_mi_custom_parsers.parse_incarceration_incident_is_violent
+              $args:
+                offense_codes: charge_codes
+          incident_metadata:
+            $normalized_values_json_dict:
+              NONBONDABLE_OFFENSES:
+                $custom:
+                  $function: us_mi_custom_parsers.nonbondable_offenses
+                  $args:
+                    offense_codes: charge_codes
+              BONDABLE_OFFENSES:
+                $custom:
+                  $function: us_mi_custom_parsers.bondable_offenses
+                  $args:
+                    offense_codes: charge_codes
+              CLASS_I:
+                $custom:
+                  $function: us_mi_custom_parsers.parse_class_i
+                  $args:
+                    offense_codes: charge_codes
+              CLASS_II:
+                $custom:
+                  $function: us_mi_custom_parsers.parse_class_ii
+                  $args:
+                    offense_codes: charge_codes
+              CLASS_III:
+                $custom:
+                  $function: us_mi_custom_parsers.parse_class_iii
+                  $args:
+                    offense_codes: charge_codes
+              OFFENSE_CODE_LIST: charge_codes
+          incarceration_incident_outcomes:
+            - $conditional:
+                - $if:
+                    $not_null: Sanction_Id
+                  $then:
+                    StateIncarcerationIncidentOutcome:
+                      external_id: Sanction_Id
+                      hearing_date: Hearing_Date
+                      date_effective: Sanction_Start_Date
+                      # TODO(MI-8608): confirm this the projected date and not actual
+                      projected_end_date: Sanction_End_Date
+                      report_date: Report_Date
+                      outcome_type: $literal_enum(StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT)
+                      punishment_length_days: Sanction_Length

@@ -2,6 +2,9 @@
 # This file associates the columns outputted from the query in `view_IncarcerationIncident` to
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
+launch_env:
+  $not:
+    $env: feature__coms_2026_enabled
 input_columns:
   offender_restriction_id: STRING
   offender_id: STRING
