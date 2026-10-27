@@ -161,6 +161,25 @@ class TestAdmissionsAndReleasesOverTime(PublicPathwaysCountByMetricTestBase, Tes
             results["data"],
         )
 
+    def test_calendar_year_filter_narrows_both_series(self) -> None:
+        results = fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.MOVEMENT_DATE_EVENT_TYPE,
+                filters={Dimension.CALENDAR_YEAR: ["2024"]},
+            ),
+        )
+
+        self.assertEqual(
+            [
+                {"movementDate": "2024-01-01", "eventType": "admission", "count": 1},
+                {"movementDate": "2024-01-01", "eventType": "release", "count": 1},
+                {"movementDate": "2024-02-01", "eventType": "admission", "count": 1},
+                {"movementDate": "2024-02-01", "eventType": "release", "count": 2},
+            ],
+            results["data"],
+        )
+
 
 class TestAdmissionsAndReleasesByDimensionCount(
     PublicPathwaysCountByMetricTestBase, TestCase
@@ -297,6 +316,31 @@ class TestAdmissionsAndReleasesByDimensionCount(
                     "eventType": "admission",
                     "custodyStatus": "incarcerated_parolee",
                     "admissionType": "drug_treatment_parole_violation",
+                    "count": 1,
+                },
+            ],
+            results["data"],
+        )
+
+    def test_calendar_year_filter_narrows_a_grouping(self) -> None:
+        results = fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.CUSTODY_STATUS,
+                filters={Dimension.CALENDAR_YEAR: ["2023"]},
+            ),
+        )
+
+        self.assertEqual(
+            [
+                {
+                    "eventType": "admission",
+                    "custodyStatus": "incarcerated_individual",
+                    "count": 2,
+                },
+                {
+                    "eventType": "admission",
+                    "custodyStatus": "incarcerated_parolee",
                     "count": 1,
                 },
             ],

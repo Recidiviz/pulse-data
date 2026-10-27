@@ -260,7 +260,7 @@ class TestPublicPathwaysMetrics(PublicPathwaysBlueprintTestCase):
                         "months_since_treatment, sentence_length_min, sentence_length_max, "
                         "charge_county_code, offense_type, charge_description, "
                         "date_in_population, custody_status, admission_type, "
-                        "release_type, community_supervision, "
+                        "release_type, community_supervision, calendar_year, "
                         "movement_date_event_type."
                     ]
                 }

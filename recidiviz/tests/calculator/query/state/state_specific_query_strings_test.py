@@ -49,6 +49,7 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
             "offense_type",
             "date_in_population",
             "movement_dates",
+            "calendar_years",
             "movement_categories",
             "custody_types",
             "movement_types",
@@ -72,6 +73,7 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
             "offense_type_id_name_map",
             "date_in_population_id_name_map",
             "movement_date_id_name_map",
+            "calendar_year_id_name_map",
             "movement_category_id_name_map",
             "custody_type_id_name_map",
             "movement_type_id_name_map",
@@ -103,6 +105,7 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
             "LEFT JOIN offense_type",
             "LEFT JOIN date_in_population",
             "LEFT JOIN movement_dates",
+            "LEFT JOIN calendar_years",
             "LEFT JOIN movement_categories",
             "LEFT JOIN custody_types",
             "LEFT JOIN movement_types",
@@ -117,13 +120,13 @@ class GetPathwaysDynamicFilterOptionsTests(unittest.TestCase):
 
     def test_all_joins_use_state_code(self) -> None:
         result = get_pathways_dynamic_filter_options()
-        # Count USING (state_code): 20 outer LEFT JOINs between top-level CTEs +
+        # Count USING (state_code): 21 outer LEFT JOINs between top-level CTEs +
         # 1 inner INNER JOIN against UNDER_CUSTODY_all inside the
-        # date_in_population CTE = 21.
+        # date_in_population CTE = 22.
         using_count = result.count("USING (state_code)") + result.count(
             "USING(state_code)"
         )
-        self.assertEqual(using_count, 21)
+        self.assertEqual(using_count, 22)
 
 
 class GetPathwaysMovementTypeByCustodyTypeTests(unittest.TestCase):

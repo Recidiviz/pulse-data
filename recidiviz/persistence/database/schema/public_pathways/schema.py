@@ -18,7 +18,7 @@
 """
 from typing import Any, Dict
 
-from sqlalchemy import BigInteger, Column, Date, Index, String
+from sqlalchemy import BigInteger, Column, Date, Index, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
@@ -274,6 +274,8 @@ class PublicPrisonAdmissionsAndReleases(PublicPathwaysBase):
     movement_category = Column(String, nullable=False)
     # Date of the admission or release movement
     movement_date = Column(Date, nullable=False)
+    # Calendar year of movement_date
+    calendar_year = Column(Integer, nullable=False)
     # Binned time period between movement_date and the current date
     time_period = Column(String, nullable=False)
     # Custody type of the person being admitted/released

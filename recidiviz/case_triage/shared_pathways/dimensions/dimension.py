@@ -64,6 +64,7 @@ class Dimension(enum.Enum):
     ADMISSION_TYPE = "admission_type"
     RELEASE_TYPE = "release_type"
     COMMUNITY_SUPERVISION = "community_supervision"
+    CALENDAR_YEAR = "calendar_year"
     # Composite dimension. Groups admissions and releases into one row per
     # movement month per event type.
     MOVEMENT_DATE_EVENT_TYPE = "movement_date_event_type"

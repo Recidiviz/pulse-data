@@ -121,6 +121,7 @@ AdmissionsAndReleasesOverTime:
       column: release_to_community_supervision_indicator
       applies_to:
         movement_category: release
+    calendar_year: FILTER
 
 # Admissions and releases counted by one dimension. Every grouping also selects
 # the event type, so a chart can tell admissions from releases without a second
@@ -177,3 +178,4 @@ AdmissionsAndReleasesByDimensionCount:
           column_label: event_type
         - column: release_to_community_supervision_indicator
           column_label: community_supervision
+    calendar_year: FILTER
