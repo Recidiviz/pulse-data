@@ -48,7 +48,7 @@ CLASSIFICATION_2026_VIOLENT_INFRACTION_CODES: list[str] = [
     "RAP",  # RAPE
     "SXB",  # SEXUAL BATTERY
 ]
-TOMIS_2_0_GO_LIVE_DATE = "2026-10-26"
+TOMIS_2_0_GO_LIVE_DATE = "2026-11-16"
 MEA_PROFILES_FIRST_DATA_DATE = "2026-09-01"
 
 # Facilities participating in the 2026 classification (RCAF/DCAF) pilot, mapped
