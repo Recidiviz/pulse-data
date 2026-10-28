@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_VantagePointAssessments_v2` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: is_local # TODO(TN-1943): change this to feature__tomis_2_0_enabled
+input_columns:
+  OffenderID: STRING
+  V4P_PIN: STRING
+  AssessmentID_v1: STRING
+  COMPLETED_BY_EXTERNAL_ID: STRING
+  DATE_COMPLETED: DATE
+  ASSESSMENT_TYPE: STRING
+  RISK_LEVEL: STRING
+  V2EducationEmploymentNeedLevel: STRING
+  V2FriendsAssociatesResidentialNeedLevel: STRING
+  V2AlcoholDrugsNeedLevel: STRING
+  V2MentalHealthNeedLevel: STRING
+  V2AggressionNeedLevel: STRING
+  V2AttitudesBehaviorsNeedLevel: STRING
+  V2PartnerFamilyChildrenNeedLevel: STRING
+  LOW_COMPLIANT_ELIGIBLE: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    assessments:
+      - StateAssessment:
+          external_id: V4P_PIN
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          # TODO(TN-3003): STRONG-R and STRONG-R 2.0 assessments are not differentiated in v2.
+          # If this distinction matters, we should try to find a way to infer the assessment type
+          # based on timing, assessment structure, etc. If this isn't possible, then we should
+          # keep the v1 view running alongside this v2 view and add logic to keep this view from ingesting
+          # legacy assessments, so that at least there's no data loss for legacy assessments.
+          # (Same decision will come up for other fields that are missing in v2, see other todos).
+          assessment_type: $literal_enum(StateAssessmentType.STRONG_R2)
+          assessment_date: DATE_COMPLETED
+          assessment_level:
+            $enum_mapping:
+              $raw_text: RISK_LEVEL
+              $mappings:
+                StateAssessmentLevel.LOW:
+                  - LOW
+                StateAssessmentLevel.MODERATE:
+                  - MOD
+                StateAssessmentLevel.HIGH:
+                  - HD # High Drug Felony Risk
+                  - HP # High Property Felony Risk
+                  - HV # High Violent Felony Risk
+                  - HVPD # High Violent, Property, and Drug Felony Risk
+                  - HIGH # New High Value for Strong R 2.0
+          assessment_metadata:
+            $normalized_values_json_dict:
+              LEGACY_ASSESSMENT_ID: AssessmentID_v1
+              # TODO(TN-3003): There are possible several assessment types for STRONG-R 2.0
+              # assessments. Find out what they mean and if/how they will actually be used once
+              # the migration is complete.
+              ASSESSMENT_SUBTYPE: ASSESSMENT_TYPE
+              # TODO(TN-3003): The following fields are not hydrated for any migrated
+              # legacy assessments, and the only non-legacy assessments in the v2 Vantage
+              # table are test entries with made up data. Therefore, we can include these
+              # fields in the metadata, but won't be able to validate them until new, real
+              # assessments start getting written to the v2 Vantage table.
+              V2_EDUCATION_EMPLOYMENT_NEED_LEVEL: V2EducationEmploymentNeedLevel
+              V2_FRIENDS_RESIDENTIAL_NEED_LEVEL: V2FriendsAssociatesResidentialNeedLevel
+              V2_ALCOHOL_DRUG_NEED_LEVEL: V2AlcoholDrugsNeedLevel
+              V2_MENTAL_HEALTH_NEED_LEVEL: V2MentalHealthNeedLevel
+              V2_AGGRESSION_NEED_LEVEL: V2AggressionNeedLevel
+              V2_ATTITUDE_BEHAVIOR_NEED_LEVEL: V2AttitudesBehaviorsNeedLevel
+              V2_FAMILY_NEED_LEVEL: V2PartnerFamilyChildrenNeedLevel
+              # LOW_COMPLIANT_ELIGIBLE can be 'Y', 'N', or Null. Null for all migrated legacy
+              # assessments, except for 2 marked as 'N'.
+              LOW_COMPLIANT_ELIGIBLE: LOW_COMPLIANT_ELIGIBLE
+          conducting_staff_external_id: COMPLETED_BY_EXTERNAL_ID
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: COMPLETED_BY_EXTERNAL_ID
+                $then: $literal("US_TN_STAFF_TOMIS")

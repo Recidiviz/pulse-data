@@ -1446,3 +1446,58 @@
     width: 24
     height: 6
 
+  - name: V4P_RNA_ASSESSMENT
+    title: V4P_RNA_ASSESSMENT
+    explore: us_tn_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_tn_V4P_RNA_ASSESSMENT.primary_key,
+      us_tn_V4P_RNA_ASSESSMENT.ASSESSMENT_RESULT_ID,
+      us_tn_V4P_RNA_ASSESSMENT.PERSON_ID,
+      us_tn_V4P_RNA_ASSESSMENT.DOC_ID,
+      us_tn_V4P_RNA_ASSESSMENT.V4P_PIN,
+      us_tn_V4P_RNA_ASSESSMENT.V4P_ASSESSMENT_ID,
+      us_tn_V4P_RNA_ASSESSMENT.ASSESSMENT_TITLE,
+      us_tn_V4P_RNA_ASSESSMENT.ASSESSMENT_TYPE,
+      us_tn_V4P_RNA_ASSESSMENT.V4P_DATE_CREATED__raw,
+      us_tn_V4P_RNA_ASSESSMENT.DATE_ASSIGNED__raw,
+      us_tn_V4P_RNA_ASSESSMENT.DATE_COMPLETED__raw,
+      us_tn_V4P_RNA_ASSESSMENT.RISK_LEVEL,
+      us_tn_V4P_RNA_ASSESSMENT.QUESTION_RESPONSES_JSON,
+      us_tn_V4P_RNA_ASSESSMENT.PROPERTIES_JSON,
+      us_tn_V4P_RNA_ASSESSMENT.ASSIGNED_BY_EXTERNAL_ID,
+      us_tn_V4P_RNA_ASSESSMENT.COMPLETED_BY_EXTERNAL_ID,
+      us_tn_V4P_RNA_ASSESSMENT.RESULT_JSON,
+      us_tn_V4P_RNA_ASSESSMENT.VASOR_SCORE,
+      us_tn_V4P_RNA_ASSESSMENT.TCUDS_SCORE,
+      us_tn_V4P_RNA_ASSESSMENT.FACILITY_ID,
+      us_tn_V4P_RNA_ASSESSMENT.LAST_MODIFIED_BY,
+      us_tn_V4P_RNA_ASSESSMENT.LAST_MODIFIED_ON__raw,
+      us_tn_V4P_RNA_ASSESSMENT.STRONG_R_RECOMMENDED,
+      us_tn_V4P_RNA_ASSESSMENT.ACTIVE_FLAG,
+      us_tn_V4P_RNA_ASSESSMENT.CREATED_DATE__raw,
+      us_tn_V4P_RNA_ASSESSMENT.CREATED_BY_ID,
+      us_tn_V4P_RNA_ASSESSMENT.UPDATED_DATE__raw,
+      us_tn_V4P_RNA_ASSESSMENT.UPDATED_BY_ID,
+      us_tn_V4P_RNA_ASSESSMENT.FELONY_SCORE,
+      us_tn_V4P_RNA_ASSESSMENT.SUBJECT_GENDER,
+      us_tn_V4P_RNA_ASSESSMENT.LOW_COMPLIANT_ELIGIBLE,
+      us_tn_V4P_RNA_ASSESSMENT.DPP_ID,
+      us_tn_V4P_RNA_ASSESSMENT.UNASSIGNED_DATE__raw,
+      us_tn_V4P_RNA_ASSESSMENT.UNASSIGNED_BY_EXTERNAL_ID,
+      us_tn_V4P_RNA_ASSESSMENT.UNASSIGN_REASON,
+      us_tn_V4P_RNA_ASSESSMENT.UNASSIGNED_JSON,
+      us_tn_V4P_RNA_ASSESSMENT.file_id,
+      us_tn_V4P_RNA_ASSESSMENT.is_deleted]
+    sorts: [us_tn_V4P_RNA_ASSESSMENT.V4P_DATE_CREATED__raw]
+    note_display: hover
+    note_text: "Risk and needs assessment results from Vant4ge, the third-party risk/needs-assessment and case-planning platform MiCase integrates with (\"V4P\" is Vant4ge — confirmed by the user 2026-08-27). Column names reference specific assessment instruments (VASOR_SCORE — Vermont Assessment of Sex Offender Risk; TCUDS_SCORE — TCU Drug Screen; STRONG_R_RECOMMENDED — the STRONG-R risk/needs tool).  File description is Claude inference/placeholder. TODO(TN-2078): confirm and expand.  Irregularities: only 90 sample rows. CREATED_BY_ID and UPDATED_BY_ID are empty on every row (ASSIGNED_BY_EXTERNAL_ID / COMPLETED_BY_EXTERNAL_ID / LAST_MODIFIED_BY appear to be the populated equivalents instead). UNASSIGNED_DATE, UNASSIGNED_BY_EXTERNAL_ID, UNASSIGN_REASON, and UNASSIGNED_JSON are empty on every row. DOC_ID references IN_EPISODE and DPP_ID references CS_EPISODE. This is an initial MiCase transfer and may be truncated, incomplete, or wrong."
+    listen: 
+      View Type: us_tn_OffenderName.view_type
+      US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
+    row: 180
+    col: 0
+    width: 24
+    height: 6
+

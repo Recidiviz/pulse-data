@@ -213,4 +213,11 @@ explore: us_tn_raw_data_template {
     view_label: "us_tn_IN_EPISODE"
   }
 
+  join: us_tn_V4P_RNA_ASSESSMENT {
+    sql_on: ${us_tn_V4P_RNA_ASSESSMENT.PERSON_ID} = ${us_tn_PERSON.PERSON_ID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_tn_V4P_RNA_ASSESSMENT"
+  }
+
 }
