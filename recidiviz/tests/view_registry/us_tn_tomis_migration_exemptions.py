@@ -115,9 +115,6 @@ from recidiviz.validation.views.external_data.regions.us_tn.supervision_populati
 from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopback_missing_classifications import (
     US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopback_wonky_recidiviz_data import (
-    US_TN_LOOPBACK_WONKY_RECIDIVIZ_DATA_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopback_wonky_tomis_data import (
     US_TN_LOOPBACK_WONKY_TOMIS_DATA_VIEW_BUILDER,
 )
@@ -139,22 +136,7 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Classification_latest"): {
         US_TN_TOMIS_CLASSIFICATION_ANALOG_VIEW_BUILDER.address: "Intentionally reads the frozen TOMIS 1.0 table for classifications decided before go-live: MiCase's migrated decisions stop in August 2026",
         US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER.address: "TODO(TN-1975): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_LOOPBACK_WONKY_RECIDIVIZ_DATA_VIEW_BUILDER.address: "TODO(TN-1976): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_LOOPBACK_WONKY_TOMIS_DATA_VIEW_BUILDER.address: "TODO(TN-1977): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_ANNUAL_RECLASSIFICATION_REVIEW_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_ANNUAL_RECLASSIFICATION_REVIEW_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_ANNUAL_RECLASSIFICATION_REVIEW_2026_POLICY_V3_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_CUSTODY_LEVEL_DOWNGRADE_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_CUSTODY_LEVEL_DOWNGRADE_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_CUSTODY_LEVEL_DOWNGRADE_2026_POLICY_V3_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_INITIAL_CLASSIFICATION_REVIEW_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_INITIAL_CLASSIFICATION_REVIEW_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_INITIAL_CLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V2_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
-        US_TN_SPECIAL_CUSTODY_LEVEL_UPGRADE_2026_POLICY_V3_RECORD_VIEW_BUILDER.address: "TODO(TN-1978): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.DailyCommunitySupervisionForRecidiviz_latest"
