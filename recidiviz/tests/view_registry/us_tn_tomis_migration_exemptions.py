@@ -135,7 +135,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Classification_latest"): {
         US_TN_TOMIS_CLASSIFICATION_ANALOG_VIEW_BUILDER.address: "Intentionally reads the frozen TOMIS 1.0 table for classifications decided before go-live: MiCase's migrated decisions stop in August 2026",
-        US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER.address: "TODO(TN-1975): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_LOOPBACK_WONKY_TOMIS_DATA_VIEW_BUILDER.address: "TODO(TN-1977): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
