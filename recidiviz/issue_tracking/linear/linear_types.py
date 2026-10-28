@@ -68,3 +68,4 @@ class LinearStateType(enum.Enum):
     STARTED = "started"
     COMPLETED = "completed"
     CANCELED = "canceled"
+    DUPLICATE = "duplicate"

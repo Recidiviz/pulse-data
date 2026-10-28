@@ -193,6 +193,31 @@ class TestBuildGraph(unittest.TestCase):
         self.assertEqual(["OBT-1"], [issue.issue_id for issue in graph.issues])
         self.assertEqual([], graph.edges)
 
+    def test_build_graph_drops_duplicate_issues_and_their_edges(self) -> None:
+        graph = build_graph(
+            config=make_config(),
+            milestones=[PHASE_1],
+            issue_nodes_by_milestone_id={
+                PHASE_1_ID: [
+                    linear_issue_node(
+                        identifier="OBT-1",
+                        title="Keep me",
+                        blocks=["OBT-2"],
+                    ),
+                    linear_issue_node(
+                        identifier="OBT-2",
+                        title="Duplicate me",
+                        state_name="Duplicate",
+                        state_type="duplicate",
+                    ),
+                ]
+            },
+            generated_at=GENERATED_AT,
+        )
+
+        self.assertEqual(["OBT-1"], [issue.issue_id for issue in graph.issues])
+        self.assertEqual([], graph.edges)
+
     def test_build_graph_drops_parent_issues_when_configured(self) -> None:
         nodes = {
             PHASE_1_ID: [

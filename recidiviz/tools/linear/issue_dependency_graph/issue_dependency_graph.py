@@ -357,7 +357,8 @@ def build_graph(
     }
 
     def is_in_scope(node: dict) -> bool:
-        if LinearStateType(node["state"]["type"]) is LinearStateType.CANCELED:
+        state_type = LinearStateType(node["state"]["type"])
+        if state_type in (LinearStateType.CANCELED, LinearStateType.DUPLICATE):
             return False
         if config.exclude_parent_issues and node["children"]["nodes"]:
             return False
