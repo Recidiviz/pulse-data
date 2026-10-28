@@ -109,6 +109,9 @@ from recidiviz.calculator.query.state.views.tasks.supervision_tasks_record_archi
 from recidiviz.calculator.query.state.views.us_tn_tomis_1_0_analog_views.CAFScore import (
     US_TN_TOMIS_CAFSCORE_ANALOG_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.us_tn_tomis_1_0_analog_views.Classification import (
+    US_TN_TOMIS_CLASSIFICATION_ANALOG_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.user_metrics.intercom_upload_user_available_actions import (
     INTERCOM_UPLOAD_VIEW_BUILDER,
 )
@@ -266,6 +269,10 @@ PERMANENT_UNREFERENCED_ADDRESSES_TO_KEEP: dict[BigQueryAddress, str] = {
     US_TN_TOMIS_CAFSCORE_ANALOG_VIEW_BUILDER.address: (
         "Read only by the US_TN 2026 classification policy validations, which a "
         "validation alone does not mark as used (Elise Gonzalez, 2026-10-20)"
+    ),
+    US_TN_TOMIS_CLASSIFICATION_ANALOG_VIEW_BUILDER.address: (
+        "Read only by the US_TN 2026 classification policy validation, which a "
+        "validation alone does not mark as used (Matthew Tomas, 2026-10-26)"
     ),
     CASE_NOTES_DATA_STORE_VIEW_BUILDER.address: (
         "This view backs the datastore for Vertex AI search (Roshan Agrawal 10/24/2024)"

@@ -55,6 +55,9 @@ from recidiviz.calculator.query.state.views.reference.workflows_opportunity_conf
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_drug_screens_preprocessed import (
     US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.us_tn_tomis_1_0_analog_views.Classification import (
+    US_TN_TOMIS_CLASSIFICATION_ANALOG_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.us_tn_tomis_1_0_analog_views.ClassTerminationRequest import (
     US_TN_TOMIS_CLASSTERMINATIONREQUEST_ANALOG_VIEW_BUILDER,
 )
@@ -109,9 +112,6 @@ from recidiviz.validation.views.external_data.regions.us_tn.incarceration_popula
 from recidiviz.validation.views.external_data.regions.us_tn.supervision_population_person_level import (
     US_TN_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_classification_2026_policy_without_recent_form_download import (
-    US_TN_CLASSIFICATION_2026_POLICY_WITHOUT_RECENT_FORM_DOWNLOAD_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopback_missing_classifications import (
     US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER,
 )
@@ -137,7 +137,7 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         US_TN_TOMIS_CLASSTERMINATIONREQUEST_ANALOG_VIEW_BUILDER.address: "Intentionally reads the frozen TOMIS 1.0 table for completions before go-live: MiCase's migrated job and class completion history is incomplete",
     },
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.Classification_latest"): {
-        US_TN_CLASSIFICATION_2026_POLICY_WITHOUT_RECENT_FORM_DOWNLOAD_VIEW_BUILDER.address: "TODO(TN-1974): Migrate this reference off of legacy TOMIS 1.0 raw data",
+        US_TN_TOMIS_CLASSIFICATION_ANALOG_VIEW_BUILDER.address: "Intentionally reads the frozen TOMIS 1.0 table for classifications decided before go-live: MiCase's migrated decisions stop in August 2026",
         US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER.address: "TODO(TN-1975): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_LOOPBACK_WONKY_RECIDIVIZ_DATA_VIEW_BUILDER.address: "TODO(TN-1976): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_LOOPBACK_WONKY_TOMIS_DATA_VIEW_BUILDER.address: "TODO(TN-1977): Migrate this reference off of legacy TOMIS 1.0 raw data",
