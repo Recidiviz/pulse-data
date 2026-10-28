@@ -236,36 +236,6 @@ jobs:
         working-directory: ./frontends/admin-panel/
         run: yarn test
 
-  asset-generation-tests:
-    name: Asset Generation Service tests
-    runs-on: runs-on=${{github.run_id}}/runner=arm64/cpu=4
-    defaults:
-      run:
-        working-directory: ./nodejs/asset-generation/
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
-        with:
-          egress-policy: audit
-
-      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # v3
-        with:
-          node-version: "22.23.4"
-          cache: "yarn"
-          cache-dependency-path: nodejs/asset-generation/yarn.lock
-      - name: Install fonts
-        run: |
-          cp src/fonts/* /usr/share/fonts/
-          fc-cache -fv
-      - name: Yarn install
-        run: yarn install --frozen-lockfile
-      - name: Lint
-        run: yarn lint --max-warnings=0
-      - name: Test
-        run: yarn test
-
   # Verify that all YAML files are properly formatted, according to prettier
   prettier:
     name: Prettier [yaml]

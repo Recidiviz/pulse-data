@@ -34,7 +34,6 @@ services:
       - IS_DEV=true
       - FLASK_DEBUG=1
       - SEGMENT_WRITE_KEY=dev-key-wont-send-data
-      - ASSET_GENERATION_URL=http://asset-generation-service:5174
 
   admin_panel_cache_hydration:
     image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
@@ -57,14 +56,3 @@ services:
     environment:
       - IS_DEV=true
       - GOOGLE_CLOUD_PROJECT=recidiviz-staging
-
-  asset_generation:
-    container_name: asset-generation-service
-    image: us-docker.pkg.dev/recidiviz-staging/asset-generation/default:latest
-    # to avoid clobbering the local node environment, we do not mount the entire package directory
-    volumes:
-      - "./nodejs/asset-generation/local:/app/local"
-      - "./nodejs/asset-generation/src:/app/src"
-    ports:
-      - "5174:5174"
-    command: yarn dev

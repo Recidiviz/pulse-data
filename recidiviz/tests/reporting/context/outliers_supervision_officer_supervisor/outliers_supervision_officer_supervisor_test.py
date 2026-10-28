@@ -17,9 +17,7 @@
 """Tests for email content preparation logic in the OutliersSupervisionOfficerSupervisor report"""
 from datetime import datetime
 from unittest import TestCase
-from unittest.mock import patch
 
-import freezegun
 from attrs import evolve
 
 from recidiviz.common.constants.states import StateCode
@@ -30,7 +28,6 @@ from recidiviz.outliers.constants import (
 )
 from recidiviz.outliers.querier.querier import OfficerSupervisorReportData
 from recidiviz.outliers.types import OutliersProductConfiguration, TargetStatusStrategy
-from recidiviz.reporting.asset_generation.types import AssetResponseBase
 from recidiviz.reporting.constants import Batch, ReportType
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.context import (
     OutliersSupervisionOfficerSupervisorContext,
@@ -89,7 +86,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
         self,
         report: OfficerSupervisorReportData,
     ) -> dict:
-        """Convenience method for mocking external resources and preparing report data"""
+        """Returns the prepared email data for the given report."""
         recipient = Recipient(
             email_address=report.recipient_email_address,
             state_code=self.batch.state_code,
@@ -101,41 +98,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             },
         )
         context = OutliersSupervisionOfficerSupervisorContext(self.batch, recipient)
-        with patch(
-            "recidiviz.reporting.context.outliers_supervision_officer_supervisor.context.AssetGenerationClient.generate_outliers_supervisor_chart"
-        ) as mock_generate:
-            mock_generate.return_value = AssetResponseBase(
-                url="http://asset-generation-test/mock/image/url"
-            )
-
-            prepared_data = context.get_prepared_data()
-
-            for metric in report.metrics:
-                mock_generate.assert_any_call(
-                    StateCode.US_XX,
-                    f"{self.test_email}-{metric.metric.name}",
-                    571,
-                    metric,
-                )
-
-        return prepared_data
-
-    @freezegun.freeze_time(datetime(2023, 6, 18, 14, 21, 0, 0))
-    def test_metric_periods(self) -> None:
-        self.assertEqual(
-            {
-                "current": "Jun &rsquo;22&ndash;Jun &rsquo;23",
-                "previous": "May &rsquo;22&ndash;May &rsquo;23",
-            },
-            self._get_prepared_data(
-                OfficerSupervisorReportData(
-                    metrics=[],
-                    metrics_without_outliers=[],
-                    recipient_email_address=self.test_email,
-                    additional_recipients=[],
-                )
-            )["metric_periods"],
-        )
+        return context.get_prepared_data()
 
     def test_show_section_headings(self) -> None:
         self.assertTrue(
@@ -161,27 +124,6 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             )["show_metric_section_headings"]
         )
 
-    def test_chart_request(self) -> None:
-        test_report = OfficerSupervisorReportData(
-            metrics=[
-                create_fixture(
-                    self.metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
-                    target_fixture_adverse,
-                    other_officers_fixture_adverse,
-                    highlighted_officers_fixture_adverse,
-                )
-            ],
-            metrics_without_outliers=[],
-            recipient_email_address=self.test_email,
-            additional_recipients=[],
-        )
-        actual = self._get_prepared_data(test_report)
-
-        self.assertEqual(
-            actual["adverse_metrics"][0]["chart"]["url"],
-            "http://asset-generation-test/mock/image/url",
-        )
-
     def test_metric_context(self) -> None:
         test_report = OfficerSupervisorReportData(
             metrics=[
@@ -203,61 +145,8 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                 {
                     "title_display_name": "Technical Incarceration Rate",
                     "body_display_name": "technical incarceration rate",
-                    "legend_zero": False,
-                    "far_direction": "above",
-                    "event_name": "technical incarcerations",
-                    "chart": {
-                        "url": "http://asset-generation-test/mock/image/url",
-                        "alt_text": (
-                            "Swarm plot of all technical incarceration rates in the "
-                            "state where Jeanette Schneider-Cox, Mario Mccarthy, and "
-                            "Ryan Luna are far from the state average for the current "
-                            "reporting period."
-                        ),
-                    },
                 }
             ],
-        )
-
-        # some of the fields produce different output based on logic;
-        # no need to test the copy pass-through fields again
-        test_report.metrics[0] = evolve(
-            test_report.metrics[0],
-            highlighted_officers=test_report.metrics[0].highlighted_officers[:1],
-        )
-        actual = self._get_prepared_data(test_report)["adverse_metrics"][0]
-        self.assertRegex(
-            actual["chart"]["alt_text"], "where Jeanette Schneider-Cox is far"
-        )
-
-        test_report = evolve(
-            test_report,
-            metrics=[
-                create_fixture(
-                    self.metric_fixtures[EARLY_DISCHARGE_REQUESTS],
-                    target_fixture_favorable_zero,
-                    other_officers_fixture_favorable_zero,
-                    highlighted_officers_fixture_favorable_zero,
-                    TargetStatusStrategy.ZERO_RATE,
-                ),
-            ],
-        )
-        actual = self._get_prepared_data(test_report)["favorable_metrics"][0]
-        self.assertTrue(actual["legend_zero"])
-        self.assertEqual(actual["far_direction"], "below")
-        self.assertRegex(
-            actual["chart"]["alt_text"],
-            "where Jeanette Schneider-Cox and Samuel Dunn have zero earned discharge requests",
-        )
-
-        test_report.metrics[0] = evolve(
-            test_report.metrics[0],
-            highlighted_officers=test_report.metrics[0].highlighted_officers[1:],
-        )
-        actual = self._get_prepared_data(test_report)["favorable_metrics"][0]
-        self.assertRegex(
-            actual["chart"]["alt_text"],
-            "where Samuel Dunn has zero",
         )
 
     def test_highlight_multiple_metrics(self) -> None:

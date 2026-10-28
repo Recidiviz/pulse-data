@@ -39,7 +39,6 @@ ARTIFACT_REGISTRY_CONFIG_PATH = os.path.join(
 class ImageKind(enum.StrEnum):
     APP_ENGINE = "appengine"
     CASE_TRIAGE_PATHWAYS = "case-triage-pathways"
-    ASSET_GENERATION = "asset-generation"
     RECIDIVIZ_BASE = "recidiviz-base"
     DATAFLOW = "dataflow"
     DATAFLOW_DEV = "dataflow-dev"

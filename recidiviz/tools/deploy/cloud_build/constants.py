@@ -42,7 +42,6 @@ DOCKER_CREDENTIAL_HELPER = (
 IMAGE_DOCKERFILES: dict[ImageKind, tuple[str, str | None]] = {
     ImageKind.APP_ENGINE: ("Dockerfile", "recidiviz-app"),
     ImageKind.RECIDIVIZ_BASE: ("Dockerfile.recidiviz-base", None),
-    ImageKind.ASSET_GENERATION: ("Dockerfile.asset-generation", None),
     ImageKind.CASE_TRIAGE_PATHWAYS: ("Dockerfile.case-triage-pathways", None),
     ImageKind.DATAFLOW: ("recidiviz/pipelines/Dockerfile.pipelines", None),
     ImageKind.DATAFLOW_DEV: ("recidiviz/pipelines/Dockerfile.pipelines", None),
@@ -63,7 +62,6 @@ PLATFORM_LINUX_ARM64 = "linux/arm64"
 IMAGE_BUILD_PLATFORMS: dict[ImageKind, list[str]] = {
     ImageKind.APP_ENGINE: [PLATFORM_LINUX_AMD64, PLATFORM_LINUX_ARM64],
     ImageKind.RECIDIVIZ_BASE: [PLATFORM_LINUX_AMD64, PLATFORM_LINUX_ARM64],
-    ImageKind.ASSET_GENERATION: [PLATFORM_LINUX_AMD64, PLATFORM_LINUX_ARM64],
     ImageKind.CASE_TRIAGE_PATHWAYS: [PLATFORM_LINUX_AMD64, PLATFORM_LINUX_ARM64],
     ImageKind.DATAFLOW: [PLATFORM_LINUX_AMD64],
     ImageKind.DATAFLOW_DEV: [PLATFORM_LINUX_AMD64],

@@ -46,15 +46,6 @@ The account and its IAM policies are managed in Terraform (see #13024).
 EOT
 }
 
-resource "google_service_account" "asset_generation_cloud_run" {
-  account_id   = "asset-generation-cr"
-  display_name = "Asset Generation Cloud Run Service Account"
-  description  = <<EOT
-Service Account that acts as the identity for the Asset Generation Cloud Run service.
-The account and its IAM policies are managed in Terraform.
-EOT
-}
-
 resource "google_service_account" "admin_panel_cloud_run" {
   account_id   = "admin-panel-cr"
   display_name = "Admin Panel Cloud Run Service Account"
@@ -134,13 +125,6 @@ resource "google_project_iam_member" "application_data_import_iam" {
   project  = var.project_id
   role     = each.key
   member   = "serviceAccount:${google_service_account.application_data_import_cloud_run.email}"
-}
-
-resource "google_project_iam_member" "asset_generation_iam" {
-  for_each = toset(["roles/run.admin", "roles/logging.logWriter"])
-  project  = var.project_id
-  role     = each.key
-  member   = "serviceAccount:${google_service_account.asset_generation_cloud_run.email}"
 }
 
 resource "google_project_iam_member" "admin_panel_iam" {
@@ -415,69 +399,6 @@ resource "google_cloud_run_service" "application-data-import" {
   autogenerate_revision_name = false
 }
 
-# Initializes Asset Generation Cloud Run service
-resource "google_cloud_run_service" "asset-generation" {
-  name     = "asset-generation"
-  location = var.us_central_region
-
-  template {
-    spec {
-      containers {
-        image = "us-docker.pkg.dev/${var.registry_project_id}/asset-generation/default:${var.docker_image_tag}"
-        # Leave command/args empty to use the default CMD from the docker image
-
-        env {
-          name  = "RECIDIVIZ_ENV"
-          value = var.project_id == "recidiviz-123" ? "production" : "staging"
-        }
-
-        env {
-          name  = "GAE_SERVICE_ACCOUNT"
-          value = google_service_account.admin_panel_cloud_run.email
-        }
-
-        env {
-          name  = "GCS_ASSET_BUCKET_NAME"
-          value = module.generated-assets.name
-        }
-
-        resources {
-          limits = {
-            cpu    = "1000m"
-            memory = "1024Mi"
-          }
-        }
-      }
-
-      service_account_name = google_service_account.asset_generation_cloud_run.email
-    }
-
-    metadata {
-      annotations = {
-        # Keep one instance running at all times so we can load images in emails quickly at any time 
-        "autoscaling.knative.dev/minScale"        = 1
-        "autoscaling.knative.dev/maxScale"        = var.max_asset_generation_instances
-        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.us_central_redis_vpc_connector.name
-        "run.googleapis.com/vpc-access-egress"    = "private-ranges-only"
-      }
-
-      # If a terraform apply fails for a given deploy, we may retry again some time later after a fix has landed. When
-      # we reattempt, the docker image tag (version number) will remain the same. If we only include the image tag but
-      # not the hash in the name and the cloud run deploy succeeded during the first attempt, Terraform will not
-      # recognize that we need to re-deploy the Cloud Run service on the second attempt, even if changes have landed
-      # between attempts #1 and #2. For this reason, we instead include the git hash in the service name.
-      name = "asset-generation-${local.git_short_hash}"
-    }
-  }
-
-  traffic {
-    percent         = 100
-    latest_revision = true
-  }
-
-  autogenerate_revision_name = false
-}
-
 # Initializes Public Pathways Cloud Run service
 resource "google_cloud_run_service" "public-pathways" {
   name     = "public-pathways-server"
@@ -594,14 +515,6 @@ resource "google_cloud_run_service_iam_member" "public-access" {
   location = google_cloud_run_service.case-triage[each.value].location
   project  = google_cloud_run_service.case-triage[each.value].project
   service  = google_cloud_run_service.case-triage[each.value].name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
-
-resource "google_cloud_run_service_iam_member" "asset-generation-public-access" {
-  location = google_cloud_run_service.asset-generation.location
-  project  = google_cloud_run_service.asset-generation.project
-  service  = google_cloud_run_service.asset-generation.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }

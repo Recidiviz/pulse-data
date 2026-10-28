@@ -74,27 +74,6 @@ steps:
       - buildx
       - create
       - --name
-      - asset-generation
-    id: create-build-context-asset-generation
-    wait_for:
-      - download-docker-credential
-      - setup-qemu
-  - name: gcr.io/cloud-builders/docker
-    env:
-      - DOCKER_BUILDKIT=1
-      - CACHE_SCOPE_KEY=$BRANCH_NAME
-    args:
-      - -c
-      - 'export PATH="/workspace/gcloud:$${PATH}" && /workspace/gcloud/docker-credential-gcr configure-docker --registries=us-docker.pkg.dev && SAFE_CACHE_SCOPE_KEY=$$(echo "$$CACHE_SCOPE_KEY" | tr "/." "--") && docker buildx build . -f Dockerfile.asset-generation --builder asset-generation --tag=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:$COMMIT_SHA --cache-to type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:cache-$${SAFE_CACHE_SCOPE_KEY},mode=max --cache-from type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:cache-$${SAFE_CACHE_SCOPE_KEY} --cache-from type=registry,ref=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:cache-main --push --platform=linux/amd64,linux/arm64 '
-    id: build-asset-generation
-    wait_for:
-      - create-build-context-asset-generation
-    entrypoint: sh
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - buildx
-      - create
-      - --name
       - case-triage-pathways
     id: create-build-context-case-triage-pathways
     wait_for:

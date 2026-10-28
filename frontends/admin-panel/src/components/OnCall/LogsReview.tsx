@@ -325,11 +325,7 @@ const Component: React.FC = () => {
           initialValues={{
             view: "cloud_run",
             ignored_statuses: NOISY_STATUSES.map((option) => option.value),
-            cloud_run_services: [
-              "application-data-import",
-              "asset-generation",
-              "case-triage-web",
-            ],
+            cloud_run_services: ["application-data-import", "case-triage-web"],
           }}
           onFinish={(values) => requestOnCallLogs(values)}
           form={form}
@@ -347,7 +343,6 @@ const Component: React.FC = () => {
                   label: "Application Data Import",
                   value: "application-data-import",
                 },
-                { label: "Asset Generation", value: "asset-generation" },
                 { label: "Case Triage", value: "case-triage-web" },
                 { label: "Justice Counts", value: "justice-counts-web" },
                 { label: "Admin Panel", value: "admin-panel" },

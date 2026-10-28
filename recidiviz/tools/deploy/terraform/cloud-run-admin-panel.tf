@@ -75,11 +75,6 @@ resource "google_cloud_run_service" "admin_panel" {
           value = var.project_id == "recidiviz-123" ? "production" : "staging"
         }
 
-        env {
-          name  = "ASSET_GENERATION_URL"
-          value = google_cloud_run_service.asset-generation.status[0].url
-        }
-
         resources {
           limits = {
             cpu    = "2000m"

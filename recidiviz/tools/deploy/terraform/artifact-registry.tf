@@ -71,12 +71,24 @@ resource "google_artifact_registry_repository" "repositories" {
 
 
 moved {
-  from = google_artifact_registry_repository.asset_generation
-  to   = google_artifact_registry_repository.repositories["asset_generation"]
-}
-
-
-moved {
   from = google_artifact_registry_repository.case_triage_pathways
   to   = google_artifact_registry_repository.repositories["case_triage_pathways"]
+}
+
+# Drops the asset-generation repository from Terraform state without deleting
+# it. A removed block cannot name a for_each instance, so the moved block first
+# gives the instance its own address.
+# TODO(OBT-55011): Manually delete the asset-generation repository in each
+# project, then remove these blocks.
+moved {
+  from = google_artifact_registry_repository.repositories["asset_generation"]
+  to   = google_artifact_registry_repository.asset_generation
+}
+
+removed {
+  from = google_artifact_registry_repository.asset_generation
+
+  lifecycle {
+    destroy = false
+  }
 }

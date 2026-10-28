@@ -43,7 +43,6 @@ from collections import defaultdict
 from itertools import groupby
 from typing import List, Optional
 
-from dateutil.relativedelta import relativedelta
 from jinja2 import Template
 
 from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
@@ -75,8 +74,6 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.reporting.asset_generation.client import AssetGenerationClient
-from recidiviz.reporting.asset_generation.types import AssetResponseBase
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.data_retrieval import (
     retrieve_data_for_outliers_supervision_officer_supervisor,
 )
@@ -110,13 +107,9 @@ from recidiviz.reporting.recipient import Recipient
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-assets = AssetGenerationClient()
-
 
 class OutliersSupervisionOfficerSupervisorContext(ReportContext):
     """Report context for the Outliers Supervision Officer Supervisor email."""
-
-    _chart_width = 571
 
     def get_report_type(self) -> ReportType:
         return ReportType.OutliersSupervisionOfficerSupervisor
@@ -135,11 +128,6 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
             "headline": f"Your {self._report_month} Unit Alert",
             "state_name": self._state_name,
             "officer_label": self._config.supervision_officer_label,
-            "metric_periods": {
-                "current": self._current_metric_period,
-                "previous": self._previous_metric_period,
-            },
-            "chart_width": self._chart_width,
             "show_metric_section_headings": self._show_metric_section_headings,
             "favorable_metrics": [
                 self._prepare_metric(m)
@@ -187,66 +175,13 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
         return {
             "title_display_name": metric_info.metric.title_display_name,
             "body_display_name": metric_info.metric.body_display_name,
-            "legend_zero": metric_info.target_status_strategy
-            == TargetStatusStrategy.ZERO_RATE,
-            "far_direction": (
-                "above"
-                if metric_info.metric.outcome_type == MetricOutcome.ADVERSE
-                else "below"
-            ),
-            "event_name": metric_info.metric.event_name,
-            "chart": {
-                "url": self._request_chart(metric_info).url,
-                "alt_text": self._chart_alt_text(metric_info),
-            },
         }
-
-    def _request_chart(self, metric_info: OutlierMetricInfo) -> AssetResponseBase:
-        return assets.generate_outliers_supervisor_chart(
-            self.batch.state_code,
-            f"{self.recipient.email_address}-{metric_info.metric.name}",
-            self._chart_width,
-            metric_info,
-        )
-
-    def _chart_alt_text(self, metric_info: OutlierMetricInfo) -> str:
-        if metric_info.target_status_strategy == TargetStatusStrategy.ZERO_RATE:
-            highlight_condition = f"{'have' if len(metric_info.highlighted_officers) > 1 else 'has'} zero {metric_info.metric.event_name}"
-        elif metric_info.target_status_strategy == TargetStatusStrategy.IQR_THRESHOLD:
-            highlight_condition = f"{'are' if len(metric_info.highlighted_officers) > 1 else 'is'} far from the state average"
-        else:
-            raise ValueError(
-                f"target_status_strategy {metric_info.target_status_strategy} is not supported"
-            )
-
-        highlighted_names = join_with_conjunction(
-            [o.name.formatted_first_last for o in metric_info.highlighted_officers]
-        )
-        return f"Swarm plot of all {metric_info.metric.body_display_name}s in the state where {highlighted_names} {highlight_condition} for the current reporting period."
 
     @property
     def _show_metric_section_headings(self) -> bool:
         """Only True if there is more than one type of metric configured for the current state"""
         outcome_types = set(m.outcome_type for m in self._config.metrics)
         return len(outcome_types) > 1
-
-    def _get_metric_period(self, date: datetime.date) -> str:
-        end_month = date.strftime("%b")
-        end_year = date.strftime("%y")
-
-        period_start = date - relativedelta(years=1)
-        start_month = period_start.strftime("%b")
-        start_year = period_start.strftime("%y")
-
-        return f"{start_month} &rsquo;{start_year}&ndash;{end_month} &rsquo;{end_year}"
-
-    @property
-    def _current_metric_period(self) -> str:
-        return self._get_metric_period(self._report_date)
-
-    @property
-    def _previous_metric_period(self) -> str:
-        return self._get_metric_period(self._report_date - relativedelta(months=1))
 
     @property
     def _highlights(self) -> Highlights:

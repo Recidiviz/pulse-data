@@ -11,7 +11,6 @@ The following `.yarnrc.yml` files have been added:
 - Prototypes Functions: `/frontends/prototypes/functions/.yarnrc.yml`
 - Prototypes Admin: `/frontends/prototypes/admin/.yarnrc.yml`
 - Prototype App: `/frontends/prototypes/prototype-app/.yarnrc.yml`
-- Asset Generation: `/nodejs/asset-generation/.yarnrc.yml`
 
 Each configuration includes:
 ```yaml

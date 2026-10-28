@@ -73,14 +73,6 @@ variable "max_application_import_instances" {
   default = 5
 }
 
-variable "max_asset_generation_instances" {
-  type = number
-  # Start with 3 as the default to match our other services. The Cloud Run
-  # default is 100, and if we had a bug causing us to scale that high that
-  # could be a costly error.
-  default = 3
-}
-
 variable "max_public_pathways_instances" {
   type = number
   # Note: if we adjust this instance number upward, we may have to adjust
