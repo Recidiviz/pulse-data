@@ -37,7 +37,7 @@ US_TN_INGEST_VIEW_MIGRATION_PAIRS: dict[str, str | None] = {
     "InferredViolations": "InferredViolations_v2",
     "OffenderMovementIncarcerationPeriod_v3": None,
     "OffenderName": "OffenderName_v2",
-    "RCAFandDCAFAssessments": None,
+    "RCAFandDCAFAssessments": "RCAFandDCAFAssessments_v2",
     "STGAssessment": "STGAssessment_v2",
     "Staff": "Staff_v2",
     "StaffCaseloadTypePeriod": None,

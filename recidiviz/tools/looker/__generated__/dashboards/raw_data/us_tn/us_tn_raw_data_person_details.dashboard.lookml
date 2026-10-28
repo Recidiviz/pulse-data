@@ -1244,6 +1244,86 @@
     width: 24
     height: 6
 
+  - name: front_end_classification_scores
+    title: front_end_classification_scores
+    explore: us_tn_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_tn_front_end_classification_scores.primary_key,
+      us_tn_front_end_classification_scores.OFFENDERID,
+      us_tn_front_end_classification_scores.ClassificationType,
+      us_tn_front_end_classification_scores.ClassificationFormType,
+      us_tn_front_end_classification_scores.LastClassificationDate__raw,
+      us_tn_front_end_classification_scores.AssessmentDate__raw,
+      us_tn_front_end_classification_scores.TrusteeFlag,
+      us_tn_front_end_classification_scores.Question1,
+      us_tn_front_end_classification_scores.Question1_notes,
+      us_tn_front_end_classification_scores.Question2,
+      us_tn_front_end_classification_scores.Question2_notes,
+      us_tn_front_end_classification_scores.Question3,
+      us_tn_front_end_classification_scores.Question3_notes,
+      us_tn_front_end_classification_scores.Question4,
+      us_tn_front_end_classification_scores.Question4_notes,
+      us_tn_front_end_classification_scores.Question5,
+      us_tn_front_end_classification_scores.Question5_notes,
+      us_tn_front_end_classification_scores.Question6,
+      us_tn_front_end_classification_scores.Question6_notes,
+      us_tn_front_end_classification_scores.Question7,
+      us_tn_front_end_classification_scores.Question7_notes,
+      us_tn_front_end_classification_scores.DateOfApprovalAndEntry_CAF__raw,
+      us_tn_front_end_classification_scores.Trustee_Question1,
+      us_tn_front_end_classification_scores.Trustee_Question2,
+      us_tn_front_end_classification_scores.Trustee_Question3,
+      us_tn_front_end_classification_scores.Trustee_Question4,
+      us_tn_front_end_classification_scores.Trustee_Question5,
+      us_tn_front_end_classification_scores.Trustee_Question6,
+      us_tn_front_end_classification_scores.Trustee_Question7,
+      us_tn_front_end_classification_scores.Trustee_Question8,
+      us_tn_front_end_classification_scores.Trustee_Question9,
+      us_tn_front_end_classification_scores.Trustee_Question10,
+      us_tn_front_end_classification_scores.Trustee_Question11,
+      us_tn_front_end_classification_scores.Trustee_Question12,
+      us_tn_front_end_classification_scores.Trustee_Question13,
+      us_tn_front_end_classification_scores.DateOfApprovalAndEntry_Trustee__raw,
+      us_tn_front_end_classification_scores.OverallScore,
+      us_tn_front_end_classification_scores.ScoredCustodyLevel,
+      us_tn_front_end_classification_scores.CounselorRecommendedOverride,
+      us_tn_front_end_classification_scores.CounselorRecommendedCustodyLevel,
+      us_tn_front_end_classification_scores.FinalOverrideCode,
+      us_tn_front_end_classification_scores.FinalCustodyLevel,
+      us_tn_front_end_classification_scores.TrusteeApprovedOrDenied,
+      us_tn_front_end_classification_scores.TrusteeEligible,
+      us_tn_front_end_classification_scores.TrusteeDenialReasons,
+      us_tn_front_end_classification_scores.Warden_TrusteeSignaturesAcquired,
+      us_tn_front_end_classification_scores.Warden_TrusteeSignaturesAcquiredDate__raw,
+      us_tn_front_end_classification_scores.ContractMonitor_TrusteeSignaturesAcquired,
+      us_tn_front_end_classification_scores.ContractMonitor_TrusteeSignaturesAcquiredDate__raw,
+      us_tn_front_end_classification_scores.AC_TrusteeSignaturesAcquired,
+      us_tn_front_end_classification_scores.AC_TrusteeSignaturesAcquiredDate__raw,
+      us_tn_front_end_classification_scores.ChiefCounselorFinalizingForm,
+      us_tn_front_end_classification_scores.TrusteeChecklistComplete,
+      us_tn_front_end_classification_scores.DateOfFinalApprovalAndEntry__raw,
+      us_tn_front_end_classification_scores.LastModifiedBy,
+      us_tn_front_end_classification_scores.LastModifiedDate__raw,
+      us_tn_front_end_classification_scores.UpdatedFields,
+      us_tn_front_end_classification_scores.SummaryTrusteeEverConvictedOfFirstDegreeMurder,
+      us_tn_front_end_classification_scores.SummaryTrusteeServingLifeSentence,
+      us_tn_front_end_classification_scores.SummaryTrusteeMoreThan10YearRemaining,
+      us_tn_front_end_classification_scores.SummaryTrusteeAllNoTrusteeCompleted,
+      us_tn_front_end_classification_scores.file_id,
+      us_tn_front_end_classification_scores.is_deleted]
+    sorts: [us_tn_front_end_classification_scores.LastClassificationDate__raw]
+    note_display: hover
+    note_text: "This file stores user input from TN completing RCAF/DCAF assessments."
+    listen: 
+      View Type: us_tn_OffenderName.view_type
+      US_TN_DOC: us_tn_OffenderName.OffenderID
+      US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
+    row: 162
+    col: 0
+    width: 24
+    height: 6
+
   - name: CS_EPISODE
     title: CS_EPISODE
     explore: us_tn_raw_data
@@ -1291,7 +1371,7 @@
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
       US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
-    row: 162
+    row: 168
     col: 0
     width: 24
     height: 6
@@ -1361,7 +1441,7 @@
       View Type: us_tn_OffenderName.view_type
       US_TN_DOC: us_tn_OffenderName.OffenderID
       US_TN_PERSON_ID: us_tn_PERSON.PERSON_ID
-    row: 168
+    row: 174
     col: 0
     width: 24
     height: 6

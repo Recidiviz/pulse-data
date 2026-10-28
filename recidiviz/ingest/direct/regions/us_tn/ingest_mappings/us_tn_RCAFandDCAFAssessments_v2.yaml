@@ -1,0 +1,188 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_RCAFandDCAFAssessments` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: is_local # TODO(TN-1943): change this to feature__tomis_2_0_enabled
+input_columns:
+  OffenderID: STRING
+  AssessmentDate: DATE
+  ClassificationDate: DATE
+  OverallScore: STRING
+  ClassificationDecision: STRING
+  ClassificationDecisionDate: STRING
+  ScoredCustodyLevel: STRING
+  ClassificationType: STRING
+  ClassificationFormType: STRING
+  Question1: STRING
+  Question2: STRING
+  Question3: STRING
+  Question4: STRING
+  Question5: STRING
+  Question6: STRING
+  Question7: STRING
+  TrusteeFlag: STRING
+  Trustee_Question1: STRING
+  Trustee_Question2: STRING
+  Trustee_Question3: STRING
+  Trustee_Question4: STRING
+  Trustee_Question5: STRING
+  Trustee_Question6: STRING
+  Trustee_Question7: STRING
+  Trustee_Question8: STRING
+  Trustee_Question9: STRING
+  Trustee_Question10: STRING
+  Trustee_Question11: STRING
+  Trustee_Question12: STRING
+  Trustee_Question13: STRING
+  DateOfApprovalAndEntry_CAF: STRING
+  DateOfApprovalAndEntry_Trustee: STRING
+  CounselorRecommendedOverride: STRING
+  CounselorRecommendedCustodyLevel: STRING
+  RecommendedCustody: STRING
+  FinalOverrideCode: STRING
+  FinalCustodyLevel: STRING
+  TrusteeEligible: STRING
+  TrusteeApprovedOrDenied: STRING
+  DateOfFinalApprovalAndEntry: STRING
+  LastClassificationDate: STRING
+  firstFormEdit: DATE
+  lastFormEdit: DATE
+  CAFDate: DATE
+  CLASSIFICATION_ID: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    assessments:
+      - StateAssessment:
+          external_id: CLASSIFICATION_ID
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type:
+            $enum_mapping:
+              $raw_text: ClassificationType
+              $mappings:
+                StateAssessmentType.RCAF:
+                  - RCAF
+                  - RCAF_V2
+                StateAssessmentType.DCAF:
+                  - DCAF
+          assessment_subtype:
+            $conditional:
+              - $if:
+                  $not_null: ClassificationType
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - ClassificationType
+                          - ClassificationFormType
+                        $include_nulls: False
+                    $custom_parser: us_tn_custom_enum_parsers.assessment_subtype_from_classification_type
+          assessment_date: AssessmentDate
+          assessment_score: OverallScore
+          assessment_level:
+            $enum_mapping:
+              $raw_text: ScoredCustodyLevel
+              $mappings:
+                StateAssessmentLevel.MINIMUM:
+                  - "MIN"
+                  - "LOW"
+                StateAssessmentLevel.MEDIUM:
+                  - "MED"
+                  - "MEDIUM"
+                StateAssessmentLevel.MEDIUM_HIGH:
+                  - "CLS"
+                  - "CLOSE"
+                StateAssessmentLevel.MAXIMUM:
+                  - "MAX"
+                  - "MAXIMUM"
+          assessment_override_reason: FinalOverrideCode
+          assessment_override_level:
+            $conditional:
+              # FinalCustodyLevel is filled in on every form, overridden or not
+              - $if:
+                  $not_null: FinalOverrideCode
+                $then:
+                  $enum_mapping:
+                    $raw_text: FinalCustodyLevel
+                    $mappings:
+                      StateAssessmentLevel.MINIMUM:
+                        - "LOW"
+                        - "TRUSTEE"
+                      StateAssessmentLevel.MEDIUM:
+                        - "MEDIUM"
+                      StateAssessmentLevel.MEDIUM_HIGH:
+                        - "CLOSE"
+                      StateAssessmentLevel.MAXIMUM:
+                        - "MAX"
+          # StateAssessment requires a decision and its date together, so set
+          # neither unless TOMIS recorded both.
+          assessment_decision:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: ClassificationDecision
+                    - $not_null: ClassificationDecisionDate
+                $then:
+                  $enum_mapping:
+                    $raw_text: ClassificationDecision
+                    $mappings:
+                      StateAssessmentDecision.APPROVED:
+                        - "AGREE"
+                      StateAssessmentDecision.DENIED:
+                        - "DISAGREE"
+          assessment_decision_date:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: ClassificationDecision
+                    - $not_null: ClassificationDecisionDate
+                $then: ClassificationDecisionDate
+          assessment_metadata:
+            $normalized_values_json_dict:
+              ClassificationType: ClassificationType
+              QUESTION1: Question1
+              QUESTION2: Question2
+              QUESTION3: Question3
+              QUESTION4: Question4
+              QUESTION5: Question5
+              QUESTION6: Question6
+              QUESTION7: Question7
+              TrusteeFlag: TrusteeFlag
+              Trustee_Question1: Trustee_Question1
+              Trustee_Question2: Trustee_Question2
+              Trustee_Question3: Trustee_Question3
+              Trustee_Question4: Trustee_Question4
+              Trustee_Question5: Trustee_Question5
+              Trustee_Question6: Trustee_Question6
+              Trustee_Question7: Trustee_Question7
+              Trustee_Question8: Trustee_Question8
+              Trustee_Question9: Trustee_Question9
+              Trustee_Question10: Trustee_Question10
+              Trustee_Question11: Trustee_Question11
+              Trustee_Question12: Trustee_Question12
+              Trustee_Question13: Trustee_Question13
+              DateOfApprovalAndEntry_CAF: DateOfApprovalAndEntry_CAF
+              DateOfApprovalAndEntry_Trustee: DateOfApprovalAndEntry_Trustee
+              CounselorRecommendedOverride: CounselorRecommendedOverride
+              CounselorRecommendedCustodyLevel: CounselorRecommendedCustodyLevel
+              FinalOverrideCode: FinalOverrideCode
+              FinalCustodyLevel: FinalCustodyLevel
+              TrusteeEligible: TrusteeEligible
+              TrusteeApprovedOrDenied: TrusteeApprovedOrDenied
+              DateOfFinalApprovalAndEntry: DateOfFinalApprovalAndEntry
+              OverallScore: OverallScore
+              CLASSIFICATIONDATE: ClassificationDate
+              CLASSIFICATIONDECISION: ClassificationDecision # AGREE or DISAGREE
+              CLASSIFICATIONDECISIONDATE: ClassificationDecisionDate
+              ClassificationFormType: ClassificationFormType
+              LastClassificationDate: LastClassificationDate
+              firstFormEdit: firstFormEdit
+              lastFormEdit: lastFormEdit
+              CAFDate: CAFDate
+              RecommendedCustody: RecommendedCustody # Note some slight code changes from v1: CLS becomes CLO, TRS becomes T
