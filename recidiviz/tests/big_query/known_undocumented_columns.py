@@ -14446,7 +14446,7 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "adjusted_max_release_date",
         "facility_id",
         "in_raw_data",
-        "in_resident_record",
+        "in_resident",
         "last_updated_date",
         "original_max_release_date",
         "person_id",
