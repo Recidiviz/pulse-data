@@ -447,6 +447,9 @@ from recidiviz.validation.views.state.us_co_work_proposed_credit_no_duplicate_of
 from recidiviz.validation.views.state.us_me_invalid_snooze_notes import (
     US_ME_INVALID_SNOOZE_NOTES_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.us_mo_staff_roster_unmatched_location_acronyms import (
+    US_MO_STAFF_ROSTER_UNMATCHED_LOCATION_ACRONYMS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.user_metrics.intercom_email_sent_to_unprovisioned_user import (
     INTERCOM_EMAIL_SENT_TO_UNPROVISIONED_USER_VIEW_BUILDER,
 )
@@ -754,6 +757,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_MO_SENTENCING_TIME_SERVED_PREPROCESSED_DATA_ISSUES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_MO_STAFF_ROSTER_UNMATCHED_LOCATION_ACRONYMS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
