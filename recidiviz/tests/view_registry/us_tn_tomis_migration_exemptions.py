@@ -106,9 +106,6 @@ from recidiviz.validation.views.external_data.regions.us_tn.incarceration_popula
 from recidiviz.validation.views.external_data.regions.us_tn.supervision_population_person_level import (
     US_TN_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopback_missing_classifications import (
-    US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.analyst_data_validation.us_tn.us_tn_loopback_wonky_tomis_data import (
     US_TN_LOOPBACK_WONKY_TOMIS_DATA_VIEW_BUILDER,
 )
@@ -119,7 +116,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
     BigQueryAddress, dict[BigQueryAddress, str]
 ] = {
     BigQueryAddress.from_str("us_tn_raw_data_up_to_date_views.CAFScore_latest"): {
-        US_TN_LOOPBACK_MISSING_CLASSIFICATIONS_VIEW_BUILDER.address: "TODO(TN-1972): Migrate this reference off of legacy TOMIS 1.0 raw data",
         US_TN_LOOPBACK_WONKY_TOMIS_DATA_VIEW_BUILDER.address: "TODO(TN-1973): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
