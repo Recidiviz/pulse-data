@@ -39,6 +39,7 @@ const sidebarComponentNames = [
   "UsIaActionPlansAndNotes",
   "UsIaVictimContactInfo",
   "UsIaEarlyDischargeIcOutDetails",
+  "UsIaEarlyDischargeFormStatus",
 
   // Resident-related components
   "Incarceration",
