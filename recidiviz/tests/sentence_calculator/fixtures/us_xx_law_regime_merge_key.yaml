@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
+state_code: US_XX
+description: Test regime whose last rule merges in the keys of the rule before it.
+effective_date: "2020-01-01"
+term_multipliers:
+  - &category_e_term_reduction
+    name: category_e_term_reduction
+    description: 15% reduction for category E offenses
+    when:
+      offense_category: E
+    multiplier: 0.85
+  - <<: *category_e_term_reduction
+    name: standard_term_reduction
+    description: 35% reduction for every other offense
+    multiplier: 0.65

@@ -497,6 +497,63 @@ class TestParseNamedConditions(unittest.TestCase):
                 inherited_conditions={},
             )
 
+    def test_condition_referring_to_inherited_condition(self) -> None:
+        sex_offense = FieldCondition(
+            field="offense_group",
+            operator=ConditionOperator.EQUALS,
+            value=NevadaOffenseGroup.SEX,
+        )
+
+        conditions = parse_named_conditions(
+            YAMLDict(
+                {
+                    "category_a_sex_offense": {
+                        "all_of": [
+                            {"condition": "sex_offense"},
+                            {"offense_category": "A"},
+                        ]
+                    },
+                }
+            ),
+            field_types=_NEVADA_FIELD_TYPES,
+            inherited_conditions={"sex_offense": sex_offense},
+        )
+
+        self.assertEqual(
+            {
+                "sex_offense": sex_offense,
+                "category_a_sex_offense": AllOf(
+                    conditions=[
+                        sex_offense,
+                        FieldCondition(
+                            field="offense_category",
+                            operator=ConditionOperator.EQUALS,
+                            value=NevadaOffenseCategory.CATEGORY_A,
+                        ),
+                    ]
+                ),
+            },
+            conditions,
+        )
+
+    def test_condition_redefining_inherited_condition(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^The conditions \['sex_offense'\] are already defined in the state's "
+            r"shared conditions\. Rename them or use the shared definitions\.$",
+        ):
+            parse_named_conditions(
+                YAMLDict({"sex_offense": {"offense_group": "VIOLENCE"}}),
+                field_types=_NEVADA_FIELD_TYPES,
+                inherited_conditions={
+                    "sex_offense": FieldCondition(
+                        field="offense_group",
+                        operator=ConditionOperator.EQUALS,
+                        value=NevadaOffenseGroup.SEX,
+                    )
+                },
+            )
+
 
 class TestConditionIsMet(unittest.TestCase):
     """Tests for is_met on FieldCondition, AllOf, and AnyOf."""

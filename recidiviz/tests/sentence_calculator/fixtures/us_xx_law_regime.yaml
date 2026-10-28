@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
+state_code: US_XX
+description: Test regime that exercises every term multiplier regime section.
+effective_date: "2020-01-01"
+use_calendar_term_conversion: true
+days_per_month: 30.44
+
+conditions:
+  violent_or_sex:
+    offense_group: [VIOLENCE, SEX]
+  max_term_only_offenses:
+    any_of:
+      - condition: violent_or_sex
+      - condition: shared_offense_ids
+
+term_multipliers:
+  - name: other_offense_term_reduction
+    description: 50% reduction for other offenses outside category A
+    when:
+      offense_group: OTHER
+      offense_category: { not_in: [A] }
+    multiplier: 0.5
+    statute: Test Statute 1(a)
+  - name: standard_term_reduction
+    description: 35% reduction for every other offense
+    multiplier: 0.65
+
+max_term_only:
+  description: The reduction comes off the max term only for these offenses
+  when:
+    condition: max_term_only_offenses
+  statute: Test Statute 2
+
+projected_dates:
+  parole_eligibility_date:
+    description: Eligible once the adjusted min term is served
+    formula: start_date + adjusted_min_days
+  release_date:
+    description: Release once the adjusted max term is served, for max terms over three years
+    when:
+      unadjusted_max_days: { greater_than: 1094 }
+    formula: start_date + adjusted_max_days
+    statute: Test Statute 3

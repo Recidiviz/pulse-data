@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
+state_code: US_XX
+description: Test regime whose projected date refers to a named condition.
+effective_date: "2020-01-01"
+conditions:
+  violent_or_sex:
+    offense_group: [VIOLENCE, SEX]
+projected_dates:
+  parole_eligibility_date:
+    description: Eligible once the adjusted min term is served, for violent or sex offenses
+    when:
+      condition: violent_or_sex
+    formula: start_date + adjusted_min_days

@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
+state_code: US_XX
+description: Test regime whose second projected date reuses the first's conditions.
+effective_date: "2020-01-01"
+projected_dates:
+  parole_eligibility_date:
+    description: Eligible once the reduced minimum term is served
+    when: &long_sentence
+      unadjusted_max_days: { greater_than: 1094 }
+    formula: start_date + adjusted_min_days
+  projected_expiration_date:
+    description: Expires once the reduced maximum term is served
+    when: *long_sentence
+    formula: start_date + adjusted_max_days

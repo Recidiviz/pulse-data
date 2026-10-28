@@ -1,0 +1,3 @@
+# yaml-language-server: $schema=../../../sentence_calculator/rules/schema/state_conditions_schema.json
+started_after_2018:
+  start_date: { after: 2018-12-31 }

@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=../../../../sentence_calculator/rules/schema/law_regime_schema.json
+state_code: US_XX
+description: Test regime that refers to the state's shared conditions.
+effective_date: "2020-01-01"
+term_multipliers:
+  - name: shared_offense_term_reduction
+    description: 15% reduction for the offenses in the state's shared conditions
+    when:
+      condition: shared_offense_ids
+    multiplier: 0.85
+  - name: standard_term_reduction
+    description: 35% reduction for every other offense
+    multiplier: 0.65
