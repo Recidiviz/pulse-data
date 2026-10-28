@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://recidiviz.org/sentence_calculator/state_conditions_schema.json",
+  "title": "Sentence Calculator State Conditions",
+  "type": "object",
+  "additionalProperties": {
+    "$ref": "law_regime_schema.json#/$defs/sentence_condition"
+  }
+}

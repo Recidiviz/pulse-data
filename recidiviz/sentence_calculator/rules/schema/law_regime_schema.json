@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://recidiviz.org/sentence_calculator/law_regime_schema.json",
+  "title": "Sentence Calculator Law Regime",
+  "type": "object",
+  "required": ["state_code", "description", "effective_date"],
+  "additionalProperties": false,
+  "properties": {
+    "state_code": { "type": "string", "pattern": "^US_[A-Z]{2,}$" },
+    "description": { "type": "string" },
+    "effective_date": { "type": "string", "format": "date" },
+    "use_calendar_term_conversion": { "type": "boolean" },
+    "days_per_month": { "type": "number", "exclusiveMinimum": 0 },
+    "days_per_year": { "type": "number", "exclusiveMinimum": 0 },
+    "conditions": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/sentence_condition" }
+    },
+    "term_multipliers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/term_multiplier" }
+    },
+    "max_term_only": {
+      "type": "object",
+      "required": ["description", "when"],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "when": { "$ref": "#/$defs/sentence_condition" },
+        "statute": { "type": "string" }
+      }
+    },
+    "projected_dates": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/date_formula" }
+    }
+  },
+  "$defs": {
+    "term_multiplier": {
+      "type": "object",
+      "required": ["name", "description", "multiplier"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "when": { "$ref": "#/$defs/sentence_condition" },
+        "multiplier": { "type": "number", "minimum": 0, "maximum": 1 },
+        "statute": { "type": "string" }
+      }
+    },
+    "date_formula": {
+      "type": "object",
+      "required": ["description", "formula"],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "when": { "$ref": "#/$defs/value_condition" },
+        "formula": { "type": "string" },
+        "statute": { "type": "string" }
+      }
+    },
+    "sentence_condition": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "all_of": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sentence_condition" }
+        },
+        "any_of": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sentence_condition" }
+        },
+        "condition": { "type": "string" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/field_matcher" }
+    },
+    "value_condition": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "all_of": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/value_condition" }
+        },
+        "any_of": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/value_condition" }
+        }
+      },
+      "additionalProperties": { "$ref": "#/$defs/field_matcher" }
+    },
+    "field_matcher": {
+      "oneOf": [
+        { "type": ["string", "number", "boolean"] },
+        { "type": "array" },
+        {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 1,
+          "additionalProperties": false,
+          "properties": {
+            "equals": {},
+            "not_equals": {},
+            "greater_than": { "type": "number" },
+            "greater_than_or_equal": { "type": "number" },
+            "less_than": { "type": "number" },
+            "less_than_or_equal": { "type": "number" },
+            "in": { "type": "array" },
+            "not_in": { "type": "array" },
+            "before": { "type": "string", "format": "date" },
+            "on_or_before": { "type": "string", "format": "date" },
+            "after": { "type": "string", "format": "date" },
+            "on_or_after": { "type": "string", "format": "date" },
+            "between_inclusive": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "type": "string", "format": "date" }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
