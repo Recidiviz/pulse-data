@@ -3,8 +3,13 @@
 # to the corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  doc_badge_number: STRING
   PARTYID_array: STRING
+  current_PARTYID: STRING
+  stable_PARTYID: STRING
+  doc_badge_number: STRING
+  serial_number_array: STRING
+  current_serial_number: STRING
+  stable_serial_number: STRING
   PERSONLASTNAME: STRING
   PERSONFIRSTNAME: STRING
   PERSONMIDDLENAME: STRING
@@ -13,15 +18,43 @@ unused_columns: []
 output:
   StateStaff:
     external_ids:
-      - StateStaffExternalId:
-          external_id: doc_badge_number
-          id_type: $literal("US_CO_DOC_BADGE_NUMBER")
       - $foreach:
           $iterable: PARTYID_array
           $result:
             StateStaffExternalId:
               external_id: $iter_item
               id_type: $literal("US_CO_PARTYID")
+              is_current_display_id_for_type:
+                $equal:
+                  - $iter_item
+                  - current_PARTYID
+              is_stable_id_for_type:
+                $equal:
+                  - $iter_item
+                  - stable_PARTYID
+      - $conditional:
+          - $if:
+              $not_null: doc_badge_number
+            $then:
+              StateStaffExternalId:
+                external_id: doc_badge_number
+                id_type: $literal("US_CO_DOC_BADGE_NUMBER")
+                is_current_display_id_for_type: $literal_bool(True)
+                is_stable_id_for_type: $literal_bool(True)
+      - $foreach:
+          $iterable: serial_number_array
+          $result:
+            StateStaffExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_CO_STAFF_SERIAL_NUMBER")
+              is_current_display_id_for_type:
+                $equal:
+                  - $iter_item
+                  - current_serial_number
+              is_stable_id_for_type:
+                $equal:
+                  - $iter_item
+                  - stable_serial_number
     full_name:
       $person_name:
         $given_names: PERSONFIRSTNAME

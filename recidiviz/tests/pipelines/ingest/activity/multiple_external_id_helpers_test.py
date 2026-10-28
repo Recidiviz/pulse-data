@@ -21,6 +21,8 @@ import unittest
 from recidiviz.common.constants.state.external_id_types import (
     US_CA_CDCNO,
     US_CA_DOC,
+    US_CO_PARTYID,
+    US_CO_STAFF_SERIAL_NUMBER,
     US_NE_ID_NBR,
     US_NYC_BOOKCASENUMBER,
 )
@@ -42,6 +44,10 @@ _PIPELINE_ONLY_SELECTION_KEYS: set[tuple[StateCode, str]] = {
     # TODO(OBT-53893): Remove when US_CA's activity pipeline moves to the Identity Service.
     (StateCode.US_CA, US_CA_DOC),
     (StateCode.US_CA, US_CA_CDCNO),
+    # US_CO staff ids: chosen by flags set at ingest.
+    # TODO(OBT-55091): Remove when US_CO's activity pipeline moves to the Identity Service.
+    (StateCode.US_CO, US_CO_PARTYID),
+    (StateCode.US_CO, US_CO_STAFF_SERIAL_NUMBER),
     # US_NE person ids: narrowed to the ingest-set flag, then selected by recency.
     # TODO(OBT-53894): Remove when US_NE's activity pipeline moves to the Identity Service.
     (StateCode.US_NE, US_NE_ID_NBR),

@@ -25,6 +25,7 @@ my_flat_field:
             arg_2: <expression>
 """
 
+import re
 from datetime import datetime
 from typing import Optional
 
@@ -65,3 +66,21 @@ def date_diff_in_days(start: str, end: str) -> Optional[str]:
     if result is None:
         return None
     return str(result)
+
+
+_DESCRIPTION_CODE_REGEX = re.compile(r"\[(?P<code>[^\[\]]+)\]$")
+
+
+def description_code(raw_text: str) -> str:
+    """Returns the code from a 'Description [CODE]' formatted value.
+
+    EOMIS coded columns are decoded into this format by
+    `query_fragments.code_with_description_sql`.
+    """
+    match = _DESCRIPTION_CODE_REGEX.search(raw_text)
+    if not match:
+        raise ValueError(
+            f"Could not parse a code from value [{raw_text}]; "
+            f"expected format 'Description [CODE]'."
+        )
+    return match.group("code")

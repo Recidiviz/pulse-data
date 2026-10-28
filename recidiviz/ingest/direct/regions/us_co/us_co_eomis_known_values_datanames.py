@@ -268,11 +268,17 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     ("eomis_programreferral", "REFERRALCANCELLATIONREASON"): ("RefCancRsn",),
     # eomis_ptyotherid
     ("eomis_ptyotherid", "PTYIDTYPE"): ("PTYIDTYPE",),
-    # eomis_relatedparty
+    # eomis_relatedparty decodes several columns through eomis_codevaluedesc. Its raw
+    # data config can't declare these joins as table_relationships, since a table can
+    # join the same foreign table only once. See
+    # https://github.com/Recidiviz/pulse-data/issues/29005.
     ("eomis_relatedparty", "PARENTGUARDIANRELATIONSHIP"): ("PARGUARREL",),
     ("eomis_relatedparty", "ACTIONTYPE"): ("ACTIONTYPE",),
     ("eomis_relatedparty", "WORKASSIGNMENT"): ("PTYWRKASG",),
     ("eomis_relatedparty", "REASONCODE"): ("REASONCODE",),
+    ("eomis_relatedparty", "PARTYRELTYPE"): ("PTYRELTYP",),
+    ("eomis_relatedparty", "PARTYRELSTATUS"): ("PTYRELSTA",),
+    ("eomis_relatedparty", "STAFFJOBCATEGORY"): ("JOBCATEG",),
     # eomis_riskasmttool
     ("eomis_riskasmttool", "RISKCURREMPL"): ("RskCurrEmpl",),
     ("eomis_riskasmttool", "RISKHIGHEDUC"): ("RskHighEduc",),

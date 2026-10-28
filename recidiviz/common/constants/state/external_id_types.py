@@ -60,6 +60,8 @@ US_CO_ADCNUMBER: Final = "US_CO_ADCNUMBER"
 US_CO_DOC_BADGE_NUMBER: Final = "US_CO_DOC_BADGE_NUMBER"
 # Eomis User ID for staff
 US_CO_USER_ID: Final = "US_CO_USER_ID"
+# Eomis staff user serial number, the value recorded in STAFFLASTUPDATE columns
+US_CO_STAFF_SERIAL_NUMBER: Final = "US_CO_STAFF_SERIAL_NUMBER"
 # Database key for users and organizations in the eomis system
 US_CO_PARTYID: Final = "US_CO_PARTYID"
 
