@@ -75,16 +75,6 @@ def document_extraction_results_dataset_for_region(
     return f"{prefix}{state_code.value.lower()}_document_extraction_results"
 
 
-def document_extraction_results_unvalidated_dataset_for_region(
-    state_code: StateCode, sandbox_dataset_prefix: str | None = None
-) -> str:
-    """Returns the dataset containing unvalidated (raw-parsed) document extraction results for this region."""
-    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
-    return (
-        f"{prefix}{state_code.value.lower()}_document_extraction_results__unvalidated"
-    )
-
-
 def document_extraction_pre_resolution_results_dataset_for_region(
     state_code: StateCode, sandbox_dataset_prefix: str | None = None
 ) -> str:
@@ -121,16 +111,6 @@ def state_agnostic_document_extraction_results_dataset(
     """
     prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
     return f"{prefix}document_extraction_results"
-
-
-def state_agnostic_document_extraction_results_unvalidated_dataset(
-    sandbox_dataset_prefix: str | None = None,
-) -> str:
-    """Returns the dataset containing the cross-state UNION ALL views over every
-    state's unvalidated (raw-parsed) document extraction results.
-    """
-    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
-    return f"{prefix}document_extraction_results__unvalidated"
 
 
 def state_agnostic_document_extraction_pre_resolution_results_dataset(

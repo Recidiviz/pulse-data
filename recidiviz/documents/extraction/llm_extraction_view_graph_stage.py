@@ -24,9 +24,8 @@ class LLMExtractionViewGraphStage(Enum):
     materialized for one extractor."""
 
     FIRST_ORDER = "first_order"
-    """After first-order extraction has run: the unvalidated views, and public
-    views when the collection declares no entity groups or the pre-resolution
-    views when it does."""
+    """After first-order extraction has run: the public views when the collection
+    declares no entity groups or the pre-resolution views when it does."""
 
     ENTITY_RESOLUTION = "entity_resolution"
     """After entity resolution has run for the collection's entity groups: the

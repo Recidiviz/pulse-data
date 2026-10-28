@@ -116,9 +116,6 @@ from recidiviz.calculator.query.state.views.tasks.snooze_status_archive import (
     SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER as TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.dataset_config import (
-    document_extraction_results_unvalidated_dataset_for_region,
-)
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_views_dataset_for_region,
     raw_latest_views_dataset_for_region,
@@ -194,7 +191,7 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             "Cross-state document extraction UNION ALL view with no deployed "
             "downstream consumer: either a payment view (the payment "
             "document_extraction_sessions view that reads it is itself unconsumed) "
-            "or an unvalidated/pre-resolution/entity view that no sessions view "
+            "or a pre-resolution/entity view that no sessions view "
             "reads. Its per-state parents are marked used through it. Tracked in "
             "TODO(OBT-51675). (Emily Turner, 2026-09-22)"
         )
@@ -207,12 +204,6 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             "document_extraction_results__entity_mentions.case_note_housing_info_housing_entity_mentions",
             "document_extraction_results__pre_resolution.case_note_employment_info_employers",
             "document_extraction_results__pre_resolution.case_note_housing_info",
-            "document_extraction_results__unvalidated.case_note_employment_info",
-            "document_extraction_results__unvalidated.case_note_employment_info_employers",
-            "document_extraction_results__unvalidated.case_note_employment_info_employment_changes",
-            "document_extraction_results__unvalidated.case_note_housing_info",
-            "document_extraction_results__unvalidated.case_note_payment_info",
-            "document_extraction_results__unvalidated.case_note_payment_info_payments",
         ]
     },
     TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER.address: (
@@ -428,12 +419,6 @@ def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
             raw_data_views_dataset_for_region(state_code, instance)
             for state_code in StateCode
             for instance in DirectIngestInstance
-        },
-        # Unvalidated LLM extraction results views exist for debugging extraction
-        # output before validation; nothing downstream reads them.
-        *{
-            document_extraction_results_unvalidated_dataset_for_region(state_code)
-            for state_code in StateCode
         },
     }:
         return True

@@ -202,8 +202,6 @@ datasets:
     description: View-derived source tables materialized into [us_co_document_extraction_results__pre_resolution].
   us_co_document_extraction_results__raw:
     description: Raw LLM document-extraction result tables for Colorado
-  us_co_document_extraction_results__unvalidated:
-    description: View-derived source tables materialized into [us_co_document_extraction_results__unvalidated].
   us_co_document_extraction_results__validated:
     description: Validated LLM document-extraction result tables for Colorado
   us_co_document_extraction_validation_audit:
@@ -346,8 +344,6 @@ datasets:
     description: View-derived source tables materialized into [us_ix_document_extraction_results__pre_resolution].
   us_ix_document_extraction_results__raw:
     description: Raw LLM document-extraction result tables for Idaho ATLAS
-  us_ix_document_extraction_results__unvalidated:
-    description: View-derived source tables materialized into [us_ix_document_extraction_results__unvalidated].
   us_ix_document_extraction_results__validated:
     description: Validated LLM document-extraction result tables for Idaho ATLAS
   us_ix_document_extraction_validation_audit:
@@ -867,10 +863,6 @@ datasets:
       - recidiviz-staging
   us_oz_document_extraction_results__raw:
     description: Raw LLM document-extraction result tables for Oz
-  us_oz_document_extraction_results__unvalidated:
-    description: View-derived source tables materialized into [us_oz_document_extraction_results__unvalidated].
-    projects:
-      - recidiviz-staging
   us_oz_document_extraction_results__validated:
     description: Validated LLM document-extraction result tables for Oz
   us_oz_document_extraction_validation_audit:
