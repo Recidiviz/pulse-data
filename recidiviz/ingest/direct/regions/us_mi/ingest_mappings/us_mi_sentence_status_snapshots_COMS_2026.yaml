@@ -1,0 +1,176 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence_status_snapshot_COMS_2026` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: feature__coms_2026_enabled
+input_columns:
+  Offender_Number: STRING
+  Sentence_Id: STRING
+  Sentence_Effective_Date: DATE
+  End_Date: DATE
+  End_Reason: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    sentences:
+      - StateSentence:
+          external_id: Sentence_Id
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                sequence_num: $literal("1")
+                status_update_datetime: Sentence_Effective_Date
+                status: $literal_enum(StateSentenceStatus.SERVING)
+            - $conditional:
+                - $if:
+                    $not_null: End_Date
+                  $then:
+                    StateSentenceStatusSnapshot:
+                      sequence_num: $literal("2")
+                      status_update_datetime: End_Date
+                      # TODO(MI-13): Re-visit mapping when we get real data
+                      status:
+                        $enum_mapping:
+                          $raw_text: End_Reason
+                          $mappings:
+                            # Active reasons are still configured in COMS; inactive reasons are legacy
+                            # values that may still appear on older records.
+                            StateSentenceStatus.COMPLETED:
+                              # Active
+                              - "Administrative Discharge from Prison"
+                              - "Administrative Discharge from Parole"
+                              - "Administrative Discharge from Probation"
+                              - "Deferred Sentence Successfully Completed"
+                              - "Discharged"
+                              - "Discharged by Transfer to Foreign Country"
+                              - "Discharged Early"
+                              - "Discharged Successfully"
+                              - "Discharged While Absconder"
+                              - "Discharged with Time Served"
+                              - "Discharged Without Improvement"
+                              - "HYTA Prison Release, Continued on Probation"
+                              - "Interstate Closed - Absconded"
+                              - "Interstate Closed - Discharged"
+                              - "Interstate Closed - Return"
+                              - "Interstate Closed - Transfer"
+                              - "Sentenced From Delay No Further Sentence Imposed"
+                              - "Termination of Non-Controlling Sentence"
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Closed, serving other charge"
+                              - "Completed Satisfactorily"
+                              - "Court Discharged with Time Served"
+                              - "Discharged While Escapee or Absconder"
+                              - "Early Discharge"
+                              - "Interest Closed for Interstate Order"
+                              - "ischarged Without Improvement"
+                              - "Offender Discharge"
+                              - "Out of State Parolee Receiving Sentence In Michigan"
+                              - "Out of State Parolee Receiving Sentence Out of State"
+                              - "Release from SAI - Complete"
+                              - "Release from SAI - Incomplete"
+                              - "Sentence Discharge while on Parole"
+                            StateSentenceStatus.REVOKED:
+                              # Active
+                              - "7411 Probation Revoked"
+                              - "Deferred Sentence Revoked"
+                              - "Discharged with Probation Revoked"
+                              - "Drug Court Probation Revoked"
+                              - "HYTA Status Revoked"
+                              - "Interstate Closed - Retake"
+                              - "Mental Health Court Probation Revoked"
+                              - "Probation Violation New Sentence"
+                              - "Probation Violation Technical Violation"
+                              - "Veterans Court Probation Revoked"
+                              # Inactive (legacy migrated over from OMNI)
+                              - "HYTA Probation Revoked"
+                              - "Parole Violation New Sentence"
+                              - "Parole Violation Technical Violation"
+                              - "Parole Violator New Sentence"
+                              - "Parole Violator Technical Violation"
+                              - "Probation Violator New Sentence"
+                              - "Probation Violator Technical Violation"
+                              - "Status Revoked"
+                              - "Technical Violation Sustained"
+                            StateSentenceStatus.VACATED:
+                              # Active
+                              - "Discharged by Court, Nollo Prosequi"
+                              - "Dismissed by Court"
+                              - "Plea Withdrawn"
+                              - "Vacated"
+                              - "Vacated with Remand"
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Closed due to Accompanying 750.520F Charge CSC 2nd Notice"
+                              - "Closed due to Accompanying 333.7413 Charge"
+                              - "Conviction Reversed by Court"
+                              - "Order Entered in Error"
+                              - "Reversal on Appeal"
+                              - "Vacated due to Habitual Offender Conviction"
+                            StateSentenceStatus.AMENDED:
+                              # Active
+                              - "Charge Reduced to Misdemeanor"
+                              - "Resentenced by Court"
+                              - "Resentenced to Jail and Probation"
+                              - "Resentenced to Jail Only"
+                              - "Resentenced to Probation Only"
+                              - "Resentenced to Time Served"
+                              - "Sentence Extended"
+                              - "Sentence Term Modified"
+                              - "Sentenced From Delay To A Jail Only Sentence"
+                              - "Sentenced From Delay To A Monetary Only Sentence"
+                              - "Sentenced From Delay To Prison"
+                              - "Sentenced From Delay To Probation"
+                              - "Sentenced to Jail Only"
+                              - "Sentenced to Juvenile Supervision"
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Combination Sentence Imposed"
+                              - "Court Resentenced to Probation"
+                              - "Order Terminated, Continued on Additional Order(s)"
+                              - "Parole Term Extended"
+                              - "Resentenced on Appeal"
+                              - "Resentenced on Appeal to Jail Only"
+                              - "Sentence Reduced to Misdemeanor"
+                              - "Sentenced to Family Independence Agency (DSS)"
+                              - "Sentenced to MDHHS - Juvenile"
+                              - "Sentenced to Prison under HYTA"
+                              - "Sentenced to Prison While in Custody of Outside Jurisdiction"
+                              - "Supervision Transferred to District Court"
+                            StateSentenceStatus.COMMUTED:
+                              # Active
+                              - "Commuted"
+                            StateSentenceStatus.PARDONED:
+                              # Active
+                              - "Pardoned"
+                            StateSentenceStatus.DEATH:
+                              # Active
+                              - "Discharged due to Death"
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Death"
+                            StateSentenceStatus.SUSPENDED:
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Sentence Suspended"
+                              - "Sentence Suspended by Court"
+                              - "Suspended Sentence"
+                            StateSentenceStatus.SANCTIONED:
+                              # Active
+                              - "Sentenced to a Monetary Sentence Only"
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Sentenced to Community Service Only"
+                            StateSentenceStatus.INTERNAL_UNKNOWN:
+                              # Active
+                              - "Failure To Appear For Sentencing"
+                              - "Termination for Classification"
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Client Number Reassignment"
+                              - "Close Reason Integration Test"
+                              - "Closed Legal Order"
+                              - "Closed Offender Charge"
+                              - "New Commitment While Under Sentence"
+                              - "Other"
+                              - "Out of State Case Transferred out of Michigan"
+                              - "Predates COMS as system of record"
+                              - "Sent Close Reason Integration Testing"
+                              - "Test-Docket Process End Reason"

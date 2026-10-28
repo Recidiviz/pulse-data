@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence_lengths` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: feature__coms_2026_enabled
+input_columns:
+  Offender_Number: STRING
+  Sentence_Id: STRING
+  Sentence_Effective_Date: DATE
+  Scheduled_End_Date: DATE
+  Minimum_Term_Life: STRING
+  Minimum_Term_Years: STRING
+  Minimum_Term_Months: STRING
+  Minimum_Term_Days: STRING
+  Maximum_Term_Life: STRING
+  Maximum_Term_Years: STRING
+  Maximum_Term_Months: STRING
+  Maximum_Term_Days: STRING
+  update_datetime: DATETIME
+  seq_num: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    sentences:
+      - StateSentence:
+          external_id: Sentence_Id
+          sentence_lengths:
+            - StateSentenceLength:
+                sequence_num: seq_num
+                length_update_datetime: update_datetime
+                # TODO(MI-350): Validate Scheduled_End_Date is an appropriate max date
+                # Do we need to incorporate Maximum_Term_Life?
+                projected_completion_date_max_external: Scheduled_End_Date
+                # TODO(MI-8527): Hydrate ERD properly once we get PBJ Date
+                projected_completion_date_min_external:
+                  $conditional:
+                    - $if:
+                        $not:
+                          $equal:
+                            - Minimum_Term_Life
+                            - $literal("1")
+                      $then:
+                        $custom:
+                          $function: us_mi_custom_parsers.date_from_start_and_duration
+                          $args:
+                            start_date_str: Sentence_Effective_Date
+                            years_str: Minimum_Term_Years
+                            months_str: Minimum_Term_Months
+                            days_str: Minimum_Term_Days
+                sentence_length_days_min:
+                  $conditional:
+                    - $if:
+                        $not:
+                          $equal:
+                            - Minimum_Term_Life
+                            - $literal("1")
+                      $then:
+                        $custom:
+                          $function: us_mi_custom_parsers.max_and_min_lengths_days
+                          $args:
+                            years_str: Minimum_Term_Years
+                            months_str: Minimum_Term_Months
+                            days_str: Minimum_Term_Days
+                sentence_length_days_max:
+                  $conditional:
+                    - $if:
+                        $not:
+                          $equal:
+                            - Maximum_Term_Life
+                            - $literal("1")
+                      $then:
+                        $custom:
+                          $function: us_mi_custom_parsers.max_and_min_lengths_days
+                          $args:
+                            years_str: Maximum_Term_Years
+                            months_str: Maximum_Term_Months
+                            days_str: Maximum_Term_Days

@@ -30,6 +30,7 @@ from re import findall, search
 from typing import Optional
 
 from recidiviz.common.str_field_utils import (
+    parse_date,
     parse_datetime,
     safe_parse_days_from_duration_pieces,
 )
@@ -99,6 +100,28 @@ def max_and_min_lengths_days(
             return None
         return str(result)
     return None
+
+
+def date_from_start_and_duration(
+    start_date_str: str,
+    years_str: str,
+    months_str: str,
+    days_str: str,
+) -> Optional[str]:
+    """Returns the ISO date reached by adding years_str, months_str, and days_str
+    to start_date_str, or None if the start date or duration cannot be parsed."""
+    start = parse_date(start_date_str)
+    if not start:
+        return None
+    days = safe_parse_days_from_duration_pieces(
+        years_str=years_str,
+        months_str=months_str,
+        days_str=days_str,
+        start_dt_str=start_date_str,
+    )
+    if not days:
+        return None
+    return (start + datetime.timedelta(days=days)).isoformat()
 
 
 def parole_possible(min_life: str, mcl: str, attempt: str) -> bool:

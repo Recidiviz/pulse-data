@@ -1,0 +1,316 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentences_COMS_2026` to the
+# corresponding Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: feature__coms_2026_enabled
+input_columns:
+  Offender_Number: STRING
+  Sentence_Id: STRING
+  Sentence_Type: STRING
+  Jurisdiction_Type: STRING
+  Jurisdiction: STRING
+  Minimum_Term_Life: STRING
+  Sentence_Date: STRING
+  Sentence_Effective_Date: STRING
+  Sentence_Begin_Date: STRING
+  Commitment_Date: STRING
+  Charge_Id: STRING
+  Offense_Date: STRING
+  Charge_Count: STRING
+  crime_code: STRING
+  crime_code_description: STRING
+  Conviction_Date: STRING
+  End_Date: STRING
+  End_reason: STRING
+  NCIC_Code: STRING
+  offense_type_ids: STRING
+  offense_type_description: STRING
+  Adjusted_Crime_Code_Class: STRING
+  StatRpt_term: STRING
+  charge_has_at_least_one_sentence_over_1_year: INTEGER
+  Prison_Applicable: STRING
+  Probation_Applicable: STRING
+unused_columns:
+  # TODO(MI-350): Check how `Sentence_Effective_Date and Sentence_Begin_Date and
+  # Commitment_Date relate and determine if we can just use effective date
+  - Sentence_Begin_Date
+  - Commitment_Date
+  - End_Date
+  # TODO(MI-350): Evaluate whether we can use this for charge classification when we have real data
+  - charge_has_at_least_one_sentence_over_1_year
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    sentences:
+      - StateSentence:
+          external_id: Sentence_Id
+          sentence_type:
+            $conditional:
+              - $if:
+                  $and:
+                    - $equal:
+                        - Sentence_Type
+                        - $literal("HYTA")
+                    - $equal:
+                        - Prison_Applicable
+                        - $literal("1")
+                $then: $literal_enum(StateSentenceType.STATE_PRISON)
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - Sentence_Type
+                        - $literal("HYTA")
+                    - $equal:
+                        - Probation_Applicable
+                        - $literal("1")
+                $then: $literal_enum(StateSentenceType.PROBATION)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: Sentence_Type
+                    $mappings:
+                      StateSentenceType.STATE_PRISON:
+                        - "Prison"
+                      StateSentenceType.PROBATION:
+                        - "Probation"
+                        - "Delayed Sentence"
+          sentencing_authority:
+            $enum_mapping:
+              $raw_text: Jurisdiction_Type
+              $mappings:
+                # MI has a unified court system so when Juridiction_Type = County,
+                # it means a state court in a judicial county
+                StateSentencingAuthority.STATE:
+                  - "County"
+                StateSentencingAuthority.OTHER_STATE:
+                  - "State"
+                  - "US Territory"
+          county_code:
+            $conditional:
+              - $if:
+                  $equal:
+                    - Jurisdiction_Type
+                    - $literal("County")
+                $then: Jurisdiction
+          # TODO(MI-350): Validate with real data to see what to do with Maximum_Term_Life
+          is_life:
+            $equal:
+              - Minimum_Term_Life
+              - $literal("1")
+          imposed_date: Sentence_Date
+          # TODO(MI-350): Check how `Sentence_Effective_Date and Sentence_Begin_Date and
+          # Commitment_Date relate and determine if we can just use effective date
+          current_state_provided_start_date: Sentence_Effective_Date
+          # TODO(MI-13): Re-visit mapping when we get real data
+          charges:
+            - StateChargeV2:
+                external_id: Charge_Id
+                status:
+                  $conditional:
+                    # if the charge has ended, use end_status to denote final charge status
+                    - $if:
+                        $not_null: End_reason
+                      $then:
+                        $enum_mapping:
+                          $raw_text: End_reason
+                          $mappings:
+                            StateChargeV2Status.CONVICTED:
+                              # Active
+                              - "7411 Probation Revoked"
+                              - "Administrative Discharge from Prison"
+                              - "Administrative Discharge from Parole"
+                              - "Administrative Discharge from Probation"
+                              - "Charge Reduced to Misdemeanor"
+                              - "Commuted"
+                              - "Deferred Sentence Revoked"
+                              - "Discharged"
+                              - "Discharged due to Death"
+                              - "Discharged Early"
+                              - "Discharged Successfully"
+                              - "Discharged While Absconder"
+                              - "Discharged with Probation Revoked"
+                              - "Discharged with Time Served"
+                              - "Discharged Without Improvement"
+                              - "Drug Court Probation Revoked"
+                              - "Failure To Appear For Sentencing"
+                              - "HYTA Status Revoked"
+                              - "Interstate Closed - Absconded"
+                              - "Interstate Closed - Discharged"
+                              - "Interstate Closed - Retake"
+                              - "Interstate Closed - Return"
+                              - "Mental Health Court Probation Revoked"
+                              - "Pardoned"
+                              - "Probation Violation New Sentence"
+                              - "Probation Violation Technical Violation"
+                              - "Resentenced by Court"
+                              - "Resentenced to Jail and Probation"
+                              - "Resentenced to Jail Only"
+                              - "Resentenced to Probation Only"
+                              - "Resentenced to Time Served"
+                              - "Sentence Extended"
+                              - "Sentence Term Modified"
+                              - "Sentenced From Delay To A Jail Only Sentence"
+                              - "Sentenced From Delay To A Monetary Only Sentence"
+                              - "Sentenced From Delay To Prison"
+                              - "Sentenced From Delay To Probation"
+                              - "Sentenced to a Monetary Sentence Only"
+                              - "Sentenced to Jail Only"
+                              - "Termination for Classification"
+                              - "Termination of Non-Controlling Sentence"
+                              - "Veterans Court Probation Revoked"
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Closed, serving other charge"
+                              - "Combination Sentence Imposed"
+                              - "Completed Satisfactorily"
+                              - "Court Discharged with Time Served"
+                              - "Court Resentenced to Probation"
+                              - "Death"
+                              - "Discharged While Escapee or Absconder"
+                              - "Early Discharge"
+                              - "HYTA Probation Revoked"
+                              - "ischarged Without Improvement"
+                              - "New Commitment While Under Sentence"
+                              - "Offender Discharge"
+                              - "Order Terminated, Continued on Additional Order(s)"
+                              - "Out of State Parolee Receiving Sentence In Michigan"
+                              - "Out of State Parolee Receiving Sentence Out of State"
+                              - "Parole Term Extended"
+                              - "Parole Violation New Sentence"
+                              - "Parole Violation Technical Violation"
+                              - "Parole Violator New Sentence"
+                              - "Parole Violator Technical Violation"
+                              - "Probation Violator New Sentence"
+                              - "Probation Violator Technical Violation"
+                              - "Release from SAI - Complete"
+                              - "Release from SAI - Incomplete"
+                              - "Resentenced on Appeal"
+                              - "Resentenced on Appeal to Jail Only"
+                              - "Sentence Discharge while on Parole"
+                              - "Sentence Reduced to Misdemeanor"
+                              - "Sentence Suspended"
+                              - "Sentence Suspended by Court"
+                              - "Sentenced to Community Service Only"
+                              - "Sentenced to Prison While in Custody of Outside Jurisdiction"
+                              - "Status Revoked"
+                              - "Supervision Transferred to District Court"
+                              - "Suspended Sentence"
+                              - "Technical Violation Sustained"
+                            StateChargeV2Status.ADJUDICATED:
+                              # Active
+                              - "Deferred Sentence Successfully Completed"
+                              - "HYTA Prison Release, Continued on Probation"
+                              - "Sentenced From Delay No Further Sentence Imposed"
+                              - "Sentenced to Juvenile Supervision"
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Sentenced to Family Independence Agency (DSS)"
+                              - "Sentenced to MDHHS - Juvenile"
+                              - "Sentenced to Prison under HYTA"
+                            StateChargeV2Status.ACQUITTED:
+                              # Active
+                              - "Vacated"
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Conviction Reversed by Court"
+                              - "Reversal on Appeal"
+                              - "Vacated due to Habitual Offender Conviction"
+                            StateChargeV2Status.DROPPED:
+                              # Active
+                              - "Discharged by Court, Nollo Prosequi"
+                              - "Dismissed by Court"
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Closed due to Accompanying 750.520F Charge CSC 2nd Notice"
+                              - "Closed due to Accompanying 333.7413 Charge"
+                            StateChargeV2Status.PENDING:
+                              # Active
+                              - "Plea Withdrawn"
+                              - "Vacated with Remand"
+                            StateChargeV2Status.TRANSFERRED_AWAY:
+                              # Active
+                              - "Discharged by Transfer to Foreign Country"
+                              - "Interstate Closed - Transfer"
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Out of State Case Transferred out of Michigan"
+                            StateChargeV2Status.INTERNAL_UNKNOWN:
+                              # Inactive (legacy migrated over from OMNI)
+                              - "Client Number Reassignment"
+                              - "Close Reason Integration Test"
+                              - "Closed Legal Order"
+                              - "Closed Offender Charge"
+                              - "Interest Closed for Interstate Order"
+                              - "Order Entered in Error"
+                              - "Other"
+                              - "Predates COMS as system of record"
+                              - "Sent Close Reason Integration Testing"
+                              - "Test-Docket Process End Reason"
+                    # if the charge has not ended, assume that it's convicted
+                    # since we we only get charges that start out convicted
+                    - $else: $literal_enum(StateChargeV2Status.CONVICTED)
+                offense_date: Offense_Date
+                ncic_code: NCIC_Code
+                statute: crime_code
+                description: crime_code_description
+                date_charged: Conviction_Date
+                counts: Charge_Count
+                is_violent:
+                  $conditional:
+                    - $if:
+                        $not_null: offense_type_ids
+                      $then:
+                        $custom:
+                          $function: us_mi_custom_parsers.parse_offense_type_ids
+                          $args:
+                            offense_type_ids: offense_type_ids
+                            result_field: $literal("is_violent")
+                is_sex_offense:
+                  $conditional:
+                    - $if:
+                        $not_null: offense_type_ids
+                      $then:
+                        $custom:
+                          $function: us_mi_custom_parsers.parse_offense_type_ids
+                          $args:
+                            offense_type_ids: offense_type_ids
+                            result_field: $literal("is_sex_offense")
+                offense_type: offense_type_description
+                # TODO(MI-13): Reevaluate once real data attained and Adjusted_Crime_Code_Class
+                #              and charge_has_at_least_one_sentence_over_1_year are validated for
+                #              whether either should be used instead of StatRpt_term
+                classification_type:
+                  $conditional:
+                    - $if:
+                        $not_null: Adjusted_Crime_Code_Class
+                      $then:
+                        $enum_mapping:
+                          $raw_text: Adjusted_Crime_Code_Class
+                          $mappings:
+                            StateChargeV2ClassificationType.FELONY:
+                              - "Felony"
+                            StateChargeV2ClassificationType.MISDEMEANOR:
+                              - "Misdemeanor"
+                    - $else_if:
+                        $not_null: StatRpt_term
+                      $then:
+                        $conditional:
+                          - $if:
+                              $equal:
+                                - $literal("MISD")
+                                - StatRpt_term
+                            $then: $literal_enum(StateChargeV2ClassificationType.MISDEMEANOR)
+                          - $else_if:
+                              $in:
+                                $value: StatRpt_term
+                                $options:
+                                  - $literal("VAR")
+                                  - $literal("LIFE")
+                                  - $literal("None")
+                            $then: $literal_enum(StateChargeV2ClassificationType.INTERNAL_UNKNOWN)
+                          - $else: $literal_enum(StateChargeV2ClassificationType.FELONY) # All other value options are for felonies
+                # We're going to pull classification subtype (degrees) from the description field; if it isn't contained in the description,
+                # then we'll return None but that doesn't necessarily mean there isn't a subclass
+                classification_subtype:
+                  $custom:
+                    $function: us_mi_custom_parsers.parse_charge_subclass
+                    $args:
+                      description: crime_code_description
