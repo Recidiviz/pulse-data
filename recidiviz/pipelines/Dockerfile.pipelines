@@ -42,6 +42,10 @@ COPY . ${WORKDIR}
 # `python setup.py sdist` here to build the artifact staged to Dataflow workers.
 # Removing it restores setup.py as the authoritative source for this image.
 RUN rm ${WORKDIR}/pyproject.toml
+# setuptools also parses the root setup.cfg during that sdist build, with configparser
+# interpolation on, so any literal % in its dev tool sections (a pytest log format,
+# say) fails every pipeline launch. Nothing in it configures this package.
+RUN rm ${WORKDIR}/setup.cfg
 
 ENV FLEX_TEMPLATE_PYTHON_SETUP_FILE="${WORKDIR}/setup.py"
 ENV FLEX_TEMPLATE_PYTHON_PY_FILE="${WORKDIR}/pipeline_runner.py"

@@ -7,6 +7,8 @@
 # Dataflow workers, pip re-executes setup.py as that sdist is installed on each
 # worker, and it reads its install_requires from the requirements file next to it.
 # setuptools does not include that file in an sdist by default (its name is
-# irrelevant -- only README*, setup.py, setup.cfg and pyproject.toml are automatic),
-# so without this every worker-side install would fail with a FileNotFoundError.
+# irrelevant -- only README*, setup.py, setup.cfg and pyproject.toml are automatic,
+# and Dockerfile.pipelines removes the root setup.cfg and pyproject.toml before the
+# build), so without this every worker-side install would fail with a
+# FileNotFoundError.
 include dataflow_flex_requirements.txt

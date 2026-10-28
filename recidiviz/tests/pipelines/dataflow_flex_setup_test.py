@@ -77,6 +77,33 @@ class TestDataflowFlexSetupPackaging(unittest.TestCase):
             f"the directory it builds the sdist in.",
         )
 
+    def test_dockerfile_removes_root_pyproject_after_copying_repo(self) -> None:
+        """The root pyproject.toml's [project] table would override the pins in
+        dataflow_flex_setup.py when Beam builds the sdist."""
+        with open(DOCKERFILE_PATH, "r", encoding="utf-8") as dockerfile:
+            contents = dockerfile.read()
+
+        self.assertLess(
+            contents.index("COPY . ${WORKDIR}\n"),
+            contents.index("RUN rm ${WORKDIR}/pyproject.toml\n"),
+            f"[{DOCKERFILE_PATH}] must remove the root pyproject.toml after copying "
+            f"the repo into ${{WORKDIR}}.",
+        )
+
+    def test_dockerfile_removes_root_setup_cfg_after_copying_repo(self) -> None:
+        """setuptools parses the root setup.cfg with configparser interpolation when
+        Beam builds the sdist, so a literal % in any of its sections fails every
+        pipeline launch."""
+        with open(DOCKERFILE_PATH, "r", encoding="utf-8") as dockerfile:
+            contents = dockerfile.read()
+
+        self.assertLess(
+            contents.index("COPY . ${WORKDIR}\n"),
+            contents.index("RUN rm ${WORKDIR}/setup.cfg\n"),
+            f"[{DOCKERFILE_PATH}] must remove the root setup.cfg after copying the "
+            f"repo into ${{WORKDIR}}.",
+        )
+
     def test_manifest_in_includes_requirements_file(self) -> None:
         with open(MANIFEST_IN_PATH, "r", encoding="utf-8") as manifest_file:
             directives = [
