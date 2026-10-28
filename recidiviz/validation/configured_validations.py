@@ -83,6 +83,13 @@ from recidiviz.validation.views.state.active_program_participation_by_region_int
 from recidiviz.validation.views.state.admission_pfi_pop_pfi_mismatch import (
     ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.analyst_data_validation.analyst_data_span_validations import (
+    ANALYST_DATA_MAGIC_END_DATE_SPANS_VIEW_BUILDER,
+    ANALYST_DATA_NULL_START_DATE_SPANS_VIEW_BUILDER,
+    ANALYST_DATA_OVERLAPPING_SPANS_VIEW_BUILDER,
+    ANALYST_DATA_START_AFTER_END_DATE_SPANS_VIEW_BUILDER,
+    ANALYST_DATA_ZERO_DAY_SPANS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.analyst_data_validation.us_ma_resident_egt_discrepancy import (
     US_MA_RESIDENT_EGT_DISCREPANCY_VIEW_BUILDER,
 )
@@ -904,6 +911,26 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=PRODUCT_ROSTER_ARCHIVE_MISSING_PRIORITIZED_ROLE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
             projects_to_deploy={GCP_PROJECT_PRODUCTION},
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=ANALYST_DATA_OVERLAPPING_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=ANALYST_DATA_ZERO_DAY_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=ANALYST_DATA_NULL_START_DATE_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=ANALYST_DATA_START_AFTER_END_DATE_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=ANALYST_DATA_MAGIC_END_DATE_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
             view_builder=US_MA_RESIDENT_EGT_DISCREPANCY_VIEW_BUILDER,
