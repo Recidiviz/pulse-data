@@ -66,7 +66,10 @@ output_schema:
         - name: unhoused
           description: >
             Explicitly has nowhere indoors to live — homeless, houseless, or
-            living in a vehicle.
+            living in a vehicle. Do not infer unhoused solely because the
+            officer could not locate the person, the person's whereabouts are
+            unknown, or the person is no longer living at an address the officer
+            visited.
         - name: in_custody
           description: >
             Currently staying in an incarceration facility (jail or prison).
@@ -190,13 +193,13 @@ output_schema:
     - name: address
       type: STRING
       description: >
-        Residential address of the person's actual residence. Supervision
-        office addresses and facility names should not be extracted. Format
-        as street address, then city, state, and zip code, e.g.
-        "123 First Road, Denver, CO 80202", with title case and consistent
-        abbreviations (St, Ave, Blvd, Dr). Partial addresses are valid;
-        include only the parts the source text states, e.g. "123 First Road".
-        Omit if no address found or person is unhoused.
+        Residential address of the person's actual residence. Supervision office
+        addresses and facility names should not be extracted. Format as street
+        address, then city, state, and zip code, e.g. "123 First Road, Denver,
+        CO 80202", with title case and consistent abbreviations (St, Ave, Blvd,
+        Dr). Partial addresses are valid; include only the parts the source text
+        states, e.g. "123 First Road". Omit if no address found or person is
+        unhoused.
       applicable_when_value:
         primary_status: [housed]
 
@@ -221,9 +224,10 @@ entity_groups:
       plural: places of residence
     entity_fields: [address, temporary_housing_name]
     grouping_instructions: >
-      Group mentions describing the same physical residence or living arrangement
-      into one entity, even when separated in time (e.g. the person returns to the
-      same address or facility across several notes). Treat a permanent residence
-      and a temporary stay at a different place as separate entities. When a
-      mention lacks a facility name but its type and context clearly indicate the
-      same facility as a named mention, group them together.
+      Group mentions describing the same physical residence or living
+      arrangement into one entity, even when separated in time (e.g. the person
+      returns to the same address or facility across several notes). Treat a
+      permanent residence and a temporary stay at a different place as separate
+      entities. When a mention lacks a facility name but its type and context
+      clearly indicate the same facility as a named mention, group them
+      together.

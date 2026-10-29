@@ -16,3 +16,8 @@ Clarifications:
 1. Living in a shelter or transitional housing means housed with
    housed_type='temporary_housing', not unhoused.
 2. Moving out of a place or searching for new housing does not mean currently unhoused.
+3. If the note indicates that the officer could not locate the person, that the
+   person's whereabouts are unknown, or that the person is no longer living at an
+   address the officer visited — and there is no other information about housed or
+   unhoused status — do not infer 'unhoused'. If no other housing information is
+   present, set is_relevant = FALSE.
