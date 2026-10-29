@@ -30,6 +30,40 @@ from recidiviz.common.str_field_utils import snake_to_camel, snake_to_title
 # app product.
 REENTRY_ASSESSMENT_PATH = "/reentry-assessment"
 
+# Every host the public pathways dashboard is served from, mapped to the state each
+# one serves. Public visitors are unauthenticated, so the host is the only signal for
+# which state a page view belongs to. Onboarding a new public dashboard domain only
+# requires adding an entry here.
+PUBLIC_PATHWAYS_HOST_TO_STATE_CODE: dict[str, StateCode] = {
+    # US_NY is the only state on pathways.recidiviz.org. Once a second state launches
+    # there, this host no longer identifies a state on its own.
+    "pathways.recidiviz.org": StateCode.US_NY,
+    "dashboards.doccs.ny.gov": StateCode.US_NY,
+}
+
+PUBLIC_PATHWAYS_ANONYMOUS_ID_COLUMN = String(
+    name="anonymous_id",
+    description="Segment's per-browser identifier for an unauthenticated visitor. Only "
+    "populated for public pathways dashboard events, where it is the only way to count "
+    "distinct visitors.",
+    mode="NULLABLE",
+)
+
+
+def public_pathways_state_code_from_host_query_fragment(
+    context_page_url_col_name: str = "context_page_url",
+) -> str:
+    """Returns a SQL expression for the state code of a public pathways event, looked
+    up from the host in its page URL via PUBLIC_PATHWAYS_HOST_TO_STATE_CODE. Hosts with
+    no entry produce NULL.
+    """
+    when_clauses = " ".join(
+        f"WHEN '{host}' THEN '{state_code.value}'"
+        for host, state_code in sorted(PUBLIC_PATHWAYS_HOST_TO_STATE_CODE.items())
+    )
+    # RTRIM strips the trailing root dot some browsers include in the host.
+    return f"CASE RTRIM(NET.HOST({context_page_url_col_name}), '.') {when_clauses} END"
+
 
 class ProductType(Enum):
     """
@@ -72,7 +106,8 @@ class ProductType(Enum):
     def url_bases(self) -> list[str]:
         """Returns the base URLs this product type is served from. Most products
         have a single host; the JII opportunities app is served from multiple
-        vendor-hosted tablet domains in addition to its web app."""
+        vendor-hosted tablet domains in addition to its web app, and public pathways
+        is also served from state partner domains."""
         if self is ProductType.CASE_PLANNING_ASSISTANT:
             return ["https://plan.recidiviz.org"]
         if self is ProductType.JII_OPPORTUNITIES_APP:
@@ -83,7 +118,13 @@ class ProductType(Enum):
         if self is ProductType.MEETINGS:
             return ["https://meet.recidiviz.org"]
         if self is ProductType.PUBLIC_PATHWAYS:
-            return ["https://pathways.recidiviz.org"]
+            return [
+                url_base
+                for host in PUBLIC_PATHWAYS_HOST_TO_STATE_CODE
+                # Some browsers report the fully qualified host with its trailing
+                # root dot (e.g. "dashboards.doccs.ny.gov.").
+                for url_base in (f"https://{host}", f"https://{host}.")
+            ]
         return ["https://dashboard.recidiviz.org"]
 
     @property
@@ -268,6 +309,8 @@ class ProductType(Enum):
                     mode="NULLABLE",
                 )
             ]
+        if self is ProductType.PUBLIC_PATHWAYS:
+            return [PUBLIC_PATHWAYS_ANONYMOUS_ID_COLUMN]
         return []
 
     @property

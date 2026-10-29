@@ -223,6 +223,100 @@ ON
 """
         self.assertEqual(expected_query, query)
 
+    def test_public_access_query_keeps_anonymous_visitors_and_derives_state_from_host(
+        self,
+    ) -> None:
+        # Public visitors are unauthenticated: left join both identity tables so their
+        # events survive, and take state_code from the page URL's host.
+        query = build_segment_event_view_query_template(
+            segment_table_sql_source=BigQueryAddress(
+                dataset_id="public_pathways_production_segment_metrics",
+                table_id="frontend_public_pathways_metric_selected",
+            ),
+            segment_table_jii_pseudonymized_id_columns=[],
+            additional_attribute_cols=["metric_id", "anonymous_id"],
+            relevant_product_types=[ProductType.PUBLIC_PATHWAYS],
+            has_user_id=False,
+        )
+        url_filter = _get_url_filter_for_all_products()
+        expected_query = f"""
+SELECT
+    CASE RTRIM(NET.HOST(events.context_page_url), '.') WHEN 'dashboards.doccs.ny.gov' THEN 'US_NY' WHEN 'pathways.recidiviz.org' THEN 'US_NY' END AS state_code,
+    events.user_id,
+    LOWER(rdu.email) AS email_address,
+    DATETIME(events.timestamp, "US/Eastern") AS event_ts,
+    person_id,
+    session_id,
+    context_page_path,
+    context_page_url,
+    CASE WHEN (context_page_url LIKE 'https://pathways.recidiviz.org/%' OR context_page_url LIKE 'https://pathways.recidiviz.org./%' OR context_page_url LIKE 'https://dashboards.doccs.ny.gov/%' OR context_page_url LIKE 'https://dashboards.doccs.ny.gov./%')
+  THEN 'PUBLIC_PATHWAYS'
+ELSE "UNKNOWN_PRODUCT_TYPE" END AS product_type,
+    events.metric_id, events.anonymous_id
+FROM (
+    SELECT
+        -- default columns for all views
+        CAST(NULL AS STRING) AS pseudonymized_id,
+        timestamp,
+    session_id,
+        CAST(NULL AS STRING) AS user_id,
+        context_page_path,
+        context_page_url,
+        "frontend_public_pathways_metric_selected" AS event,
+        metric_id, anonymous_id
+    FROM
+        `{{project_id}}.public_pathways_production_segment_metrics.frontend_public_pathways_metric_selected`
+    -- events from prod deployment only
+    WHERE
+        {url_filter}
+    -- dedupes events loaded more than once
+    QUALIFY
+        ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) = 1
+) events
+-- join to filter out recidiviz users and others unidentified (if any)
+LEFT JOIN
+    `{{project_id}}.workflows_views.reidentified_dashboard_users_materialized` rdu
+ON
+    -- We get the state_code above from `reidentified_dashboard_users`, which could have have an
+    -- entry for a user for both US_ID and US_IX. We can't use the pseudonymized id to distinguish
+    -- because they may match between both states. Instead, use the timestamp of the event to
+    -- determine whether it is a US_ID event or a US_IX event.
+    events.user_id = rdu.user_id
+    AND (
+        rdu.state_code != "US_ID"
+        OR events.timestamp < "{FIRST_IX_EXPORT_DATE}"
+    )
+LEFT JOIN
+    `{{project_id}}.workflows_views.pseudonymized_id_to_person_id_materialized` person
+ON
+    events.pseudonymized_id = person.pseudonymized_id
+    -- This condition ensures that we only keep events where the state_code of the person_id
+    -- matches the state_code of the user_id.
+    -- TODO(#60453): Investigate cases where rdu state_code doesn't match person state_code
+    
+
+"""
+        self.assertEqual(expected_query, query)
+
+    def test_public_access_query_requires_has_user_id_false(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Source \[public_pathways_production_segment_metrics\.pages\] belongs "
+            r"only to public access products \[<ProductType\.PUBLIC_PATHWAYS: "
+            r"'PUBLIC_PATHWAYS'>\], so it must set has_user_id=False to keep "
+            r"unauthenticated visitors and have a context_page_url to derive "
+            r"state_code from\.$",
+        ):
+            build_segment_event_view_query_template(
+                segment_table_sql_source=BigQueryAddress(
+                    dataset_id="public_pathways_production_segment_metrics",
+                    table_id="pages",
+                ),
+                segment_table_jii_pseudonymized_id_columns=[],
+                additional_attribute_cols=[],
+                relevant_product_types=[ProductType.PUBLIC_PATHWAYS],
+            )
+
 
 class TestProductTypeWithoutUrlInference(unittest.TestCase):
     """Tests for build_segment_event_view_query_template() with

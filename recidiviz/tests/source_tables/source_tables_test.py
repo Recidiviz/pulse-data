@@ -96,7 +96,6 @@ COMMON_VESTIGES = [
     "jii_frontend_prod_segment_metrics.identifies",
     "jii_frontend_prod_segment_metrics.tracks",
     "jii_frontend_prod_segment_metrics.users",
-    "public_pathways_production_segment_metrics.pages",
     "public_pathways_production_segment_metrics.tracks",
     "meetings_app_segment_metrics.identifies",
     "meetings_app_segment_metrics.tracks",

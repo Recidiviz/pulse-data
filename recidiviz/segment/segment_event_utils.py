@@ -40,7 +40,10 @@ from recidiviz.calculator.query.state.dataset_config import (
     PUBLIC_PATHWAYS_PRODUCTION_SEGMENT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
 )
-from recidiviz.segment.product_type import ProductType
+from recidiviz.segment.product_type import (
+    ProductType,
+    public_pathways_state_code_from_host_query_fragment,
+)
 from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
     build_source_table_repository_for_externally_managed_tables,
     collect_externally_managed_source_table_collections,
@@ -296,6 +299,9 @@ def build_segment_event_view_query_template(
     When `user_is_jii` is True, the event's `user_id` is itself the resident's
     pseudonymized ID, so we skip the staff re-identification join, leave `email_address`
     null, and resolve `state_code`/`person_id` via the resident record salt.
+
+    When every product in relevant_product_types is public access (e.g. public
+    pathways), visitors are anonymous, so state_code comes from the page URL's host.
     """
 
     if not additional_attribute_cols:
@@ -308,6 +314,17 @@ def build_segment_event_view_query_template(
             "person_id_expr is mutually exclusive with "
             "segment_table_jii_pseudonymized_id_columns and user_is_jii; only one "
             "way of resolving person_id may be used."
+        )
+
+    is_public_access_source = bool(relevant_product_types) and all(
+        product_type.is_public_access for product_type in relevant_product_types
+    )
+    if is_public_access_source and (has_user_id or context_page_url_expr is None):
+        raise ValueError(
+            f"Source [{segment_table_sql_source.to_str()}] belongs only to public "
+            f"access products {relevant_product_types}, so it must set "
+            f"has_user_id=False to keep unauthenticated visitors and have a "
+            f"context_page_url to derive state_code from."
         )
 
     if user_is_jii:
@@ -414,11 +431,21 @@ def build_segment_event_view_query_template(
             '"PERSON_EXTERNAL_ID_WITH_RESIDENT_RECORD_SALT"'
         )
     else:
-        state_code_select = (
-            "rdu.state_code AS state_code"
-            if person_id_expr is not None
-            else "COALESCE(person.state_code, rdu.state_code) AS state_code"
-        )
+        if is_public_access_source:
+            # Public visitors are unauthenticated, so neither the staff nor the person
+            # join can supply a state; the host the page was served from does instead.
+            state_code_select = (
+                public_pathways_state_code_from_host_query_fragment(
+                    "events.context_page_url"
+                )
+                + " AS state_code"
+            )
+        elif person_id_expr is not None:
+            state_code_select = "rdu.state_code AS state_code"
+        else:
+            state_code_select = (
+                "COALESCE(person.state_code, rdu.state_code) AS state_code"
+            )
         email_select = "LOWER(rdu.email) AS email_address"
         pseudonymized_id_select = (
             # this field was renamed, fall back to previous name for older records

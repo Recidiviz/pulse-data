@@ -94,6 +94,19 @@ class ProductTypeTest(unittest.TestCase):
         for url_base in ProductType.JII_OPPORTUNITIES_APP.url_bases:
             self.assertIn(f"{url_base}/%", fragment)
 
+    def test_public_pathways_url_bases_include_every_host_with_trailing_dot(
+        self,
+    ) -> None:
+        self.assertEqual(
+            [
+                "https://pathways.recidiviz.org",
+                "https://pathways.recidiviz.org.",
+                "https://dashboards.doccs.ny.gov",
+                "https://dashboards.doccs.ny.gov.",
+            ],
+            ProductType.PUBLIC_PATHWAYS.url_bases,
+        )
+
     def test_url_base_filter_matches_all_hosts(self) -> None:
         """url_base_filter matches every host a product is served from."""
         jii_host_filter = ProductType.JII_OPPORTUNITIES_APP.url_base_filter()

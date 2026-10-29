@@ -4,6 +4,7 @@ address:
 description: "Segment events emitted when a user clicks the methodology link on the Public Pathways dashboard."
 schema:
   - name: anonymous_id
+    description: Segment's per-browser identifier for the visitor, set before any login. Public dashboard visitors are unauthenticated, so this is the only way to count distinct visitors.
     type: STRING
     mode: NULLABLE
   - name: context_ip
