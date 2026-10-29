@@ -179,6 +179,50 @@ US_MO_CST_CSST_ASSESSMENT_TYPES = (
     "ORAS_COMMUNITY_SUPERVISION_SCREENING",
 )
 
+# Output column of us_mo_supervision_super_sessions_with_latest_liberty_start_query.
+US_MO_LATEST_LIBERTY_START_DATE_COLUMN = "latest_liberty_start_date"
+
+
+def us_mo_supervision_super_sessions_with_latest_liberty_start_query() -> str:
+    """Returns SQL with one row per US_MO prioritized supervision super session,
+    with the start date of the person's most recent LIBERTY compartment session
+    that began on or before the super session started.
+
+    MO DOC confirmed in October 2026 that a discharge starts a new supervision
+    cycle, which needs a new CST/CSST. So a qualifying assessment from before
+    supervision started only counts toward that supervision if it is on or after
+    latest_liberty_start_date. For example, given these sessions for one person:
+
+        2024-01-10 to 2024-09-01  SUPERVISION
+        2024-09-01 to 2025-02-03  LIBERTY      (CST scored 2025-01-20, for a SAR)
+        2025-02-03 to (open)      SUPERVISION
+
+    ...the query returns (end_date is exclusive):
+
+        start_date,end_date,latest_liberty_start_date
+        2024-01-10,2024-09-01,NULL
+        2025-02-03,NULL,2024-09-01
+
+    The 2025-01-20 CST counts toward the 2025-02-03 super session, but a CST
+    scored during the 2024 supervision would not.
+    """
+    return f"""
+    SELECT
+        super_sessions.state_code,
+        super_sessions.person_id,
+        super_sessions.start_date,
+        super_sessions.end_date_exclusive AS end_date,
+        MAX(liberty_sessions.start_date) AS {US_MO_LATEST_LIBERTY_START_DATE_COLUMN},
+    FROM `{{project_id}}.sessions.prioritized_supervision_super_sessions_materialized` super_sessions
+    LEFT JOIN `{{project_id}}.sessions.compartment_sessions_materialized` liberty_sessions
+        ON super_sessions.state_code = liberty_sessions.state_code
+        AND super_sessions.person_id = liberty_sessions.person_id
+        AND liberty_sessions.compartment_level_1 = 'LIBERTY'
+        AND liberty_sessions.start_date <= super_sessions.start_date
+    WHERE super_sessions.state_code = 'US_MO'
+    GROUP BY 1, 2, 3, 4
+"""
+
 
 def classes_cte() -> str:
     """Helper method that returns a CTE getting
@@ -1229,26 +1273,33 @@ def us_mo_recurring_oras_assessment_criteria_view_builder(
             until the next one is due
         supervision_spans_query: SQL returning state_code, person_id,
             start_date, and (exclusive) end_date for one row per continuous
-            supervision episode. Must already be filtered to US_MO.
+            supervision episode. Must already be filtered to US_MO. When
+            assessment_lookback_days > 0, it must also return
+            US_MO_LATEST_LIBERTY_START_DATE_COLUMN, as
+            us_mo_supervision_super_sessions_with_latest_liberty_start_query
+            does.
         meets_criteria_leading_window_days: Number of days before the prior
             assessment becomes overdue and appears as incoming for the user
         assessment_lookback_days: When > 0, a qualifying assessment completed
-            this many days before a supervision episode's start date can also
-            satisfy the requirement for that episode (e.g. a pre-sentence SAR
-            assessment). The lookback is clamped so it never reaches past the
-            person's immediately preceding supervision episode's end date, so
-            one historical assessment can't satisfy two closely-spaced
-            episodes at once. Defaults to 0 (only assessments within the
-            episode itself count), preserving prior behavior.
+            up to this many days before a supervision episode's start date can
+            also satisfy the requirement for that episode, unless the person
+            entered a LIBERTY session after the assessment. For example, a
+            pre-sentence SAR assessment counts, and so does one from before a
+            suspension and reinstatement, but one from before a discharge
+            doesn't. Defaults to 0 (only assessments within the episode itself
+            count).
     """
     cadence_unit = "MONTH" if reassessment_cadence_months == 1 else "MONTHS"
     contact_cadence_value = f"1 EVERY {reassessment_cadence_months} {cadence_unit}"
     assessment_date_lower_bound = (
         f"GREATEST("
         f"DATE_SUB(ss.start_date, INTERVAL {assessment_lookback_days} DAY), "
-        f"{nonnull_start_date_clause('ss.prev_span_end_date')})"
+        f"{nonnull_start_date_clause(f'ss.{US_MO_LATEST_LIBERTY_START_DATE_COLUMN}')})"
         if assessment_lookback_days
         else "ss.start_date"
+    )
+    latest_liberty_start_date_select = (
+        f"{US_MO_LATEST_LIBERTY_START_DATE_COLUMN}," if assessment_lookback_days else ""
     )
 
     query_template = f"""
@@ -1258,9 +1309,7 @@ WITH supervision_spans AS (
         person_id,
         start_date,
         end_date,
-        LAG(end_date) OVER (
-            PARTITION BY state_code, person_id ORDER BY start_date
-        ) AS prev_span_end_date,
+        {latest_liberty_start_date_select}
     FROM ({supervision_spans_query}) base
 ),
 
@@ -1283,9 +1332,11 @@ assessments AS (
                 AND {nonnull_end_date_exclusive_clause("ss.end_date")}
     WHERE a.state_code = 'US_MO'
         AND a.assessment_type = '{assessment_type}'
-    -- Within a single day, keep the latest assessment by sequence_num.
+    -- Within a single day, keep the latest assessment by sequence_num. Partition
+    -- by episode too: an assessment inside one episode can also fall in the next
+    -- episode's lookback window, and it has to count for both.
     QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY a.person_id, a.assessment_date
+        PARTITION BY a.person_id, ss.start_date, a.assessment_date
         ORDER BY a.sequence_num DESC
     ) = 1
 ),

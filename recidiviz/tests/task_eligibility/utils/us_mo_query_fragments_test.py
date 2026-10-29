@@ -42,8 +42,9 @@ _STATE_ASSESSMENT_SCHEMA = [
 class TestUsMoRecurringOrasAssessmentCriteriaViewBuilder(BigQueryEmulatorTestCase):
     """Tests the assessment_lookback_days date math in
     us_mo_recurring_oras_assessment_criteria_view_builder: the lookback window
-    itself, its clamp to the prior supervision episode's end, and the dedup
-    when two pre-episode assessments land on the same clamped span_start."""
+    itself, the floor at the start of the person's most recent LIBERTY
+    session, and the dedup when two pre-episode assessments land on the same
+    span_start."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -65,6 +66,9 @@ class TestUsMoRecurringOrasAssessmentCriteriaViewBuilder(BigQueryEmulatorTestCas
         return view_builder.build().view_query
 
     def test_pre_episode_assessment_within_lookback_satisfies_episode(self) -> None:
+        # Like a CST scored for a pre-sentence SAR: the person has been at
+        # liberty since 2024-01-01, and the assessment comes after that, so it
+        # counts toward the episode starting 2024-06-01.
         self.load_rows_into_table(
             _STATE_ASSESSMENT_ADDRESS,
             [
@@ -86,7 +90,8 @@ class TestUsMoRecurringOrasAssessmentCriteriaViewBuilder(BigQueryEmulatorTestCas
             FROM ({self._view_query(
                 "SELECT 'US_MO' AS state_code, 1 AS person_id, "
                 "DATE('2024-06-01') AS start_date, "
-                "CAST(NULL AS DATE) AS end_date"
+                "CAST(NULL AS DATE) AS end_date, "
+                "DATE('2024-01-01') AS latest_liberty_start_date"
             )})
             WHERE NOT meets_criteria
             ORDER BY start_date
@@ -121,16 +126,22 @@ class TestUsMoRecurringOrasAssessmentCriteriaViewBuilder(BigQueryEmulatorTestCas
             FROM ({self._view_query(
                 "SELECT 'US_MO' AS state_code, 4 AS person_id, "
                 "DATE('2024-06-01') AS start_date, "
-                "CAST(NULL AS DATE) AS end_date"
+                "CAST(NULL AS DATE) AS end_date, "
+                "CAST(NULL AS DATE) AS latest_liberty_start_date"
             )})
             """,
             expected_result=[],
         )
 
-    def test_lookback_is_clamped_to_prior_episode_end(self) -> None:
-        # An assessment from before the prior episode ended shouldn't reach
-        # forward into the next episode, even if it falls within the lookback
-        # window; an assessment taken in the gap between episodes should.
+    def test_assessment_during_prior_episode_satisfies_next_episode_without_liberty_gap(
+        self,
+    ) -> None:
+        # With no LIBERTY session between the two episodes (for example, a
+        # suspension and reinstatement), an assessment completed during the
+        # first episode also satisfies the second (OBT-53667): person_id=2's
+        # assessment on 2023-11-01 falls inside the first episode (2023-06-01
+        # to 2024-01-01) and is within 365 days of the second episode's
+        # 2024-01-15 start.
         self.load_rows_into_table(
             _STATE_ASSESSMENT_ADDRESS,
             [
@@ -140,13 +151,6 @@ class TestUsMoRecurringOrasAssessmentCriteriaViewBuilder(BigQueryEmulatorTestCas
                     "assessment_date": date(2023, 11, 1),
                     "assessment_type": "ORAS_COMMUNITY_SUPERVISION",
                     "sequence_num": 1,
-                },
-                {
-                    "state_code": "US_MO",
-                    "person_id": 2,
-                    "assessment_date": date(2024, 2, 1),
-                    "assessment_type": "ORAS_COMMUNITY_SUPERVISION",
-                    "sequence_num": 2,
                 },
             ],
         )
@@ -158,10 +162,12 @@ class TestUsMoRecurringOrasAssessmentCriteriaViewBuilder(BigQueryEmulatorTestCas
                     AS most_recent_assessment_date
             FROM ({self._view_query(
                 "SELECT 'US_MO' AS state_code, 2 AS person_id, "
-                "DATE('2023-06-01') AS start_date, DATE('2024-01-01') AS end_date "
+                "DATE('2023-06-01') AS start_date, DATE('2024-01-01') AS end_date, "
+                "CAST(NULL AS DATE) AS latest_liberty_start_date "
                 "UNION ALL "
                 "SELECT 'US_MO' AS state_code, 2 AS person_id, "
-                "DATE('2024-03-01') AS start_date, CAST(NULL AS DATE) AS end_date"
+                "DATE('2024-01-15') AS start_date, CAST(NULL AS DATE) AS end_date, "
+                "CAST(NULL AS DATE) AS latest_liberty_start_date"
             )})
             WHERE NOT meets_criteria
             ORDER BY start_date
@@ -172,8 +178,53 @@ class TestUsMoRecurringOrasAssessmentCriteriaViewBuilder(BigQueryEmulatorTestCas
                     "most_recent_assessment_date": date(2023, 11, 1),
                 },
                 {
-                    "start_date": date(2024, 3, 1),
-                    "most_recent_assessment_date": date(2024, 2, 1),
+                    "start_date": date(2024, 1, 15),
+                    "most_recent_assessment_date": date(2023, 11, 1),
+                },
+            ],
+        )
+
+    def test_assessment_before_liberty_gap_does_not_satisfy_next_episode(
+        self,
+    ) -> None:
+        # Same dates as the test above, but the person was discharged to
+        # LIBERTY on 2024-01-01, which starts a new supervision cycle. The
+        # 2023-11-01 assessment only counts for the first episode, so the
+        # second episode gets no row from this criterion.
+        self.load_rows_into_table(
+            _STATE_ASSESSMENT_ADDRESS,
+            [
+                {
+                    "state_code": "US_MO",
+                    "person_id": 5,
+                    "assessment_date": date(2023, 11, 1),
+                    "assessment_type": "ORAS_COMMUNITY_SUPERVISION",
+                    "sequence_num": 1,
+                },
+            ],
+        )
+        self.run_query_test(
+            f"""
+            SELECT
+                start_date,
+                SAFE_CAST(JSON_VALUE(reason_v2, '$.most_recent_assessment_date') AS DATE)
+                    AS most_recent_assessment_date
+            FROM ({self._view_query(
+                "SELECT 'US_MO' AS state_code, 5 AS person_id, "
+                "DATE('2023-06-01') AS start_date, DATE('2024-01-01') AS end_date, "
+                "CAST(NULL AS DATE) AS latest_liberty_start_date "
+                "UNION ALL "
+                "SELECT 'US_MO' AS state_code, 5 AS person_id, "
+                "DATE('2024-01-15') AS start_date, CAST(NULL AS DATE) AS end_date, "
+                "DATE('2024-01-01') AS latest_liberty_start_date"
+            )})
+            WHERE NOT meets_criteria
+            ORDER BY start_date
+            """,
+            expected_result=[
+                {
+                    "start_date": date(2023, 11, 1),
+                    "most_recent_assessment_date": date(2023, 11, 1),
                 },
             ],
         )
@@ -210,7 +261,8 @@ class TestUsMoRecurringOrasAssessmentCriteriaViewBuilder(BigQueryEmulatorTestCas
             FROM ({self._view_query(
                 "SELECT 'US_MO' AS state_code, 3 AS person_id, "
                 "DATE('2024-06-01') AS start_date, "
-                "CAST(NULL AS DATE) AS end_date"
+                "CAST(NULL AS DATE) AS end_date, "
+                "CAST(NULL AS DATE) AS latest_liberty_start_date"
             )})
             WHERE NOT meets_criteria
             ORDER BY start_date
