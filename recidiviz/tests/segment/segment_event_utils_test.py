@@ -222,3 +222,40 @@ ON
 
 """
         self.assertEqual(expected_query, query)
+
+
+class TestProductTypeWithoutUrlInference(unittest.TestCase):
+    """Tests for build_segment_event_view_query_template() with
+    infer_product_type_from_url=False."""
+
+    def test_assigns_single_product_and_keeps_prod_url_filter(self) -> None:
+        # Every event gets the one relevant product, whatever page fired it, but the
+        # query still drops events from non-prod deployments.
+        query = build_segment_event_view_query_template(
+            segment_table_sql_source=BigQueryAddress(
+                dataset_id="pulse_dashboard_segment_metrics",
+                table_id="frontend_task_table_category_selected",
+            ),
+            segment_table_jii_pseudonymized_id_columns=[],
+            additional_attribute_cols=[],
+            relevant_product_types=[ProductType.TASKS],
+            infer_product_type_from_url=False,
+        )
+        self.assertIn("'TASKS' AS product_type,", query)
+        self.assertNotIn("CASE WHEN", query)
+        self.assertIn(_get_url_filter_for_all_products(), query)
+
+    def test_multiple_products_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"relevant_product_types has exactly one entry"
+        ):
+            build_segment_event_view_query_template(
+                segment_table_sql_source=BigQueryAddress(
+                    dataset_id="pulse_dashboard_segment_metrics",
+                    table_id="frontend_task_table_category_selected",
+                ),
+                segment_table_jii_pseudonymized_id_columns=[],
+                additional_attribute_cols=[],
+                relevant_product_types=[ProductType.TASKS, ProductType.WORKFLOWS],
+                infer_product_type_from_url=False,
+            )

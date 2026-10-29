@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -76,6 +76,13 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         # Mutually exclusive with segment_table_jii_pseudonymized_id_columns and
         # user_is_jii.
         person_id_expr: str | None = None,
+        # Whether to assign product_type by matching context_page_url against each
+        # relevant product's URL rule. Set this to False for events that only one
+        # product's UI components can fire, wherever a state places those components
+        # (e.g. the task table, which US_MO renders on /workflows/home). When False,
+        # relevant_product_types must have exactly one entry, and every event is
+        # attributed to it.
+        infer_product_type_from_url: bool = True,
     ) -> None:
         self.segment_table_sql_source = segment_events_source_table_address
         self.segment_table_jii_pseudonymized_id_columns = (
@@ -90,6 +97,7 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.has_page_context = has_page_context
         self.user_id_is_email = user_id_is_email
         self.person_id_expr = person_id_expr
+        self.infer_product_type_from_url = infer_product_type_from_url
 
         address = self.view_address(
             segment_events_source_table_address, user_is_jii=user_is_jii
@@ -109,6 +117,7 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                 has_page_context=has_page_context,
                 user_id_is_email=user_id_is_email,
                 person_id_expr=person_id_expr,
+                infer_product_type_from_url=infer_product_type_from_url,
             ),
             schema=segment_event_schema(
                 segment_events_source_table_address=segment_events_source_table_address,
@@ -152,6 +161,7 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         has_page_context: bool = True,
         user_id_is_email: bool = False,
         person_id_expr: str | None = None,
+        infer_product_type_from_url: bool = True,
     ) -> str:
         """Builds the SQL query template for the Segment event view for a set of relevant product types
         by transforming hashed user and client id's into internal id's and pulling any additional
@@ -169,4 +179,5 @@ class SegmentEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             context_page_url_expr="context_page_url" if has_page_context else None,
             user_id_is_email=user_id_is_email,
             person_id_expr=person_id_expr,
+            infer_product_type_from_url=infer_product_type_from_url,
         )

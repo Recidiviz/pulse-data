@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2026 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -284,6 +284,10 @@ def build_segment_event_view_query_template(
     # cast directly to INT64 and used as-is. Mutually exclusive with
     # segment_table_jii_pseudonymized_id_columns and user_is_jii.
     person_id_expr: str | None = None,
+    # Whether to assign product_type from context_page_url using each relevant
+    # product's URL rule. When False, relevant_product_types must have exactly one
+    # entry and every event is attributed to it.
+    infer_product_type_from_url: bool = True,
 ) -> str:
     """Builds the SQL query template for a Segment event view by transforming
     hashed user and client id's into internal id's and pulling any additional
@@ -320,12 +324,12 @@ def build_segment_event_view_query_template(
 
     if segment_table_sql_source.table_id == "pages":
         product_type_clause = _get_product_type_case_when_statement_pages()
-    elif context_page_url_expr is None:
-        # With no context_page_url to run URL-based inference against, we can only
-        # resolve product_type when the source unambiguously belongs to one product.
+    elif context_page_url_expr is None or not infer_product_type_from_url:
+        # Without URL-based inference, we can only resolve product_type when the
+        # source unambiguously belongs to one product.
         if len(relevant_product_types) != 1:
             raise ValueError(
-                f"Cannot infer product_type without a context_page_url for source "
+                f"Cannot assign product_type without URL-based inference for source "
                 f"[{segment_table_sql_source.to_str()}] unless relevant_product_types "
                 f"has exactly one entry, found: {relevant_product_types}"
             )
