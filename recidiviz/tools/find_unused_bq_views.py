@@ -112,8 +112,8 @@ from recidiviz.calculator.query.state.views.sessions_validation.session_supervis
 from recidiviz.calculator.query.state.views.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.tasks.snooze_status_archive import (
-    SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER as TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.tasks.client_snooze_spans import (
+    CLIENT_SNOOZE_SPANS_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
@@ -206,9 +206,11 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             "document_extraction_results__pre_resolution.case_note_housing_info",
         ]
     },
-    TASKS_SNOOZE_STATUS_ARCHIVE_VIEW_BUILDER.address: (
-        "New tasks snooze status archive view. "
-        "Downstream work is tracked in TODO(OBT-39438). (Daniel McLaughlin, 2026-07-29)"
+    CLIENT_SNOOZE_SPANS_VIEW_BUILDER.address: (
+        "New Tasks snooze span view; no downstream consumer yet. "
+        "TODO(MO-549): remove this exemption once the post-full-launch "
+        "analysis notebook switches to this view from segment events. "
+        "(Regina Medina, 2026-09-26)"
     ),
     US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_VIEW_BUILDER.address: (
         "New CO certificate-to-sentence-credit reconciliation view, consumed directly "
