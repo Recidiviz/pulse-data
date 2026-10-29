@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
-state_code: US_XX
 description: Test regime that reduces terms with multipliers.
 effective_date: "2020-01-01"
 
@@ -9,6 +8,12 @@ term_multipliers:
     when:
       offense_category: E
     multiplier: 0.5
+    applies_to:
+      max_term: always
+      min_term: always
   - name: standard_term_reduction
     description: 35% reduction for every other offense
     multiplier: 0.65
+    applies_to:
+      max_term: always
+      min_term: always

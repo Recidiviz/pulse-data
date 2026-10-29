@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=../schema/state_conditions_schema.json
+# Named conditions every US_NV law regime can refer to.
+
+# Every sentence except a felony DUI under NRS 484C.110, 484C.120, 484C.130, or
+# 484C.430, by NDOC offense ID.
+# These are all Category A or Bs, so in practice checking these doesn't do anything.
+
+# TODO(NV-13): This list is a result of a conversation with NDOC but isn't final.
+# We need to verify this one more time with NDOC. We also need a way to keep this
+# list updated as NOCs change. If it's true that we can just use every ID tied to
+# one of the NRS codes above, a script that runs on NOC changes can do the job.
+not_felony_dui:
+  offense_id:
+    not_in:
+      [
+        1577,
+        1578,
+        1579,
+        1582,
+        1583,
+        1585,
+        1586,
+        1587,
+        1588,
+        1589,
+        1590,
+        1591,
+        1592,
+        1593,
+        1594,
+        2063,
+        2064,
+        2065,
+        2066,
+        2067,
+        2068,
+        2069,
+        2090,
+        2461,
+        2720,
+        2721,
+        2722,
+        2723,
+        2724,
+        2725,
+        2726,
+        2727,
+        2738,
+        2739,
+        2740,
+      ]

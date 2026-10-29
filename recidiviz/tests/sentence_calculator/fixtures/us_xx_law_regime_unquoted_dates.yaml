@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
-state_code: US_XX
 description: Test regime that writes its dates without quotes.
 effective_date: 2020-01-01
 term_multipliers:
@@ -8,11 +7,20 @@ term_multipliers:
     when:
       start_date: { before: 2019-01-01 }
     multiplier: 0.5
+    applies_to:
+      max_term: always
+      min_term: always
   - name: 2019_start_term_reduction
     description: 40% reduction for sentences that started in 2019
     when:
       start_date: { between_inclusive: [2019-01-01, 2019-12-31] }
     multiplier: 0.6
+    applies_to:
+      max_term: always
+      min_term: always
   - name: standard_term_reduction
     description: 35% reduction for every other sentence
     multiplier: 0.65
+    applies_to:
+      max_term: always
+      min_term: always

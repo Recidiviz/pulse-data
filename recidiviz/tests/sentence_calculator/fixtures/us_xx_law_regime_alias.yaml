@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
-state_code: US_XX
 description: Test regime whose second projected date reuses the first's conditions.
 effective_date: "2020-01-01"
 projected_dates:

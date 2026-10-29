@@ -3,10 +3,9 @@
   "$id": "https://recidiviz.org/sentence_calculator/law_regime_schema.json",
   "title": "Sentence Calculator Law Regime",
   "type": "object",
-  "required": ["state_code", "description", "effective_date"],
+  "required": ["description", "effective_date"],
   "additionalProperties": false,
   "properties": {
-    "state_code": { "type": "string", "pattern": "^US_[A-Z]{2,}$" },
     "description": { "type": "string" },
     "effective_date": { "type": "string", "format": "date" },
     "use_calendar_term_conversion": { "type": "boolean" },
@@ -20,16 +19,6 @@
       "type": "array",
       "items": { "$ref": "#/$defs/term_multiplier" }
     },
-    "max_term_only": {
-      "type": "object",
-      "required": ["description", "when"],
-      "additionalProperties": false,
-      "properties": {
-        "description": { "type": "string" },
-        "when": { "$ref": "#/$defs/sentence_condition" },
-        "statute": { "type": "string" }
-      }
-    },
     "projected_dates": {
       "type": "object",
       "additionalProperties": { "$ref": "#/$defs/date_formula" }
@@ -38,15 +27,38 @@
   "$defs": {
     "term_multiplier": {
       "type": "object",
-      "required": ["name", "description", "multiplier"],
+      "required": ["name", "description", "multiplier", "applies_to"],
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string" },
         "description": { "type": "string" },
         "when": { "$ref": "#/$defs/sentence_condition" },
         "multiplier": { "type": "number", "minimum": 0, "maximum": 1 },
+        "applies_to": { "$ref": "#/$defs/applies_to" },
         "statute": { "type": "string" }
       }
+    },
+    "applies_to": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "min_term": { "$ref": "#/$defs/reduction_target" },
+        "max_term": { "$ref": "#/$defs/reduction_target" }
+      }
+    },
+    "reduction_target": {
+      "oneOf": [
+        { "const": "always" },
+        {
+          "type": "object",
+          "required": ["when"],
+          "additionalProperties": false,
+          "properties": {
+            "when": { "$ref": "#/$defs/sentence_condition" }
+          }
+        }
+      ]
     },
     "date_formula": {
       "type": "object",

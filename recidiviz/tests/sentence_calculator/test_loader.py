@@ -27,6 +27,7 @@ from recidiviz.sentence_calculator.models.conditions import (
 from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import NevadaSentence
 from recidiviz.sentence_calculator.rules.loader import (
     law_regime_yaml_path,
+    list_law_regime_names,
     load_law_regime,
     load_state_conditions,
 )
@@ -79,7 +80,6 @@ class TestLoadLawRegime(unittest.TestCase):
             )
 
         self.assertEqual("TEST_REGIME", regime.name)
-        self.assertEqual(StateCode.US_XX, regime.state_code)
         # The regime's first rule refers to a condition in the state's
         # conditions.yaml.
         self.assertEqual(
@@ -107,17 +107,6 @@ class TestLoadLawRegime(unittest.TestCase):
         ):
             load_law_regime(state_code=StateCode.US_XX, regime_name="NOT_A_REGIME")
 
-    def test_load_regime_whose_state_does_not_match_path(self) -> None:
-        with mock.patch(
-            _STATE_RULES_DIR_PATH, return_value=fixtures.as_filepath("us_xx_rules")
-        ), self.assertRaisesRegex(
-            ValueError,
-            r"^Law regime file \[.*us_xx_rules/test_regime\.yaml\] has state_code "
-            r"\[US_XX\], but it is in the directory for state \[US_YY\]\. Make the "
-            r"state_code in the file match its directory\.$",
-        ):
-            load_law_regime(state_code=StateCode.US_YY, regime_name="TEST_REGIME")
-
     def test_regime_name_that_could_escape_state_directory(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -132,6 +121,51 @@ class TestLoadStateConditions(unittest.TestCase):
 
     def test_state_without_conditions_file(self) -> None:
         self.assertEqual({}, load_state_conditions(StateCode.US_XX))
+
+    def test_load_conditions(self) -> None:
+        # The fixtures are for US_XX, which has no Sentence class of its own, so
+        # their conditions compare Nevada sentence fields.
+        with mock.patch(_SENTENCE_CLASS_PATH, return_value=NevadaSentence), mock.patch(
+            _STATE_RULES_DIR_PATH, return_value=fixtures.as_filepath("us_xx_rules")
+        ):
+            conditions = load_state_conditions(StateCode.US_XX)
+
+        self.assertEqual(
+            {
+                "shared_offense_ids": FieldCondition(
+                    field="offense_id",
+                    operator=ConditionOperator.IN,
+                    value=[1001, 1002],
+                ),
+                "not_shared_offense_ids": FieldCondition(
+                    field="offense_id",
+                    operator=ConditionOperator.NOT_IN,
+                    value=[1001, 1002],
+                ),
+            },
+            conditions,
+        )
+
+
+class TestListLawRegimeNames(unittest.TestCase):
+    """Tests for list_law_regime_names."""
+
+    def test_list_nevada_regimes(self) -> None:
+        self.assertEqual(["SB_413"], list_law_regime_names(StateCode.US_NV))
+
+    def test_list_regimes_for_state_without_rules(self) -> None:
+        self.assertEqual([], list_law_regime_names(StateCode.US_XX))
+
+
+class TestAllLawRegimes(unittest.TestCase):
+    """Tests over every real law regime file."""
+
+    def test_load_all_law_regimes(self) -> None:
+        for state_code in StateCode:
+            for regime_name in list_law_regime_names(state_code):
+                with self.subTest(state_code=state_code, regime_name=regime_name):
+                    # Raises if the file fails the schema or fails to parse.
+                    load_law_regime(state_code=state_code, regime_name=regime_name)
 
 
 if __name__ == "__main__":

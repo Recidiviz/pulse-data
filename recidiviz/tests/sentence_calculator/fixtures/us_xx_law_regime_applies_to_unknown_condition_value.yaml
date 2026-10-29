@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
+description: Test regime with a misspelled offense group in an applies_to condition.
+effective_date: "2020-01-01"
+term_multipliers:
+  - name: standard_term_reduction
+    description: 35% reduction of every max term, and of non-violent min terms
+    multiplier: 0.65
+    applies_to:
+      max_term: always
+      min_term:
+        when:
+          offense_group: { not_in: [VIOLENT] }

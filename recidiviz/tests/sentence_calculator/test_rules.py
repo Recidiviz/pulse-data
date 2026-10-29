@@ -24,10 +24,8 @@ from datetime import date
 
 from jsonschema.exceptions import ValidationError
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.sentence_calculator.models.conditions import (
     AllOf,
-    AnyOf,
     ConditionOperator,
     FieldCondition,
 )
@@ -35,8 +33,9 @@ from recidiviz.sentence_calculator.models.rules import (
     LAW_REGIME_SCHEMA_PATH,
     DateFormulaRule,
     LawRegime,
-    MaxTermOnlyRule,
+    ReductionTarget,
     TermMultiplierRule,
+    TermType,
     parse_state_conditions,
 )
 from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import (
@@ -52,23 +51,25 @@ _CATEGORY_E = FieldCondition(
     value=NevadaOffenseCategory.CATEGORY_E,
 )
 
+_MAX_AND_MIN_TERMS = [
+    ReductionTarget(term=TermType.MAX_TERM, when=None),
+    ReductionTarget(term=TermType.MIN_TERM, when=None),
+]
+
 
 def _law_regime(
     *,
     term_multipliers: list[TermMultiplierRule],
-    max_term_only: MaxTermOnlyRule | None,
     projected_dates: dict[str, DateFormulaRule],
 ) -> LawRegime:
     return LawRegime(
         name="TEST_REGIME",
-        state_code=StateCode.US_XX,
         description="Test regime",
         effective_date=date(2020, 1, 1),
         use_calendar_term_conversion=False,
         days_per_month=30.0,
         days_per_year=365.0,
         term_multipliers=term_multipliers,
-        max_term_only=max_term_only,
         projected_dates=projected_dates,
     )
 
@@ -101,7 +102,6 @@ class TestLawRegimeFromYaml(unittest.TestCase):
         self.assertEqual(
             LawRegime(
                 name="US_XX_LAW_REGIME",
-                state_code=StateCode.US_XX,
                 description=(
                     "Test regime that exercises every term multiplier regime section."
                 ),
@@ -129,40 +129,48 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                             ]
                         ),
                         multiplier=0.5,
+                        applies_to=[
+                            ReductionTarget(term=TermType.MAX_TERM, when=None),
+                            ReductionTarget(term=TermType.MIN_TERM, when=None),
+                        ],
                         statute="Test Statute 1(a)",
                     ),
                     TermMultiplierRule(
                         name="standard_term_reduction",
-                        description="35% reduction for every other offense",
+                        description=(
+                            "35% reduction of every other offense's max term, and of "
+                            "its min term outside these offenses"
+                        ),
                         when=None,
                         multiplier=0.65,
-                        statute=None,
+                        applies_to=[
+                            ReductionTarget(term=TermType.MAX_TERM, when=None),
+                            ReductionTarget(
+                                term=TermType.MIN_TERM,
+                                # The named conditions are filled in where they
+                                # are used.
+                                when=AllOf(
+                                    conditions=[
+                                        FieldCondition(
+                                            field="offense_group",
+                                            operator=ConditionOperator.NOT_IN,
+                                            value=[
+                                                NevadaOffenseGroup.VIOLENCE,
+                                                NevadaOffenseGroup.SEX,
+                                            ],
+                                        ),
+                                        FieldCondition(
+                                            field="offense_id",
+                                            operator=ConditionOperator.NOT_IN,
+                                            value=[1001, 1002],
+                                        ),
+                                    ]
+                                ),
+                            ),
+                        ],
+                        statute="Test Statute 2",
                     ),
                 ],
-                max_term_only=MaxTermOnlyRule(
-                    description=(
-                        "The reduction comes off the max term only for these offenses"
-                    ),
-                    # The named conditions are filled in where they are used.
-                    when=AnyOf(
-                        conditions=[
-                            FieldCondition(
-                                field="offense_group",
-                                operator=ConditionOperator.IN,
-                                value=[
-                                    NevadaOffenseGroup.VIOLENCE,
-                                    NevadaOffenseGroup.SEX,
-                                ],
-                            ),
-                            FieldCondition(
-                                field="offense_id",
-                                operator=ConditionOperator.IN,
-                                value=[1001, 1002],
-                            ),
-                        ]
-                    ),
-                    statute="Test Statute 2",
-                ),
                 projected_dates={
                     "parole_eligibility_date": DateFormulaRule(
                         name="parole_eligibility_date",
@@ -204,6 +212,10 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                     description="50% reduction for category E offenses",
                     when=_CATEGORY_E,
                     multiplier=0.5,
+                    applies_to=[
+                        ReductionTarget(term=TermType.MAX_TERM, when=None),
+                        ReductionTarget(term=TermType.MIN_TERM, when=None),
+                    ],
                     statute=None,
                 ),
                 TermMultiplierRule(
@@ -211,12 +223,15 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                     description="35% reduction for every other offense",
                     when=None,
                     multiplier=0.65,
+                    applies_to=[
+                        ReductionTarget(term=TermType.MAX_TERM, when=None),
+                        ReductionTarget(term=TermType.MIN_TERM, when=None),
+                    ],
                     statute=None,
                 ),
             ],
             regime.term_multipliers,
         )
-        self.assertIsNone(regime.max_term_only)
         self.assertEqual({}, regime.projected_dates)
         # The file sets none of these, so they get their defaults.
         self.assertFalse(regime.use_calendar_term_conversion)
@@ -231,6 +246,16 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                 shared_conditions={},
             )
 
+    def test_parse_rule_missing_applies_to_fails_schema(self) -> None:
+        with self.assertRaisesRegex(
+            ValidationError, r"^'applies_to' is a required property"
+        ):
+            LawRegime.from_yaml(
+                fixtures.as_filepath("us_xx_law_regime_rule_missing_applies_to.yaml"),
+                sentence_class=NevadaSentence,
+                shared_conditions={},
+            )
+
     def test_parse_misspelled_condition_value(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -241,6 +266,32 @@ class TestLawRegimeFromYaml(unittest.TestCase):
         ):
             LawRegime.from_yaml(
                 fixtures.as_filepath("us_xx_law_regime_unknown_condition_value.yaml"),
+                sentence_class=NevadaSentence,
+                shared_conditions={},
+            )
+
+    def test_parse_applies_to_with_unknown_value_fails_schema(self) -> None:
+        with self.assertRaisesRegex(
+            ValidationError, r"^'sometimes' is not valid under any of the given schemas"
+        ):
+            LawRegime.from_yaml(
+                fixtures.as_filepath("us_xx_law_regime_applies_to_unknown_value.yaml"),
+                sentence_class=NevadaSentence,
+                shared_conditions={},
+            )
+
+    def test_parse_misspelled_condition_value_in_applies_to(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Invalid conditions in term_multipliers entry \[standard_term_reduction\] "
+            r"applies_to \[min_term\]\. The condition on field \[offense_group\] has "
+            r"value \['VIOLENT'\], which the field can't take\. Values it can take: "
+            r"\['VIOLENCE', 'SEX', 'PROPERTY', 'DRUG', 'OTHER', 'UNKNOWN'\]\.$",
+        ):
+            LawRegime.from_yaml(
+                fixtures.as_filepath(
+                    "us_xx_law_regime_applies_to_unknown_condition_value.yaml"
+                ),
                 sentence_class=NevadaSentence,
                 shared_conditions={},
             )
@@ -279,7 +330,6 @@ class TestLawRegimeFromYaml(unittest.TestCase):
         # Pre-commit rejects YAML files with repeated keys, so this file can't be
         # a checked-in fixture.
         regime_yaml = """
-state_code: US_XX
 description: Test regime whose when mapping names two conditions under one key.
 effective_date: "2020-01-01"
 conditions:
@@ -306,7 +356,7 @@ term_multipliers:
             with self.assertRaisesRegex(
                 ValueError,
                 r"^The YAML file \[.*test_regime\.yaml\] repeats the key "
-                r"\[condition\] in one mapping, at line 15\. Remove one of them\. To "
+                r"\[condition\] in one mapping, at line 14\. Remove one of them\. To "
                 r"require several conditions on the same field, or several named "
                 r"conditions, list them under all_of\.$",
             ):
@@ -318,7 +368,7 @@ term_multipliers:
         with self.assertRaisesRegex(
             ValueError,
             r"^The YAML file \[.*us_xx_law_regime_merge_key\.yaml\] uses the alias "
-            r"\[\*category_e_term_reduction\] at line 12, which law regime files "
+            r"\[\*category_e_term_reduction\] at line 14, which law regime files "
             r"don't support\. Write out the value in full\. To share a condition "
             r"between rules, define it as a named condition and refer to it with "
             r"condition: <name>\.$",
@@ -333,7 +383,7 @@ term_multipliers:
         with self.assertRaisesRegex(
             ValueError,
             r"^The YAML file \[.*us_xx_law_regime_alias\.yaml\] uses the alias "
-            r"\[\*long_sentence\] at line 13, which law regime files don't "
+            r"\[\*long_sentence\] at line 12, which law regime files don't "
             r"support\.",
         ):
             LawRegime.from_yaml(
@@ -345,14 +395,14 @@ term_multipliers:
     def test_parse_condition_redefining_shared_condition(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^The conditions \['violent_or_sex'\] are already defined in the "
+            r"^The conditions \['not_violent_or_sex'\] are already defined in the "
             r"state's shared conditions\. Rename them or use the shared "
             r"definitions\.$",
         ):
             LawRegime.from_yaml(
                 fixtures.as_filepath("us_xx_law_regime.yaml"),
                 sentence_class=NevadaSentence,
-                shared_conditions={"violent_or_sex": _CATEGORY_E},
+                shared_conditions={"not_violent_or_sex": _CATEGORY_E},
             )
 
     def test_parse_whole_numbers_as_floats(self) -> None:
@@ -426,6 +476,15 @@ term_multipliers:
             set(schema["$defs"]["field_matcher"]["oneOf"][2]["properties"]),
         )
 
+    def test_schema_terms_match_python_enum(self) -> None:
+        with open(LAW_REGIME_SCHEMA_PATH, encoding="utf-8") as f:
+            schema = json.load(f)
+
+        self.assertEqual(
+            [e.value for e in TermType],
+            list(schema["$defs"]["applies_to"]["properties"]),
+        )
+
 
 class TestLawRegimeValidation(unittest.TestCase):
     """Tests for the cross-field validation in LawRegime.__attrs_post_init__."""
@@ -444,6 +503,7 @@ class TestLawRegimeValidation(unittest.TestCase):
                         description="35% reduction for every other offense",
                         when=None,
                         multiplier=0.65,
+                        applies_to=_MAX_AND_MIN_TERMS,
                         statute=None,
                     ),
                     TermMultiplierRule(
@@ -451,10 +511,10 @@ class TestLawRegimeValidation(unittest.TestCase):
                         description="50% reduction for category E offenses",
                         when=_CATEGORY_E,
                         multiplier=0.5,
+                        applies_to=_MAX_AND_MIN_TERMS,
                         statute=None,
                     ),
                 ],
-                max_term_only=None,
                 projected_dates={},
             )
 
@@ -473,28 +533,31 @@ class TestLawRegimeValidation(unittest.TestCase):
                         description="50% reduction for category E offenses",
                         when=_CATEGORY_E,
                         multiplier=0.5,
+                        applies_to=_MAX_AND_MIN_TERMS,
                         statute=None,
                     )
                 ],
-                max_term_only=None,
                 projected_dates={},
             )
 
-    def test_max_term_only_without_reduction(self) -> None:
+    def test_term_multiplier_with_repeated_term(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Law regime \[TEST_REGIME\] has max_term_only but no term_multipliers, "
-            r"so there is no reduction to keep off the min term\. Add term_multipliers "
-            r"or remove max_term_only\.$",
+            r"^Term multiplier \[standard_term_reduction\] lists the terms "
+            r"\['min_term'\] more than once in applies_to\. List each term once, "
+            r"and combine its conditions with any_of or all_of\.$",
         ):
-            _law_regime(
-                term_multipliers=[],
-                max_term_only=MaxTermOnlyRule(
-                    description="Reductions come off the max term only for these offenses",
-                    when=_CATEGORY_E,
-                    statute=None,
-                ),
-                projected_dates={},
+            TermMultiplierRule(
+                name="standard_term_reduction",
+                description="35% reduction for every offense",
+                when=None,
+                multiplier=0.65,
+                applies_to=[
+                    ReductionTarget(term=TermType.MAX_TERM, when=None),
+                    ReductionTarget(term=TermType.MIN_TERM, when=_CATEGORY_E),
+                    ReductionTarget(term=TermType.MIN_TERM, when=None),
+                ],
+                statute=None,
             )
 
     def test_duplicate_rule_names(self) -> None:
@@ -510,10 +573,10 @@ class TestLawRegimeValidation(unittest.TestCase):
                         description="Eligible once the adjusted min term is served",
                         when=None,
                         multiplier=0.65,
+                        applies_to=_MAX_AND_MIN_TERMS,
                         statute=None,
                     )
                 ],
-                max_term_only=None,
                 projected_dates={
                     "parole_eligibility_date": _date_rule(
                         name="parole_eligibility_date",
@@ -531,7 +594,6 @@ class TestLawRegimeValidation(unittest.TestCase):
         ):
             _law_regime(
                 term_multipliers=[],
-                max_term_only=None,
                 projected_dates={
                     "parole_eligibility_date": _date_rule(
                         name="parole_eligibility_date",
@@ -543,7 +605,6 @@ class TestLawRegimeValidation(unittest.TestCase):
     def test_formula_with_duration_function(self) -> None:
         regime = _law_regime(
             term_multipliers=[],
-            max_term_only=None,
             projected_dates={
                 "mandatory_parole_release_date": _date_rule(
                     name="mandatory_parole_release_date",
@@ -569,7 +630,6 @@ class TestLawRegimeValidation(unittest.TestCase):
         ):
             _law_regime(
                 term_multipliers=[],
-                max_term_only=None,
                 projected_dates={
                     "parole_eligibility_date": _date_rule(
                         name="parole_eligibility_date",
@@ -588,7 +648,6 @@ class TestLawRegimeValidation(unittest.TestCase):
         ):
             _law_regime(
                 term_multipliers=[],
-                max_term_only=None,
                 projected_dates={
                     "release_date": _date_rule(
                         name="release_date",
@@ -607,7 +666,6 @@ class TestLawRegimeValidation(unittest.TestCase):
         ):
             _law_regime(
                 term_multipliers=[],
-                max_term_only=None,
                 projected_dates={
                     "release_date": _date_rule(
                         name="release_date",
@@ -629,7 +687,6 @@ class TestLawRegimeValidation(unittest.TestCase):
         ):
             _law_regime(
                 term_multipliers=[],
-                max_term_only=None,
                 projected_dates={
                     "start_date": _date_rule(
                         name="start_date",
@@ -645,7 +702,6 @@ class TestProjectedDateEvaluationOrder(unittest.TestCase):
     def test_dates_come_after_the_dates_they_use(self) -> None:
         regime = _law_regime(
             term_multipliers=[],
-            max_term_only=None,
             projected_dates={
                 "mandatory_release_date": _date_rule(
                     name="mandatory_release_date",

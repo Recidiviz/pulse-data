@@ -21,26 +21,28 @@ A regime is defined in a YAML file under recidiviz/sentence_calculator/rules/
 and takes its name from the file's name, uppercased. For example,
 rules/us_nv/sb_413.yaml might hold:
 
-    state_code: US_NV
     description: Nevada Senate Bill 413
     effective_date: "2027-07-01"
     use_calendar_term_conversion: true
     term_multipliers:
       - name: standard_term_reduction
-        description: 35% reduction for every offense
+        description: >-
+          35% reduction of every max term, and of the min term outside A and B
+          felonies
         multiplier: 0.65
-    max_term_only:
-      description: The reduction comes off the max term only for A and B felonies
-      when:
-        offense_category: [A, B]
+        applies_to:
+          max_term: always
+          min_term:
+            when:
+              offense_category: { not_in: [A, B] }
     projected_dates:
       parole_eligibility_date:
         description: Eligible once the reduced minimum term is served
         formula: start_date + adjusted_min_days
 
-...which parses into a LawRegime named SB_413 with one TermMultiplierRule, a
-MaxTermOnlyRule that keeps category A and B sentences' reductions off their min
-terms, and one DateFormulaRule named parole_eligibility_date.
+...which parses into a LawRegime named SB_413 with one TermMultiplierRule, which
+reduces every sentence's max term and reduces the min term of sentences outside
+categories A and B, and one DateFormulaRule named parole_eligibility_date.
 
 Each list of rules is checked in order, and the first rule whose 'when' conditions
 hold applies. A rule without 'when' conditions applies to every sentence, so it
@@ -52,6 +54,7 @@ import ast
 import datetime
 import os
 from collections.abc import Hashable, Mapping
+from enum import Enum
 from graphlib import CycleError, TopologicalSorter
 from pathlib import Path
 from typing import Any
@@ -60,12 +63,10 @@ import attr
 import yaml
 
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.states import StateCode
 from recidiviz.sentence_calculator import rules as rules_package
 from recidiviz.sentence_calculator.models.conditions import (
     Condition,
     ConditionParser,
-    is_condition,
     is_opt_condition,
     parse_named_conditions,
     sentence_condition_field_types,
@@ -106,6 +107,10 @@ PROJECTED_DATE_VALUE_TYPES: dict[str, type] = {
 # projected_expiration_date - months(12). Each takes a whole number, and a date
 # plus or minus one moves by that many calendar years or months.
 EXPRESSION_DURATION_FUNCTIONS = ("years", "months")
+
+# The applies_to value for a term that a reduction comes off for every sentence
+# the rule applies to.
+APPLIES_TO_ALWAYS = "always"
 
 
 class _UniqueKeySafeLoader(yaml.SafeLoader):
@@ -270,6 +275,70 @@ def expression_variable_names(*, expression: str, rule_name: str) -> set[str]:
     }
 
 
+class TermType(Enum):
+    """A sentence term that a reduction can come off. The values match the
+    Sentence fields that hold the terms."""
+
+    MIN_TERM = "min_term"
+    MAX_TERM = "max_term"
+
+
+@attr.define(frozen=True, kw_only=True)
+class ReductionTarget:
+    """A term that a reduction comes off, and the sentences it comes off for."""
+
+    term: TermType = attr.ib(validator=attr.validators.in_(TermType))
+    """The term the reduction comes off."""
+
+    when: Condition | None = attr.ib(validator=is_opt_condition)
+    """Conditions a sentence must meet for the reduction to come off this term,
+    or None if it comes off this term for every sentence the rule applies to."""
+
+
+def _pop_applies_to(
+    yaml_dict: YAMLDict, *, parser: ConditionParser, rule_location: str
+) -> list[ReductionTarget]:
+    """Returns the ReductionTargets in a rule's applies_to mapping, which maps each
+    term the reduction comes off to always, or to the when conditions a sentence
+    must meet for the reduction to come off it, e.g.
+
+        applies_to:
+          max_term: always
+          min_term:
+            when:
+              offense_category: { not_in: [A, B] }
+
+    Args:
+        yaml_dict: The rule, which holds the applies_to mapping.
+        parser: Parses conditions on sentence fields.
+        rule_location: Where the rule appears, e.g. term_multipliers entry
+            [standard_term_reduction], for error messages.
+    """
+    applies_to_dict = yaml_dict.pop_dict("applies_to")
+    targets = []
+    for term_name in applies_to_dict.keys():
+        term = TermType(term_name)
+        location = f"{rule_location} applies_to [{term.value}]"
+        if applies_to_dict.peek_type(term_name) is str:
+            value = applies_to_dict.pop(term_name, str)
+            if value != APPLIES_TO_ALWAYS:
+                raise ValueError(
+                    f"The value of {location} is [{value}]. Write "
+                    f"[{APPLIES_TO_ALWAYS}], or a mapping with when conditions."
+                )
+            targets.append(ReductionTarget(term=term, when=None))
+            continue
+        target_dict = applies_to_dict.pop_dict(term_name)
+        targets.append(
+            ReductionTarget(
+                term=term,
+                when=parser.parse(target_dict.pop_dict("when"), location=location),
+            )
+        )
+        _check_no_unexpected_keys(target_dict, location=location)
+    return targets
+
+
 @attr.define(frozen=True, kw_only=True)
 class TermMultiplierRule:
     """A flat reduction applied to a sentence's terms at sentencing."""
@@ -288,8 +357,27 @@ class TermMultiplierRule:
     """The fraction of each term left after the reduction, e.g. 0.65 for a 35%
     reduction."""
 
+    applies_to: list[ReductionTarget] = attr.ib(
+        validator=[
+            attr_validators.is_non_empty_list,
+            attr_validators.is_list_of(ReductionTarget),
+        ]
+    )
+    """The terms the reduction comes off. The reduction never comes off a term
+    that isn't listed."""
+
     statute: str | None = attr.ib(validator=attr_validators.is_opt_str)
     """Citation for the law the rule encodes, if any."""
+
+    def __attrs_post_init__(self) -> None:
+        terms = [target.term.value for target in self.applies_to]
+        duplicate_terms = sorted({term for term in terms if terms.count(term) > 1})
+        if duplicate_terms:
+            raise ValueError(
+                f"Term multiplier [{self.name}] lists the terms {duplicate_terms} "
+                f"more than once in applies_to. List each term once, and combine "
+                f"its conditions with any_of or all_of."
+            )
 
     @classmethod
     def from_yaml_dict(
@@ -303,35 +391,9 @@ class TermMultiplierRule:
             description=yaml_dict.pop("description", str),
             when=_pop_when(yaml_dict, parser=parser, location=location),
             multiplier=_pop_number(yaml_dict, "multiplier"),
-            statute=yaml_dict.pop_optional("statute", str),
-        )
-        _check_no_unexpected_keys(yaml_dict, location=location)
-        return rule
-
-
-@attr.define(frozen=True, kw_only=True)
-class MaxTermOnlyRule:
-    """The sentences whose reduction comes off the max term only. Every other
-    sentence's reduction comes off both its min and max terms."""
-
-    description: str = attr.ib(validator=attr_validators.is_non_empty_str)
-    """Plain-language explanation of which sentences this covers and why."""
-
-    when: Condition = attr.ib(validator=is_condition)
-    """Conditions a sentence must meet for its reduction to skip the min term."""
-
-    statute: str | None = attr.ib(validator=attr_validators.is_opt_str)
-    """Citation for the law the rule encodes, if any."""
-
-    @classmethod
-    def from_yaml_dict(
-        cls, yaml_dict: YAMLDict, *, parser: ConditionParser
-    ) -> "MaxTermOnlyRule":
-        """Returns the MaxTermOnlyRule defined by a regime's max_term_only."""
-        location = "max_term_only"
-        rule = MaxTermOnlyRule(
-            description=yaml_dict.pop("description", str),
-            when=parser.parse(yaml_dict.pop_dict("when"), location=location),
+            applies_to=_pop_applies_to(
+                yaml_dict, parser=parser, rule_location=location
+            ),
             statute=yaml_dict.pop_optional("statute", str),
         )
         _check_no_unexpected_keys(yaml_dict, location=location)
@@ -416,9 +478,6 @@ class LawRegime:
     """Identifier for the regime, e.g. SB_413: the name of its YAML file without
     the extension, uppercased."""
 
-    state_code: StateCode = attr.ib(validator=attr.validators.instance_of(StateCode))
-    """The state whose sentences this regime governs."""
-
     description: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """Human-readable explanation of the regime."""
 
@@ -441,12 +500,6 @@ class LawRegime:
     )
     """Flat reductions applied at sentencing. The first rule whose conditions a
     sentence meets applies."""
-
-    max_term_only: MaxTermOnlyRule | None = attr.ib(
-        validator=attr_validators.is_opt(MaxTermOnlyRule)
-    )
-    """The sentences whose reduction skips the min term, or None if every
-    sentence's reduction reaches both terms."""
 
     projected_dates: dict[str, DateFormulaRule] = attr.ib(
         validator=attr_validators.is_dict_of(str, DateFormulaRule)
@@ -487,16 +540,7 @@ class LawRegime:
                 f"itself."
             ) from e
 
-    # This will change when additional modifiers are added later -- right now it checks
-    # for multipliers because multipliers are the only modifiers, but later credit
-    # reductions will be another option.
     def __attrs_post_init__(self) -> None:
-        if self.max_term_only and not self.term_multipliers:
-            raise ValueError(
-                f"Law regime [{self.name}] has max_term_only but no term_multipliers, "
-                f"so there is no reduction to keep off the min term. Add "
-                f"term_multipliers or remove max_term_only."
-            )
         _check_rule_order(
             regime_name=self.name,
             section="term_multipliers",
@@ -576,12 +620,10 @@ class LawRegime:
         values_parser = ConditionParser(
             field_types=PROJECTED_DATE_VALUE_TYPES, named_conditions=None
         )
-        max_term_only_dict = yaml_dict.pop_dict_optional("max_term_only")
         days_per_month = _pop_optional_number(yaml_dict, "days_per_month")
         days_per_year = _pop_optional_number(yaml_dict, "days_per_year")
         regime = LawRegime(
             name=cls.name_for_yaml_path(yaml_path),
-            state_code=StateCode(yaml_dict.pop("state_code", str)),
             description=yaml_dict.pop("description", str),
             effective_date=_pop_date(yaml_dict, "effective_date"),
             use_calendar_term_conversion=yaml_dict.pop_optional(
@@ -594,13 +636,6 @@ class LawRegime:
                 TermMultiplierRule.from_yaml_dict(rule_dict, parser=sentence_parser)
                 for rule_dict in yaml_dict.pop_dicts_optional("term_multipliers") or []
             ],
-            max_term_only=(
-                MaxTermOnlyRule.from_yaml_dict(
-                    max_term_only_dict, parser=sentence_parser
-                )
-                if max_term_only_dict is not None
-                else None
-            ),
             projected_dates=_parse_projected_dates(
                 yaml_dict.pop_dict_optional("projected_dates") or YAMLDict({}),
                 parser=values_parser,

@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=../schema/law_regime_schema.json
+description: Nevada Senate Bill 413
+effective_date: "2027-07-01"
+use_calendar_term_conversion: true # Use actual calendar days for year/month conversion
+
+conditions:
+  # Every sentence except a category A or B felony, a violence or sex offense,
+  # or a felony DUI.
+  reduction_reaches_min_term:
+    offense_category: { not_in: [A, B] }
+    offense_group: { not_in: [VIOLENCE, SEX] }
+    condition: not_felony_dui
+
+term_multipliers:
+  - name: standard_term_reduction
+    description: >-
+      A 35% reduction (multiplier 0.65) of every sentence's max term. It also
+      comes off the min term, except for category A and B felonies, violence
+      and sex offenses, and felony DUIs.
+    multiplier: 0.65
+    applies_to:
+      max_term: always
+      min_term:
+        when:
+          condition: reduction_reaches_min_term
+    statute: NRS 209.4467
+
+# TODO(NV-44): Add exceptional merit credits to the reductions
+
+projected_dates:
+  # TODO(NV-15): For consecutive sentences, the test in test_golden_state_provided.py
+  # matches start_date + adjusted_min_days, need to check whether that was ACTUALLY a
+  # state-provided golden or was just named that way.
+  # TODO(NV-14): Add "youthful offender" statute.
+  # TODO(NV-46): Handle when this date is in the past or needs to be overriden (e.g.
+  # given the result of a parole board action).
+  parole_eligibility_date:
+    description: Parole Eligibility Date (PED), based on the adjusted minimum term.
+    formula: start_date + adjusted_min_days - 1
+
+  projected_expiration_date:
+    description: Projected Expiration Date (PEXD), based on the adjusted maximum term.
+    formula: start_date + adjusted_max_days - 1
+
+  # The mixing of units here (3 years, 12 months) is because that's what the statute
+  # says.
+  # TODO(NV-43): Determine if we need to add eligibility checks to this date.
+  mandatory_parole_release_date:
+    description: >-
+      Mandatory Parole Release (MPR), PEXD minus 12 months, for an original
+      maximum term of 3 years or more.
+    when:
+      unadjusted_max_years: { greater_than_or_equal: 3 }
+    formula: projected_expiration_date - months(12)
+    statute: NRS 213.1215
+
+  # TODO(NV-45) This is absolutely wrong, but I'm not sure what 'right' should look
+  # like. Details in the ticket.
+  base_parole_eligibility_date:
+    description: Base Parole Eligibility Date (BPED), the full unadjusted minimum term.
+    formula: start_date + unadjusted_min_days - 1

@@ -31,7 +31,7 @@ from recidiviz.sentence_calculator.models.rules import LawRegime, parse_state_co
 _REGIME_NAME_REGEX = re.compile(r"[A-Za-z0-9_]+")
 
 # The file in a state's directory that holds the named conditions every regime
-# for the state can refer to.
+# for the state can refer to. Every other YAML file there defines a law regime.
 STATE_CONDITIONS_FILE_NAME = "conditions.yaml"
 
 
@@ -63,6 +63,19 @@ def load_state_conditions(state_code: StateCode) -> dict[str, Condition]:
     )
 
 
+def list_law_regime_names(state_code: StateCode) -> list[str]:
+    """Returns the names of every law regime defined for state_code, e.g.
+    ["SB_413"] for US_NV, or an empty list if the state has none."""
+    state_dir = _state_rules_dir(state_code)
+    if not os.path.isdir(state_dir):
+        return []
+    return sorted(
+        LawRegime.name_for_yaml_path(file_name)
+        for file_name in os.listdir(state_dir)
+        if file_name.endswith(".yaml") and file_name != STATE_CONDITIONS_FILE_NAME
+    )
+
+
 def load_law_regime(*, state_code: StateCode, regime_name: str) -> LawRegime:
     """Returns the LawRegime named regime_name for state_code."""
     yaml_path = law_regime_yaml_path(state_code=state_code, regime_name=regime_name)
@@ -71,16 +84,8 @@ def load_law_regime(*, state_code: StateCode, regime_name: str) -> LawRegime:
             f"No law regime [{regime_name}] defined for state [{state_code.value}]. "
             f"Expected a file at [{yaml_path}]."
         )
-    regime = LawRegime.from_yaml(
+    return LawRegime.from_yaml(
         yaml_path,
         sentence_class=state_inputs.sentence_class(state_code),
         shared_conditions=load_state_conditions(state_code),
     )
-    if regime.state_code is not state_code:
-        raise ValueError(
-            f"Law regime file [{yaml_path}] has state_code "
-            f"[{regime.state_code.value}], but it is in the directory for state "
-            f"[{state_code.value}]. Make the state_code in the file match its "
-            f"directory."
-        )
-    return regime

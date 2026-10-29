@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
-state_code: US_XX
 description: Test regime that writes its numbers without decimal points.
 effective_date: "2020-01-01"
 days_per_month: 30
@@ -8,3 +7,6 @@ term_multipliers:
   - name: no_reduction
     description: No reduction for every offense
     multiplier: 1
+    applies_to:
+      max_term: always
+      min_term: always
