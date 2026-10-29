@@ -73,6 +73,13 @@ output:
                       $json_extract:
                         $key: penalty_id
                         $json: $iter_item
+                    outcome_type:
+                      $enum_mapping:
+                        $raw_text:
+                          $json_extract:
+                            $key: penalty_name
+                            $json: $iter_item
+                        $custom_parser: us_ix_custom_enum_parsers.map_incarceration_incident_outcome_type
                     date_effective:
                       $json_extract:
                         $key: penalty_start

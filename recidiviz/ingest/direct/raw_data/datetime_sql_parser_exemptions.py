@@ -117,12 +117,6 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
             "UpdateDate",
             "WarrantDate",
         ],
-        "scl_DORPenalty": [
-            "InsertDate",
-            "PenaltyEndDate",
-            "PenaltyStartDate",
-            "UpdateDate",
-        ],
         "scl_Offense": ["OffenseDate"],
         "scl_SentenceDetail": ["SegmentEndDate", "SegmentStartDate"],
         "scl_SentenceOrder": ["SentenceDate"],
@@ -410,6 +404,12 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         "ref_LocationType": ["InsertDate", "UpdateDate"],
         "ref_NameSuffixType": ["InsertDate", "UpdateDate"],
         "ref_QuestionnaireTemplate": ["InsertDate", "PublishDate", "UpdateDate"],
+        "scl_DORPenalty": [
+            "InsertDate",
+            "PenaltyEndDate",
+            "PenaltyStartDate",
+            "UpdateDate",
+        ],
         "scl_DiscOffenseRpt": [
             "InfractionDate",
             "InsertDate",

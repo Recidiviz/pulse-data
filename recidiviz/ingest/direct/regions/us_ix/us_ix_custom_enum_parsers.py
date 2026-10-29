@@ -23,10 +23,12 @@ my_enum_field:
     $custom_parser: us_ix_custom_enum_parsers.<function name>
 """
 
+import re
 from datetime import date
 from typing import Optional
 
 from recidiviz.common.constants.state.state_incarceration_incident import (
+    StateIncarcerationIncidentOutcomeType,
     StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentencingAuthority
@@ -229,6 +231,50 @@ def parse_sentencing_authority(raw_text: str) -> StateSentencingAuthority:
     if raw_text == "Idaho":
         return StateSentencingAuthority.STATE
     return StateSentencingAuthority.OTHER_STATE
+
+
+# A penalty name is a base penalty plus an optional class suffix, like "DETENTION B" or
+# "PRIVILEGES 2".
+_PENALTY_CLASS_SUFFIX_REGEX = re.compile(r" (A1|A|B|C|[0-9])$")
+
+# DOR penalties keyed by their uppercased name without the class suffix, as named in
+# scl_DOROffenseTypePenalty.AuditPenaltyName.
+_PENALTY_OUTCOME_TYPES: dict[str, StateIncarcerationIncidentOutcomeType] = {
+    "COMMISSARY": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    "CONTACT VISITING": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    # "Lost Privileges (Days)".
+    "DAYS": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    # "Disciplinary Detention". TODO(OBT-52603): Confirm with IDOC whether this is
+    # served in restrictive housing, in which case it should map to SOLITARY.
+    "DETENTION": StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT,
+    "EXTRA DUTY": StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR,
+    "HOBBYCRAFT": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    # "Cell/Living Unit Restriction".
+    "LIVING UNIT": StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT,
+    "NOT GUILTY": StateIncarcerationIncidentOutcomeType.NOT_GUILTY,
+    "PRIVILEGES": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    "PROPERTY": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    "REC RESTRICTIONS": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    "REPRIMAND": StateIncarcerationIncidentOutcomeType.WARNING,
+    "RESTITUTION": StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY,
+    "TELEPHONE": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    "VISITING": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    "WORK": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
+    # A penalty type named "1" whose description is "Reprimand".
+    "1": StateIncarcerationIncidentOutcomeType.WARNING,
+}
+
+
+def map_incarceration_incident_outcome_type(
+    raw_text: str,
+) -> StateIncarcerationIncidentOutcomeType:
+    """Returns the outcome type for a DOR penalty, given its penalty name. No contact
+    orders, "Other", penalties where the hearing itself was the only penalty, and any
+    penalty name not listed above map to INTERNAL_UNKNOWN."""
+    base_penalty = _PENALTY_CLASS_SUFFIX_REGEX.sub("", raw_text.strip().upper())
+    if base_penalty in _PENALTY_OUTCOME_TYPES:
+        return _PENALTY_OUTCOME_TYPES[base_penalty]
+    return StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN
 
 
 def map_incident_type(
