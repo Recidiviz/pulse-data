@@ -75,7 +75,7 @@ jobs:
 
   big-query-emulator-tests:
     name: BigQuery Emulator Tests
-    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache
+    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=8/extras=s3-cache
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
@@ -104,7 +104,7 @@ jobs:
 
   bigquery-view-graph-validation:
     name: BigQuery View Graph Validation
-    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=16/extras=s3-cache
+    runs-on: runs-on=${{github.run_id}}/runner=x64/cpu=4/extras=s3-cache
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
