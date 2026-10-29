@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for WorkflowsParoleBoardClientProfileETLDelegate."""
+
 import unittest
 
 from recidiviz.common.constants.states import StateCode
@@ -38,40 +39,4 @@ class WorkflowsParoleBoardClientProfileETLDelegateTest(unittest.TestCase):
         self.assertEqual(
             {"parole_board_client_profile_record.json": "paroleBoardClientProfiles"},
             delegate.COLLECTION_BY_FILENAME,
-        )
-
-    def test_transform_row_keys_on_person_external_id_and_camel_cases_the_profile(
-        self,
-    ) -> None:
-        """The person_external_id keys the document id, matching the resident's own
-        document, and is left out of the document body."""
-        delegate = WorkflowsParoleBoardClientProfileETLDelegate(StateCode.US_XX)
-        row = (
-            '{"state_code": "US_XX", "person_external_id": "A100", '
-            '"pseudonymized_id": "p100", '
-            '"demographics": {"resident_dob": "1980-02-03", "case_manager": "Ana Ruiz"}, '
-            '"parole_hearings": [{"hearing_status": "SCHEDULED", '
-            '"hearing_date": "2026-11-04"}], '
-            '"criminal_history": []}'
-        )
-
-        doc_id, document = delegate.transform_row(
-            row, "parole_board_client_profile_record.json"
-        )
-
-        self.assertEqual("A100", doc_id)
-        self.assertEqual(
-            {
-                "stateCode": "US_XX",
-                "pseudonymizedId": "p100",
-                "demographics": {
-                    "residentDob": "1980-02-03",
-                    "caseManager": "Ana Ruiz",
-                },
-                "paroleHearings": [
-                    {"hearingStatus": "SCHEDULED", "hearingDate": "2026-11-04"}
-                ],
-                "criminalHistory": [],
-            },
-            document,
         )

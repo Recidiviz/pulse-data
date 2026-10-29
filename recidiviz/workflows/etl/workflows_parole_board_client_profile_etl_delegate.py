@@ -15,15 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Delegate class to ETL Parole Board client profiles into Firestore."""
-import json
 
 from recidiviz.calculator.query.state.views.workflows.firestore.parole_board_client_profile_record import (
     PAROLE_BOARD_CLIENT_PROFILE_RECORD_VIEW_NAME,
-    PERSON_EXTERNAL_ID_COLUMN_NAME,
 )
-from recidiviz.common.common_utils import convert_nested_dictionary_keys
-from recidiviz.common.str_field_utils import snake_to_camel
-from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
+from recidiviz.workflows.etl.workflows_person_external_id_keyed_etl_delegate import (
+    WorkflowsPersonExternalIdKeyedETLDelegate,
+)
 
 PAROLE_BOARD_CLIENT_PROFILE_RECORD_FILENAME = (
     f"{PAROLE_BOARD_CLIENT_PROFILE_RECORD_VIEW_NAME}.json"
@@ -34,18 +32,12 @@ PAROLE_BOARD_CLIENT_PROFILE_RECORD_FILENAME = (
 PAROLE_BOARD_CLIENT_PROFILES_COLLECTION_NAME = "paroleBoardClientProfiles"
 
 
-class WorkflowsParoleBoardClientProfileETLDelegate(WorkflowsFirestoreETLDelegate):
+class WorkflowsParoleBoardClientProfileETLDelegate(
+    WorkflowsPersonExternalIdKeyedETLDelegate
+):
     """Delegate class to ETL the parole_board_client_profile_record.json file into
     Firestore, one document per resident, under the same document id as that
-    resident's document in the residents collection.
-
-    For example, the row
-        {"state_code": "US_ID", "person_external_id": "1234567",
-         "pseudonymized_id": "a1b2c3", "parole_hearings": [{"hearing_status": "SCHEDULED"}]}
-    becomes the document us_id_1234567:
-        {"stateCode": "US_ID", "pseudonymizedId": "a1b2c3",
-         "paroleHearings": [{"hearingStatus": "SCHEDULED"}]}
-    """
+    resident's document in the residents collection."""
 
     COLLECTION_BY_FILENAME = {
         PAROLE_BOARD_CLIENT_PROFILE_RECORD_FILENAME: PAROLE_BOARD_CLIENT_PROFILES_COLLECTION_NAME
@@ -53,8 +45,3 @@ class WorkflowsParoleBoardClientProfileETLDelegate(WorkflowsFirestoreETLDelegate
 
     def get_supported_files(self) -> list[str]:
         return [PAROLE_BOARD_CLIENT_PROFILE_RECORD_FILENAME]
-
-    def transform_row(self, row: str, filename: str) -> tuple[str, dict]:
-        data = json.loads(row)
-        person_external_id = data.pop(PERSON_EXTERNAL_ID_COLUMN_NAME)
-        return person_external_id, convert_nested_dictionary_keys(data, snake_to_camel)

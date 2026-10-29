@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Endpoints for Workflows ETL"""
+
 import logging
 import os
 from http import HTTPStatus
@@ -58,6 +59,9 @@ from recidiviz.workflows.etl.workflows_supervision_staff_etl_delegate import (
 from recidiviz.workflows.etl.workflows_tasks_etl_delegate import (
     WorkflowsTasksETLDelegate,
 )
+from recidiviz.workflows.etl.workflows_us_ix_moves_management_etl_delegate import (
+    WorkflowsUsIxMovesManagementETLDelegate,
+)
 from recidiviz.workflows.types import WorkflowsSystemType
 
 WORKFLOWS_ETL_OPERATIONS_QUEUE = "workflows-etl-operations-queue"
@@ -100,6 +104,7 @@ def get_workflows_delegates(state_code: StateCode) -> List[WorkflowsETLDelegate]
         WorkflowsClientETLDelegate(state_code),
         WorkflowsResidentETLDelegate(state_code),
         WorkflowsParoleBoardClientProfileETLDelegate(state_code),
+        WorkflowsUsIxMovesManagementETLDelegate(state_code),
         WorkflowsTasksETLDelegate(state_code),
         WorkflowsLocationETLDelegate(state_code),
     ]
