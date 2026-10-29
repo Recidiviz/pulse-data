@@ -76,6 +76,10 @@ from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
+)
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
@@ -128,6 +132,22 @@ class UsIxPlacementMatrixFacility(Enum):
     # CAPP was renamed to Mountain View Transformation Center
     MVTC = "MOUNTAIN VIEW TRANSFORMATION CENTER"
     NICI = "NORTH IDAHO CORRECTIONAL INSTITUTION"
+
+    @property
+    def reception_housing_unit_prefix(self) -> str | None:
+        """Returns the start of the housing unit names in the facility's Reception
+        and Diagnostic Unit (RDU), such as "UNIT 15-" for ISCI, or None if the
+        facility has no RDU."""
+        if self is UsIxPlacementMatrixFacility.ISCI:
+            return "UNIT 15-"
+        if self in (
+            UsIxPlacementMatrixFacility.ICIO,
+            UsIxPlacementMatrixFacility.ISCC,
+            UsIxPlacementMatrixFacility.MVTC,
+            UsIxPlacementMatrixFacility.NICI,
+        ):
+            return None
+        raise ValueError(f"Unexpected facility: [{self}]")
 
 
 # Community Reentry Centers (CRCs) - work release facilities where residents
@@ -223,6 +243,42 @@ FROM (
 def us_ix_not_in_facility_criteria_view_builder(
     *,
     criteria_name: str,
+    facility_sessions_description: str,
+    facility: UsIxPlacementMatrixFacility,
+) -> (
+    StateSpecificTaskCriteriaBigQueryViewBuilder
+    | StateSpecificTaskCriteriaGroupBigQueryViewBuilder
+):
+    """Returns a criteria builder that is met whenever someone is not in a
+    facility. Being in reception at a facility doesn't count as being in the facility.
+    """
+    reception_housing_unit_prefix = facility.reception_housing_unit_prefix
+    if reception_housing_unit_prefix is None:
+        return _us_ix_facility_sessions_criteria_view_builder(
+            criteria_name=criteria_name,
+            description=facility_sessions_description,
+            facility=facility,
+        )
+    return StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        logic_type=TaskCriteriaGroupLogicType.OR,
+        sub_criteria_list=[
+            _us_ix_facility_sessions_criteria_view_builder(
+                criteria_name=f"{criteria_name}_FACILITY_SESSIONS",
+                description=facility_sessions_description,
+                facility=facility,
+            ),
+            _us_ix_in_reception_unit_criteria_view_builder(
+                facility=facility,
+                reception_housing_unit_prefix=reception_housing_unit_prefix,
+            ),
+        ],
+    )
+
+
+def _us_ix_facility_sessions_criteria_view_builder(
+    *,
+    criteria_name: str,
     description: str,
     facility: UsIxPlacementMatrixFacility,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
@@ -261,6 +317,58 @@ FROM facility_spans
                 description="Date the person's current stay at the facility began",
             ),
         ],
+    )
+
+
+def _us_ix_in_reception_unit_criteria_view_builder(
+    *,
+    facility: UsIxPlacementMatrixFacility,
+    reception_housing_unit_prefix: str,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """Returns a criteria builder that is met while someone is in a facility's
+    Reception and Diagnostic Unit (RDU). Bed moves in the unit are aggregated to one span.
+    """
+    # TODO(#85650): Source this from hsn_Bed.BedTypeId (4 = "Reception and
+    # Diagnostic Unit") once that's in the ingest output, instead of parsing housing
+    # unit names.
+    query_template = fix_indent(
+        f"""
+WITH reception_unit_sessions AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
+    WHERE state_code = 'US_IX'
+        AND facility = '{facility.value}'
+        AND STARTS_WITH(housing_unit, '{reception_housing_unit_prefix}')
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    TRUE AS meets_criteria,
+    CAST(NULL AS JSON) AS reason,
+FROM (
+{fix_indent(aggregate_adjacent_spans("reception_unit_sessions"), indent_level=4)}
+)
+""",
+        indent_level=0,
+    )
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=StateCode.US_IX,
+        criteria_name=f"US_IX_IN_{facility.name}_RECEPTION_UNIT",
+        criteria_spans_query_template=query_template,
+        description=(
+            f"Spans of time when someone in Idaho is housed in the Reception and "
+            f"Diagnostic Unit (RDU) at {facility.value}. Matches housing units starting with "
+            f"{reception_housing_unit_prefix}."
+        ),
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=False,
+        reasons_fields=[],
     )
 
 
