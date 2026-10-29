@@ -912,7 +912,7 @@ def us_tx_fee_type_case_sql(*, column: str) -> str:
     return f"""CASE {column}
         WHEN 'C' THEN 'Crime Victim Fund'
         WHEN 'S' THEN 'Supervision'
-        WHEN 'E' THEN 'Post-Secondary Education Reimbursement'
+        WHEN 'E' THEN 'Post Secondary Education Reimbursement'
         WHEN 'P' THEN 'Sexual Assault Program'
         WHEN 'R' THEN 'Restitution'
         ELSE NULL
