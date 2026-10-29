@@ -30,7 +30,7 @@ from recidiviz.task_eligibility.completion_events.general import (
 )
 from recidiviz.task_eligibility.criteria.general import is_male
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    custody_level_is_minimum_or_rider_or_parole_violator,
+    custody_level_is_minimum_or_rider_without_sex_offense_or_parole_violator,
     not_in_mvtc,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
@@ -46,7 +46,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         is_male.VIEW_BUILDER,
-        custody_level_is_minimum_or_rider_or_parole_violator.VIEW_BUILDER,
+        custody_level_is_minimum_or_rider_without_sex_offense_or_parole_violator.VIEW_BUILDER,
         not_in_mvtc.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_prison_facility.VIEW_BUILDER,
