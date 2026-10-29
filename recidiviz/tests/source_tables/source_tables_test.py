@@ -149,6 +149,9 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             # These source tables only exist & are in-use in production
             "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
             "all_billing_data.gcp_billing_export_v1_01338E_BE3FD6_363B4C",
+            # Daily archive of GitHub webhook events; no deployed view reads it yet.
+            # TODO(OBT-55688): remove once eng_metrics.pr_first_feedback reads this table.
+            "github_events_raw.github_events_archive",
             *COMMON_VESTIGES,
         ]
     },
@@ -163,6 +166,9 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "sentencing_views.case_insights_record_flattened",
             # Legacy V1 Idaho tasks record archive, predates V2 pipeline
             "export_archives.us_ix_supervision_tasks_record_archive",
+            # Daily archive of GitHub webhook events; no deployed view reads it yet.
+            # TODO(OBT-55688): remove once eng_metrics.pr_first_feedback reads this table.
+            "github_events_raw.github_events_archive",
             *COMMON_VESTIGES,
         ]
     },

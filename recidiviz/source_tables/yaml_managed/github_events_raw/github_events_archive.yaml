@@ -1,0 +1,59 @@
+address:
+  dataset_id: github_events_raw
+  table_id: github_events_archive
+description:
+  Archive of the GitHub org webhook deliveries the security team's SIEM received,
+  one row per delivery, deduplicated on delivery_id. Two views the security team
+  shares feed it, recidiviz-security.github_events_share.github_events_v1
+  (deliveries from 2025-04-30 to 2026-03-25) and github_events_v2 (a rolling
+  400-day window); both drop org-level events and the security team's own repos,
+  and siem_source_table says which one a row came from. The
+  github_events_archive_daily_merge scheduled query in
+  recidiviz/tools/deploy/terraform/bigquery-scheduled-queries.tf merges the last
+  seven days of the v2 view every day; a one-time backfill loaded the rest.
+  Partitions never expire, so this table keeps the history the SIEM deletes.
+schema:
+  - name: delivery_id
+    type: STRING
+    mode: REQUIRED
+    description: GitHub's X-GitHub-Delivery id for the webhook delivery; the merge key.
+  - name: event_timestamp
+    type: STRING
+    mode: NULLABLE
+    description:
+      Delivery time as the SIEM loader recorded it, an ISO 8601 string with a UTC
+      offset, for example "2026-03-05T18:51:00.970679+00:00".
+  - name: event_timestamp_ts
+    type: TIMESTAMP
+    mode: REQUIRED
+    description:
+      Delivery time as a timestamp; the partition column. Copied from the v2
+      view, or parsed from event_timestamp for rows backfilled from the v1 view.
+  - name: github_event_type
+    type: STRING
+    mode: NULLABLE
+    description: The X-GitHub-Event header value, for example pull_request or issue_comment.
+  - name: repository_full_name
+    type: STRING
+    mode: NULLABLE
+    description: The repository as owner/name, for example Recidiviz/pulse-data. Never null, because the shared views drop org-level events.
+  - name: sender_login
+    type: STRING
+    mode: NULLABLE
+    description: GitHub login of the account whose action triggered the event.
+  - name: action
+    type: STRING
+    mode: NULLABLE
+    description: The payload's top-level action field, for example opened or submitted. Null for event types without one.
+  - name: webhook_payload
+    type: JSON
+    mode: NULLABLE
+    description: The full webhook payload as GitHub sent it.
+  - name: siem_source_table
+    type: STRING
+    mode: REQUIRED
+    description: Which shared view the row was copied from, github_events_v1 or github_events_v2.
+time_partitioning:
+  type: DAY
+  field: event_timestamp_ts
+require_partition_filter: false
