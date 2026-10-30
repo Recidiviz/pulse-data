@@ -55,9 +55,6 @@ from recidiviz.calculator.query.state.views.analyst_data.number_months_downgrade
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.classification.recommended_custody_level_views.recommended_custody_level_spans import (
-    RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.jii_texting.jii_texting_contact_reminders import (
     JII_TEXTING_CONTACT_REMINDERS_VIEW_BUILDER,
 )
@@ -123,6 +120,9 @@ from recidiviz.utils.environment import (
 )
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.types import assert_type
+from recidiviz.validation.views.classification.recommended_custody_level_future_score_increase import (
+    RECOMMENDED_CUSTODY_LEVEL_FUTURE_SCORE_INCREASE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.dataset_config import (
     CLASSIFICATION_VALIDATION_VIEWS_DATASET,
 )
@@ -505,10 +505,10 @@ class ViewDagInvariantTests(unittest.TestCase):
                 dataset_id="llm_eval__label_studio",
                 table_id="meetings_module_quality_submitted_tasks",
             ),
-            # State-agnostic fan-in of every classification policy's recommended spans;
-            # reading the unioned view is what lets a newly migrated policy flow through
+            # State-agnostic check over every classification policy's recommended
+            # spans; reading the unioned view is what lets a new policy flow through
             # without adding a branch here.
-            RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER.address,
+            RECOMMENDED_CUSTODY_LEVEL_FUTURE_SCORE_INCREASE_VIEW_BUILDER.address,
             # Sessionized views over validated document extraction results, each
             # tracking a status field over time across all states at once.
             *(

@@ -732,10 +732,6 @@ def custody_level_vs_recommended_criteria(
             HIGHER_THAN_RECOMMENDED for a downgrade task). None satisfies the criteria
             for every span the policy covers, which is how a task carries a policy's
             current and recommended levels as reasons without gating on them.
-
-    TODO(#63762): custody_level_compared_to_recommended no longer has any callers.
-    Delete it. Its upcoming_eligibility_date logic has a bug fixed here, where a met
-    span followed by another met span reported the later span's start date.
     """
     spans_address = (
         recommended_classification_spans_view_builder.table_for_query.format_address_for_query_template()
@@ -813,119 +809,6 @@ def custody_level_vs_recommended_criteria(
         {CUSTODY_LEVEL_COLUMN_NAME},
         upcoming_eligibility_date,
     FROM next_eligibility_spans
-    WHERE start_date <= CURRENT_DATE('US/Pacific')
-    """
-
-
-def custody_level_compared_to_recommended(
-    criteria: str,
-    score_type_by_state: dict[str, str],
-) -> str:
-    """Returns spans of time where a given criteria comparing current and recommended
-    custody level is met, for policies whose recommended levels still come from a
-    hand-written view rather than a RecommendedClassificationSpansBigQueryViewBuilder.
-    A policy on that builder should use custody_level_vs_recommended_criteria instead,
-    which reads the policy view by builder rather than by score_type.
-
-    Args:
-        criteria: The criteria for comparing current custody level to recommended level.
-        score_type_by_state: Maps each state code to the score_type to read its
-            recommended levels from, e.g. {"US_MI": "RECLASS_2026_POLICY"}. Every state
-            this criteria covers needs an entry; a state with none is filtered out.
-    """
-    score_type_conditions = [
-        f"(state_code = '{state_code}' AND score_type = '{score_type}')"
-        for state_code, score_type in score_type_by_state.items()
-    ]
-    score_type_filter = f"WHERE ({' OR '.join(score_type_conditions)})"
-
-    return f"""
-    WITH critical_dates AS (
-      SELECT 
-        state_code,
-        person_id,
-        start_date,
-        end_date_exclusive,
-        custody_level,
-        CAST(NULL AS STRING) AS recommended_custody_level,
-      FROM `{{project_id}}.{{sessions_dataset}}.custody_level_sessions_materialized`
-
-      UNION ALL
-
-      SELECT 
-        state_code, 
-        person_id, 
-        start_date,
-        end_date_exclusive,
-        CAST(NULL AS STRING) AS custody_level,
-        recommended_custody_level,
-      FROM `{{project_id}}.{{classification_dataset}}.recommended_custody_level_spans_materialized`
-      {score_type_filter}
-
-    ),
-    {create_sub_sessions_with_attributes(table_name='critical_dates',end_date_field_name="end_date_exclusive")}
-    , 
-    dedup_cte AS (
-        SELECT
-            person_id,
-            state_code,
-            start_date,
-            end_date_exclusive,
-            -- Take non-null values if there are any
-            MAX(custody_level) AS custody_level,
-            MAX(recommended_custody_level) AS recommended_custody_level,
-        FROM
-           sub_sessions_with_attributes
-        GROUP BY
-            1,2,3,4
-    ),
-    meets_criteria_spans AS (
-        SELECT 
-            dedup_cte.*,
-            {criteria} AS meets_criteria,
-        FROM dedup_cte
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` current_cl
-            ON dedup_cte.custody_level = current_cl.custody_level
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` recommended_cl
-            ON recommended_custody_level = recommended_cl.custody_level
-    ),
-    next_eligibility_spans AS (
-    /* This CTE aggregates meets_critera_spans for rows where custody_level, recommended_custody_level, 
-    and meets_criteria have the same value so that we can set the upcoming_eligibility_date as the start date for that
-    row if meets_criteria, and the start_date for the upcoming row, if the next row meets_criteria. In this way we 
-    get the date at which someone becomes eligible for rows where clients are eligible, or the next date at which
-    the client will become eligible */
-    SELECT 
-        *,
-        CASE
-            WHEN LEAD(meets_criteria) OVER (PARTITION BY person_id ORDER BY start_date) 
-                THEN LEAD(start_date) OVER (PARTITION BY person_id ORDER BY start_date)
-            WHEN meets_criteria THEN start_date
-            ELSE NULL
-        END AS upcoming_eligibility_date
-    FROM ({aggregate_adjacent_spans(table_name = 'meets_criteria_spans',
-                                      attribute=['custody_level', 'recommended_custody_level', 'meets_criteria'],
-                                    end_date_field_name='end_date_exclusive')})
-    )
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date_exclusive AS end_date,
-        meets_criteria,
-        TO_JSON(STRUCT(
-            recommended_custody_level AS recommended_custody_level,
-            n.custody_level AS custody_level,
-            n.upcoming_eligibility_date
-        )) AS reason,
-        recommended_custody_level,
-        n.custody_level,
-        n.upcoming_eligibility_date
-    FROM next_eligibility_spans n
-    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` current_cl
-        ON n.custody_level = current_cl.custody_level
-    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` recommended_cl
-        ON recommended_custody_level = recommended_cl.custody_level
     WHERE start_date <= CURRENT_DATE('US/Pacific')
     """
 
