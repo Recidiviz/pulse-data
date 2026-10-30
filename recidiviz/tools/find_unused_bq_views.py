@@ -58,9 +58,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked
 from recidiviz.calculator.query.state.views.classification.all_classification_score_components import (
     ALL_CLASSIFICATION_SCORE_COMPONENTS_VIEW_ID,
 )
-from recidiviz.calculator.query.state.views.classification.recidiviz_designed_assessment_instruments import (
-    RECIDIVIZ_DESIGNED_ASSESSMENT_INSTRUMENTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.earned_time.us_co_work_engagement import (
     US_CO_WORK_ENGAGEMENT_VIEW_BUILDER,
 )
@@ -320,12 +317,6 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
     BigQueryAddress.from_str(
         "static_reference_data_views.us_tn_incident_infraction_descriptions"
     ): "TODO(#53520): This will be used to add incident and infraction descriptions to facility tools (Lydia Masr, 11/26/2025)",
-    RECIDIVIZ_DESIGNED_ASSESSMENT_INSTRUMENTS_VIEW_BUILDER.address: (
-        "Lookup of the classification instruments Recidiviz designed, for the "
-        "classification monitoring dashboard to join against all_classification_"
-        "assessment_events. Unused until that dashboard reads it. TODO(#108522) "
-        "(Hugo Salas, 2026-10-13)"
-    ),
     BigQueryAddress.from_str(
         "static_reference_data_views.us_ix_core_programs_by_facility"
     ): (

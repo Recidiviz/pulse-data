@@ -27,6 +27,7 @@ class EventType(Enum):
 
     ABSCONSION_BENCH_WARRANT = "ABSCONSION_BENCH_WARRANT"
     ALL_TOOLS_LINE_STAFF_ACTIVE_USAGE_EVENT = "ALL_TOOLS_LINE_STAFF_ACTIVE_USAGE_EVENT"
+    ASSESSMENT = "ASSESSMENT"
     COMPARTMENT_LEVEL_2_START = "COMPARTMENT_LEVEL_2_START"
     CUSTODY_LEVEL_CHANGE = "CUSTODY_LEVEL_CHANGE"
     DRUG_SCREEN = "DRUG_SCREEN"
@@ -123,6 +124,7 @@ class EventType(Enum):
         """Returns the unit of observation type associated with the event type"""
         if self in [
             EventType.ABSCONSION_BENCH_WARRANT,
+            EventType.ASSESSMENT,
             EventType.COMPARTMENT_LEVEL_2_START,
             EventType.CUSTODY_LEVEL_CHANGE,
             EventType.DRUG_SCREEN,

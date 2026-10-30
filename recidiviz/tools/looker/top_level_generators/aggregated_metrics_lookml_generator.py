@@ -29,6 +29,7 @@ from recidiviz.aggregated_metrics.configuration.collections.standard import (
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    APPROVED_RISK_ASSESSMENTS,
     AVG_DAILY_POPULATION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
     AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
@@ -74,6 +75,7 @@ from recidiviz.tools.looker.top_level_generators.base_lookml_generator import (
 )
 
 _ALLOWED_METRIC_DENOMINATORS: List[AggregatedMetric] = [
+    APPROVED_RISK_ASSESSMENTS,
     AVG_DAILY_POPULATION,
     *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
     *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,

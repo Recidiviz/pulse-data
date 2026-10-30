@@ -522,6 +522,9 @@ class ViewDagInvariantTests(unittest.TestCase):
             # reading the unioned view lets a state's new instrument flow through.
             NUMBER_MONTHS_BETWEEN_CUSTODY_DOWNGRADE_AND_ASSESSMENT_DUE_VIEW_BUILDER.address,
             HAS_INITIAL_CLASSIFICATION_IN_STATE_PRISON_CUSTODY_VIEW_BUILDER.address,
+            BigQueryAddress(
+                dataset_id="observations__person_event", table_id="assessment"
+            ),
         }
 
         allowed_union_all_datasets_to_query_from = {

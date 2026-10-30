@@ -2248,6 +2248,31 @@ PROP_PERIOD_WITH_CRITICAL_CASELOAD = DailyAvgSpanCountMetric(
     ),
 )
 
+APPROVED_RISK_ASSESSMENTS = EventCountMetric(
+    name="approved_risk_assessments",
+    display_name="Approved Risk Assessments",
+    description="Number of approved RISK-class assessments, counting at most one per "
+    "person, instrument, and day",
+    event_selector=EventSelector(
+        event_type=EventType.ASSESSMENT,
+        event_conditions_dict={"assessment_class": ["RISK"]},
+    ),
+    event_segmentation_columns=["assessment_type", "assessment_subtype"],
+)
+
+APPROVED_RISK_ASSESSMENT_OVERRIDES = EventCountMetric(
+    name="approved_risk_assessment_overrides",
+    display_name="Approved Risk Assessment Overrides",
+    description="Number of approved RISK-class assessments where staff placed the "
+    "person at a level other than the one the instrument scored. Assessments whose "
+    "ingest records no override level never count, even if they were overridden",
+    event_selector=EventSelector(
+        event_type=EventType.ASSESSMENT,
+        event_conditions_dict={"assessment_class": ["RISK"], "is_override": ["true"]},
+    ),
+    event_segmentation_columns=["assessment_type", "assessment_subtype"],
+)
+
 # This exists to support PROP_SENTENCE_ metrics
 SUPERVISION_STARTS_FROM_INCARCERATION = EventCountMetric(
     name="supervision_starts_from_incarceration",
