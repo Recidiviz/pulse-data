@@ -16,8 +16,10 @@
 #  =============================================================================
 """Tests the ability for WorkflowsClientETLDelegate to parse json rows."""
 
-import os
+import json
+from copy import deepcopy
 from datetime import datetime, timezone
+from typing import Any
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import MagicMock, patch
 
@@ -32,6 +34,108 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.workflows_client_etl_delegate import (
     WorkflowsClientETLDelegate,
 )
+
+CLIENT_FILENAME = "client_record.json"
+
+TEST_DATA: dict[str, Any] = {
+    "person_external_id": "200",
+    "pseudonymized_id": "p200",
+    "display_id": "d200",
+    "state_code": "US_TN",
+    "person_name": json.dumps(
+        {
+            "given_names": "MATILDA",
+            "middle_names": "",
+            "name_suffix": "",
+            "surname": "MOUSE-HOUSE",
+        }
+    ),
+    "officer_id": "100",
+    "supervision_type": "TN PROBATIONER",
+    "supervision_level": "MEDIUM",
+    "supervision_level_start": "2020-03-10",
+    "all_eligible_opportunities": ["usTnCompliantReporting2025Policy"],
+    "all_ineligible_opportunities": ["usTnExpiration"],
+    "current_balance": 45.10,
+    "special_conditions": "SPECIAL",
+    "address": "123 Fake st., Faketown, Tn 12345",
+    "phone_number": "8889997777",
+    "expiration_date": "2022-02-28",
+    "last_payment_date": "2021-12-20",
+    "last_payment_amount": 10.25,
+    "board_conditions": [
+        {"condition": "CT", "condition_description": "COMPLETE THERAPEUTIC COMMUNITY"},
+        {"condition": "CW", "condition_description": "COMMUNITY SERVICE REFERRAL"},
+    ],
+    "supervision_start_date": "2021-03-04",
+    "district": "DISTRICT 0",
+    "milestones": [
+        {"type": "BIRTHDAY_THIS_MONTH", "text": "Birthday this month (February 17)"},
+        {"type": "MONTHS_WITHOUT_VIOLATION", "text": "12 months without a violation"},
+    ],
+    "email_address": "matilda@testdomain.com",
+    "current_employers": [
+        {
+            "name": "Mouse House",
+            "address": "123 Mousey Way",
+            "start_date": "2021-04-04",
+        },
+        {
+            "name": "Denny's",
+            "address": "456 Cookie Crumble Drive",
+            "start_date": "2022-03-04",
+        },
+    ],
+}
+
+EXPECTED_DOCUMENT: dict[str, Any] = {
+    "personExternalId": "200",
+    "pseudonymizedId": "p200",
+    "displayId": "d200",
+    "stateCode": "US_TN",
+    "personName": {
+        "givenNames": "Matilda",
+        "middleNames": "",
+        "nameSuffix": "",
+        "surname": "Mouse-House",
+    },
+    "officerId": "100",
+    "supervisionType": "Probation",
+    "supervisionLevel": "MEDIUM",
+    "supervisionLevelStart": "2020-03-10",
+    "allEligibleOpportunities": ["usTnCompliantReporting2025Policy"],
+    "allIneligibleOpportunities": ["usTnExpiration"],
+    "currentBalance": 45.1,
+    "specialConditions": "SPECIAL",
+    "address": "123 Fake st., Faketown, TN 12345",
+    "phoneNumber": "8889997777",
+    "expirationDate": "2022-02-28",
+    "lastPaymentDate": "2021-12-20",
+    "lastPaymentAmount": 10.25,
+    "boardConditions": [
+        {"condition": "CT", "conditionDescription": "COMPLETE THERAPEUTIC COMMUNITY"},
+        {"condition": "CW", "conditionDescription": "COMMUNITY SERVICE REFERRAL"},
+    ],
+    "supervisionStartDate": "2021-03-04",
+    "district": "DISTRICT 0",
+    "milestones": [
+        {"type": "BIRTHDAY_THIS_MONTH", "text": "Birthday this month (February 17)"},
+        {"type": "MONTHS_WITHOUT_VIOLATION", "text": "12 months without a violation"},
+    ],
+    "emailAddress": "matilda@testdomain.com",
+    "currentEmployers": [
+        {
+            "name": "Mouse House",
+            "address": "123 Mousey Way",
+            "startDate": "2021-04-04",
+        },
+        {
+            "name": "Denny's",
+            "address": "456 Cookie Crumble Drive",
+            "startDate": "2022-03-04",
+        },
+    ],
+}
 
 
 class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
@@ -57,204 +161,77 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
         """
         Test that the transform_row method correctly parses the json
         """
-        path_to_fixture = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "fixtures",
-            "client_record.json",
-        )
-        with open(path_to_fixture, "r", encoding="utf-8") as fp:
-            fixture = fp.readline()
+        delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
+        doc_id, row = delegate.transform_row(json.dumps(TEST_DATA), CLIENT_FILENAME)
+        self.assertEqual("200", doc_id)
+        self.assertEqual(EXPECTED_DOCUMENT, row)
 
-            delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
+    def test_transform_row_without_optional_fields(self) -> None:
+        """
+        Test that transform_row method omits optional fields that are missing rather
+        than defaulting them
+        """
+        delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
+        data = deepcopy(TEST_DATA)
+        del data["supervision_level"]
+        del data["all_eligible_opportunities"]
+        del data["all_ineligible_opportunities"]
+        del data["address"]
+        del data["phone_number"]
+        del data["expiration_date"]
+        del data["last_payment_date"]
+        del data["last_payment_amount"]
+        del data["supervision_start_date"]
+        del data["milestones"]
 
-            doc_id, row = delegate.transform_row(fixture, "client_record.json")
-            # US_TN first row has board conditions
-            self.assertEqual(doc_id, "200")
-            self.assertEqual(
-                {
-                    "address": "123 Fake st., Faketown, TN 12345",
-                    "allEligibleOpportunities": ["usTnCompliantReporting2025Policy"],
-                    "allIneligibleOpportunities": ["usTnExpiration"],
-                    "currentBalance": 45.1,
-                    "expirationDate": "2022-02-28",
-                    "lastPaymentAmount": 10.25,
-                    "lastPaymentDate": "2021-12-20",
-                    "officerId": "100",
-                    "personExternalId": "200",
-                    "pseudonymizedId": "p200",
-                    "displayId": "d200",
-                    "personName": {
-                        "givenNames": "Matilda",
-                        "middleNames": "",
-                        "nameSuffix": "",
-                        "surname": "Mouse-House",
-                    },
-                    "phoneNumber": "8889997777",
-                    "specialConditions": "SPECIAL",
-                    "stateCode": "US_TN",
-                    "supervisionLevel": "MEDIUM",
-                    "supervisionLevelStart": "2020-03-10",
-                    "supervisionType": "Probation",
-                    "boardConditions": [
-                        {
-                            "condition": "CT",
-                            "conditionDescription": "COMPLETE THERAPEUTIC COMMUNITY",
-                        },
-                        {
-                            "condition": "CW",
-                            "conditionDescription": "COMMUNITY SERVICE REFERRAL",
-                        },
-                    ],
-                    "supervisionStartDate": "2021-03-04",
-                    "district": "DISTRICT 0",
-                    "milestones": [
-                        {
-                            "type": "BIRTHDAY_THIS_MONTH",
-                            "text": "Birthday this month (February 17)",
-                        },
-                        {
-                            "type": "MONTHS_WITHOUT_VIOLATION",
-                            "text": "12 months without a violation",
-                        },
-                    ],
-                    "emailAddress": "matilda@testdomain.com",
-                    "currentEmployers": [
-                        {
-                            "name": "Mouse House",
-                            "address": "123 Mousey Way",
-                            "startDate": "2021-04-04",
-                        },
-                        {
-                            "name": "Denny's",
-                            "address": "456 Cookie Crumble Drive",
-                            "startDate": "2022-03-04",
-                        },
-                    ],
-                },
-                row,
-            )
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        del expected["supervisionLevel"]
+        del expected["allEligibleOpportunities"]
+        del expected["allIneligibleOpportunities"]
+        del expected["address"]
+        del expected["phoneNumber"]
+        del expected["expirationDate"]
+        del expected["lastPaymentDate"]
+        del expected["lastPaymentAmount"]
+        del expected["supervisionStartDate"]
+        del expected["milestones"]
 
-            # US_TN second row has none of the nullable fields
-            fixture = fp.readline()
-            doc_id, row = delegate.transform_row(fixture, "client_record.json")
-            self.assertEqual(doc_id, "201")
-            self.assertEqual(
-                {
-                    "personExternalId": "201",
-                    "pseudonymizedId": "p201",
-                    "displayId": "d201",
-                    "stateCode": "US_TN",
-                    "personName": {
-                        "givenNames": "Harry",
-                        "middleNames": "Henry",
-                        "nameSuffix": "",
-                        "surname": "Houdini IV",
-                    },
-                    "officerId": "102",
-                    "currentBalance": 282,
-                    "district": "DISTRICT X",
-                    "supervisionType": "ISC",
-                    "specialConditions": "NULL",
-                    "boardConditions": [],
-                    "emailAddress": "harry@fake.net",
-                    "currentEmployers": [
-                        {
-                            "name": "The Camera Store",
-                            "address": "496 Fakers Ave",
-                        }
-                    ],
-                },
-                row,
-            )
+        doc_id, row = delegate.transform_row(json.dumps(data), CLIENT_FILENAME)
+        self.assertEqual("200", doc_id)
+        self.assertEqual(expected, row)
 
-            # US_TN third row has supervision downgrade eligible and milestones
-            fixture = fp.readline()
-            doc_id, row = delegate.transform_row(fixture, "client_record.json")
-            self.assertEqual(doc_id, "202")
-            self.assertEqual(
-                {
-                    "personExternalId": "202",
-                    "pseudonymizedId": "p202",
-                    "displayId": "d202",
-                    "personName": {
-                        "givenNames": "Third",
-                        "middleNames": "Persons",
-                        "nameSuffix": "",
-                        "surname": "Realname",
-                    },
-                    "address": "456 Fake st., Faketown, TN 12345",
-                    "currentBalance": 45.1,
-                    "expirationDate": "2022-02-28",
-                    "lastPaymentAmount": 10.25,
-                    "lastPaymentDate": "2021-12-20",
-                    "officerId": "100",
-                    "phoneNumber": "8889997777",
-                    "specialConditions": "SPECIAL",
-                    "stateCode": "US_TN",
-                    "supervisionLevel": "MEDIUM",
-                    "supervisionLevelStart": "2020-03-10",
-                    "supervisionType": "Probation",
-                    "boardConditions": [
-                        {
-                            "condition": "CT",
-                            "conditionDescription": "COMPLETE THERAPEUTIC COMMUNITY",
-                        },
-                        {
-                            "condition": "CW",
-                            "conditionDescription": "COMMUNITY SERVICE REFERRAL",
-                        },
-                    ],
-                    "supervisionStartDate": "2021-03-04",
-                    "district": "DISTRICT 0",
-                    "allEligibleOpportunities": ["supervisionLevelDowngrade"],
-                    "allIneligibleOpportunities": ["usTnExpiration"],
-                    "milestones": [
-                        {
-                            "type": "MONTHS_WITHOUT_VIOLATION",
-                            "text": "12 months without a violation",
-                        },
-                        {
-                            "type": "MONTHS_ON_+SUPERVISION",
-                            "text": "23 months on supervision",
-                        },
-                    ],
-                    "emailAddress": "third@realname.net",
-                },
-                row,
-            )
+    def test_transform_row_with_supervision_level_downgrade(self) -> None:
+        """
+        Test that transform_row method correctly parses json when the row has a
+        supervision downgrade eligible
+        """
+        delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
+        data = deepcopy(TEST_DATA)
+        data["all_eligible_opportunities"] = ["supervisionLevelDowngrade"]
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected["allEligibleOpportunities"] = ["supervisionLevelDowngrade"]
 
-            # US_ND row
-            delegate = WorkflowsClientETLDelegate(StateCode.US_ND)
-            fixture = fp.readline()
-            doc_id, row = delegate.transform_row(fixture, "client_record.json")
-            self.assertEqual(doc_id, "203")
-            self.assertEqual(
-                {
-                    "personExternalId": "203",
-                    "pseudonymizedId": "p203",
-                    "displayId": "d203",
-                    "stateCode": "US_ND",
-                    "address": "456 Fake st., Faketown, ND 12345",
-                    "phoneNumber": "8889997777",
-                    "expirationDate": "2022-02-28",
-                    "personName": {
-                        "givenNames": "Fourth",
-                        "middleNames": "Persons",
-                        "nameSuffix": "",
-                        "surname": "Realname",
-                    },
-                    "officerId": "100",
-                    "supervisionType": "DUAL",
-                    "supervisionLevel": "MEDIUM",
-                    "supervisionLevelStart": "2020-03-10",
-                    "supervisionStartDate": "2021-03-04",
-                    "allEligibleOpportunities": ["earlyTermination"],
-                    "metadata": {
-                        "stateCode": "US_ND",
-                    },
-                },
-                row,
-            )
+        doc_id, row = delegate.transform_row(json.dumps(data), CLIENT_FILENAME)
+        self.assertEqual("200", doc_id)
+        self.assertEqual(expected, row)
+
+    def test_transform_row_for_non_us_tn_state(self) -> None:
+        """
+        Test that transform_row method for US_ND correctly parses the json
+        """
+        delegate = WorkflowsClientETLDelegate(StateCode.US_ND)
+        data = deepcopy(TEST_DATA)
+        data["state_code"] = "US_ND"
+        data["supervision_type"] = "DUAL"
+        data["address"] = "456 Fake st., Faketown, ND 12345"
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected["stateCode"] = "US_ND"
+        expected["supervisionType"] = "DUAL"
+        expected["address"] = "456 Fake st., Faketown, ND 12345"
+
+        doc_id, row = delegate.transform_row(json.dumps(data), CLIENT_FILENAME)
+        self.assertEqual("200", doc_id)
+        self.assertEqual(expected, row)
 
     @patch("google.cloud.firestore_v1.AsyncClient")
     @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
