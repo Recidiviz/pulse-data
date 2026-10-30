@@ -15,8 +15,10 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests the ability for IncarcerationStaffRecordEtlDelegate to parse json rows."""
-import os
+import json
+from copy import deepcopy
 from datetime import datetime, timezone
+from typing import Any
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import MagicMock, patch
 
@@ -31,6 +33,32 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.workflows_incarceration_staff_etl_delegate import (
     WorkflowsIncarcerationStaffETLDelegate,
 )
+
+INCARCERATION_STAFF_FILENAME = "incarceration_staff_record.json"
+
+TEST_DATA: dict[str, Any] = {
+    "id": "100",
+    "staff_external_id": "100",
+    "state_code": "US_XX",
+    "email": "matilda@testdomain.com",
+    "district": "District 1",
+    "given_names": "JOEY",
+    "surname": "JOE-JOE JR. III",
+    "role_subtype": "SUPERVISION_OFFICER",
+    "pseudonymized_id": "p100",
+}
+
+EXPECTED_DOCUMENT: dict[str, Any] = {
+    "id": "100",
+    "staffExternalId": "100",
+    "stateCode": "US_XX",
+    "email": "matilda@testdomain.com",
+    "district": "District 1",
+    "givenNames": "Joey",
+    "surname": "Joe-Joe Jr. III",
+    "roleSubtype": "SUPERVISION_OFFICER",
+    "pseudonymizedId": "p100",
+}
 
 
 class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
@@ -57,96 +85,35 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
         Test that the transform_row method correctly parses the json
         """
         delegate = WorkflowsIncarcerationStaffETLDelegate(StateCode.US_XX)
-
-        path_to_fixture = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "fixtures",
-            "incarceration_staff_record.json",
+        doc_id, row = delegate.transform_row(
+            json.dumps(TEST_DATA), INCARCERATION_STAFF_FILENAME
         )
-        with open(path_to_fixture, "r", encoding="utf-8") as fp:
-            fixture = fp.readline()
+        self.assertEqual("100", doc_id)
+        self.assertEqual(EXPECTED_DOCUMENT, row)
 
-            doc_id, row = delegate.transform_row(
-                fixture, "incarceration_staff_record.json"
-            )
-            self.assertEqual(doc_id, "100")
-            self.assertEqual(
-                row,
-                {
-                    "id": "100",
-                    "staffExternalId": "100",
-                    "stateCode": "US_XX",
-                    "email": "jjjj3@xx.gov",
-                    "district": "District 1",
-                    "givenNames": "Joey",
-                    "surname": "Joe-Joe Jr. III",
-                    "roleSubtype": "SUPERVISION_OFFICER",
-                    "pseudonymizedId": "p100",
-                },
-            )
+    def test_transform_row_with_missing_optional_fields(self) -> None:
+        """
+        Test that transform_row method defaults email and roleSubtype to None and the
+        names to empty strings when they are missing
+        """
+        delegate = WorkflowsIncarcerationStaffETLDelegate(StateCode.US_XX)
+        data = deepcopy(TEST_DATA)
+        del data["email"]
+        del data["role_subtype"]
+        del data["given_names"]
+        del data["surname"]
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected["email"] = None
+        expected["roleSubtype"] = None
+        expected["givenNames"] = ""
+        expected["surname"] = ""
 
-            fixture = fp.readline()
-
-            doc_id, row = delegate.transform_row(
-                fixture, "incarceration_staff_record.json"
-            )
-            self.assertEqual(doc_id, "101")
-            self.assertEqual(
-                row,
-                {
-                    "id": "101",
-                    "staffExternalId": "101",
-                    "stateCode": "US_XX",
-                    "email": "sal.sli@xx.gov",
-                    "district": "District 2",
-                    "givenNames": "Sally S.",
-                    "surname": "Slithers",
-                    "roleSubtype": "SUPERVISION_OFFICER_SUPERVISOR",
-                    "pseudonymizedId": "p101",
-                },
-            )
-
-            fixture = fp.readline()
-
-            doc_id, row = delegate.transform_row(
-                fixture, "incarceration_staff_record.json"
-            )
-            self.assertEqual(doc_id, "102")
-            self.assertEqual(
-                row,
-                {
-                    "id": "102",
-                    "staffExternalId": "102",
-                    "stateCode": "US_XX",
-                    "email": None,
-                    "district": "District 3",
-                    "givenNames": "Foghorn",
-                    "surname": "Leghorn",
-                    "roleSubtype": None,
-                    "pseudonymizedId": "p102",
-                },
-            )
-
-            fixture = fp.readline()
-
-            doc_id, row = delegate.transform_row(
-                fixture, "incarceration_staff_record.json"
-            )
-            self.assertEqual(doc_id, "103")
-            self.assertEqual(
-                row,
-                {
-                    "id": "103",
-                    "staffExternalId": "103",
-                    "stateCode": "US_XX",
-                    "email": None,
-                    "district": "District 4",
-                    "givenNames": "",
-                    "surname": "",
-                    "roleSubtype": None,
-                    "pseudonymizedId": "p103",
-                },
-            )
+        doc_id, row = delegate.transform_row(
+            json.dumps(data),
+            INCARCERATION_STAFF_FILENAME,
+        )
+        self.assertEqual("100", doc_id)
+        self.assertEqual(expected, row)
 
     @patch("google.cloud.firestore_v1.AsyncClient")
     @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
