@@ -1,0 +1,90 @@
+address:
+  dataset_id: eomis_writeback_metadata
+  table_id: us_ar_eomis_writeback_credit_details
+description: >-
+  AR-owned CPU counters behind each Edovo award and GED completion the writeback attempted: the maximum, pending and
+  awarded CPUs of the case plan the referral attaches to (the latest plan established on or before the referral date) and
+  the count of ERC (Earned Release Credit) rows on the sentence credit ledger, as the run found them before the write and,
+  for a write that completed, just after. AR's flows write program referrals, and eOMIS calculates the CPU counters and
+  ERC credit in response, so these values are read back from eOMIS and are not values the flow wrote. One row per
+  (run_id, eomis_offender_id, pathway, award_month), where award_month is null for GED. Written directly by AR's own
+  flows via ArCreditDetailsRecorder, not by the shared BigQueryAuditRecorder that eomis_writeback_candidates and
+  eomis_writeback_runs use. A candidate the run could not match to a case plan has no row; its reason is in
+  eomis_writeback_candidates.result_detail. Rows come only from production commit runs. eOMIS may post a referral's
+  credit after the run's second read, so after counters equal to the before counters do not mean the write failed.
+schema:
+  - name: run_id
+    type: STRING
+    mode: REQUIRED
+    description: The run that produced this row. Joins to eomis_writeback_candidates and eomis_writeback_runs.
+  - name: state_code
+    type: STRING
+    mode: REQUIRED
+    description: The state whose eOMIS instance this row concerns. Always "US_AR" today; included for consistency with eomis_writeback_candidates and eomis_writeback_runs.
+  - name: eomis_offender_id
+    type: STRING
+    mode: REQUIRED
+    description: The eOMIS offender ID of the person the write was for. Joins to eomis_writeback_candidates.
+  - name: pathway
+    type: STRING
+    mode: REQUIRED
+    description: The flow that wrote the referral, "edovo" or "ged".
+  - name: award_month
+    type: DATE
+    mode: NULLABLE
+    description: The first day of the month an Edovo award was for. A run can write several months for one person, so this is part of the row's key. Null for a GED completion, which has no award month.
+  - name: status
+    type: STRING
+    mode: REQUIRED
+    description: >-
+      The result's status, as in eomis_writeback_candidates.status: "success" when the referral was written and read back,
+      "skipped" when an Edovo award's plan had no CPU room, or "error" when a write was sent but could not be confirmed.
+  - name: case_plan_date
+    type: DATE
+    mode: REQUIRED
+    description: >-
+      The established date of the case plan these counters belong to. The flow identifies a case plan by this date, so it
+      also says which of the person's case plans the counters describe. Join it to the ingested case plan dates to find
+      the plan.
+  - name: max_cpus_before
+    type: INTEGER
+    mode: NULLABLE
+    description: The plan's maximum CPUs just before the write, or null if the plan's screen did not render it.
+  - name: pending_cpus_before
+    type: INTEGER
+    mode: NULLABLE
+    description: The plan's pending CPUs just before the write, or null if the plan's screen did not render it.
+  - name: awarded_cpus_before
+    type: INTEGER
+    mode: NULLABLE
+    description: The plan's awarded CPUs just before the write, or null if the plan's screen did not render it.
+  - name: max_cpus_after
+    type: INTEGER
+    mode: NULLABLE
+    description: The plan's maximum CPUs just after the write. Null for a skip or an error, and if the plan's screen did not render it.
+  - name: pending_cpus_after
+    type: INTEGER
+    mode: NULLABLE
+    description: The plan's pending CPUs just after the write. Null for a skip or an error, and if the plan's screen did not render it.
+  - name: awarded_cpus_after
+    type: INTEGER
+    mode: NULLABLE
+    description: The plan's awarded CPUs just after the write. Null for a skip or an error, and if the plan's screen did not render it.
+  - name: erc_rows_before
+    type: INTEGER
+    mode: NULLABLE
+    description: >-
+      The number of rows on the person's sentence credit ledger screen that mention ERC (Earned Release Credit) just
+      before the write, or null if the run did not read the ledger. A skip does not read it.
+  - name: erc_rows_after
+    type: INTEGER
+    mode: NULLABLE
+    description: >-
+      The number of ledger rows that mention ERC just after the write. Null for a skip or an error, and if the run could
+      not read the ledger. The ledger may gain its row after this read, so a count equal to erc_rows_before does not mean
+      the write failed.
+  - name: recorded_at
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: When this row was recorded.
+clustering_fields: null
