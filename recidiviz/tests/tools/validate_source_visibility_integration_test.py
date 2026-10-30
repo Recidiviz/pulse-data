@@ -949,6 +949,7 @@ def test_view_registry_deployed_view_graphs_dependencies() -> None:
                 "recidiviz.ingest.views",
                 "recidiviz.ingest.direct",
                 "recidiviz.llm_eval",
+                "recidiviz.monitoring.eng_metrics",
                 "recidiviz.monitoring.platform_kpis",
                 "recidiviz.observations",
                 "recidiviz.segment",

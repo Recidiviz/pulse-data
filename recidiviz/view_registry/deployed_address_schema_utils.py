@@ -231,6 +231,9 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewBuilder,
     DirectIngestRawDataTableLatestViewCollector,
 )
+from recidiviz.monitoring.eng_metrics.pr_first_feedback import (
+    PR_FIRST_FEEDBACK_VIEW_BUILDER,
+)
 from recidiviz.monitoring.platform_kpis.cost.bq_monthly_costs_by_dataset import (
     BQ_MONTHLY_COSTS_BY_DATASET_VIEW_BUILDER,
 )
@@ -437,6 +440,9 @@ def state_agnostic_deployed_views_without_state_code_column(
         BQ_MONTHLY_COSTS_BY_DATASET_VIEW_BUILDER.address,
         GCP_COMMITMENT_BURNDOWN_VIEW_BUILDER.address,
         DAG_RUNTIMES_VIEW_BUILDER.address,
+        # This view's key is GitHub repo and PR number; engineering activity has no
+        # state.
+        PR_FIRST_FEEDBACK_VIEW_BUILDER.address,
         # These views calculate cross-state metrics for orgwide impact tracking
         *_get_breadth_depth_addresses_without_state_code(),
         # This view joins the Notion roadmap's free-text "state" column with Linear

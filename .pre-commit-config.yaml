@@ -113,7 +113,7 @@ repos:
         entry: uv run python -m
           recidiviz.calculator.calculation_documentation_generator
         language: system
-        files: ^recidiviz/calculator/query/|^recidiviz/.*/views/|^recidiviz/task_eligibility/|^recidiviz/monitoring/platform_kpis/|^recidiviz/ingest/direct/regions/.*/raw_data/
+        files: ^recidiviz/calculator/query/|^recidiviz/.*/views/|^recidiviz/task_eligibility/|^recidiviz/monitoring/platform_kpis/|^recidiviz/monitoring/eng_metrics/|^recidiviz/ingest/direct/regions/.*/raw_data/
         exclude: ^recidiviz/tests/|^recidiviz/calculator/modeling/
         require_serial: true
       - id: generate_function_usage_documentation

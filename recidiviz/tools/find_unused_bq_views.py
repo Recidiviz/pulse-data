@@ -124,6 +124,9 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.metrics.export.exported_view_utils import (
     get_all_metric_export_view_addresses,
 )
+from recidiviz.monitoring.eng_metrics.pr_first_feedback import (
+    PR_FIRST_FEEDBACK_VIEW_BUILDER,
+)
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.observations.dataset_config import dataset_for_observation_type_cls
 from recidiviz.observations.event_observation_big_query_view_builder import (
@@ -206,6 +209,12 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             "document_extraction_results__pre_resolution.case_note_housing_info",
         ]
     },
+    PR_FIRST_FEEDBACK_VIEW_BUILDER.address: (
+        "Steel-thread view for the engineering metrics dashboard; its consumer is "
+        "the LookML explore and dashboard tile that TODO(OBT-55689) adds in "
+        "Recidiviz/looker. Move it to LOOKER_REFERENCED_ADDRESSES once that "
+        "lands. (Matthew Root, 2026-10-29)"
+    ),
     CLIENT_SNOOZE_SPANS_VIEW_BUILDER.address: (
         "New Tasks snooze span view; no downstream consumer yet. "
         "TODO(MO-549): remove this exemption once the post-full-launch "

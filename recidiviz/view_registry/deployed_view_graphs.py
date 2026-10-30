@@ -57,6 +57,7 @@ from recidiviz.llm_eval.label_studio.views.view_config import (
 from recidiviz.llm_eval.llmaj.views.view_config import (
     get_view_builders_for_views_to_update as get_llmaj_view_builders,
 )
+from recidiviz.monitoring.eng_metrics.view_config import get_eng_metrics_views_to_update
 from recidiviz.monitoring.platform_kpis.view_config import (
     get_platform_kpi_views_to_update,
 )
@@ -154,6 +155,7 @@ def _calculation_view_builders_across_projects() -> list[BigQueryViewBuilder]:
             get_validation_view_builders(),
             build_validation_metadata_view_builders(),
             get_platform_kpi_views_to_update(),
+            get_eng_metrics_views_to_update(),
             get_transitions_view_builders(),
             get_static_data_view_builders(),
             get_label_studio_view_builders(),

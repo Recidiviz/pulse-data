@@ -153,9 +153,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             # audit the CPU counters before and after each AR writeback, so no
             # deployed view reads it.
             "eomis_writeback_metadata.us_ar_eomis_writeback_credit_details",
-            # Daily archive of GitHub webhook events; no deployed view reads it yet.
-            # TODO(OBT-55688): remove once eng_metrics.pr_first_feedback reads this table.
-            "github_events_raw.github_events_archive",
             *COMMON_VESTIGES,
         ]
     },
@@ -174,9 +171,6 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             # audit the CPU counters before and after each AR writeback, so no
             # deployed view reads it.
             "eomis_writeback_metadata.us_ar_eomis_writeback_credit_details",
-            # Daily archive of GitHub webhook events; no deployed view reads it yet.
-            # TODO(OBT-55688): remove once eng_metrics.pr_first_feedback reads this table.
-            "github_events_raw.github_events_archive",
             *COMMON_VESTIGES,
         ]
     },
