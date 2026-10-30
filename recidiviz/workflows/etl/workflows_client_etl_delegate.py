@@ -32,6 +32,24 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
 
     COLLECTION_BY_FILENAME = {"client_record.json": "clients"}
 
+    PSEUDONYMIZED_FIELDS = {
+        "person_name": {
+            "given_names": "first_name",
+            "middle_names": "first_name",
+            "surname": "last_name",
+        },
+        "address": "address",
+        "current_physical_residence_address_unstructured": "address",
+        "current_physical_residence_address_structured": {
+            "address_line_1": "street_address",
+            "address_line_2": "secondary_address",
+            "address_city": "city",
+            "address_zip": "zipcode",
+        },
+        "phone_number": "phone_number",
+        "email_address": "email",
+    }
+
     def get_supported_files(self) -> List[str]:
         return ["client_record.json"]
 

@@ -28,6 +28,14 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
 
     COLLECTION_BY_FILENAME = {"resident_record.json": "residents"}
 
+    PSEUDONYMIZED_FIELDS = {
+        "person_name": {
+            "given_names": "first_name",
+            "middle_names": "first_name",
+            "surname": "last_name",
+        }
+    }
+
     def get_supported_files(self) -> List[str]:
         return ["resident_record.json"]
 

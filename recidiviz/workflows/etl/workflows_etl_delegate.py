@@ -17,6 +17,7 @@
 """Abstract classes defining delegate interfaces for ETLing data into the
 workflows' frontend database(s)."""
 import abc
+import copy
 import logging
 import os
 import re
@@ -24,6 +25,7 @@ from asyncio import TaskGroup
 from datetime import datetime, timezone
 from typing import IO, Dict, Iterator, List, Optional, Tuple
 
+from faker import Faker
 from google.api_core.exceptions import AlreadyExists
 from google.cloud.firestore_admin_v1 import CreateIndexRequest, Index
 from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
@@ -54,6 +56,15 @@ class WorkflowsETLDelegate(abc.ABC):
 
     def __init__(self, state_code: StateCode):
         self.state_code = state_code
+        self._faker = Faker()
+
+    PSEUDONYMIZED_FIELDS: dict | None = None
+    """
+    A map from each PII field to the Faker provider that generates its fake value (e.g.
+    "first_name"). Omitted fields keep their real value even if they are nested under a
+    field that has some PII (e.g. "name_suffix" stays the same). None means the delegate
+    exports no pseudonymized copy.
+    """
 
     @abc.abstractmethod
     def get_supported_files(self) -> List[str]:
@@ -92,6 +103,35 @@ class WorkflowsETLDelegate(abc.ABC):
 
         with client.open(filepath) as f:
             yield f
+
+    def pseudonymize_record(self, record: dict, seed: str) -> dict | None:
+        if not self.PSEUDONYMIZED_FIELDS:
+            return None
+
+        self._faker.seed_instance(seed)
+        result = copy.deepcopy(record)
+        self._pseudonymize_fields_on_record(result, self.PSEUDONYMIZED_FIELDS)
+
+        return result
+
+    def _pseudonymize_fields_on_record(
+        self, record: dict, pseudonymized_fields: dict
+    ) -> None:
+        for field, value in pseudonymized_fields.items():
+            if field not in record or record[field] is None:
+                continue
+
+            if isinstance(value, str):
+                record[field] = getattr(self._faker, value)()
+            elif isinstance(value, dict):
+                nested_record = record[field]
+                if not isinstance(nested_record, dict):
+                    raise ValueError(
+                        f"Expected a dictionary, but got {type(nested_record).__name__} for field: {field} on record: {record}"
+                    )
+                self._pseudonymize_fields_on_record(
+                    record=nested_record, pseudonymized_fields=value
+                )
 
 
 class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
