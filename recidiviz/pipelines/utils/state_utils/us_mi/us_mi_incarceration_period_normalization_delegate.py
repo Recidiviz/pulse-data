@@ -16,6 +16,7 @@
 # =============================================================================
 """Contains US_MI implementation of the StateSpecificIncarcerationNormalizationDelegate."""
 import datetime
+from collections import defaultdict
 from typing import List, Optional
 
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -177,11 +178,29 @@ class UsMiIncarcerationNormalizationDelegate(
         incarceration_periods: List[StateIncarcerationPeriod],
     ) -> List[StateIncarcerationPeriod]:
         """
-        Infer an additional IP for gaps between IPs that end because of temporary release
-        and subsequent non-adjacent IPs that start because of return from temporary release
+        Infer an additional IP for gaps between IPs that end because of a temporary release
+        (such as a hospital trip or a court writ) and subsequent non-adjacent IPs that start
+        because of return from temporary release
         """
 
         new_incarceration_periods: List[StateIncarcerationPeriod] = []
+
+        # Look up the IPs bordering each gap by date rather than with
+        # get_objects_directly_preceding_range / get_objects_directly_following_range,
+        # which skip zero-day periods. MI records most temporary releases as a zero-day
+        # IP on the release date.
+        ips_by_release_date: dict[
+            datetime.date, list[StateIncarcerationPeriod]
+        ] = defaultdict(list)
+        ips_by_admission_date: dict[
+            datetime.date, list[StateIncarcerationPeriod]
+        ] = defaultdict(list)
+        for ip in incarceration_periods:
+            if ip.release_date is not None:
+                ips_by_release_date[ip.release_date].append(ip)
+            ips_by_admission_date[assert_type(ip.admission_date, datetime.date)].append(
+                ip
+            )
 
         critical_range_builder = CriticalRangesBuilder([*incarceration_periods])
         for critical_range in critical_range_builder.get_sorted_critical_ranges():
@@ -193,15 +212,9 @@ class UsMiIncarcerationNormalizationDelegate(
             if ips_overlapping_range:
                 continue
 
-            ips_preceding_range = (
-                critical_range_builder.get_objects_directly_preceding_range(
-                    critical_range, StateIncarcerationPeriod
-                )
-            )
-
             ips_ending_in_temp_release = [
                 ip
-                for ip in ips_preceding_range
+                for ip in ips_by_release_date[critical_range.lower_bound_inclusive_date]
                 if ip.release_reason
                 == StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE
             ]
@@ -209,13 +222,14 @@ class UsMiIncarcerationNormalizationDelegate(
             if not ips_ending_in_temp_release:
                 continue
 
-            ips_following_range = (
-                critical_range_builder.get_objects_directly_following_range(
-                    critical_range, StateIncarcerationPeriod
-                )
-            )
+            if critical_range.upper_bound_exclusive_date is None:
+                continue
 
-            if ips_following_range is None or not any(
+            ips_following_range = ips_by_admission_date[
+                critical_range.upper_bound_exclusive_date
+            ]
+
+            if not any(
                 ip.admission_reason
                 == StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE
                 for ip in ips_following_range
@@ -227,7 +241,12 @@ class UsMiIncarcerationNormalizationDelegate(
                 continue
 
             previous_ip = ips_ending_in_temp_release[0]
-            next_ip = ips_following_range[0]
+            next_ip = next(
+                ip
+                for ip in ips_following_range
+                if ip.admission_reason
+                == StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE
+            )
 
             # Create a new incarceration period for this TEMPORARY RELEASE period in the
             # gap.

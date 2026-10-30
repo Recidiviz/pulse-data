@@ -277,6 +277,146 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         self.assertEqual(result, expected_periods)
 
+    def test_infer_additional_periods_zero_day_temporary_release_ip(self) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2022, 6, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="10",
+            release_date=date(2022, 7, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="117",
+            external_id="ip-1",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="state",
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2022, 7, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="107",
+            release_date=date(2022, 7, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+            release_reason_raw_text="95",
+            external_id="ip-2",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="state",
+        )
+
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2022, 7, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
+            admission_reason_raw_text="81",
+            external_id="ip-3",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="state",
+        )
+
+        incarceration_periods = [
+            incarceration_period_1,
+            incarceration_period_2,
+            incarceration_period_3,
+        ]
+
+        sp_index = default_normalized_sp_index_for_tests(supervision_periods=[])
+
+        result = self.delegate.infer_additional_periods(
+            incarceration_periods=incarceration_periods,
+            person_id=self.person_id,
+            supervision_period_index=sp_index,
+        )
+
+        expected_periods = [
+            incarceration_period_1,
+            incarceration_period_2,
+            incarceration_period_3,
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=2600000000012312345,
+                external_id="ip-2-TEMPORARY_RELEASE",
+                state_code=_STATE_CODE,
+                admission_date=date(2022, 7, 1),
+                release_date=date(2022, 7, 4),
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
+                release_reason=StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                custodial_authority_raw_text="state",
+            ),
+        ]
+
+        self.assertEqual(result, expected_periods)
+
+    def test_infer_additional_periods_zero_day_court_writ_ip(self) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2022, 6, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="10",
+            release_date=date(2022, 7, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text="117",
+            external_id="ip-1",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="state",
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2022, 7, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text="107",
+            release_date=date(2022, 7, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+            release_reason_raw_text="37",
+            external_id="ip-2",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="state",
+        )
+
+        incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2022, 7, 8),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
+            admission_reason_raw_text="26",
+            external_id="ip-3",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="state",
+        )
+
+        incarceration_periods = [
+            incarceration_period_1,
+            incarceration_period_2,
+            incarceration_period_3,
+        ]
+
+        sp_index = default_normalized_sp_index_for_tests(supervision_periods=[])
+
+        result = self.delegate.infer_additional_periods(
+            incarceration_periods=incarceration_periods,
+            person_id=self.person_id,
+            supervision_period_index=sp_index,
+        )
+
+        expected_periods = [
+            incarceration_period_1,
+            incarceration_period_2,
+            incarceration_period_3,
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=2600000000012312345,
+                external_id="ip-2-TEMPORARY_RELEASE",
+                state_code=_STATE_CODE,
+                admission_date=date(2022, 7, 1),
+                release_date=date(2022, 7, 8),
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
+                release_reason=StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                custodial_authority_raw_text="state",
+            ),
+        ]
+
+        self.assertEqual(result, expected_periods)
+
     def test_get_incarceration_admission_violation_type(self) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
