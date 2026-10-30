@@ -403,7 +403,7 @@ class LLMExtractionJobManager:
         the eligible set grows without bound over an extractor's lifetime, so it
         is never diffed in memory.
         """
-        terminal_document_ids = (
+        terminal_document_exists = (
             session.query(schema.LLMExtractionJobDocument.document_contents_id)
             .join(
                 schema.LLMExtractionJob,
@@ -420,8 +420,10 @@ class LLMExtractionJobManager:
                 schema.LLMExtractionJobDocument.result_type.in_(
                     [t.value for t in TERMINAL_JOB_DOCUMENT_RESULT_TYPES]
                 ),
+                schema.LLMExtractionJobDocument.document_contents_id
+                == schema.LLMExtractionEligibleDocument.document_contents_id,
             )
-            .scalar_subquery()
+            .exists()
         )
 
         needing_processing = (
@@ -430,9 +432,12 @@ class LLMExtractionJobManager:
                 schema.LLMExtractionEligibleDocument.state_code == state_code.value,
                 schema.LLMExtractionEligibleDocument.extractor_version_id
                 == extractor_version_id,
-                schema.LLMExtractionEligibleDocument.document_contents_id.notin_(
-                    terminal_document_ids
-                ),
+                # Expressed as a correlated NOT EXISTS rather
+                # than NOT IN over a collected id set: the eligible and job-document sets
+                # both scale with the extractor version's lifetime, and NOT EXISTS lets
+                # Postgres drive the anti-join from an index on the correlated
+                # document_contents_id instead of materializing every terminal id.
+                ~terminal_document_exists,
             )
             .distinct()
             .all()
