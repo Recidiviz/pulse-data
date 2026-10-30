@@ -684,31 +684,23 @@ US_TN_VIOLENT_CLASS_A_INCIDENT_CONDITION = f"""(
     AND incident_class = 'A'
 )"""
 
-# WHERE condition, over incarceration incident columns, selecting the incidents TN's
-# classification policy counts at all: guilty dispositions that aren't verbal warnings.
-US_TN_CLASSIFICATION_INCIDENTS_WHERE_CLAUSE = """disposition = 'GU'
-        AND incident_details NOT LIKE "%VERBAL WARNING%"
-        AND incident_class IS NOT NULL
-        AND incident_date IS NOT NULL"""
 
-# QUALIFY condition keeping only the most severe incident per (person, date), so a
-# Class B incident on the same date as a Class A incident never counts.
-US_TN_CLASSIFICATION_INCIDENTS_QUALIFY_CLAUSE = f"""ROW_NUMBER() OVER (
-        PARTITION BY person_id, incident_date
-        ORDER BY
-            CASE WHEN {US_TN_VIOLENT_CLASS_A_INCIDENT_CONDITION} THEN 1 ELSE 0 END DESC,
-            incident_class,
-            injury_level DESC,
-            assault_score DESC,
-            -- Tiebreakers for determinism only.
-            infraction_type_raw_text,
-            incarceration_incident_id
-    ) = 1"""
+def us_tn_classification_incidents_where_clause(
+    *, disposition_sql: str, incident_class_sql: str
+) -> str:
+    """Returns the WHERE condition, over incarceration incident columns, selecting the
+    incidents TN's classification policy counts at all: guilty dispositions that aren't
+    verbal warnings. disposition_sql and incident_class_sql read the incident's TN
+    disposition code and disciplinary class."""
+    return f"""{disposition_sql} = 'GU'
+        AND incident_details NOT LIKE "%VERBAL WARNING%"
+        AND {incident_class_sql} IS NOT NULL
+        AND incident_date IS NOT NULL"""
 
 
 def tn_classification_policy_2026_incidents() -> str:
     """Returns a SQL subquery of every TN incarceration incident that passes
-    US_TN_CLASSIFICATION_INCIDENTS_WHERE_CLAUSE, flagged with is_violent. Unlike the
+    us_tn_classification_incidents_where_clause, flagged with is_violent. Unlike the
     classification incidents view, it keeps every incident on a date rather than only
     the most severe.
     """
@@ -723,5 +715,7 @@ def tn_classification_policy_2026_incidents() -> str:
             {US_TN_VIOLENT_CLASS_A_INCIDENT_CONDITION} AS is_violent,
         FROM `{{project_id}}.analyst_data.us_tn_incarceration_incidents_preprocessed_materialized`
         WHERE state_code = "US_TN"
-            AND {US_TN_CLASSIFICATION_INCIDENTS_WHERE_CLAUSE}
+            AND {us_tn_classification_incidents_where_clause(
+                disposition_sql="disposition", incident_class_sql="incident_class"
+            )}
     )"""

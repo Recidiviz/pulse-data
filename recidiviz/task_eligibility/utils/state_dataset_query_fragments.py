@@ -79,65 +79,6 @@ def task_deadline_critical_date_update_datetimes_cte(
     )"""
 
 
-def has_at_least_x_incarceration_incidents_in_time_interval(
-    number_of_incidents: int = 1,
-    date_interval: int = 12,
-    date_part: str = "MONTH",
-) -> str:
-    """
-    Determines if individuals have at least a specified number of incarceration incidents
-    within a given time interval.
-
-    Args:
-        number_of_incidents: Number of incidents tests needed within time interval
-        date_interval (int, optional): Number of <date_part> when the negative drug screen
-            will be counted as valid. Defaults to 12 (e.g. it could be 12 months).
-        date_part (str, optional): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
-        where_clause (str, optional): Optional clause that does some state-specific filtering. Defaults to ''.
-    Returns:
-        f-string: Spans of time where the criteria is met
-    """
-
-    return f"""
-    WITH incident_sessions AS (
-        SELECT
-            state_code,
-            person_id,
-            incident_date AS start_date,
-            DATE_ADD(incident_date, INTERVAL {date_interval} {date_part}) AS end_date,
-            incident_date AS latest_incident_date,
-            FALSE AS meets_criteria,
-        FROM 
-            `{{project_id}}.{{analyst_dataset}}.incarceration_incidents_preprocessed_materialized`
-    )
-    ,
-    {create_sub_sessions_with_attributes('incident_sessions')},
-    grouped AS (
-        SELECT
-            state_code,
-            person_id,
-            start_date,
-            end_date,
-            count(*) AS num_incidents_within_timeframe,
-            MAX(latest_incident_date) AS latest_incident_date
-        FROM
-            sub_sessions_with_attributes
-        GROUP BY
-            1,2,3,4
-    )
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        num_incidents_within_timeframe >= {number_of_incidents} AS meets_criteria,
-        TO_JSON(STRUCT(latest_incident_date AS latest_incarceration_incident_date)) AS reason
-    FROM
-        grouped
-    """
-
-
 def x_time_from_ineligible_offense(
     statutes_list: list,
     date_part: str,

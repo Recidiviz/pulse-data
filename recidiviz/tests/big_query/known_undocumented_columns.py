@@ -1059,7 +1059,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
     ): [
         "assault_score",
         "disposition",
-        "hearing_date",
         "incarceration_incident_id",
         "incident_class",
         "incident_date",
@@ -1070,7 +1069,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "injury_level",
         "person_id",
         "state_code",
-        "violence_level",
     ],
     BigQueryAddress.from_str("analyst_data.us_tn_invoices_preprocessed"): [
         "fee_type",
