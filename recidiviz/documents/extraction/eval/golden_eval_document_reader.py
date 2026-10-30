@@ -30,7 +30,7 @@ from recidiviz.documents.extraction.eval.golden_eval_document import GoldenEvalD
 from recidiviz.documents.extraction.eval.golden_eval_document_parser import (
     GoldenEvalDocumentParseError,
     GoldenEvalDocumentParser,
-    expected_value_column_name,
+    expected_column_name_for_stage,
 )
 from recidiviz.documents.extraction.eval.golden_eval_document_source import (
     GoldenEvalDocumentSourceError,
@@ -39,6 +39,7 @@ from recidiviz.documents.extraction.eval.golden_eval_document_source import (
 from recidiviz.documents.extraction.eval.golden_eval_document_validator import (
     GoldenEvalDocumentIssue,
     GoldenEvalDocumentValidator,
+    GoldenEvalFirstOrderDocumentValidator,
 )
 from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
     LLMExtractionViewGraphStage,
@@ -134,7 +135,9 @@ class GoldenEvalDocumentReader:
     """Reads each row's cell text into a document."""
 
     validator: GoldenEvalDocumentValidator = attr.ib(
-        validator=attr.validators.instance_of(GoldenEvalDocumentValidator)
+        validator=attr.validators.instance_of(
+            GoldenEvalDocumentValidator  # type: ignore[type-abstract]
+        )
     )
     """Flags the expected values of a parsed document that the output schema does
     not allow.
@@ -165,7 +168,9 @@ class GoldenEvalDocumentReader:
             parser=GoldenEvalDocumentParser(
                 state_code=source.state_code, output_schema=output_schema
             ),
-            validator=GoldenEvalDocumentValidator(output_schema=output_schema),
+            validator=GoldenEvalFirstOrderDocumentValidator(
+                output_schema=output_schema
+            ),
         )
 
     @classmethod
@@ -291,9 +296,11 @@ class GoldenEvalDocumentReader:
                 if issue.element_index is None
                 else f"element [{issue.element_index}] {issue.detail}"
             )
-            issues_by_column[expected_value_column_name(issue.field_name)].append(
-                detail
-            )
+            issues_by_column[
+                expected_column_name_for_stage(
+                    field_name=issue.field_name, stage=issue.stage
+                )
+            ].append(detail)
         return dict(issues_by_column)
 
     @staticmethod
