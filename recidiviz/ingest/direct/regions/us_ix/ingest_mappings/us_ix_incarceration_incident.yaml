@@ -34,20 +34,31 @@ output:
           facility: LocationName
           incident_severity:
             $enum_mapping:
-              $raw_text: SeverityDesc
+              $raw_text:
+                $custom:
+                  $function: us_ix_custom_parsers.parse_dor_offense_class
+                  $args:
+                    offense_code: DorOffenseCode
               $mappings:
                 StateIncarcerationIncidentSeverity.HIGHEST:
-                  - Highest
+                  - A
                 StateIncarcerationIncidentSeverity.SECOND_HIGHEST:
-                  - High
+                  - B
                 StateIncarcerationIncidentSeverity.THIRD_HIGHEST:
-                  - Moderate
+                  - C
                 StateIncarcerationIncidentSeverity.FOURTH_HIGHEST:
-                  - Low Moderate
-                StateIncarcerationIncidentSeverity.FIFTH_HIGHEST:
-                  - Low
+                  # Informal resolution offense codes (I01, I02, ...)
+                  - I
                 StateIncarcerationIncidentSeverity.INTERNAL_UNKNOWN:
-                  - None
+                  # Numeric offense codes (100-899), last used in 2017
+                  - "1"
+                  - "2"
+                  - "3"
+                  - "4"
+                  - "5"
+                  - "6"
+                  - "7"
+                  - "8"
           incident_type:
             $enum_mapping:
               $raw_text: DorOffenseTypeDesc
@@ -62,6 +73,7 @@ output:
               DACaseId: DACaseId
               TermId: TermId
               OffenseCode: DorOffenseCode
+              Severity: SeverityDesc
               OffenseCategoryId: DorOffenseCategoryId
           incarceration_incident_outcomes:
             - $foreach:

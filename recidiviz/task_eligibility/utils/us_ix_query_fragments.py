@@ -955,7 +955,7 @@ def us_ix_dors_query(*, dor_classes: list[str]) -> str:
         -- Report-backed DORs use the report id as their external_id.
         incident.external_id AS incident_external_id,
         NULLIF(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.DACaseId'), '') AS da_case_id,
-        SUBSTR(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.OffenseCode'), 1, 1) AS dor_class,
+        incident.incident_severity_raw_text AS dor_class,
         JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.OffenseTypeName') AS offense_type_name,
         JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.IncidentDetails') AS dor_description,
         incident.incident_date,
@@ -972,7 +972,7 @@ def us_ix_dors_query(*, dor_classes: list[str]) -> str:
         ) AS is_pending,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident` incident
     WHERE incident.state_code = 'US_IX'
-        AND SUBSTR(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.OffenseCode'), 1, 1)
+        AND incident.incident_severity_raw_text
             IN ({list_to_query_string(dor_classes, quoted=True, single_quote=True)})
         AND NULLIF(JSON_EXTRACT_SCALAR(incident.incident_metadata, '$.DACaseId'), '') IS NOT NULL
         AND incident.incarceration_incident_id NOT IN (

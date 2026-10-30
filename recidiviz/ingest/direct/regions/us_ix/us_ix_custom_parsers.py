@@ -278,3 +278,13 @@ def is_county_jail(supervision_site: str) -> bool:
 
 def is_valid_year(segment_start_date: str) -> bool:
     return segment_start_date != "" and segment_start_date[0:4] != "9999"
+
+
+def parse_dor_offense_class(offense_code: str) -> Optional[str]:
+    """Returns the class of a DOR offense code, which is its first character. For
+    example, "A01" is Class A. Older offense codes (such as "802") and informal
+    resolution codes (such as "I06") return "8" and "I", which are not DOR classes.
+    """
+    if not offense_code:
+        return None
+    return offense_code[0]
