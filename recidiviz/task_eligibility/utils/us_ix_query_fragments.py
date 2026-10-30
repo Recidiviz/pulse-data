@@ -149,6 +149,68 @@ class UsIxPlacementMatrixFacility(Enum):
             return None
         raise ValueError(f"Unexpected facility: [{self}]")
 
+    @property
+    def drive_hours_by_release_district(self) -> dict[UsIxReleaseDistrict, float]:
+        """Returns the drive time in hours from each release district's main office
+        city to the facility, such as 6.2 from DISTRICT 2 (Lewiston) to ISCI.
+
+        The times come from OpenStreetMap (OSRM) routing run on 2026-10-29, which
+        tends to run slower than real driving on rural highways. NICI is measured
+        from Cottonwood town, about 3 miles from the facility. ISC has no entry
+        because Interstate Compact releases have no Idaho office to measure from.
+        """
+        if self is UsIxPlacementMatrixFacility.ICIO:
+            return {
+                UsIxReleaseDistrict.DISTRICT_1: 3.4,
+                UsIxReleaseDistrict.DISTRICT_2: 0.9,
+                UsIxReleaseDistrict.DISTRICT_3: 5.2,
+                UsIxReleaseDistrict.DISTRICT_4: 5.5,
+                UsIxReleaseDistrict.DISTRICT_5: 7.6,
+                UsIxReleaseDistrict.DISTRICT_6: 9.3,
+                UsIxReleaseDistrict.DISTRICT_7: 9.0,
+            }
+        if self is UsIxPlacementMatrixFacility.ISCC:
+            return {
+                UsIxReleaseDistrict.DISTRICT_1: 8.5,
+                UsIxReleaseDistrict.DISTRICT_2: 6.1,
+                UsIxReleaseDistrict.DISTRICT_3: 0.8,
+                UsIxReleaseDistrict.DISTRICT_4: 0.4,
+                UsIxReleaseDistrict.DISTRICT_5: 2.3,
+                UsIxReleaseDistrict.DISTRICT_6: 3.9,
+                UsIxReleaseDistrict.DISTRICT_7: 4.6,
+            }
+        if self is UsIxPlacementMatrixFacility.ISCI:
+            return {
+                UsIxReleaseDistrict.DISTRICT_1: 8.6,
+                UsIxReleaseDistrict.DISTRICT_2: 6.2,
+                UsIxReleaseDistrict.DISTRICT_3: 0.8,
+                UsIxReleaseDistrict.DISTRICT_4: 0.5,
+                UsIxReleaseDistrict.DISTRICT_5: 2.4,
+                UsIxReleaseDistrict.DISTRICT_6: 4.0,
+                UsIxReleaseDistrict.DISTRICT_7: 4.7,
+            }
+        if self is UsIxPlacementMatrixFacility.MVTC:
+            return {
+                UsIxReleaseDistrict.DISTRICT_1: 8.5,
+                UsIxReleaseDistrict.DISTRICT_2: 6.1,
+                UsIxReleaseDistrict.DISTRICT_3: 0.8,
+                UsIxReleaseDistrict.DISTRICT_4: 0.4,
+                UsIxReleaseDistrict.DISTRICT_5: 2.3,
+                UsIxReleaseDistrict.DISTRICT_6: 3.9,
+                UsIxReleaseDistrict.DISTRICT_7: 4.6,
+            }
+        if self is UsIxPlacementMatrixFacility.NICI:
+            return {
+                UsIxReleaseDistrict.DISTRICT_1: 3.6,
+                UsIxReleaseDistrict.DISTRICT_2: 1.2,
+                UsIxReleaseDistrict.DISTRICT_3: 4.3,
+                UsIxReleaseDistrict.DISTRICT_4: 4.6,
+                UsIxReleaseDistrict.DISTRICT_5: 6.8,
+                UsIxReleaseDistrict.DISTRICT_6: 8.4,
+                UsIxReleaseDistrict.DISTRICT_7: 9.1,
+            }
+        raise ValueError(f"Unexpected facility: [{self}]")
+
 
 # Community Reentry Centers (CRCs) - work release facilities where residents
 # can transition back into the community
