@@ -34,14 +34,8 @@ import re
 from typing import Dict, Set, Tuple
 
 import pandas as pd
-import us
 
-from recidiviz.common.errors import FipsMergingError
-from recidiviz.common.fips_fuzzy_matching import fuzzy_join
 from recidiviz.common.local_file_paths import filepath_relative_to_caller
-
-# Float between [0, 1] which sets the required fuzzy matching certainty
-_FUZZY_MATCH_CUTOFF = 0.75
 
 _FIPS: pd.DataFrame = None
 _SANITIZED_COUNTY_NAMES = None
@@ -59,38 +53,6 @@ def _get_FIPS() -> pd.DataFrame:
         )
 
     return _FIPS
-
-
-def add_column_to_df(
-    df: pd.DataFrame, county_names: pd.Series, state: us.states.State
-) -> pd.DataFrame:
-    """Add a new fips column to |df|.
-
-    The provided |county_names| must be the same length as |df| and map each
-    |df| row to the county_name that should be used to join against fips.csv.
-    """
-    old_index = df.index
-    df.index = county_names.apply(sanitize_county_name)
-
-    df = fuzzy_join(df, get_fips_for(state), _FUZZY_MATCH_CUTOFF)
-
-    df.index = old_index
-    return df
-
-
-def get_fips_for(state: us.states.State) -> pd.DataFrame:
-    """Get the [county_name, fips] df, filtering for the given |state|."""
-
-    # Copy _FIPS to allow mutating the view created after filtering by state
-    fips = _get_FIPS().copy()
-
-    fips = fips[fips.state_code == int(state.fips)]
-    if fips.empty:
-        raise FipsMergingError(f"Failed to find FIPS codes for state: {state}")
-
-    fips["county_name"] = fips["county_name"].apply(sanitize_county_name)
-    fips = fips.set_index("county_name")
-    return fips[["fips"]]
 
 
 # TODO(OBT-46748): this parser is not currently used outside of justice counts, but will map `US_NYC` to `US_NY`
