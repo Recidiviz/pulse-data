@@ -155,6 +155,40 @@ class BuildIdentityRowsEmailExclusionTest(TestCase):
         self.assertEqual({"1H4+9uzAJodib5XgFW2La+HgK3PeQtU8CVUl4ziIlJs="}, staged)
 
 
+class BuildIdentityRowsFlagResolutionTest(TestCase):
+    """Tests that build_identity_rows resolves the display/stable id flags at
+    build time, which needs no database."""
+
+    def test_multiple_ids_of_type_without_strategy_fail_at_build_time(self) -> None:
+        """A multi-id cluster for a (tenant, id_type) with no selection
+        strategy must fail while building rows, so the import isolates the bad
+        cluster instead of persisting arbitrary flags."""
+        cluster = IdentityCluster(
+            tenant=_TENANT,
+            person_type=PersonType.JII,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=_TENANT, external_id="A1", id_type=_ID_TYPE.value
+                ),
+                IdentityClusterExternalId(
+                    tenant=_TENANT, external_id="B2", id_type=_ID_TYPE.value
+                ),
+            ),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^No shared display/stable selection strategy for tenant \[US_OZ\] "
+            r"and id_type \[US_OZ_LOTR_ID\]",
+        ):
+            build_identity_rows(
+                snapshot=_snapshot_for(cluster),
+                now=_NOW,
+                committed_email_hashes=set(),
+                staged_email_hashes=set(),
+            )
+
+
 @pytest.mark.uses_db
 class BuildIdentityRowsMappingTest(IdentityDatabaseTestCase):
     """Tests that build_identity_rows' output persists into a queryable identity."""
@@ -243,8 +277,10 @@ class BuildIdentityRowsMappingTest(IdentityDatabaseTestCase):
                         external_id="A123",
                         id_type=_ID_TYPE,
                         is_active=True,
-                        is_current_display_id_for_type=None,
-                        is_stable_id_for_type=None,
+                        # The cluster's only id of this type is trivially both
+                        # the display and the stable id.
+                        is_current_display_id_for_type=True,
+                        is_stable_id_for_type=True,
                     )
                 ],
                 attributes=types.IdentityAttributes(
@@ -353,6 +389,50 @@ class BuildIdentityRowsMappingTest(IdentityDatabaseTestCase):
         )
 
     @freeze_time(_NOW)
+    def test_multiple_ids_of_type_split_display_and_stable_flags(self) -> None:
+        """US_OZ identity person ids select alphabetically, so of P001 and
+        P002 the higher P002 becomes the display id and the lower P001 the
+        stable id."""
+        multi_id_type = IdentifierType.US_OZ_IDENTITY_PERSON_ID
+        cluster = IdentityCluster(
+            tenant=_TENANT,
+            person_type=PersonType.JII,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=_TENANT, external_id="P001", id_type=multi_id_type.value
+                ),
+                IdentityClusterExternalId(
+                    tenant=_TENANT, external_id="P002", id_type=multi_id_type.value
+                ),
+            ),
+        )
+
+        self._persist(_snapshot_for(cluster))
+
+        identity = self.querier.get_by_external_id("P001", multi_id_type)
+        if identity is None:
+            self.fail("No identity was created for external id [P001]")
+        self.assertEqual(
+            [
+                types.ExternalId(
+                    external_id="P001",
+                    id_type=multi_id_type,
+                    is_active=True,
+                    is_current_display_id_for_type=False,
+                    is_stable_id_for_type=True,
+                ),
+                types.ExternalId(
+                    external_id="P002",
+                    id_type=multi_id_type,
+                    is_active=True,
+                    is_current_display_id_for_type=True,
+                    is_stable_id_for_type=False,
+                ),
+            ],
+            sorted(identity.external_ids, key=lambda e: e.external_id),
+        )
+
+    @freeze_time(_NOW)
     def test_cluster_with_only_external_ids_creates_bare_identity(self) -> None:
         cluster = IdentityCluster(
             tenant=_TENANT,
@@ -383,8 +463,10 @@ class BuildIdentityRowsMappingTest(IdentityDatabaseTestCase):
                         external_id="S9",
                         id_type=_ID_TYPE,
                         is_active=True,
-                        is_current_display_id_for_type=None,
-                        is_stable_id_for_type=None,
+                        # The cluster's only id of this type is trivially both
+                        # the display and the stable id.
+                        is_current_display_id_for_type=True,
+                        is_stable_id_for_type=True,
                     )
                 ],
                 attributes=types.IdentityAttributes(

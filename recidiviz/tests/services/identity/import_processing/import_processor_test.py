@@ -689,12 +689,19 @@ class ImportUpdateTest(ImportProcessorTestCase):
         self.assertEqual({"US_OZ": ["Original"]}, self._surnames_by_tenant())
 
     def test_external_ids_are_additive(self) -> None:
+        # After this update the identity holds several active ids of one type
+        # (OLD9 is kept alongside A1 and B2), so the update pass's flag
+        # resolution consults the selection registry; US_OZ_IDENTITY_PERSON_ID
+        # is a (tenant, id_type) with a registered strategy.
+        multi_id_type = IdentifierType.US_OZ_IDENTITY_PERSON_ID
         existing_id = uuid.uuid4()
         insert_identity(recidiviz_id=existing_id, last_cluster_hash="stale-hash")
         insert_name(recidiviz_id=existing_id, given_name="Grace", surname="Original")
-        insert_external_id(recidiviz_id=existing_id, external_id="A1", id_type=_ID_TYPE)
         insert_external_id(
-            recidiviz_id=existing_id, external_id="OLD9", id_type=_ID_TYPE
+            recidiviz_id=existing_id, external_id="A1", id_type=multi_id_type
+        )
+        insert_external_id(
+            recidiviz_id=existing_id, external_id="OLD9", id_type=multi_id_type
         )
 
         cluster = IdentityCluster(
@@ -702,10 +709,10 @@ class ImportUpdateTest(ImportProcessorTestCase):
             person_type=PersonType.JII,
             external_ids=(
                 IdentityClusterExternalId(
-                    tenant=Tenant.US_OZ, external_id="A1", id_type=_ID_TYPE.value
+                    tenant=Tenant.US_OZ, external_id="A1", id_type=multi_id_type.value
                 ),
                 IdentityClusterExternalId(
-                    tenant=Tenant.US_OZ, external_id="B2", id_type=_ID_TYPE.value
+                    tenant=Tenant.US_OZ, external_id="B2", id_type=multi_id_type.value
                 ),
             ),
             name=IdentityClusterName(
@@ -720,6 +727,131 @@ class ImportUpdateTest(ImportProcessorTestCase):
         # B2 is added; OLD9 stays even though the cluster no longer carries it.
         self.assertEqual({"A1", "OLD9", "B2"}, self._external_ids_for(existing_id))
         self.assertEqual(1, self._identity_count())
+
+    def _external_id_flags_for(
+        self, recidiviz_id: uuid.UUID
+    ) -> dict[str, tuple[bool, bool]]:
+        """Returns each of the identity's external ids mapped to
+        (is_current_display_id_for_type, is_stable_id_for_type)."""
+        with SessionFactory.using_database(self.database_key) as session:
+            return {
+                row.external_id: (
+                    row.is_current_display_id_for_type,
+                    row.is_stable_id_for_type,
+                )
+                for row in session.query(schema.ExternalId).filter(
+                    schema.ExternalId.recidiviz_id == recidiviz_id
+                )
+            }
+
+    def test_new_external_id_of_type_takes_over_the_display_flag(self) -> None:
+        """US_OZ identity person ids select alphabetically, so when the
+        cluster brings the higher P002, P002 takes the display flag and P001
+        keeps the stable flag."""
+        multi_id_type = IdentifierType.US_OZ_IDENTITY_PERSON_ID
+        existing_id = uuid.uuid4()
+        insert_identity(recidiviz_id=existing_id, last_cluster_hash="stale-hash")
+        insert_external_id(
+            recidiviz_id=existing_id,
+            external_id="P001",
+            id_type=multi_id_type,
+            is_current_display_id_for_type=True,
+            is_stable_id_for_type=True,
+        )
+
+        cluster = IdentityCluster(
+            tenant=Tenant.US_OZ,
+            person_type=PersonType.JII,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="P001", id_type=multi_id_type.value
+                ),
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="P002", id_type=multi_id_type.value
+                ),
+            ),
+        )
+        self._run(
+            ClusterSnapshot(cluster=cluster, stored_cluster_hash=cluster.cluster_hash),
+            should_clear_first=False,
+        )
+
+        self.assertEqual(
+            {"P001": (False, True), "P002": (True, False)},
+            self._external_id_flags_for(existing_id),
+        )
+
+    def test_display_flag_moves_between_existing_ids_without_tripping_unique_index(
+        self,
+    ) -> None:
+        """A display flag can move between two ids that already have rows, e.g.
+        when a tenant's selection strategy changes between runs. The partial
+        unique index on the flag is checked per row as updates land, and the
+        gaining row (P001) sorts before the losing row (P002), so without the
+        update pass clearing flags and flushing first, the gaining update
+        would land while the losing row still carries TRUE and the import
+        would fail. Simulates the strategy change by patching display
+        selection from alphabetically-last to alphabetically-first."""
+        multi_id_type = IdentifierType.US_OZ_IDENTITY_PERSON_ID
+        existing_id = uuid.uuid4()
+        insert_identity(recidiviz_id=existing_id, last_cluster_hash="stale-hash")
+        insert_external_id(
+            recidiviz_id=existing_id,
+            external_id="P001",
+            id_type=multi_id_type,
+            is_current_display_id_for_type=False,
+            is_stable_id_for_type=True,
+        )
+        insert_external_id(
+            recidiviz_id=existing_id,
+            external_id="P002",
+            id_type=multi_id_type,
+            is_current_display_id_for_type=True,
+            is_stable_id_for_type=False,
+        )
+
+        cluster = IdentityCluster(
+            tenant=Tenant.US_OZ,
+            person_type=PersonType.JII,
+            external_ids=(
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="P001", id_type=multi_id_type.value
+                ),
+                IdentityClusterExternalId(
+                    tenant=Tenant.US_OZ, external_id="P002", id_type=multi_id_type.value
+                ),
+            ),
+        )
+        with patch(
+            "recidiviz.services.identity.import_processing.external_id_flag_resolver"
+            ".select_display_external_id",
+            side_effect=lambda *, tenant, id_type, external_ids: min(external_ids),
+        ):
+            self._run(
+                ClusterSnapshot(
+                    cluster=cluster, stored_cluster_hash=cluster.cluster_hash
+                ),
+                should_clear_first=False,
+            )
+
+        self.assertEqual(
+            {"P001": (True, True), "P002": (False, False)},
+            self._external_id_flags_for(existing_id),
+        )
+
+    def test_update_resolves_flags_on_a_previously_unflagged_external_id(self) -> None:
+        """An identity written before the flags existed carries none; the next
+        update resolves them."""
+        existing_id = uuid.uuid4()
+        insert_identity(recidiviz_id=existing_id, last_cluster_hash="stale-hash")
+        insert_external_id(recidiviz_id=existing_id, external_id="A1", id_type=_ID_TYPE)
+
+        self._run(
+            _named_snapshot(external_id="A1", surname="Changed"),
+            should_clear_first=False,
+        )
+
+        self.assertEqual({"A1": (True, True)}, self._external_id_flags_for(existing_id))
 
     def test_update_keeps_the_identitys_own_email(self) -> None:
         existing_id = uuid.uuid4()
@@ -1171,10 +1303,12 @@ class ImportUpdateTest(ImportProcessorTestCase):
         insert_name(recidiviz_id=second_id, given_name="Grace", surname="Second")
         insert_external_id(recidiviz_id=second_id, external_id="B2", id_type=_ID_TYPE)
 
-        # Both clusters add the same new external id, so applying the chunk in
-        # one transaction violates the unique active (external_id, id_type)
+        # Both clusters add the same new external id (of a second id type, so
+        # neither cluster carries two ids of one type), so applying the chunk
+        # in one transaction violates the unique active (external_id, id_type)
         # index and rolls back. The per-cluster retry then lands the first
         # update and isolates the second, which fails alone.
+        shared_id_type = IdentifierType.US_OZ_KDS_PERSON_ID
         first_cluster = IdentityCluster(
             tenant=Tenant.US_OZ,
             person_type=PersonType.JII,
@@ -1183,7 +1317,9 @@ class ImportUpdateTest(ImportProcessorTestCase):
                     tenant=Tenant.US_OZ, external_id="A1", id_type=_ID_TYPE.value
                 ),
                 IdentityClusterExternalId(
-                    tenant=Tenant.US_OZ, external_id="SHARED9", id_type=_ID_TYPE.value
+                    tenant=Tenant.US_OZ,
+                    external_id="SHARED9",
+                    id_type=shared_id_type.value,
                 ),
             ),
             name=IdentityClusterName(
@@ -1198,7 +1334,9 @@ class ImportUpdateTest(ImportProcessorTestCase):
                     tenant=Tenant.US_OZ, external_id="B2", id_type=_ID_TYPE.value
                 ),
                 IdentityClusterExternalId(
-                    tenant=Tenant.US_OZ, external_id="SHARED9", id_type=_ID_TYPE.value
+                    tenant=Tenant.US_OZ,
+                    external_id="SHARED9",
+                    id_type=shared_id_type.value,
                 ),
             ),
             name=IdentityClusterName(

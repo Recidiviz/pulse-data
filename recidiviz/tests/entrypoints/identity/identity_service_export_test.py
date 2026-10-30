@@ -218,6 +218,34 @@ class IdentityServiceExportTest(unittest.TestCase):
         self.assertIsNone(identity_row[LEGACY_PERSON_ID_COLUMN])
         self.assertIsNone(identity_row[LEGACY_STAFF_ID_COLUMN])
 
+    def test_external_id_row_serializes(self) -> None:
+        """The export's external_ids schema derives from the SQLAlchemy table,
+        so asserting the whole row fails loudly if a column is added to the
+        table without its value reaching the export."""
+        insert_identity(recidiviz_id=RECIDIVIZ_ID)
+        insert_external_id(
+            recidiviz_id=RECIDIVIZ_ID,
+            external_id="A1234",
+            id_type=IdentifierType.US_OZ_KDS_PERSON_ID,
+            is_current_display_id_for_type=True,
+            is_stable_id_for_type=False,
+        )
+
+        export_identity_service_to_bigquery(bq_client=self.mock_bq_client)
+
+        [external_id_row] = self._rows_loaded_by_table_id()["external_ids"]
+        self.assertEqual(
+            {
+                "recidiviz_id": str(RECIDIVIZ_ID),
+                "external_id": "A1234",
+                "id_type": "US_OZ_KDS_PERSON_ID",
+                "is_active": True,
+                "is_current_display_id_for_type": True,
+                "is_stable_id_for_type": False,
+            },
+            external_id_row,
+        )
+
     def test_attribute_rows_serialize(self) -> None:
         insert_identity(recidiviz_id=RECIDIVIZ_ID)
         insert_name(recidiviz_id=RECIDIVIZ_ID, given_name="ARAGORN", surname="ELESSAR")

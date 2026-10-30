@@ -30,6 +30,9 @@ from recidiviz.persistence.entity.identity.identity_cluster_entities import (
 from recidiviz.services.identity.import_processing.bq_snapshot_reader import (
     ClusterSnapshot,
 )
+from recidiviz.services.identity.import_processing.external_id_flag_resolver import (
+    resolve_display_and_stable_id_flags,
+)
 from recidiviz.services.identity.import_processing.identity_child_rows import (
     ATTRIBUTE_ROW_TYPES,
     build_attribute_rows,
@@ -59,11 +62,13 @@ def apply_identity_update(
 ) -> None:
     """Brings an identity up to date with its matching cluster snapshot.
 
-    Adds any external ids the identity lacks, never removing any, replaces its
-    EXTERNAL_DATA_SYSTEM attribute rows with the cluster's values (a row a
-    human has pinned via canonical_locked survives untouched), and makes the
-    identity's person_type match the cluster's, logging a warning when that
-    changes it.
+    Adds any external ids the identity lacks, never removing any, re-resolves
+    the display/stable id flags over the identity's resulting external id set
+    (a newly added id can displace the previous display or stable id of its
+    type), replaces its EXTERNAL_DATA_SYSTEM attribute rows with the cluster's
+    values (a row a human has pinned via canonical_locked survives untouched),
+    and makes the identity's person_type match the cluster's, logging a
+    warning when that changes it.
 
     Stages every change on the given session; the caller controls the
     transaction boundary. Writes the snapshot's stored cluster hash to
@@ -82,8 +87,20 @@ def apply_identity_update(
             committed_email_hashes once the transaction commits.
     """
     cluster = snapshot.cluster
-    _add_missing_external_ids(
+    external_id_rows = _add_missing_external_ids(
         session=session, cluster=cluster, recidiviz_id=identity.recidiviz_id
+    )
+    # Resolution can move a flag between rows, and the partial unique indexes
+    # on the flags are checked per row as writes land, in an order we don't
+    # control, so the gaining row's TRUE can land while the losing row still
+    # carries TRUE. Clear every flag and flush first so the resolver's flag
+    # writes are the only TRUEs the indexes ever see in flight.
+    for row in external_id_rows:
+        row.is_current_display_id_for_type = False
+        row.is_stable_id_for_type = False
+    session.flush()
+    resolve_display_and_stable_id_flags(
+        tenant=cluster.tenant, external_id_rows=external_id_rows
     )
     _replace_external_data_system_attributes(
         session=session,
@@ -109,27 +126,29 @@ def apply_identity_update(
 
 def _add_missing_external_ids(
     *, session: Session, cluster: IdentityCluster, recidiviz_id: uuid.UUID
-) -> None:
+) -> list[schema.ExternalId]:
     """Adds an active ExternalId row for each cluster external id the identity
-    lacks.
+    lacks. Returns the identity's resulting complete row list, the pre-existing
+    rows (active and not) plus the rows just added, so the caller can resolve
+    the display/stable id flags over the full set.
 
     External ids are additive: an id already on the identity, active or not, is
     left as is, and ids on the identity but absent from the cluster are never
     removed.
     """
-    existing_keys = {
-        (row.id_type, row.external_id)
-        for row in session.query(schema.ExternalId).filter(
-            schema.ExternalId.recidiviz_id == recidiviz_id
-        )
-    }
-    session.add_all(
-        [
-            row
-            for row in build_external_id_rows(cluster, recidiviz_id=recidiviz_id)
-            if (row.id_type, row.external_id) not in existing_keys
-        ]
+    existing_rows = (
+        session.query(schema.ExternalId)
+        .filter(schema.ExternalId.recidiviz_id == recidiviz_id)
+        .all()
     )
+    existing_keys = {(row.id_type, row.external_id) for row in existing_rows}
+    added_rows = [
+        row
+        for row in build_external_id_rows(cluster, recidiviz_id=recidiviz_id)
+        if (row.id_type, row.external_id) not in existing_keys
+    ]
+    session.add_all(added_rows)
+    return existing_rows + added_rows
 
 
 def _replace_external_data_system_attributes(

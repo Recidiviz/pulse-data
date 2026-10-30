@@ -24,6 +24,9 @@ from recidiviz.persistence.database.schema.identity import schema
 from recidiviz.services.identity.import_processing.bq_snapshot_reader import (
     ClusterSnapshot,
 )
+from recidiviz.services.identity.import_processing.external_id_flag_resolver import (
+    resolve_display_and_stable_id_flags,
+)
 from recidiviz.services.identity.import_processing.identity_child_rows import (
     build_attribute_rows,
     build_external_id_rows,
@@ -42,7 +45,9 @@ def build_identity_rows(
     An identity consists of one row in the identities table, plus one row for
     each value the cluster carries in the appropriate child table: an
     external_ids row per external id, a names row per name, an emails row per
-    address, and so on. See identity_child_rows for the full mapping.
+    address, and so on. See identity_child_rows for the full mapping. The
+    external id rows carry the display/stable id flags resolved over the
+    cluster's ids (see external_id_flag_resolver).
 
     The identity stores the pipeline's cluster_hash as last_cluster_hash so
     the update pass skips the cluster on the next import if it is unchanged.
@@ -81,7 +86,11 @@ def build_identity_rows(
             last_cluster_hash=snapshot.stored_cluster_hash,
         )
     ]
-    rows.extend(build_external_id_rows(cluster, recidiviz_id=recidiviz_id))
+    external_id_rows = build_external_id_rows(cluster, recidiviz_id=recidiviz_id)
+    resolve_display_and_stable_id_flags(
+        tenant=cluster.tenant, external_id_rows=external_id_rows
+    )
+    rows.extend(external_id_rows)
     rows.extend(
         build_attribute_rows(
             cluster,

@@ -78,21 +78,6 @@ class BuildingBlockSchemaTest(unittest.TestCase):
             api_schemas.ExternalIdSchema().dump(external_id),
         )
 
-    def test_external_id_schema_default_form_excludes_internal_flags(self) -> None:
-        external_id = types.ExternalId(
-            external_id="A123",
-            id_type=IdentifierType.US_OZ_LOTR_ID,
-            is_active=True,
-            is_current_display_id_for_type=True,
-            is_stable_id_for_type=True,
-        )
-        self.assertEqual(
-            {"externalId": "A123", "idType": "US_OZ_LOTR_ID"},
-            api_schemas.ExternalIdSchema(
-                exclude=api_schemas.EXTERNAL_ID_INTERNAL_FLAGS
-            ).dump(external_id),
-        )
-
     def test_sourced_phone_number_schema(self) -> None:
         value = make_sourced_attribute(
             types.PhoneNumber(number="5551234567", type=PhoneType.CELL, preferred=True),
@@ -243,10 +228,11 @@ class IdentitySchemaTest(unittest.TestCase):
         # internal reconciliation bookkeeping is omitted in the default form
         self.assertNotIn("lastClusterHash", dumped)
         self.assertNotIn("skipDemographicGuard", dumped)
-        # external IDs omit the internal selection flags in the default form
+        # external IDs omit is_active in the default form but keep the
+        # display/stable flags
         self.assertNotIn("isActive", dumped["externalIds"][0])
-        self.assertNotIn("isCurrentDisplayIdForType", dumped["externalIds"][0])
-        self.assertNotIn("isStableIdForType", dumped["externalIds"][0])
+        self.assertFalse(dumped["externalIds"][0]["isCurrentDisplayIdForType"])
+        self.assertFalse(dumped["externalIds"][0]["isStableIdForType"])
         # attributes are the default (collapsed) form
         self.assertIn("dateOfBirth", dumped["attributes"])
         self.assertNotIn("datesOfBirth", dumped["attributes"])
