@@ -424,17 +424,14 @@ OPT AS (
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY CAST(AdmissionDate AS DATETIME) DESC) = 1
 ),
 stg_information AS (
+    -- Updated to account for the formatting of the COMS_Security_Threat_Group_Involvement post 2026 COMS cutover
     SELECT
         pei.person_id,
-        STG_Level
+        REPLACE(STG_Level, "STG ", "") AS STG_Level
     FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Threat_Group_Involvement_latest`
     INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
         ON Offender_Number = pei.external_id
             AND id_type = 'US_MI_DOC'
-    WHERE Security_Threat_Group_Status = 'ACTIVE'
-    -- there are a small number of times where a single person appears wih two distinct STG levels in the table
-    -- in those cases, let's pick the STG level that was most recently entered
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY CAST(Start_Date AS DATETIME) DESC, STG_LEVEL DESC) = 1
 ),
 assessment_information AS (
     SELECT
