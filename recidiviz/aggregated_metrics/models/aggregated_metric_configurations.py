@@ -5017,17 +5017,6 @@ SUM_EARNED_CREDIT_WRITEBACK_DAYS_REQUESTED = SumEventValueMetric(
     event_value_numeric="days_requested",
 )
 
-SUM_EARNED_CREDIT_WRITEBACK_DAYS_ATTEMPTED = SumEventValueMetric(
-    name="sum_earned_credit_writeback_days_attempted",
-    display_name="Sum of Earned Credit Writeback Days Attempted",
-    description="Sum of requested days that earned credit writeback attempts submitted to the state's system, excluding attempts with no recorded day counts",
-    event_selector=EventSelector(
-        event_type=EventType.EARNED_CREDIT_WRITEBACK_ATTEMPT,
-        event_conditions_dict={},
-    ),
-    event_value_numeric="days_attempted",
-)
-
 SUM_EARNED_CREDIT_WRITEBACK_DAYS_WRITTEN = SumEventValueMetric(
     name="sum_earned_credit_writeback_days_written",
     display_name="Sum of Earned Credit Writeback Days Written",

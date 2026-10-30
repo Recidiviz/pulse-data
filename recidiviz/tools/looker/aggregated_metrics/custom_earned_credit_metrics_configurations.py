@@ -62,24 +62,24 @@ EARNED_CREDIT_ASSIGNMENT_NAMES_TO_TYPES = {
 EARNED_CREDIT_JSON_FIELD_FILTERS_WITH_SUGGESTIONS: dict[str, list[str]] = {
     # US_CO
     "pathway": ["Cert", "Edovo", "Ged", "Unrecognized", "Work"],
-    "outcome_category": [
-        "Applied Successfully",
-        "Error Other",
-        "In Progress",
-        "Refused",
-        "Skipped",
-        "Uncertain",
-        "Wedged",
-    ],
-    "eomis_status_at_write": [
+    "outcome_category": ["Not Written", "Unconfirmed", "Written"],
+    "outcome_reason": [
+        "Already Synced",
         "Applied",
+        "Applied + Pending",
         "Ineligible",
-        "Multiple",
+        "Ineligible + Pending",
         "Partially Applied",
+        "Partially Applied + Pending",
         "Pending",
         "Probated",
+        "Read Only Form",
+        "Response Lost",
+        "Reversal Found",
+        "Run Died",
         "Unrecognized",
         "Void",
+        "Write Failed",
     ],
 }
 
@@ -88,7 +88,6 @@ EARNED_CREDIT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.EARNED_CREDIT_WRITEBACK_ATTEMPT_EVENTS,
     metric_config.DISTINCT_POPULATION_EARNED_CREDIT_WRITEBACK_ATTEMPT,
     metric_config.SUM_EARNED_CREDIT_WRITEBACK_DAYS_REQUESTED,
-    metric_config.SUM_EARNED_CREDIT_WRITEBACK_DAYS_ATTEMPTED,
     metric_config.SUM_EARNED_CREDIT_WRITEBACK_DAYS_WRITTEN,
     metric_config.SUM_EARNED_CREDIT_WRITEBACK_DAYS_APPLIED,
     metric_config.DISTINCT_POPULATION_WITH_EARNED_CREDIT_WRITEBACK_DAYS_APPLIED,
