@@ -29,6 +29,9 @@ from recidiviz.documents.dataset_config import (
     document_extraction_validated_results_dataset_for_region,
     document_extraction_validation_audit_dataset_for_region,
 )
+from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
+    GoldenEvalDocumentsBQTable,
+)
 from recidiviz.documents.extraction.eval.golden_eval_results_table import (
     GoldenEvalResultsBQTable,
 )
@@ -42,6 +45,7 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
 )
 from recidiviz.source_tables.extraction_results_source_table_collection import (
     collect_extraction_results_source_table_collections,
+    collect_golden_eval_documents_source_table_collection,
     collect_golden_eval_results_source_table_collection,
 )
 from recidiviz.source_tables.source_table_config import (
@@ -157,4 +161,38 @@ class CollectGoldenEvalResultsSourceTableCollectionTest(unittest.TestCase):
         )
         self.assertEqual(
             TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS, collection.table_expiration_ms
+        )
+
+
+class CollectGoldenEvalDocumentsSourceTableCollectionTest(unittest.TestCase):
+    """Tests for collect_golden_eval_documents_source_table_collection."""
+
+    def test_one_table_per_collection_name(self) -> None:
+        collection = collect_golden_eval_documents_source_table_collection(
+            extractor_collection_names=[_GOLDEN_EVAL_COLLECTION_NAME]
+        )
+
+        self.assertEqual(_GOLDEN_EVAL_DATASET_ID, collection.dataset_id)
+        table = one(collection.source_tables)
+        self.assertEqual("fake_extractor_collection__documents", table.address.table_id)
+        self.assertEqual(GoldenEvalDocumentsBQTable.schema(), table.schema_fields)
+        self.assertEqual(
+            GoldenEvalDocumentsBQTable.description(
+                collection_name=_GOLDEN_EVAL_COLLECTION_NAME
+            ),
+            table.description,
+        )
+
+    def test_as_sandbox_collection(self) -> None:
+        collection = collect_golden_eval_documents_source_table_collection(
+            extractor_collection_names=[_GOLDEN_EVAL_COLLECTION_NAME]
+        ).as_sandbox_collection("my_prefix")
+
+        self.assertEqual(f"my_prefix_{_GOLDEN_EVAL_DATASET_ID}", collection.dataset_id)
+        self.assertEqual(
+            GoldenEvalDocumentsBQTable.address(
+                collection_name=_GOLDEN_EVAL_COLLECTION_NAME,
+                sandbox_prefix="my_prefix",
+            ),
+            one(collection.source_tables).address,
         )

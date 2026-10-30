@@ -16,10 +16,12 @@
 # =============================================================================
 """Contains source table definitions for the BigQuery tables the LLM
 document-extraction pipeline writes: the three per-state, per-collection tables
-(raw results, validated results, and the validation audit) and the golden eval
-results table.
+(raw results, validated results, and the validation audit), the golden eval
+results table, and the golden eval documents table an entity-resolution eval
+run loads.
 """
 
+from collections.abc import Sequence
 from types import ModuleType
 
 from recidiviz.common.constants.states import StateCode
@@ -29,6 +31,9 @@ from recidiviz.documents.dataset_config import (
     document_extraction_raw_results_dataset_for_region,
     document_extraction_validated_results_dataset_for_region,
     document_extraction_validation_audit_dataset_for_region,
+)
+from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
+    GoldenEvalDocumentsBQTable,
 )
 from recidiviz.documents.extraction.eval.golden_eval_results_table import (
     GoldenEvalResultsBQTable,
@@ -188,6 +193,41 @@ def collect_golden_eval_results_source_table_collection(
                 collection_name=collection_name
             ),
             schema_fields=GoldenEvalResultsBQTable.schema(),
+        )
+
+    return collection
+
+
+def collect_golden_eval_documents_source_table_collection(
+    *, extractor_collection_names: Sequence[str]
+) -> SourceTableCollection:
+    """Collects the golden eval documents source table collection, one
+    `document_extraction_golden_eval_results.{collection_name}__documents` table
+    per name in |extractor_collection_names|. An entity-resolution golden eval run
+    loads its sheet's documents into the sandbox copy of the first-order
+    collection's table, so the collection is only ever created via
+    `.as_sandbox_collection(prefix)`.
+
+    The tables are state-agnostic: every state that runs a given extractor writes
+    to the same table, keyed apart by the `state_code` column.
+    """
+    collection = SourceTableCollection(
+        update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
+        dataset_id=document_extraction_golden_eval_results_dataset(),
+        labels=[],
+        update_config=SourceTableCollectionUpdateConfig.regenerable(),
+        description=(
+            "Golden eval documents for entity-resolution LLM document extraction, "
+            "one per extractor collection. Each run replaces the rows."
+        ),
+    )
+    for collection_name in extractor_collection_names:
+        collection.add_source_table(
+            table_id=GoldenEvalDocumentsBQTable.table_id(collection_name),
+            description=GoldenEvalDocumentsBQTable.description(
+                collection_name=collection_name
+            ),
+            schema_fields=GoldenEvalDocumentsBQTable.schema(),
         )
 
     return collection

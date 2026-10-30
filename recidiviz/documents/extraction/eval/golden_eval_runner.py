@@ -34,6 +34,10 @@ from recidiviz.documents.extraction.eval.golden_eval_document import GoldenEvalD
 from recidiviz.documents.extraction.eval.golden_eval_document_reader import (
     GoldenEvalDocumentReader,
 )
+from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_helpers import (
+    first_order_config_for,
+    seed_golden_eval_document_contents,
+)
 from recidiviz.documents.extraction.eval.golden_eval_result import (
     GoldenEvalFieldScore,
     GoldenEvalResult,
@@ -184,6 +188,22 @@ class GoldenEvalRunner:
 
         documents = self._read_golden_eval_documents(config=config)
 
+        if config.extraction_stage == LLMExtractionViewGraphStage.ENTITY_RESOLUTION:
+            seed_golden_eval_document_contents(
+                bq_client=self.bq_client,
+                sandbox_prefix=self.sandbox_prefix,
+                first_order_config=first_order_config_for(config),
+                documents=documents,
+            )
+            # TODO(OBT-53821): Seed the __pre_resolution table, keyed by the
+            # document_contents_id mapping the seeding above returns.
+            # TODO(OBT-53823): Build the composite documents and run them through
+            # the extraction session.
+            raise ValueError(
+                f"Entity-resolution golden eval is not supported yet, so extractor "
+                f"[{config.extractor_id}] cannot be golden eval'd."
+            )
+
         session = SyncLLMDocumentExtractionSession(
             config=config,
             job_id=job_id,
@@ -264,13 +284,21 @@ class GoldenEvalRunner:
         self, *, config: LLMExtractorConfig
     ) -> list[GoldenEvalDocument]:
         """Returns every golden eval document |config| declares, having reported
-        every problem in the eval set at once.
+        every problem in the eval set at once. An entity-resolution extractor's
+        documents come from its parent first-order extractor's entity-resolution
+        eval set.
         """
         sheets_reader = (
             GoogleSheetReader(sheets_service=self.sheets_service)
             if self.sheets_service is not None
             else GoogleSheetReader.from_application_default_credentials()
         )
+        if config.extraction_stage == LLMExtractionViewGraphStage.ENTITY_RESOLUTION:
+            return GoldenEvalDocumentReader.from_config(
+                config=first_order_config_for(config),
+                sheets_reader=sheets_reader,
+                stage=LLMExtractionViewGraphStage.ENTITY_RESOLUTION,
+            ).load_all_documents()
         return GoldenEvalDocumentReader.from_config(
             config=config,
             sheets_reader=sheets_reader,

@@ -113,7 +113,7 @@ class DocumentGenerationQueryBuilder:
         )
         return f"""
 SELECT
-    {self._document_contents_id_sql_clause(self.config.state_code)} AS {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
+    {self.document_contents_id_sql_clause(self.config.state_code)} AS {DOCUMENT_CONTENTS_ID_COLUMN_NAME},
     {list_to_query_string(passthrough_columns)}
 FROM (
     SELECT
@@ -124,7 +124,7 @@ FROM (
 WHERE {DOCUMENT_TEXT_COLUMN_NAME} IS NOT NULL AND {DOCUMENT_TEXT_COLUMN_NAME} != ''"""
 
     @staticmethod
-    def _document_contents_id_sql_clause(state_code: StateCode) -> str:
+    def document_contents_id_sql_clause(state_code: StateCode) -> str:
         """Returns the SQL that computes document_contents_id for |state_code|."""
         return f"TO_HEX(SHA256(CONCAT('{state_code.value}', '|', {DOCUMENT_TEXT_COLUMN_NAME})))"
 

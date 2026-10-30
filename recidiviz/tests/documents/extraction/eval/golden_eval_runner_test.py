@@ -50,6 +50,9 @@ from recidiviz.documents.extraction.eval.golden_eval_document_parser import (
     TEST_TYPE_COLUMN_NAME,
     expected_value_column_name,
 )
+from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
+    GoldenEvalDocumentsBQTable,
+)
 from recidiviz.documents.extraction.eval.golden_eval_result import (
     GoldenEvalFieldScore,
     GoldenEvalResult,
@@ -93,8 +96,12 @@ from recidiviz.documents.extraction.models.llm_model_registry import LLMModelCon
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     IS_RELEVANT_FIELD_NAME,
 )
+from recidiviz.source_tables.document_store_source_table_collection import (
+    collect_document_store_source_tables_for_configs,
+)
 from recidiviz.source_tables.extraction_results_source_table_collection import (
     collect_extraction_results_source_table_collections,
+    collect_golden_eval_documents_source_table_collection,
     collect_golden_eval_results_source_table_collection,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
@@ -102,6 +109,10 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_entity_resolution_extractor_config,
+    patch_fake_entity_resolution_model_config_name,
+)
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     build_fake_extractor_assignment_result_json,
     build_fake_extractor_result_content,
@@ -943,3 +954,143 @@ class GoldenEvalRunnerEmulatorTest(BigQueryEmulatorTestCase):
             (row[DOCUMENT_CONTENTS_ID_COLUMN_NAME], row[EXTRACTION_JOB_ID_COLUMN_NAME])
             for row in results
         )
+
+
+class GoldenEvalRunnerEntityResolutionEmulatorTest(BigQueryEmulatorTestCase):
+    """Tests the part of an entity-resolution golden eval run that exists so far:
+    seeding the sandbox document contents table from the ER sheet tab.
+    """
+
+    @classmethod
+    def get_source_tables(cls) -> list[SourceTableCollection]:
+        return [
+            collect_golden_eval_documents_source_table_collection(
+                extractor_collection_names=["FAKE_EXTRACTOR_COLLECTION"]
+            ).as_sandbox_collection(_SANDBOX_PREFIX),
+            *[
+                collection.as_sandbox_collection(_SANDBOX_PREFIX)
+                for collection in collect_document_store_source_tables_for_configs(
+                    [_config().input_document_collection]
+                )
+            ],
+        ]
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+        self.config = fake_entity_resolution_extractor_config("location")
+
+    def test_entity_resolution_config_seeds_contents_then_raises(self) -> None:
+        sheet = GoogleSheetTable(
+            title=f"{_STATE_CODE.value}__ER",
+            column_names=list(_ER_CELLS_UNIT_1),
+            rows=[
+                GoogleSheetTableRow(row_number=2, values_by_column=_ER_CELLS_UNIT_1),
+                GoogleSheetTableRow(row_number=3, values_by_column=_ER_CELLS_UNIT_2),
+            ],
+        )
+        runner = GoldenEvalRunner(
+            sandbox_prefix=_SANDBOX_PREFIX,
+            requester=_REQUESTER,
+            persist_processed_results=False,
+            sheets_service=create_autospec(Resource, instance=True),
+            bq_client=self.bq_client,
+        )
+
+        with patch.object(GoogleSheetReader, "read_tab_as_table", return_value=sheet):
+            with self.assertRaisesRegex(ValueError, r"not supported yet"):
+                runner.run_eval(config=self.config)
+
+        documents_address = GoldenEvalDocumentsBQTable.address(
+            collection_name=_config().extractor_collection.name,
+            sandbox_prefix=_SANDBOX_PREFIX,
+        )
+        self.run_query_test(
+            f"SELECT state_code, golden_document_id, document_text "
+            f"FROM `{self.project_id}.{documents_address.to_str()}`",
+            [
+                {
+                    "state_code": "US_XX",
+                    "golden_document_id": "unit_1",
+                    "document_text": (
+                        "<p>The record is active. Assigned to dish duty at "
+                        "$12.50/hour.</p>"
+                    ),
+                },
+                {
+                    "state_code": "US_XX",
+                    "golden_document_id": "unit_2",
+                    "document_text": "No fictional assignment record here.",
+                },
+            ],
+        )
+        contents_address = (
+            _config().input_document_collection.document_contents_table_address(
+                sandbox_dataset_prefix=_SANDBOX_PREFIX
+            )
+        )
+        self.run_query_test(
+            f"SELECT document_contents_id, document_text, document_length_bytes "
+            f"FROM `{self.project_id}.{contents_address.to_str()}`",
+            [
+                {
+                    # sha256("US_XX|The record is active. Assigned to dish duty at
+                    # $12.50/hour.")
+                    "document_contents_id": (
+                        "0ddaf582ab052d4e6f76a510bc852ade"
+                        "8277b0e13619efa988f6eaf2309c9cd6"
+                    ),
+                    "document_text": (
+                        "The record is active. Assigned to dish duty at $12.50/hour."
+                    ),
+                    "document_length_bytes": 59,
+                },
+                {
+                    # sha256("US_XX|No fictional assignment record here.")
+                    "document_contents_id": (
+                        "1290b0540647a0c9716c3a86aeae486e"
+                        "17b94b491a0ecb7952a03fb19bb15e08"
+                    ),
+                    "document_text": "No fictional assignment record here.",
+                    "document_length_bytes": 36,
+                },
+            ],
+        )
+
+
+_ER_CELLS_UNIT_1 = {
+    TEST_TYPE_COLUMN_NAME: "unit",
+    TEST_CASE_COLUMN_NAME: "base_case",
+    GOLDEN_DOCUMENT_ID_COLUMN_NAME: "unit_1",
+    DOCUMENT_TEXT_COLUMN_NAME: (
+        "<p>The record is active. Assigned to dish duty at $12.50/hour.</p>"
+    ),
+    "test_group_id": "1",
+    "document_date": "2026-03-01",
+    "is_relevant__expected": "true",
+    "primary_status__expected": "active",
+    "status_note__expected": "Currently active.",
+    "location__expected": "Kitchen",
+    "assignments__expected": _DISH_DUTY_ELEMENT_JSON,
+    "location__expected__er": "Main Kitchen",
+    "assignments__expected__er": (
+        '[{"assignment_name": "Dish duty", "assignment_type": "internal", '
+        '"rate_amount": 12.5}]'
+    ),
+}
+
+_ER_CELLS_UNIT_2 = {
+    TEST_TYPE_COLUMN_NAME: "unit",
+    TEST_CASE_COLUMN_NAME: "missing_fields",
+    GOLDEN_DOCUMENT_ID_COLUMN_NAME: "unit_2",
+    DOCUMENT_TEXT_COLUMN_NAME: "No fictional assignment record here.",
+    "test_group_id": "1",
+    "document_date": "2026-03-15",
+    "is_relevant__expected": "false",
+    "primary_status__expected": "",
+    "status_note__expected": "",
+    "location__expected": "",
+    "assignments__expected": "",
+    "location__expected__er": "",
+    "assignments__expected__er": "",
+}

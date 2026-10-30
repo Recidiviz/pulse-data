@@ -22,6 +22,7 @@ from unittest.mock import patch
 
 import attr
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.common.constants.operations.llm_extraction_job import (
     LLMExtractionJobDocumentResultType,
@@ -57,8 +58,14 @@ from recidiviz.source_tables.extraction_results_source_table_collection import (
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_entity_resolution_extractor_config,
+    patch_fake_entity_resolution_model_config_name,
+)
 from recidiviz.tools.documents.run_sandbox_golden_eval import (
     DEFAULT_TABLE_EXPIRATION_HOURS,
+    document_contents_sandbox_source_table_collection,
+    golden_eval_documents_sandbox_source_table_collection,
     golden_eval_sandbox_source_table_collection,
     main,
     parse_arguments,
@@ -183,6 +190,60 @@ class TestGoldenEvalSandboxSourceTableCollection(TestCase):
                     sandbox_prefix=_SANDBOX_PREFIX,
                     table_expiration_ms=72 * _ONE_HOUR_MS,
                 )
+
+
+class TestDocumentContentsSandboxSourceTableCollection(TestCase):
+    """Tests for the sandbox document contents collection an entity-resolution run
+    seeds.
+    """
+
+    def setUp(self) -> None:
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+
+    def test_holds_only_the_first_order_input_contents_table(self) -> None:
+        collection = document_contents_sandbox_source_table_collection(
+            config=fake_entity_resolution_extractor_config("location"),
+            sandbox_prefix=_SANDBOX_PREFIX,
+            table_expiration_ms=72 * _ONE_HOUR_MS,
+        )
+
+        self.assertEqual(
+            [
+                BigQueryAddress(
+                    dataset_id="my_prefix_us_xx_document_contents",
+                    table_id="fake_input_notes_document_contents",
+                )
+            ],
+            [table.address for table in collection.source_tables],
+        )
+        self.assertEqual(72 * _ONE_HOUR_MS, collection.table_expiration_ms)
+
+
+class TestGoldenEvalDocumentsSandboxSourceTableCollection(TestCase):
+    """Tests for the sandbox golden eval documents collection an entity-resolution
+    run loads the eval sheet's documents into.
+    """
+
+    def setUp(self) -> None:
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+
+    def test_holds_only_the_first_order_collections_documents_table(self) -> None:
+        collection = golden_eval_documents_sandbox_source_table_collection(
+            config=fake_entity_resolution_extractor_config("location"),
+            sandbox_prefix=_SANDBOX_PREFIX,
+            table_expiration_ms=72 * _ONE_HOUR_MS,
+        )
+
+        self.assertEqual(
+            [
+                BigQueryAddress(
+                    dataset_id="my_prefix_document_extraction_golden_eval_results",
+                    table_id="fake_extractor_collection__documents",
+                )
+            ],
+            [table.address for table in collection.source_tables],
+        )
+        self.assertEqual(72 * _ONE_HOUR_MS, collection.table_expiration_ms)
 
 
 class TestRunSandboxGoldenEval(TestCase):

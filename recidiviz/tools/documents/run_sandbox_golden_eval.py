@@ -47,24 +47,35 @@ import sys
 
 import attr
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.git import get_normalized_git_username
 from recidiviz.documents.extraction.eval.golden_eval_console_summary import (
     render_golden_eval_console_summary,
 )
+from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_helpers import (
+    first_order_config_for,
+)
 from recidiviz.documents.extraction.eval.golden_eval_results_table import (
     GoldenEvalResultsBQTable,
 )
 from recidiviz.documents.extraction.eval.golden_eval_runner import GoldenEvalRunner
+from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
+    LLMExtractionViewGraphStage,
+)
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     get_first_order_llm_extractor_config,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
 )
+from recidiviz.source_tables.document_store_source_table_collection import (
+    collect_document_store_source_tables_for_configs,
+)
 from recidiviz.source_tables.extraction_results_source_table_collection import (
     collect_extraction_results_source_table_collections,
+    collect_golden_eval_documents_source_table_collection,
     collect_golden_eval_results_source_table_collection,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
@@ -137,16 +148,35 @@ def _sandbox_source_table_collections(
     table_expiration_ms: int,
 ) -> list[SourceTableCollection]:
     """Returns every sandbox source table collection this run writes to: the golden
-    eval results table always, plus the extractor's raw, validated, and audit result
-    tables when the run is also persisting its processed results.
+    eval results table always, the first-order document contents and golden eval
+    documents tables for an entity-resolution extractor, and the extractor's raw,
+    validated, and audit result tables when the run is also persisting its
+    processed results.
     """
     collections = [
+        # TODO(OBT-53824): Decide which golden eval results table an
+        # entity-resolution run writes to. Only first-order collections have one.
         golden_eval_sandbox_source_table_collection(
             collection_name=config.extractor_collection.name,
             sandbox_prefix=sandbox_prefix,
             table_expiration_ms=table_expiration_ms,
         )
     ]
+    if config.extraction_stage == LLMExtractionViewGraphStage.ENTITY_RESOLUTION:
+        collections.append(
+            document_contents_sandbox_source_table_collection(
+                config=config,
+                sandbox_prefix=sandbox_prefix,
+                table_expiration_ms=table_expiration_ms,
+            )
+        )
+        collections.append(
+            golden_eval_documents_sandbox_source_table_collection(
+                config=config,
+                sandbox_prefix=sandbox_prefix,
+                table_expiration_ms=table_expiration_ms,
+            )
+        )
     if persist_results:
         collections.extend(
             collection.as_sandbox_collection(
@@ -177,7 +207,64 @@ def golden_eval_sandbox_source_table_collection(
             f"[{collection_name}]. Known collections: "
             f"{sorted(a.table_id.upper() for a in collection.source_tables_by_address)}."
         )
+    return _narrowed_sandbox_collection(
+        collection=collection,
+        address=address,
+        sandbox_prefix=sandbox_prefix,
+        table_expiration_ms=table_expiration_ms,
+    )
 
+
+def document_contents_sandbox_source_table_collection(
+    *, config: LLMExtractorConfig, sandbox_prefix: str, table_expiration_ms: int
+) -> SourceTableCollection:
+    """Returns the sandbox collection holding just the document_contents table of
+    the first-order input collection that entity-resolution extractor |config|
+    reads source text from.
+    """
+    document_collection = first_order_config_for(config).input_document_collection
+    address = document_collection.document_contents_table_address(
+        sandbox_dataset_prefix=None
+    )
+    (collection,) = [
+        collection
+        for collection in collect_document_store_source_tables_for_configs(
+            [document_collection]
+        )
+        if address in collection.source_tables_by_address
+    ]
+    return _narrowed_sandbox_collection(
+        collection=collection,
+        address=address,
+        sandbox_prefix=sandbox_prefix,
+        table_expiration_ms=table_expiration_ms,
+    )
+
+
+def golden_eval_documents_sandbox_source_table_collection(
+    *, config: LLMExtractorConfig, sandbox_prefix: str, table_expiration_ms: int
+) -> SourceTableCollection:
+    """Returns the sandbox collection holding just the golden eval documents table
+    of the first-order extractor collection that entity-resolution extractor
+    |config| was generated from.
+    """
+    return collect_golden_eval_documents_source_table_collection(
+        extractor_collection_names=[
+            first_order_config_for(config).extractor_collection.name
+        ]
+    ).as_sandbox_collection(sandbox_prefix, table_expiration_ms=table_expiration_ms)
+
+
+def _narrowed_sandbox_collection(
+    *,
+    collection: SourceTableCollection,
+    address: BigQueryAddress,
+    sandbox_prefix: str,
+    table_expiration_ms: int,
+) -> SourceTableCollection:
+    """Returns the sandbox version of |collection| holding only the table at
+    |address|.
+    """
     return attr.evolve(
         collection,
         source_tables_by_address={
