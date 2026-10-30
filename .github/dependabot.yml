@@ -18,5 +18,8 @@ updates:
       - dependencies
       - javascript
       - "Type: Dependency Upgrade"
+    # Matches the StepSecurity NPM Package Cooldown Check, which fails PRs that
+    # add a version released less than 7 days ago, and the 7-day exclude-newer
+    # in pyproject.toml.
     cooldown:
-      default-days: 3
+      default-days: 7
