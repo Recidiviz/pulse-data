@@ -1093,11 +1093,6 @@ DATETIME_PARSER_EXEMPTIONS_NO_DOWNSTREAM_REFERENCES: dict[
     StateCode.US_IX: {
         "com_SubstanceAbuseInfo": ["AlcoholDateofLastUse"],
     },
-    StateCode.US_MI: {
-        "COMS_Security_Classification": [
-            "Actual_Placement_Level_Assessment_Result_Entered_Date"
-        ],
-    },
     StateCode.US_TX: {
         "ProgramReferral": ["PREF_PROG_TYPE_ID"],
     },

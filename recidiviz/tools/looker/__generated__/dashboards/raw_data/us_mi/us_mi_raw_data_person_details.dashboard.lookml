@@ -1342,19 +1342,20 @@
     fields: [us_mi_COMS_Security_Classification.primary_key,
       us_mi_COMS_Security_Classification.Security_Classification_Id,
       us_mi_COMS_Security_Classification.Offender_Number,
-      us_mi_COMS_Security_Classification.Confinement_Level_Assessment_Result,
-      us_mi_COMS_Security_Classification.Confinement_Level_Assessment_Result_Entered_Date__raw,
-      us_mi_COMS_Security_Classification.Management_Level_Assessment_Result,
-      us_mi_COMS_Security_Classification.Management_Level_Assessment_Result_Entered_Date__raw,
-      us_mi_COMS_Security_Classification.True_Security_Level_Assessment_Result,
-      us_mi_COMS_Security_Classification.True_Security_Level_Assessment_Result_Entered_Date__raw,
-      us_mi_COMS_Security_Classification.Actual_Placement_Level_Assessment_Result,
-      us_mi_COMS_Security_Classification.Actual_Placement_Level_Assessment_Result_Entered_Date__raw,
+      us_mi_COMS_Security_Classification.Confinement_Level,
+      us_mi_COMS_Security_Classification.Management_Level,
+      us_mi_COMS_Security_Classification.Management_Level_Score,
+      us_mi_COMS_Security_Classification.True_Security_Level,
+      us_mi_COMS_Security_Classification.Actual_Placement_Level,
+      us_mi_COMS_Security_Classification.Departure_Reason,
+      us_mi_COMS_Security_Classification.Waiver_Reason,
+      us_mi_COMS_Security_Classification.Start_Date__raw,
+      us_mi_COMS_Security_Classification.Entered_Date__raw,
       us_mi_COMS_Security_Classification.file_id,
       us_mi_COMS_Security_Classification.is_deleted]
-    sorts: [us_mi_COMS_Security_Classification.Confinement_Level_Assessment_Result_Entered_Date__raw]
+    sorts: [us_mi_COMS_Security_Classification.Start_Date__raw]
     note_display: hover
-    note_text: "This table includes data from the COMS system about security classification assessment results"
+    note_text: "This table includes data from the COMS system about security classification assessment results for active prisoners. Only includes submitted security classification assessments. Sent as a full dump file every day. Note: see also COMS_Security_Classification for an earlier COMS security classification data format with a different schema."
     listen: 
       View Type: us_mi_ADH_OFFENDER.view_type
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
@@ -1365,28 +1366,27 @@
     width: 24
     height: 6
 
-  - name: COMS_Security_Classifications
-    title: COMS_Security_Classifications
+  - name: COMS_Security_Classification_Legacy
+    title: COMS_Security_Classification_Legacy
     explore: us_mi_raw_data
     model: "@{model_name}"
     type: looker_grid
-    fields: [us_mi_COMS_Security_Classifications.primary_key,
-      us_mi_COMS_Security_Classifications.Security_Classification_Id,
-      us_mi_COMS_Security_Classifications.Offender_Number,
-      us_mi_COMS_Security_Classifications.Confinement_Level,
-      us_mi_COMS_Security_Classifications.Management_Level,
-      us_mi_COMS_Security_Classifications.Management_Level_Score,
-      us_mi_COMS_Security_Classifications.True_Security_Level,
-      us_mi_COMS_Security_Classifications.Actual_Placement_Level,
-      us_mi_COMS_Security_Classifications.Departure_Reason,
-      us_mi_COMS_Security_Classifications.Waiver_Reason,
-      us_mi_COMS_Security_Classifications.Start_Date__raw,
-      us_mi_COMS_Security_Classifications.Entered_Date__raw,
-      us_mi_COMS_Security_Classifications.file_id,
-      us_mi_COMS_Security_Classifications.is_deleted]
-    sorts: [us_mi_COMS_Security_Classifications.Start_Date__raw]
+    fields: [us_mi_COMS_Security_Classification_Legacy.primary_key,
+      us_mi_COMS_Security_Classification_Legacy.Security_Classification_Id,
+      us_mi_COMS_Security_Classification_Legacy.Offender_Number,
+      us_mi_COMS_Security_Classification_Legacy.Confinement_Level_Assessment_Result,
+      us_mi_COMS_Security_Classification_Legacy.Confinement_Level_Assessment_Result_Entered_Date__raw,
+      us_mi_COMS_Security_Classification_Legacy.Management_Level_Assessment_Result,
+      us_mi_COMS_Security_Classification_Legacy.Management_Level_Assessment_Result_Entered_Date__raw,
+      us_mi_COMS_Security_Classification_Legacy.True_Security_Level_Assessment_Result,
+      us_mi_COMS_Security_Classification_Legacy.True_Security_Level_Assessment_Result_Entered_Date__raw,
+      us_mi_COMS_Security_Classification_Legacy.Actual_Placement_Level_Assessment_Result,
+      us_mi_COMS_Security_Classification_Legacy.Actual_Placement_Level_Assessment_Result_Entered_Date__raw,
+      us_mi_COMS_Security_Classification_Legacy.file_id,
+      us_mi_COMS_Security_Classification_Legacy.is_deleted]
+    sorts: [us_mi_COMS_Security_Classification_Legacy.Confinement_Level_Assessment_Result_Entered_Date__raw]
     note_display: hover
-    note_text: "This table includes data from the COMS system about security classification assessment results for active prisoners. Only includes submitted security classification assessments. Sent as a full dump file every day. Note: see also COMS_Security_Classification for an earlier COMS security classification data format with a different schema."
+    note_text: "This table includes data from the COMS system about security classification assessment results"
     listen: 
       View Type: us_mi_ADH_OFFENDER.view_type
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id

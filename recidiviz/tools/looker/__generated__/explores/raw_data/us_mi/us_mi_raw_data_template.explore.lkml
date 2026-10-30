@@ -262,11 +262,11 @@ explore: us_mi_raw_data_template {
     view_label: "us_mi_COMS_Security_Classification"
   }
 
-  join: us_mi_COMS_Security_Classifications {
-    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Security_Classifications.Offender_Number};;
+  join: us_mi_COMS_Security_Classification_Legacy {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Security_Classification_Legacy.Offender_Number};;
     type: full_outer
     relationship: many_to_many
-    view_label: "us_mi_COMS_Security_Classifications"
+    view_label: "us_mi_COMS_Security_Classification_Legacy"
   }
 
   join: us_mi_COMS_Security_Standards_Toxin {
