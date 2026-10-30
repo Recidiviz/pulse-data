@@ -26,10 +26,14 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.extraction.eval.golden_eval_document import GoldenEvalDocument
+from recidiviz.documents.extraction.eval.golden_eval_document import (
+    GoldenEvalDocument,
+    GoldenEvalEntityResolutionDocument,
+)
 from recidiviz.documents.extraction.eval.golden_eval_document_parser import (
     GoldenEvalDocumentParseError,
     GoldenEvalDocumentParser,
+    GoldenEvalEntityResolutionDocumentParser,
     expected_column_name_for_stage,
 )
 from recidiviz.documents.extraction.eval.golden_eval_document_source import (
@@ -39,6 +43,7 @@ from recidiviz.documents.extraction.eval.golden_eval_document_source import (
 from recidiviz.documents.extraction.eval.golden_eval_document_validator import (
     GoldenEvalDocumentIssue,
     GoldenEvalDocumentValidator,
+    GoldenEvalEntityResolutionDocumentValidator,
     GoldenEvalFirstOrderDocumentValidator,
 )
 from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
@@ -47,6 +52,9 @@ from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
 from recidiviz.documents.extraction.models.llm_document_extraction_golden_eval_config import (
     GoldenEvalTestType,
 )
+from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
+    LLMExtractorCollectionConfig,
+)
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
 )
@@ -54,6 +62,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema import (
     LLMRequestOutputSchema,
 )
 from recidiviz.utils.google_sheets_reader import GoogleSheetReader, GoogleSheetTableRow
+from recidiviz.utils.types import assert_type
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -149,20 +158,26 @@ class GoldenEvalDocumentReader:
         return self.source.state_code
 
     @property
+    def stage(self) -> LLMExtractionViewGraphStage:
+        """Returns the extraction stage whose eval set this reader reads."""
+        return self.source.stage
+
+    @property
     def source_sheet_uri(self) -> str:
         """Returns the URI of the sheet the rows come from."""
         return self.source.source_sheet_uri
 
     @classmethod
-    def for_extractor(
+    def for_first_order_extractor(
         cls,
         *,
         source: GoldenEvalGoogleSheetDocumentSource,
         output_schema: LLMRequestOutputSchema,
     ) -> "GoldenEvalDocumentReader":
-        """Returns the reader for the eval sheet |source| reads, wired to read it
-        against |output_schema|.
-        """
+        """Returns the reader for the first-order eval sheet read by |source|."""
+        cls._verify_source_stage(
+            source=source, parser_stage=LLMExtractionViewGraphStage.FIRST_ORDER
+        )
         return cls(
             source=source,
             parser=GoldenEvalDocumentParser(
@@ -174,26 +189,93 @@ class GoldenEvalDocumentReader:
         )
 
     @classmethod
-    def from_config(
-        cls, *, config: LLMExtractorConfig, sheets_reader: GoogleSheetReader
+    def for_entity_resolution_extractor(
+        cls,
+        *,
+        source: GoldenEvalGoogleSheetDocumentSource,
+        extractor_collection: LLMExtractorCollectionConfig,
     ) -> "GoldenEvalDocumentReader":
-        """Returns the reader for |config|'s golden eval set."""
+        """Returns the reader for the entity-resolution eval sheet read by |source|,
+        whose rows hold the expected values of |extractor_collection|.
+        """
+        cls._verify_source_stage(
+            source=source, parser_stage=LLMExtractionViewGraphStage.ENTITY_RESOLUTION
+        )
+        return cls(
+            source=source,
+            parser=GoldenEvalEntityResolutionDocumentParser(
+                state_code=source.state_code,
+                output_schema=extractor_collection.output_schema,
+                resolver_fields=extractor_collection.resolver_fields,
+            ),
+            validator=GoldenEvalEntityResolutionDocumentValidator(
+                first_order_validator=GoldenEvalFirstOrderDocumentValidator(
+                    output_schema=extractor_collection.output_schema
+                ),
+                resolver_fields=extractor_collection.resolver_fields,
+                resolver_sub_field_names_by_array_field_name=(
+                    extractor_collection.resolver_sub_field_names_by_array_field_name
+                ),
+            ),
+        )
+
+    @staticmethod
+    def _verify_source_stage(
+        *,
+        source: GoldenEvalGoogleSheetDocumentSource,
+        parser_stage: LLMExtractionViewGraphStage,
+    ) -> None:
+        """Raises if |source| reads the eval set of a different stage than the
+        parser being paired with it.
+        """
+        if source.stage is not parser_stage:
+            raise ValueError(
+                f"Golden eval sheet [{source.source_sheet_uri}] holds the "
+                f"[{source.stage.value}] eval set, but the reader's parser reads "
+                f"the [{parser_stage.value}] eval set."
+            )
+
+    @classmethod
+    def from_config(
+        cls,
+        *,
+        config: LLMExtractorConfig,
+        sheets_reader: GoogleSheetReader,
+        stage: LLMExtractionViewGraphStage,
+    ) -> "GoldenEvalDocumentReader":
+        """Returns the reader for first-order extractor |config|'s eval set for
+        |stage|. The entity-resolution eval set covers every entity group of the
+        collection and is read from the first-order config that declares it.
+        """
+        if config.extraction_stage is LLMExtractionViewGraphStage.ENTITY_RESOLUTION:
+            raise ValueError(
+                f"Extractor [{config.extractor_id}] is an entity-resolution "
+                f"extractor; its eval set is declared on, and read from, its parent "
+                f"first-order extractor's config."
+            )
         if config.golden_eval is None:
             raise ValueError(
                 f"Extractor [{config.extractor_id}] declares no golden_eval config, "
                 f"so it cannot be used to run a golden eval."
             )
-        return cls.for_extractor(
-            source=GoldenEvalGoogleSheetDocumentSource(
-                sheets_reader=sheets_reader,
-                state_code=config.state_code,
-                stage=LLMExtractionViewGraphStage.FIRST_ORDER,
-                source_sheet_uri=config.golden_eval.config_for_stage(
-                    LLMExtractionViewGraphStage.FIRST_ORDER
-                ).source_sheet_uri,
-            ),
-            output_schema=config.extractor_collection.output_schema,
+        source = GoldenEvalGoogleSheetDocumentSource(
+            sheets_reader=sheets_reader,
+            state_code=config.state_code,
+            stage=stage,
+            source_sheet_uri=config.golden_eval.config_for_stage(
+                stage
+            ).source_sheet_uri,
         )
+        output_schema = config.extractor_collection.output_schema
+        if stage is LLMExtractionViewGraphStage.FIRST_ORDER:
+            return cls.for_first_order_extractor(
+                source=source, output_schema=output_schema
+            )
+        if stage is LLMExtractionViewGraphStage.ENTITY_RESOLUTION:
+            return cls.for_entity_resolution_extractor(
+                source=source, extractor_collection=config.extractor_collection
+            )
+        raise ValueError(f"Unexpected stage: [{stage}]")
 
     def verify_columns(self, *, column_names: list[str]) -> None:
         """Verifies |column_names| lets every row of the sheet be read against the
@@ -223,7 +305,7 @@ class GoldenEvalDocumentReader:
 
     def load_all_documents(self) -> list[GoldenEvalDocument]:
         """Returns every golden eval document the source's sheet holds, in order,
-        having reported every problem at once rather than stopping at the first —
+        having reported every problem at once rather than stopping at the first,
         so an eval run fails before it reaches the LLM and an author fixes the
         whole eval set in one pass.
         """
@@ -255,6 +337,25 @@ class GoldenEvalDocumentReader:
             )
         self._warn_if_a_test_type_is_unrepresented(documents=documents)
         return documents
+
+    def load_all_entity_resolution_documents(
+        self,
+    ) -> list[GoldenEvalEntityResolutionDocument]:
+        """Returns every document of the entity-resolution eval set the source's
+        sheet holds, as load_all_documents reads them.
+        """
+        if self.stage is not LLMExtractionViewGraphStage.ENTITY_RESOLUTION:
+            raise ValueError(
+                f"Golden eval reader for sheet [{self.source_sheet_uri}] reads the "
+                f"[{self.stage.value}] eval set, not the "
+                f"[{LLMExtractionViewGraphStage.ENTITY_RESOLUTION.value}] one. Build the "
+                f"reader with for_entity_resolution_extractor, or call "
+                f"load_all_documents instead."
+            )
+        return [
+            assert_type(document, GoldenEvalEntityResolutionDocument)
+            for document in self.load_all_documents()
+        ]
 
     def read_document_from_row(
         self, *, row: GoogleSheetTableRow
@@ -331,7 +432,7 @@ class GoldenEvalDocumentReader:
         *, row_issues: list[GoldenEvalRowIssue], row_count: int
     ) -> list[str]:
         """Returns one rendered line per row issue, in sheet order, collapsing to a
-        single line any issue that every row of the sheet holds — a mistake
+        single line any issue that every row of the sheet holds, since a mistake
         repeated down a whole column, rendered once per row, buries everything
         else.
         """
@@ -339,11 +440,15 @@ class GoldenEvalDocumentReader:
         for row_issue in row_issues:
             matching_rows_by_cause[(row_issue.column_name, row_issue.detail)] += 1
 
-        collapsed_causes = {
-            cause
-            for cause, matching_rows in matching_rows_by_cause.items()
-            if row_count > 1 and matching_rows == row_count
-        }
+        collapsed_causes = (
+            {
+                cause
+                for cause, matching_rows in matching_rows_by_cause.items()
+                if matching_rows == row_count
+            }
+            if row_count > 1
+            else set()
+        )
 
         rendered: list[str] = []
         already_collapsed: set[tuple[str, str]] = set()

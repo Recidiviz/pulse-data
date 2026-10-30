@@ -24,6 +24,7 @@ STRING, ENUM, and FLOAT. The INTEGER and top-level FLOAT cases it does not
 declare are exercised against the minimal schema `_visits_output_schema()` builds.
 """
 import csv
+import datetime
 import re
 from typing import Any
 from unittest import TestCase
@@ -32,13 +33,20 @@ from unittest.mock import create_autospec
 import attr
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.extraction.eval.golden_eval_document import GoldenEvalDocument
+from recidiviz.documents.extraction.eval.golden_eval_document import (
+    GoldenEvalDocument,
+    GoldenEvalEntityResolutionDocument,
+)
 from recidiviz.documents.extraction.eval.golden_eval_document_parser import (
+    DOCUMENT_DATE_COLUMN_NAME,
     DOCUMENT_TEXT_COLUMN_NAME,
     EXPECTED_VALUE_COLUMN_SUFFIX,
     GOLDEN_DOCUMENT_ID_COLUMN_NAME,
     TEST_CASE_COLUMN_NAME,
+    TEST_GROUP_ID_COLUMN_NAME,
     TEST_TYPE_COLUMN_NAME,
+    GoldenEvalEntityResolutionDocumentParser,
+    expected_resolved_value_column_name,
     expected_value_column_name,
 )
 from recidiviz.documents.extraction.eval.golden_eval_document_reader import (
@@ -48,6 +56,9 @@ from recidiviz.documents.extraction.eval.golden_eval_document_reader import (
 from recidiviz.documents.extraction.eval.golden_eval_document_source import (
     GoldenEvalDocumentSourceError,
     GoldenEvalGoogleSheetDocumentSource,
+)
+from recidiviz.documents.extraction.eval.golden_eval_document_validator import (
+    GoldenEvalEntityResolutionDocumentValidator,
 )
 from recidiviz.documents.extraction.eval.golden_eval_scorer import (
     LLMDocumentExtractionGoldenEvalScorer,
@@ -77,6 +88,10 @@ from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
 )
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_entity_resolution_extractor_config,
+    patch_fake_entity_resolution_model_config_name,
+)
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
     build_fake_extractor_assignment_result_json,
     build_fake_extractor_irrelevant_result_content,
@@ -95,7 +110,9 @@ from recidiviz.utils.types import assert_type
 
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 _SOURCE_SHEET_URI = "https://docs.google.com/spreadsheets/d/abc123"
+_ER_SOURCE_SHEET_URI = "https://docs.google.com/spreadsheets/d/abc123#gid=2"
 _HAPPY_PATH_FIXTURE = "golden_eval_sheet.csv"
+_ER_HAPPY_PATH_FIXTURE = "golden_eval_entity_resolution_sheet.csv"
 
 _DISH_DUTY_ELEMENT_JSON = (
     '{"assignment_name": "Dish duty", "assignment_type": "internal", '
@@ -186,6 +203,46 @@ def _tab(*cell_dicts: dict[str, str]) -> GoogleSheetTable:
     return GoogleSheetTable(
         title=StateCode.US_XX.value,
         column_names=list(_cells()),
+        rows=_rows(*cell_dicts),
+    )
+
+
+_RESOLVED_DISH_DUTY_ELEMENT_JSON = (
+    '{"assignment_name": "Dish duty", "assignment_type": "internal", '
+    '"rate_amount": 12.5}'
+)
+_RESOLVED_DISH_DUTY_ELEMENT = {
+    "assignment_name": "Dish duty",
+    "assignment_type": "internal",
+    "rate_amount": 12.5,
+}
+
+
+def _er_cells(**overrides: str) -> dict[str, str]:
+    """Returns one entity-resolution row's cell text keyed by column: the
+    default first-order row plus the entity-resolution columns, allowing
+    passed-in overrides.
+    """
+    cells = {
+        **_cells(),
+        TEST_GROUP_ID_COLUMN_NAME: "1",
+        DOCUMENT_DATE_COLUMN_NAME: "2026-03-01",
+        expected_resolved_value_column_name("location"): "Main Kitchen",
+        expected_resolved_value_column_name(
+            "assignments"
+        ): f"[{_RESOLVED_DISH_DUTY_ELEMENT_JSON}]",
+    }
+    cells.update(overrides)
+    return cells
+
+
+def _er_tab(*cell_dicts: dict[str, str]) -> GoogleSheetTable:
+    """Returns the US_XX__ER tab holding |cell_dicts| as its data rows, numbered
+    from row 2 as the sheet's first data row.
+    """
+    return GoogleSheetTable(
+        title="US_XX__ER",
+        column_names=list(_er_cells()),
         rows=_rows(*cell_dicts),
     )
 
@@ -289,10 +346,10 @@ class GoldenEvalDocumentReaderTest(TestCase):
             stage=LLMExtractionViewGraphStage.FIRST_ORDER,
             source_sheet_uri=_SOURCE_SHEET_URI,
         )
-        self.reader = GoldenEvalDocumentReader.for_extractor(
+        self.reader = GoldenEvalDocumentReader.for_first_order_extractor(
             source=source, output_schema=self.output_schema
         )
-        self.visits_reader = GoldenEvalDocumentReader.for_extractor(
+        self.visits_reader = GoldenEvalDocumentReader.for_first_order_extractor(
             source=source, output_schema=_visits_output_schema()
         )
 
@@ -459,13 +516,7 @@ class GoldenEvalDocumentReaderTest(TestCase):
 
     def test_verify_columns_missing_expected_column_for_schema_field(self) -> None:
         with self.assertRaisesRegex(
-            ValueError,
-            re.escape(
-                f"Golden eval sheet [{_SOURCE_SHEET_URI}] cannot be read against "
-                f"the extractor's output schema:\n"
-                f"  - has no [location__expected] column, so output schema field "
-                f"[location] would have no expectation"
-            ),
+            ValueError, re.escape("has no [location__expected] column")
         ):
             self.reader.verify_columns(
                 column_names=list(_cells_without("location__expected"))
@@ -473,11 +524,7 @@ class GoldenEvalDocumentReaderTest(TestCase):
 
     def test_verify_columns_missing_metadata_column(self) -> None:
         with self.assertRaisesRegex(
-            ValueError,
-            re.escape(
-                f"  - has no [{DOCUMENT_TEXT_COLUMN_NAME}] column, which every "
-                f"golden eval sheet requires"
-            ),
+            ValueError, re.escape(f"has no [{DOCUMENT_TEXT_COLUMN_NAME}] column")
         ):
             self.reader.verify_columns(
                 column_names=list(_cells_without(DOCUMENT_TEXT_COLUMN_NAME))
@@ -485,12 +532,7 @@ class GoldenEvalDocumentReaderTest(TestCase):
 
     def test_verify_columns_stale_expected_value_column(self) -> None:
         with self.assertRaisesRegex(
-            ValueError,
-            re.escape(
-                "  - column [removed_field__expected] names no field the output "
-                "schema declares: ['assignments', 'is_relevant', 'location', "
-                "'primary_status', 'status_note']"
-            ),
+            ValueError, re.escape("column [removed_field__expected] names no field")
         ):
             self.reader.verify_columns(
                 column_names=[*_cells(), "removed_field__expected"]
@@ -1067,28 +1109,53 @@ class GoldenEvalDocumentReaderTest(TestCase):
 
     def test_from_config_builds_reader_for_the_extractor(self) -> None:
         reader = GoldenEvalDocumentReader.from_config(
-            config=self.config, sheets_reader=self.sheets_reader
+            config=self.config,
+            sheets_reader=self.sheets_reader,
+            stage=LLMExtractionViewGraphStage.FIRST_ORDER,
         )
 
         self.assertEqual(StateCode.US_XX, reader.state_code)
+        self.assertEqual(LLMExtractionViewGraphStage.FIRST_ORDER, reader.stage)
         self.assertEqual(self.output_schema, reader.parser.output_schema)
         self.assertEqual(_SOURCE_SHEET_URI, reader.source_sheet_uri)
 
     def test_from_config_without_golden_eval_raises(self) -> None:
         config = attr.evolve(self.config, golden_eval=None)
 
-        with self.assertRaisesRegex(
-            ValueError,
-            rf"^Extractor \[{re.escape(config.extractor_id)}\] declares no "
-            r"golden_eval config, so it cannot be used to run a golden eval\.$",
-        ):
-            GoldenEvalDocumentReader.from_config(
-                config=config, sheets_reader=self.sheets_reader
-            )
+        for stage in LLMExtractionViewGraphStage:
+            with self.subTest(stage=stage), self.assertRaisesRegex(
+                ValueError,
+                rf"\[{re.escape(config.extractor_id)}\] declares no golden_eval config",
+            ):
+                GoldenEvalDocumentReader.from_config(
+                    config=config, sheets_reader=self.sheets_reader, stage=stage
+                )
+
+    def test_from_config_rejects_entity_resolution_extractor(self) -> None:
+        with patch_fake_entity_resolution_model_config_name():
+            er_config = fake_entity_resolution_extractor_config("assignment")
+
+        for stage in LLMExtractionViewGraphStage:
+            with self.subTest(stage=stage), self.assertRaisesRegex(
+                ValueError,
+                rf"\[{re.escape(er_config.extractor_id)}\] is an entity-resolution "
+                r"extractor",
+            ):
+                GoldenEvalDocumentReader.from_config(
+                    config=er_config, sheets_reader=self.sheets_reader, stage=stage
+                )
 
     # ------------------------------------------------------------------
     # Reading the whole sheet
     # ------------------------------------------------------------------
+
+    def test_load_all_entity_resolution_documents_rejects_first_order_reader(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(ValueError, r"\[first_order\] eval set"):
+            self.reader.load_all_entity_resolution_documents()
+
+        self.sheets_reader.read_tab_as_table.assert_not_called()
 
     def test_load_all_documents_reads_the_configured_sheet(self) -> None:
         self.sheets_reader.read_tab_as_table.return_value = _tab(_cells())
@@ -1113,13 +1180,7 @@ class GoldenEvalDocumentReaderTest(TestCase):
         )
 
         with self.assertRaisesRegex(
-            ValueError,
-            re.escape(
-                f"Golden eval sheet [{_SOURCE_SHEET_URI}] cannot be read against "
-                f"the extractor's output schema:\n"
-                f"  - column [no_such_field__expected] names no field the output "
-                f"schema declares:"
-            ),
+            ValueError, re.escape("column [no_such_field__expected] names no field")
         ):
             self.reader.load_all_documents()
 
@@ -1301,6 +1362,366 @@ class GoldenEvalDocumentReaderTest(TestCase):
                 "row [2] column [is_relevant__expected] value [yes]: could not be "
                 "parsed as a boolean; expected true or false"
             ],
+            caught.exception.issues,
+        )
+
+
+class GoldenEvalDocumentReaderEntityResolutionTest(TestCase):
+    """Tests for GoldenEvalDocumentReader reading an entity-resolution eval set."""
+
+    def setUp(self) -> None:
+        self.config = get_first_order_llm_extractor_config(
+            StateCode.US_XX, _COLLECTION_NAME, config_module=fake_config
+        )
+        self.collection = self.config.extractor_collection
+        self.sheets_reader = create_autospec(GoogleSheetReader)
+        self.reader = GoldenEvalDocumentReader.for_entity_resolution_extractor(
+            source=GoldenEvalGoogleSheetDocumentSource(
+                sheets_reader=self.sheets_reader,
+                state_code=StateCode.US_XX,
+                stage=LLMExtractionViewGraphStage.ENTITY_RESOLUTION,
+                source_sheet_uri=_ER_SOURCE_SHEET_URI,
+            ),
+            extractor_collection=self.collection,
+        )
+
+    def _read_rows(
+        self, *cell_dicts: dict[str, str]
+    ) -> list[GoldenEvalDocumentReadResult]:
+        """Returns the results parsed from inline rows."""
+        return [
+            self.reader.read_document_from_row(row=row) for row in _rows(*cell_dicts)
+        ]
+
+    def _read_one_document(
+        self, *cell_dicts: dict[str, str]
+    ) -> GoldenEvalEntityResolutionDocument:
+        """Returns the single document parsed from one row, asserting it parsed
+        with no issues.
+        """
+        (result,) = self._read_rows(*cell_dicts)
+        self.assertEqual([], result.issues)
+        return assert_type(result.document, GoldenEvalEntityResolutionDocument)
+
+    def _read_one_row_issues(self, *cell_dicts: dict[str, str]) -> list[str]:
+        """Returns the rendered issues from reading one row, asserting it produced
+        no document.
+        """
+        (result,) = self._read_rows(*cell_dicts)
+        self.assertIsNone(result.document)
+        return [issue.rendered for issue in result.issues]
+
+    def test_read_document_from_happy_path_fixture(self) -> None:
+        column_names, rows = _load_sheet(_ER_HAPPY_PATH_FIXTURE)
+        self.reader.verify_columns(column_names=column_names)
+
+        results = [self.reader.read_document_from_row(row=row) for row in rows]
+
+        self.assertEqual([], [issue for result in results for issue in result.issues])
+        self.assertEqual(
+            [
+                ("unit_1", 1, datetime.date(2026, 3, 1)),
+                ("unit_2", 1, datetime.date(2026, 3, 15)),
+                ("sample_1", 2, datetime.date(2026, 4, 1)),
+                ("unit_3", 2, datetime.date(2026, 4, 2)),
+            ],
+            [
+                (
+                    assert_type(
+                        result.document, GoldenEvalEntityResolutionDocument
+                    ).golden_document_id,
+                    assert_type(
+                        result.document, GoldenEvalEntityResolutionDocument
+                    ).test_group_id,
+                    assert_type(
+                        result.document, GoldenEvalEntityResolutionDocument
+                    ).document_date,
+                )
+                for result in results
+            ],
+        )
+        self.assertEqual(
+            [
+                {
+                    "location": "Main Kitchen",
+                    "assignments": [dict(_RESOLVED_DISH_DUTY_ELEMENT)],
+                },
+                {"location": None, "assignments": None},
+                {
+                    "location": None,
+                    "assignments": [
+                        dict(_RESOLVED_DISH_DUTY_ELEMENT),
+                        {
+                            "assignment_name": "Laundry",
+                            "assignment_type": "internal",
+                            "rate_amount": None,
+                        },
+                    ],
+                },
+                {"location": "Main Kitchen", "assignments": []},
+            ],
+            [
+                assert_type(
+                    result.document, GoldenEvalEntityResolutionDocument
+                ).expected_resolved_values
+                for result in results
+            ],
+        )
+
+    def test_read_document_keys_first_order_issues_to_expected_columns(self) -> None:
+        self.assertEqual(
+            [
+                _one_cell_issue(
+                    column_name="primary_status__expected",
+                    value="bogus",
+                    reason=(
+                        "is not one of the values field [primary_status] declares: "
+                        "['active', 'inactive', 'other']"
+                    ),
+                )
+            ],
+            self._read_one_row_issues(_er_cells(primary_status__expected="bogus")),
+        )
+
+    def test_read_document_keys_resolved_issues_to_expected_er_columns(self) -> None:
+        self.assertEqual(
+            [
+                _one_cell_issue(
+                    column_name="assignments__expected__er",
+                    value="[]",
+                    reason=(
+                        "holds [0] element(s), but [assignments__expected] holds "
+                        "[1]."
+                    ),
+                )
+            ],
+            self._read_one_row_issues(_er_cells(assignments__expected__er="[]")),
+        )
+
+    def test_read_document_keys_resolved_scalar_issues_to_expected_er_columns(
+        self,
+    ) -> None:
+        self.assertEqual(
+            [
+                _one_cell_issue(
+                    column_name="location__expected__er",
+                    value="",
+                    reason=(
+                        "is blank, but [location__expected] holds [Kitchen]; every "
+                        "extracted mention must have a resolved form"
+                    ),
+                )
+            ],
+            self._read_one_row_issues(_er_cells(location__expected__er="")),
+        )
+
+    def test_read_document_reports_metadata_and_resolved_cell_issues_together(
+        self,
+    ) -> None:
+        self.assertEqual(
+            [
+                _one_cell_issue(
+                    column_name=TEST_GROUP_ID_COLUMN_NAME,
+                    value="zero",
+                    reason=(
+                        "is not a positive integer; test_group_id is a small "
+                        "synthetic integer shared by the rows resolved together as "
+                        "one person's documents"
+                    ),
+                ),
+                _one_cell_issue(
+                    column_name="assignments__expected__er",
+                    value="not json",
+                    reason=(
+                        "is not valid JSON (Expecting value, at position [0]); "
+                        "expected a JSON array of objects keyed by the sub-field "
+                        "names of field [assignments]"
+                    ),
+                ),
+            ],
+            self._read_one_row_issues(
+                _er_cells(test_group_id="zero", assignments__expected__er="not json")
+            ),
+        )
+
+    def test_read_document_skips_resolved_validation_when_first_order_values_invalid(
+        self,
+    ) -> None:
+        # The resolved array is also one element short, but the first-order
+        # problem is reported alone: each resolved check reads the first-order
+        # value it resolves.
+        self.assertEqual(
+            [
+                _one_cell_issue(
+                    column_name="primary_status__expected",
+                    value="bogus",
+                    reason=(
+                        "is not one of the values field [primary_status] declares: "
+                        "['active', 'inactive', 'other']"
+                    ),
+                )
+            ],
+            self._read_one_row_issues(
+                _er_cells(
+                    primary_status__expected="bogus", assignments__expected__er="[]"
+                )
+            ),
+        )
+
+    def test_read_document_ignores_annotator_columns(self) -> None:
+        document = self._read_one_document(_er_cells(notes="looks right"))
+
+        self.assertEqual("unit_1", document.golden_document_id)
+
+    def test_verify_columns_reports_first_order_and_resolved_problems_at_once(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"(?s)has no \[location__expected\] column.*"
+            r"has no \[document_date\] column",
+        ):
+            self.reader.verify_columns(
+                column_names=[
+                    name
+                    for name in _er_cells()
+                    if name not in ("location__expected", DOCUMENT_DATE_COLUMN_NAME)
+                ]
+            )
+
+    def test_from_config_builds_reader_for_the_extractor(self) -> None:
+        reader = GoldenEvalDocumentReader.from_config(
+            config=self.config,
+            sheets_reader=self.sheets_reader,
+            stage=LLMExtractionViewGraphStage.ENTITY_RESOLUTION,
+        )
+
+        self.assertEqual(StateCode.US_XX, reader.state_code)
+        self.assertEqual(LLMExtractionViewGraphStage.ENTITY_RESOLUTION, reader.stage)
+        self.assertEqual(_ER_SOURCE_SHEET_URI, reader.source_sheet_uri)
+        parser = assert_type(reader.parser, GoldenEvalEntityResolutionDocumentParser)
+        validator = assert_type(
+            reader.validator, GoldenEvalEntityResolutionDocumentValidator
+        )
+        self.assertEqual(self.collection.output_schema, parser.output_schema)
+        self.assertEqual(self.collection.resolver_fields, parser.resolver_fields)
+        self.assertEqual(
+            self.collection.output_schema,
+            validator.first_order_validator.output_schema,
+        )
+        self.assertEqual(self.collection.resolver_fields, validator.resolver_fields)
+        self.assertEqual(
+            self.collection.resolver_sub_field_names_by_array_field_name,
+            validator.resolver_sub_field_names_by_array_field_name,
+        )
+
+    def test_from_config_without_entity_resolution_sheet_raises(self) -> None:
+        config = attr.evolve(
+            self.config,
+            golden_eval=LLMDocumentExtractionGoldenEvalConfig(
+                stage_configs={
+                    LLMExtractionViewGraphStage.FIRST_ORDER: assert_type(
+                        self.config.golden_eval, LLMDocumentExtractionGoldenEvalConfig
+                    ).config_for_stage(LLMExtractionViewGraphStage.FIRST_ORDER)
+                }
+            ),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"No golden_eval\.entity_resolution block is declared",
+        ):
+            GoldenEvalDocumentReader.from_config(
+                config=config,
+                sheets_reader=self.sheets_reader,
+                stage=LLMExtractionViewGraphStage.ENTITY_RESOLUTION,
+            )
+
+    def test_reader_rejects_a_source_stage_the_parser_does_not_read(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"holds the \[first_order\] eval set, but the reader's parser",
+        ):
+            GoldenEvalDocumentReader.for_entity_resolution_extractor(
+                source=GoldenEvalGoogleSheetDocumentSource(
+                    sheets_reader=self.sheets_reader,
+                    state_code=StateCode.US_XX,
+                    stage=LLMExtractionViewGraphStage.FIRST_ORDER,
+                    source_sheet_uri=_ER_SOURCE_SHEET_URI,
+                ),
+                extractor_collection=self.collection,
+            )
+
+    def test_load_all_documents_reads_the_configured_sheet(self) -> None:
+        self.sheets_reader.read_tab_as_table.return_value = _er_tab(_er_cells())
+
+        documents = self.reader.load_all_documents()
+
+        self.sheets_reader.read_tab_as_table.assert_called_once_with(
+            sheet_uri=_ER_SOURCE_SHEET_URI
+        )
+        self.assertEqual(["unit_1"], [d.golden_document_id for d in documents])
+
+    def test_load_all_entity_resolution_documents_returns_resolved_documents(
+        self,
+    ) -> None:
+        self.sheets_reader.read_tab_as_table.return_value = _er_tab(_er_cells())
+
+        self.assertEqual(
+            GoldenEvalEntityResolutionDocument,
+            type(self.reader.load_all_entity_resolution_documents()[0]),
+        )
+
+    def test_load_all_documents_requires_tab_titled_for_entity_resolution(
+        self,
+    ) -> None:
+        self.sheets_reader.read_tab_as_table.return_value = attr.evolve(
+            _er_tab(_er_cells()), title="US_XX"
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"reads tab \[US_XX\], but it is the \[entity_resolution\] eval set",
+        ):
+            self.reader.load_all_documents()
+
+    def test_load_all_documents_reports_every_malformed_row_at_once(self) -> None:
+        self.sheets_reader.read_tab_as_table.return_value = _er_tab(
+            _er_cells(document_id="unit_1", document_date="yesterday"),
+            _er_cells(document_id="unit_2"),
+            _er_cells(document_id="unit_3", assignments__expected__er="[]"),
+        )
+
+        with self.assertRaises(GoldenEvalDocumentSourceError) as caught:
+            self.reader.load_all_documents()
+
+        self.assertEqual(
+            [
+                "row [2] column [document_date] value [yesterday]: is not a date "
+                "written as YYYY-MM-DD; ensure the cell holds plain text rather "
+                "than a formatted date",
+                "row [4] column [assignments__expected__er] value [[]]: holds [0] "
+                "element(s), but [assignments__expected] holds [1].",
+            ],
+            caught.exception.issues,
+        )
+        self.assertIn(
+            f"Found [2] problem(s) in golden eval sheet [{_ER_SOURCE_SHEET_URI}]",
+            str(caught.exception),
+        )
+
+    def test_load_all_documents_reports_duplicate_document_ids(self) -> None:
+        self.sheets_reader.read_tab_as_table.return_value = _er_tab(
+            _er_cells(document_id="unit_1"),
+            _er_cells(document_id="unit_2"),
+            _er_cells(document_id="unit_1"),
+        )
+
+        with self.assertRaises(GoldenEvalDocumentSourceError) as caught:
+            self.reader.load_all_documents()
+
+        self.assertEqual(
+            ["golden_document_id [unit_1] is reused in multiple rows [2, 4]"],
             caught.exception.issues,
         )
 

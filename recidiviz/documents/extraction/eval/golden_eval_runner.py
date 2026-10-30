@@ -61,6 +61,9 @@ from recidiviz.documents.extraction.llm_extraction_job_manager import (
 from recidiviz.documents.extraction.llm_extraction_results_persister import (
     LLMExtractionResultsPersister,
 )
+from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
+    LLMExtractionViewGraphStage,
+)
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
 )
@@ -269,7 +272,9 @@ class GoldenEvalRunner:
             else GoogleSheetReader.from_application_default_credentials()
         )
         return GoldenEvalDocumentReader.from_config(
-            config=config, sheets_reader=sheets_reader
+            config=config,
+            sheets_reader=sheets_reader,
+            stage=LLMExtractionViewGraphStage.FIRST_ORDER,
         ).load_all_documents()
 
     @staticmethod
