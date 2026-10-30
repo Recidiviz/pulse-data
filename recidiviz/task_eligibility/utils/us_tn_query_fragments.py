@@ -670,20 +670,48 @@ def offense_severity_rank_count(generation_keys: list[str]) -> int:
     return rank_counts.pop()
 
 
+_US_TN_VIOLENT_INFRACTION_TYPES_STR = list_to_query_string(
+    CLASSIFICATION_2026_VIOLENT_INFRACTION_CODES,
+    quoted=True,
+    single_quote=True,
+)
+
+# Condition, over incarceration incident columns, selecting violent incidents. Only
+# Class A incidents can be violent: new Class B/C incidents are always marked
+# non-violent, and violent Class B/C incidents are not scored retroactively.
+US_TN_VIOLENT_CLASS_A_INCIDENT_CONDITION = f"""(
+    COALESCE(infraction_type_raw_text IN ({_US_TN_VIOLENT_INFRACTION_TYPES_STR}), FALSE)
+    AND incident_class = 'A'
+)"""
+
+# WHERE condition, over incarceration incident columns, selecting the incidents TN's
+# classification policy counts at all: guilty dispositions that aren't verbal warnings.
+US_TN_CLASSIFICATION_INCIDENTS_WHERE_CLAUSE = """disposition = 'GU'
+        AND incident_details NOT LIKE "%VERBAL WARNING%"
+        AND incident_class IS NOT NULL
+        AND incident_date IS NOT NULL"""
+
+# QUALIFY condition keeping only the most severe incident per (person, date), so a
+# Class B incident on the same date as a Class A incident never counts.
+US_TN_CLASSIFICATION_INCIDENTS_QUALIFY_CLAUSE = f"""ROW_NUMBER() OVER (
+        PARTITION BY person_id, incident_date
+        ORDER BY
+            CASE WHEN {US_TN_VIOLENT_CLASS_A_INCIDENT_CONDITION} THEN 1 ELSE 0 END DESC,
+            incident_class,
+            injury_level DESC,
+            assault_score DESC,
+            -- Tiebreakers for determinism only.
+            infraction_type_raw_text,
+            incarceration_incident_id
+    ) = 1"""
+
+
 def tn_classification_policy_2026_incidents() -> str:
+    """Returns a SQL subquery of every TN incarceration incident that passes
+    US_TN_CLASSIFICATION_INCIDENTS_WHERE_CLAUSE, flagged with is_violent. Unlike the
+    classification incidents view, it keeps every incident on a date rather than only
+    the most severe.
     """
-    Returns a SQL CTE that retrieves TN incarceration incidents with relevant metadata.
-
-    Incidents are prioritized to later keep only the most severe incident per person per date.
-
-    Returns:
-        str: SQL CTE string
-    """
-    violent_infraction_types_str = list_to_query_string(
-        CLASSIFICATION_2026_VIOLENT_INFRACTION_CODES,
-        quoted=True,
-        single_quote=True,
-    )
     return f"""(
         SELECT
             person_id,
@@ -692,40 +720,8 @@ def tn_classification_policy_2026_incidents() -> str:
             incident_date,
             incident_class,  -- Class: A, B, or C
             infraction_type_raw_text,
-            -- Flag whether incident is violent based on the infraction type
-            -- Mark *all* Class B/C incidents as non-violent, because new Class B/C incidents
-            -- will always be marked as non-violent, and there is no retroactive scoring for violent
-            -- Class B/C incidents.
-            COALESCE(infraction_type_raw_text IN (
-                {violent_infraction_types_str}
-                ), FALSE) AND incident_class = 'A' AS is_violent,
-            -- Rank incidents by severity within each (person, date), for deduplication.
-            -- Lower rank = more severe.
-            ROW_NUMBER() OVER (
-                PARTITION BY person_id, incident_date
-                ORDER BY
-                    -- Prioritize Class A violent incidents
-                    CASE WHEN
-                        COALESCE(infraction_type_raw_text IN (
-                            {violent_infraction_types_str}
-                        ), FALSE) AND incident_class = 'A'
-                        THEN 1 ELSE 0
-                        END DESC,
-                    -- Then prioritize incident class (A, B, C)
-                    incident_class,
-                    injury_level DESC,
-                    assault_score DESC,
-                    -- Then order by infraction type, just to make it more deterministic
-                    infraction_type_raw_text,
-                    -- Then order by incident ID, which is arbitrary but ensures determinism
-                    incarceration_incident_id
-            ) AS severity_rank
+            {US_TN_VIOLENT_CLASS_A_INCIDENT_CONDITION} AS is_violent,
         FROM `{{project_id}}.analyst_data.us_tn_incarceration_incidents_preprocessed_materialized`
         WHERE state_code = "US_TN"
-            -- Only include guilty dispositions
-            AND disposition = 'GU'
-            -- Exclude verbal warnings
-            AND incident_details NOT LIKE "%VERBAL WARNING%"
-            AND incident_class IS NOT NULL
-            AND incident_date IS NOT NULL
+            AND {US_TN_CLASSIFICATION_INCIDENTS_WHERE_CLAUSE}
     )"""
