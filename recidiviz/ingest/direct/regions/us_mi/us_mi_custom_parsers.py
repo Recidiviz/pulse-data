@@ -358,6 +358,20 @@ def parse_class_iii(offense_codes: str) -> str:
     return "False"
 
 
+def parse_misconduct_class(offense_codes: str) -> Optional[str]:
+    """Returns the most serious misconduct class among the offense codes, as "I", "II"
+    or "III". For example, "013@@421" (one Class I and one Class II offense) returns
+    "I". Returns None when no offense code has a class.
+    """
+    if parse_class_i(offense_codes) == "True":
+        return "I"
+    if parse_class_ii(offense_codes) == "True":
+        return "II"
+    if parse_class_iii(offense_codes) == "True":
+        return "III"
+    return None
+
+
 def parse_incarceration_incident_is_violent(offense_codes: str) -> bool:
     """Returns whether MI's 2026 classification policy treats an incident as violent,
     which requires a Class I or II incident with at least one offense code whose last
