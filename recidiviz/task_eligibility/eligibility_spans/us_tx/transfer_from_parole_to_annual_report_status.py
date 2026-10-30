@@ -34,6 +34,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     case_type_eligible_for_ars_ers,
     no_warrant_with_sustained_violation_within_2_years,
+    not_medically_recommended_intensive_supervision,
     not_supervision_within_6_months_of_release_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -57,6 +58,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_warrant_with_sustained_violation_within_2_years.VIEW_BUILDER,
         not_supervision_within_6_months_of_release_date.VIEW_BUILDER,
         case_type_eligible_for_ars_ers.VIEW_BUILDER,
+        not_medically_recommended_intensive_supervision.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
     policy_start_date=date(2025, 7, 1),
