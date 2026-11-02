@@ -45,6 +45,13 @@ explore: us_az_raw_data_template {
     view_label: "us_az_LOOKUPS"
   }
 
+  join: us_az_AZ_DOC_GANG_AFFILIATION {
+    sql_on: ${us_az_PERSON.PERSON_ID} = ${us_az_AZ_DOC_GANG_AFFILIATION.PERSON_ID};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_az_AZ_DOC_GANG_AFFILIATION"
+  }
+
   join: us_az_MEA_PROFILES {
     sql_on: ${us_az_PERSON.PERSON_ID} = ${us_az_MEA_PROFILES.USERID};;
     type: full_outer

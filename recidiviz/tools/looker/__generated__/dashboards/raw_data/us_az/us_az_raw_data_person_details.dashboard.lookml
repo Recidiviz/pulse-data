@@ -341,6 +341,51 @@
     width: 24
     height: 6
 
+  - name: AZ_DOC_GANG_AFFILIATION
+    title: AZ_DOC_GANG_AFFILIATION
+    explore: us_az_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_az_AZ_DOC_GANG_AFFILIATION.primary_key,
+      us_az_AZ_DOC_GANG_AFFILIATION.GANG_AFF_ID,
+      us_az_AZ_DOC_GANG_AFFILIATION.PERSON_ID,
+      us_az_AZ_DOC_GANG_AFFILIATION.GANG_ID,
+      us_az_AZ_DOC_GANG_AFFILIATION.AFFILIATION_ID,
+      us_az_AZ_DOC_GANG_AFFILIATION.AFFILIATION_TYPE_ID,
+      us_az_AZ_DOC_GANG_AFFILIATION.STG_ID,
+      us_az_AZ_DOC_GANG_AFFILIATION.STG_AFFILIATION_ID,
+      us_az_AZ_DOC_GANG_AFFILIATION.STG_AFFILIATION_TYPE_ID,
+      us_az_AZ_DOC_GANG_AFFILIATION.NICKNAME,
+      us_az_AZ_DOC_GANG_AFFILIATION.EVER_MEMBER_GANG,
+      us_az_AZ_DOC_GANG_AFFILIATION.MEMBER_STREET_OR_DOC,
+      us_az_AZ_DOC_GANG_AFFILIATION.SERVED_SENTENCE_DOC,
+      us_az_AZ_DOC_GANG_AFFILIATION.ACTIVE_MEMBER,
+      us_az_AZ_DOC_GANG_AFFILIATION.TATTOOS,
+      us_az_AZ_DOC_GANG_AFFILIATION.STG_DASHBOARD_FLAG,
+      us_az_AZ_DOC_GANG_AFFILIATION.ADDITIONAL_INFO,
+      us_az_AZ_DOC_GANG_AFFILIATION.CREATE_USERID,
+      us_az_AZ_DOC_GANG_AFFILIATION.CREATE_DTM__raw,
+      us_az_AZ_DOC_GANG_AFFILIATION.UPDT_USERID,
+      us_az_AZ_DOC_GANG_AFFILIATION.UPDT_DTM__raw,
+      us_az_AZ_DOC_GANG_AFFILIATION.ACTIVE_FLAG,
+      us_az_AZ_DOC_GANG_AFFILIATION.CHANGE_ID,
+      us_az_AZ_DOC_GANG_AFFILIATION.ENROLLEMENT_DECISION,
+      us_az_AZ_DOC_GANG_AFFILIATION.APPROVEMENT_DATE__raw,
+      us_az_AZ_DOC_GANG_AFFILIATION.APPROVED_BY,
+      us_az_AZ_DOC_GANG_AFFILIATION.ENROLLEMENT_REQ_SUBMITTED,
+      us_az_AZ_DOC_GANG_AFFILIATION.file_id,
+      us_az_AZ_DOC_GANG_AFFILIATION.is_deleted]
+    sorts: [us_az_AZ_DOC_GANG_AFFILIATION.CREATE_DTM__raw]
+    note_display: hover
+    note_text: "Contains one row per recorded gang or Security Threat Group (STG) affiliation for a person, including whether they are an active member and the status of any STG enrollment decision. This file is sent as a full historical export nightly."
+    listen: 
+      View Type: us_az_PERSON.view_type
+      US_AZ_PERSON_ID: us_az_PERSON.PERSON_ID
+    row: 36
+    col: 0
+    width: 24
+    height: 6
+
   - name: MEA_PROFILES
     title: MEA_PROFILES
     explore: us_az_raw_data
@@ -372,7 +417,7 @@
     listen: 
       View Type: us_az_PERSON.view_type
       US_AZ_PERSON_ID: us_az_PERSON.PERSON_ID
-    row: 36
+    row: 42
     col: 0
     width: 24
     height: 6
@@ -397,7 +442,7 @@
     listen: 
       View Type: us_az_PERSON.view_type
       US_AZ_PERSON_ID: us_az_PERSON.PERSON_ID
-    row: 42
+    row: 48
     col: 0
     width: 24
     height: 6
@@ -420,7 +465,7 @@
     listen: 
       View Type: us_az_PERSON.view_type
       US_AZ_PERSON_ID: us_az_PERSON.PERSON_ID
-    row: 48
+    row: 54
     col: 0
     width: 24
     height: 6
