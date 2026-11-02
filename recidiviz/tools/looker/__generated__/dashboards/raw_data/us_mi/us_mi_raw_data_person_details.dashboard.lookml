@@ -738,7 +738,7 @@
       us_mi_COMS_Case_Managers.Case_Manager_Id,
       us_mi_COMS_Case_Managers.Supervision_Status_Id,
       us_mi_COMS_Case_Managers.Offender_Number,
-      us_mi_COMS_Case_Managers.Case_Manager_Omnni_Employee_Id,
+      us_mi_COMS_Case_Managers.COMS_Case_Mgmt_Staff_Id,
       us_mi_COMS_Case_Managers.Start_Date__raw,
       us_mi_COMS_Case_Managers.End_Date__raw,
       us_mi_COMS_Case_Managers.Entered_Date__raw,
@@ -746,13 +746,41 @@
       us_mi_COMS_Case_Managers.is_deleted]
     sorts: [us_mi_COMS_Case_Managers.Start_Date__raw]
     note_display: hover
-    note_text: "This table includes data from the COMS system about the assignment of supervision agents to JII on supervision.  This table is active starting 8/14/2023 and should only hold supervision assignment information that was relevant from 8/14/2023 onwards."
+    note_text: "This table includes data from the COMS system about the assignment of supervision agents and prison case managers to JII. Staff are identified by their COMS staff id, which links to COMS_dm_Staff. MI started sending this version of the table with the 2026-10-28 transfer; earlier transfers, which identify staff by OMNI employee id, live in COMS_Case_Managers_LEGACY."
     listen: 
       View Type: us_mi_ADH_OFFENDER.view_type
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
     row: 96
+    col: 0
+    width: 24
+    height: 6
+
+  - name: COMS_Case_Managers_LEGACY
+    title: COMS_Case_Managers_LEGACY
+    explore: us_mi_raw_data
+    model: "@{model_name}"
+    type: looker_grid
+    fields: [us_mi_COMS_Case_Managers_LEGACY.primary_key,
+      us_mi_COMS_Case_Managers_LEGACY.Case_Manager_Id,
+      us_mi_COMS_Case_Managers_LEGACY.Supervision_Status_Id,
+      us_mi_COMS_Case_Managers_LEGACY.Offender_Number,
+      us_mi_COMS_Case_Managers_LEGACY.Case_Manager_Omnni_Employee_Id,
+      us_mi_COMS_Case_Managers_LEGACY.Start_Date__raw,
+      us_mi_COMS_Case_Managers_LEGACY.End_Date__raw,
+      us_mi_COMS_Case_Managers_LEGACY.Entered_Date__raw,
+      us_mi_COMS_Case_Managers_LEGACY.file_id,
+      us_mi_COMS_Case_Managers_LEGACY.is_deleted]
+    sorts: [us_mi_COMS_Case_Managers_LEGACY.Start_Date__raw]
+    note_display: hover
+    note_text: "This table includes data from the COMS system about the assignment of supervision agents to JII on supervision.   This table is active starting 8/14/2023 and ending 2026-10-28 and should only hold supervision assignment information that was relevant within that tiem period. This version of the table identifies staff by OMNI employee id. Starting with the 2026-10-28 transfer, MI sends this table with COMS staff ids instead, under the COMS_Case_Managers file tag."
+    listen: 
+      View Type: us_mi_ADH_OFFENDER.view_type
+      US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
+      US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
+      US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
+    row: 102
     col: 0
     width: 24
     height: 6
@@ -778,7 +806,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 102
+    row: 108
     col: 0
     width: 24
     height: 6
@@ -818,7 +846,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 108
+    row: 114
     col: 0
     width: 24
     height: 6
@@ -848,7 +876,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 114
+    row: 120
     col: 0
     width: 24
     height: 6
@@ -880,7 +908,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 120
+    row: 126
     col: 0
     width: 24
     height: 6
@@ -911,7 +939,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 126
+    row: 132
     col: 0
     width: 24
     height: 6
@@ -945,7 +973,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 132
+    row: 138
     col: 0
     width: 24
     height: 6
@@ -975,7 +1003,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 138
+    row: 144
     col: 0
     width: 24
     height: 6
@@ -1003,7 +1031,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 144
+    row: 150
     col: 0
     width: 24
     height: 6
@@ -1031,7 +1059,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 150
+    row: 156
     col: 0
     width: 24
     height: 6
@@ -1059,7 +1087,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 156
+    row: 162
     col: 0
     width: 24
     height: 6
@@ -1091,7 +1119,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 162
+    row: 168
     col: 0
     width: 24
     height: 6
@@ -1121,7 +1149,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 168
+    row: 174
     col: 0
     width: 24
     height: 6
@@ -1150,7 +1178,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 174
+    row: 180
     col: 0
     width: 24
     height: 6
@@ -1175,7 +1203,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 180
+    row: 186
     col: 0
     width: 24
     height: 6
@@ -1204,7 +1232,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 186
+    row: 192
     col: 0
     width: 24
     height: 6
@@ -1229,7 +1257,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 192
+    row: 198
     col: 0
     width: 24
     height: 6
@@ -1268,7 +1296,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 198
+    row: 204
     col: 0
     width: 24
     height: 6
@@ -1300,7 +1328,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 204
+    row: 210
     col: 0
     width: 24
     height: 6
@@ -1329,7 +1357,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 210
+    row: 216
     col: 0
     width: 24
     height: 6
@@ -1361,7 +1389,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 216
+    row: 222
     col: 0
     width: 24
     height: 6
@@ -1392,7 +1420,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 222
+    row: 228
     col: 0
     width: 24
     height: 6
@@ -1434,7 +1462,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 228
+    row: 234
     col: 0
     width: 24
     height: 6
@@ -1464,7 +1492,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 234
+    row: 240
     col: 0
     width: 24
     height: 6
@@ -1487,7 +1515,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 240
+    row: 246
     col: 0
     width: 24
     height: 6
@@ -1514,7 +1542,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 246
+    row: 252
     col: 0
     width: 24
     height: 6
@@ -1541,7 +1569,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 252
+    row: 258
     col: 0
     width: 24
     height: 6
@@ -1617,7 +1645,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 258
+    row: 264
     col: 0
     width: 24
     height: 6
@@ -1645,7 +1673,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 264
+    row: 270
     col: 0
     width: 24
     height: 6
@@ -1673,7 +1701,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 270
+    row: 276
     col: 0
     width: 24
     height: 6
@@ -1705,7 +1733,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 276
+    row: 282
     col: 0
     width: 24
     height: 6
@@ -1734,7 +1762,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 282
+    row: 288
     col: 0
     width: 24
     height: 6
@@ -1762,7 +1790,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 288
+    row: 294
     col: 0
     width: 24
     height: 6
@@ -1789,7 +1817,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 294
+    row: 300
     col: 0
     width: 24
     height: 6
@@ -1820,7 +1848,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 300
+    row: 306
     col: 0
     width: 24
     height: 6
@@ -1850,7 +1878,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 306
+    row: 312
     col: 0
     width: 24
     height: 6
@@ -1893,7 +1921,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 312
+    row: 318
     col: 0
     width: 24
     height: 6
@@ -1943,7 +1971,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 318
+    row: 324
     col: 0
     width: 24
     height: 6
@@ -1985,7 +2013,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 324
+    row: 330
     col: 0
     width: 24
     height: 6
@@ -2047,7 +2075,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 330
+    row: 336
     col: 0
     width: 24
     height: 6
@@ -2099,7 +2127,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 336
+    row: 342
     col: 0
     width: 24
     height: 6
@@ -2138,7 +2166,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 342
+    row: 348
     col: 0
     width: 24
     height: 6
@@ -2359,7 +2387,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 348
+    row: 354
     col: 0
     width: 24
     height: 6
@@ -2443,7 +2471,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 354
+    row: 360
     col: 0
     width: 24
     height: 6
@@ -2469,7 +2497,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 360
+    row: 366
     col: 0
     width: 24
     height: 6
@@ -2521,7 +2549,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 366
+    row: 372
     col: 0
     width: 24
     height: 6
@@ -2578,7 +2606,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 372
+    row: 378
     col: 0
     width: 24
     height: 6
@@ -2613,7 +2641,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 378
+    row: 384
     col: 0
     width: 24
     height: 6
@@ -2664,7 +2692,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 384
+    row: 390
     col: 0
     width: 24
     height: 6
@@ -2706,7 +2734,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 390
+    row: 396
     col: 0
     width: 24
     height: 6
@@ -2739,7 +2767,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 396
+    row: 402
     col: 0
     width: 24
     height: 6
@@ -2779,7 +2807,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 402
+    row: 408
     col: 0
     width: 24
     height: 6
@@ -2818,7 +2846,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 408
+    row: 414
     col: 0
     width: 24
     height: 6
@@ -2853,7 +2881,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 414
+    row: 420
     col: 0
     width: 24
     height: 6
@@ -2881,7 +2909,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 420
+    row: 426
     col: 0
     width: 24
     height: 6
@@ -2911,7 +2939,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 426
+    row: 432
     col: 0
     width: 24
     height: 6
@@ -2969,7 +2997,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 432
+    row: 438
     col: 0
     width: 24
     height: 6
@@ -3024,7 +3052,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 438
+    row: 444
     col: 0
     width: 24
     height: 6
@@ -3094,7 +3122,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 444
+    row: 450
     col: 0
     width: 24
     height: 6
@@ -3132,7 +3160,7 @@
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
       US_MI_DOC: us_mi_ADH_OFFENDER.offender_number
       US_MI_DOC_BOOK: us_mi_ADH_OFFENDER_BOOKING.offender_booking_id
-    row: 450
+    row: 456
     col: 0
     width: 24
     height: 6

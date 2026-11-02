@@ -174,7 +174,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
     StateCode.US_MI: {
         "ADH_OFFENDER_DESIGNATION": ["last_update_node"],
         "ADH_OFFENDER_SENTENCE": ["last_update_date"],
-        "COMS_Case_Managers": ["End_Date", "Entered_Date", "Start_Date"],
+        "COMS_Case_Managers_LEGACY": ["End_Date", "Entered_Date", "Start_Date"],
         "COMS_Modifiers": ["End_Date", "Entered_Date", "Start_Date"],
         "COMS_Specialties": ["End_Date", "Entered_Date", "Start_Date"],
     },
@@ -555,7 +555,7 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
             "Entered_Date",
             "Incident_Date",
         ],
-        "COMS_dm_Staff_Supervisors": ["End_Date", "Entered_Date", "Start_Date"],
+        "COMS_dm_Staff_Supervisors_LEGACY": ["End_Date", "Entered_Date", "Start_Date"],
         "RECIDIVIZ_REFERENCE_mclxwalk": ["last_update_date"],
     },
     StateCode.US_NE: {

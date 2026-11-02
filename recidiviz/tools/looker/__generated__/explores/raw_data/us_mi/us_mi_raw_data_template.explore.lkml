@@ -122,6 +122,13 @@ explore: us_mi_raw_data_template {
     view_label: "us_mi_COMS_Case_Managers"
   }
 
+  join: us_mi_COMS_Case_Managers_LEGACY {
+    sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Case_Managers_LEGACY.Offender_Number};;
+    type: full_outer
+    relationship: many_to_many
+    view_label: "us_mi_COMS_Case_Managers_LEGACY"
+  }
+
   join: us_mi_COMS_Case_Notes {
     sql_on: ${us_mi_ADH_OFFENDER.offender_number} = ${us_mi_COMS_Case_Notes.Offender_Number};;
     type: full_outer

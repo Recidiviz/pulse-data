@@ -82,7 +82,7 @@ custom:
 
   US_MI:
     file_tags:
-      COMS_Case_Managers:
+      COMS_Case_Managers_LEGACY:
         date_range_exclusions:
           - datetime_start_inclusive: "2023-08-22T00:00:00Z"
             datetime_end_exclusive: "2025-08-28T00:00:00Z"
@@ -114,7 +114,7 @@ custom:
               "MI changed the data transfer for this table on 2026-10-28 to include
               more supervision statuses, so the row count jump is expected. Excluding imports before
               the change from the median."
-      COMS_dm_Staff_Supervisors:
+      COMS_dm_Staff_Supervisors_LEGACY:
         date_range_exclusions:
           - datetime_start_inclusive: "2026-07-01T00:00:00Z"
             datetime_end_exclusive: "2026-10-26T00:00:00Z"

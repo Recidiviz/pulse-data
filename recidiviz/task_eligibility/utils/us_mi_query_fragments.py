@@ -797,7 +797,7 @@ def secondary_officer_dockets_cte() -> str:
                            JSON_EXTRACT_SCALAR(s.full_name, "$.surname")))
                     ORDER BY Case_Manager_Omnni_Employee_Id
                 ) AS metadata_officers
-            FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Case_Managers_latest` cm
+            FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Case_Managers_LEGACY_latest` cm
             LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` ON Offender_Number = external_id AND id_type = 'US_MI_DOC'
             LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Supervision_Statuses_latest` ss USING(Supervision_Status_Id, Offender_Number)
             LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` sei ON Case_Manager_Omnni_Employee_Id = sei.external_id AND sei.id_type = 'US_MI_OMNI_USER'
