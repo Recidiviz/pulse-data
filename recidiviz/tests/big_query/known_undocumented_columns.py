@@ -1304,15 +1304,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "session_id",
         "state_code",
     ],
-    BigQueryAddress.from_str(
-        "analyst_data.workflows_live_completion_event_types_by_state"
-    ): [
-        "completion_event_type",
-        "first_access_date",
-        "is_fully_launched",
-        "launch_date",
-        "state_code",
-    ],
     BigQueryAddress.from_str("analyst_data.workflows_person_events"): [
         "person_id",
         "start_date",
@@ -2515,15 +2506,12 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "eligible_for_over_7_days",
         "has_mandatory_due_date",
         "ineligible_criteria",
-        "is_after_full_state_launch",
         "is_almost_eligible",
         "is_eligible",
         "is_eligible_or_almost_eligible",
         "is_jii_decarceral_transition",
         "system_type",
         "task_type",
-        "task_type_is_fully_launched",
-        "task_type_is_live",
     ],
     BigQueryAddress.from_str(
         "observations__officer_span.insights_supervision_officer_caseload_category_session"
@@ -2729,14 +2717,11 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "eligible_for_over_7_days",
         "has_mandatory_due_date",
         "ineligible_criteria",
-        "is_after_full_state_launch",
         "is_almost_eligible",
         "is_eligible",
         "is_jii_decarceral_transition",
         "system_type",
         "task_type",
-        "task_type_is_fully_launched",
-        "task_type_is_live",
     ],
     BigQueryAddress.from_str("observations__person_event.task_eligibility_start"): [
         "after_almost_eligible",
@@ -4000,17 +3985,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
         "location_type",
         "region",
         "region_id",
-        "state_code",
-    ],
-    BigQueryAddress.from_str("reference_views.workflows_opportunity_configs"): [
-        "completion_event_type",
-        "experiment_id",
-        "export_collection_name",
-        "opportunity_record_view_name",
-        "opportunity_type",
-        "opportunity_type_path_str",
-        "person_record_type",
-        "source_filename",
         "state_code",
     ],
     BigQueryAddress.from_str(
