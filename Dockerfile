@@ -25,6 +25,12 @@ RUN apt-get update -y && apt install -y \
 # Install dependencies for pymssql 
 RUN apt-get update -y && \
     apt-get install -y freetds-dev gcc g++ unixodbc-dev
+# Upgrade libbrotli explicitly: the apt layers above are served from the BuildKit
+# registry cache, so a rebuild alone does not pick up newer Ubuntu package versions
+# (CVE-2026-111497).
+RUN apt-get update -y && \
+    apt-get install -y --only-upgrade libbrotli1 libbrotli-dev && \
+    rm -rf /var/lib/apt/lists/*
 RUN locale-gen en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 ENV LC_CTYPE=en_US.UTF-8
