@@ -63,6 +63,11 @@ output:
             $enum_mapping:
               $raw_text: DorOffenseTypeDesc
               $custom_parser: us_ix_custom_enum_parsers.map_incident_type
+          is_violent:
+            $custom:
+              $function: us_ix_custom_parsers.parse_dor_is_violent
+              $args:
+                offense_code: DorOffenseCode
           incident_details: IncidentDetails
           incident_metadata:
             $json_dict:

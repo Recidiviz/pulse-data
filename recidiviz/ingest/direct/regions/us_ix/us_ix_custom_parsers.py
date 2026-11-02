@@ -288,3 +288,16 @@ def parse_dor_offense_class(offense_code: str) -> Optional[str]:
     if not offense_code:
         return None
     return offense_code[0]
+
+
+def parse_dor_is_violent(offense_code: str) -> Optional[bool]:
+    """Returns whether the DOR with offense_code counts as violent, which is whether
+    the code is Class A ("A23" is violent, "B32" is not). Returns None when the DOR has
+    no offense code.
+    """
+    # TODO(OBT-55819): Class A includes non-violent offenses like drug possession and
+    # leaves out the Violence 2 and 3 codes in Classes B and C.
+    offense_class = parse_dor_offense_class(offense_code)
+    if offense_class is None:
+        return None
+    return offense_class == "A"
