@@ -1421,17 +1421,17 @@
   resolved "https://registry.yarnpkg.com/@ctrl/tinycolor/-/tinycolor-3.6.1.tgz#b6c75a56a1947cc916ea058772d666a2c8932f31"
   integrity sha512-SITSV6aIXsuVNV3f3O0f2n/cgyEDWoSqtZMYiAmcsYHydcKrOz3gUxB/iXd/Qf08+IZX4KpgNbvUdMBmWz+kcA==
 
-"@dagrejs/dagre@^3.1.1":
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/@dagrejs/dagre/-/dagre-3.1.1.tgz#06de3070d584886b8820aaceeefc45a553cf2b97"
-  integrity sha512-zroZB1dFOFiGgv4Xcrn1DckB1o4aOikPqD2NDQPV0WM//CXGcS6xiD0rNkqHmw6FEg4tabt4nxPLwgCWT+Vb2A==
+"@dagrejs/dagre@^3.1.3":
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/@dagrejs/dagre/-/dagre-3.1.3.tgz#6196d666e9dd380991226e593133c327ed8dfc9b"
+  integrity sha512-X4aUTwOReZvthaZWOVHqlJ52/ZdhZFEM4+Lh/uR4XooUSLE6p71bcy7MPGzYnNUcNh+nj+i/qJQpCMIdQnSmrg==
   dependencies:
-    "@dagrejs/graphlib" "4.0.5"
+    "@dagrejs/graphlib" "4.0.6"
 
-"@dagrejs/graphlib@4.0.5":
-  version "4.0.5"
-  resolved "https://registry.yarnpkg.com/@dagrejs/graphlib/-/graphlib-4.0.5.tgz#1ae7a93a4640a9e50117439d23327e27d6b698d3"
-  integrity sha512-7xrBTqIts3o+PMUZX97wSc+7TUbW+/rULzGNCTP6yooNVDXbzw4Wutg/H/xOutTB/c/k0YqOAavgPh4/Zk9PFA==
+"@dagrejs/graphlib@4.0.6":
+  version "4.0.6"
+  resolved "https://registry.yarnpkg.com/@dagrejs/graphlib/-/graphlib-4.0.6.tgz#f7019785a8e199ab0acb23b87c271bd835e4d151"
+  integrity sha512-Hjv7hbfmSBMP4nVXMFt4gusqWWHghQF0qNT4V5KHo4Jatvd+2L5VHKFnnIjXVuDnaHIRz7ZuHSnlf0RuZkOwWA==
 
 "@emotion/cache@^10.0.27":
   version "10.0.29"
