@@ -5,8 +5,8 @@ manifest_language: 1.0.0
 input_columns:
   BDGNO: STRING
   LOC_ACRONYM: STRING
-  start_date: STRING
-  end_date: STRING
+  start_date: DATETIME
+  end_date: DATETIME
   SEQ: INTEGER
 unused_columns: []
 output:
