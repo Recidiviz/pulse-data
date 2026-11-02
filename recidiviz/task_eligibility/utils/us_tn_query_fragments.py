@@ -564,6 +564,12 @@ _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP = {
 }
 
 
+# CAF assessments before this date answer the offense severity question on an older
+# scale (values 0, 1, 2, 3, 4, 6) that _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP
+# does not describe, so they are not read.
+_US_TN_CURRENT_CAF_SCALE_START_DATE = "1999-01-01"
+
+
 def _build_offense_severity_lookup_cte() -> str:
     """
     Builds a lookup CTE from _US_TN_CLASSIFICATION_OFFENSE_SEVERITY_RAW_SCORE_MAP that
@@ -627,6 +633,7 @@ def latest_caf_score_cte() -> str:
         WHERE
             asmt.assessment_type IN ('CAF', 'DCAF', 'RCAF')
             AND state_code = 'US_TN'
+            AND asmt.assessment_date >= '{_US_TN_CURRENT_CAF_SCALE_START_DATE}'
             -- Ignore "dummy" 0 scores, used for placement to Max custody
             AND (
                 CAST(NULLIF(JSON_EXTRACT_SCALAR(asmt.assessment_metadata,'$.CAFSCORE'), '') AS INT64) != 0
