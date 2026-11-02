@@ -83,17 +83,6 @@ This document provides detailed architecture diagrams for the SFTPGo deployment 
 │  │  │  │    (creates NEG: sftpgo-admin-neg-l7)                     │   │ │  │
 │  │  │  └───────────────────────────────────────────────────────────┘   │ │  │
 │  │  └──────────────────────────────────────────────────────────────────┘ │  │
-│  │                                                                       │  │
-│  │  ┌──────────────────────────────────────────────────────────────────┐ │  │
-│  │  │                 Namespace: cert-manager                          │ │  │
-│  │  │                                                                  │ │  │
-│  │  │  cert-manager Pod                                                │ │  │
-│  │  │  • Watches Certificate resources                                 │ │  │
-│  │  │  • Requests certs from Let's Encrypt                             │ │  │
-│  │  │  • DNS-01 challenge via Cloud DNS                                │ │  │
-│  │  │  • Workload Identity: cert-manager-dns01@PROJECT.iam             │ │  │
-│  │  │  • Stores certs in Secret: sftpgo-admin-tls                      │ │  │
-│  │  └──────────────────────────────────────────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
@@ -109,6 +98,7 @@ This document provides detailed architecture diagrams for the SFTPGo deployment 
 │  │              (sftpgo-admin-us-xx.recidiviz.org)                      │   │
 │  │                                                                      │   │
 │  │  A Record: sftpgo-admin-us-xx.recidiviz.org → 203.0.113.51           │   │
+│  │  CNAME Record: Certificate Manager DNS authorization                 │   │
 │  │  Delegated from parent domain via NS records                         │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
@@ -118,7 +108,7 @@ This document provides detailed architecture diagrams for the SFTPGo deployment 
 │                          Global/Project Resources                            │
 │                         (Control Plane Only)                                 │
 │                                                                              │
-│  • Service Account: cert-manager-dns01 (DNS admin permissions)               │
+│  • Certificate Manager: sftpgo-admin-cert (Google-managed, regional)         │
 │  • IAM Bindings: Workload Identity, GCS permissions                          │
 │  • Secret Manager: sftpgo_admin_password, sftpgo_us-xx_password              │
 │  • DNS Resolution: Anycast (routes to nearest edge, then regional LB)        │
@@ -210,8 +200,8 @@ This document provides detailed architecture diagrams for the SFTPGo deployment 
   ┌─────────────────────────────────────────────┐
   │  Regional HTTPS Proxy                       │
   │  • Name: sftpgo-https-proxy-regional        │
-  │  • SSL Certificate:                         │
-  │    sftpgo-admin-cert-regional-TIMESTAMP     │
+  │  • Certificate Manager certificate:         │
+  │    sftpgo-admin-cert                        │
   │  • TLS Termination happens here             │
   │  • URL Map: sftpgo-url-map-regional         │
   └─────────────────────────────────────────────┘
@@ -374,109 +364,41 @@ This document provides detailed architecture diagrams for the SFTPGo deployment 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Certificate Issuance Flow (DNS-01 Challenge)                                 │
+│ Certificate Issuance Flow (Certificate Manager DNS Authorization)            │
 └─────────────────────────────────────────────────────────────────────────────┘
 
   ┌─────────────────────────────────────────────┐
   │  Terraform Apply                            │
-  │  • Creates Certificate resource             │
-  │  • Creates ClusterIssuer (Let's Encrypt)    │
+  │  • Enables certificatemanager API           │
+  │  • Creates DNS authorization                │
+  │    sftpgo-admin-dns-auth                    │
   └─────────────────────────────────────────────┘
        │
-       │ 1. Certificate resource created
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  cert-manager (Kubernetes Operator)         │
-  │  • Watches Certificate resources            │
-  │  • Detects new certificate request          │
-  │  • Domain: sftpgo-admin-us-xx.recidiviz.org │
-  └─────────────────────────────────────────────┘
-       │
-       │ 2. Initiate ACME protocol
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  Let's Encrypt ACME API                     │
-  │  • Server: acme-v02.api.letsencrypt.org     │
-  │  • Email: security@recidiviz.org            │
-  │  • Challenge type: DNS-01                   │
-  └─────────────────────────────────────────────┘
-       │
-       │ 3. Challenge token received
-       │    Token: ABC123...
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  cert-manager DNS-01 Solver                 │
-  │  • Uses Cloud DNS solver                    │
-  │  • Auth: Workload Identity                  │
-  │    - K8s SA: cert-manager                   │
-  │    - GCP SA: cert-manager-dns01             │
-  │  • Permission: dns.admin                    │
-  └─────────────────────────────────────────────┘
-       │
-       │ 4. Create TXT record for validation
-       │    Record: _acme-challenge.sftpgo-admin-us-xx.recidiviz.org
-       │    Value: ABC123...
+       │ 1. Add the DNS authorization's CNAME record
        ▼
   ┌─────────────────────────────────────────────┐
   │  Cloud DNS Managed Zone                     │
   │  • Zone: sftpgo-admin-zone                  │
-  │  • Domain: sftpgo-admin-us-xx.recidiviz.org │
-  │  • TXT Record created                       │
+  │  • CNAME Record: _acme-challenge_<id>...    │
+  │    → Google-controlled validation domain    │
   └─────────────────────────────────────────────┘
        │
-       │ 5. DNS propagation (30-60 seconds)
+       │ 2. Request managed certificate
        ▼
   ┌─────────────────────────────────────────────┐
-  │  Let's Encrypt Validation                   │
-  │  • Queries DNS for TXT record               │
-  │  • Verifies token matches                   │
-  │  • Domain ownership confirmed               │
+  │  Certificate Manager                        │
+  │  • Certificate: sftpgo-admin-cert           │
+  │  • Location: us-central1                    │
+  │  • Validates domain via CNAME record        │
+  │  • Issues and stores cert + private key     │
   └─────────────────────────────────────────────┘
        │
-       │ 6. Issue certificate
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  Let's Encrypt Certificate Authority        │
-  │  • Generates certificate                    │
-  │  • Validity: 90 days                        │
-  │  • Returns cert + chain                     │
-  └─────────────────────────────────────────────┘
-       │
-       │ 7. Store certificate
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  Kubernetes Secret                          │
-  │  • Name: sftpgo-admin-tls                   │
-  │  • Namespace: sftpgo                        │
-  │  • Data:                                    │
-  │    - tls.crt (certificate + chain)          │
-  │    - tls.key (private key)                  │
-  └─────────────────────────────────────────────┘
-       │
-       │ 8. Terraform reads secret
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  Terraform Data Source                      │
-  │  • data.kubernetes_secret.sftpgo_cert       │
-  │  • Waits for secret to exist                │
-  │  • Reads certificate and key                │
-  └─────────────────────────────────────────────┘
-       │
-       │ 9. Upload to GCP
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  Regional SSL Certificate (GCP)             │
-  │  • Name: sftpgo-admin-cert-regional-TIME    │
-  │  • Region: us-central1                      │
-  │  • Certificate: from Kubernetes secret      │
-  │  • Private Key: from Kubernetes secret      │
-  └─────────────────────────────────────────────┘
-       │
-       │ 10. Attach to HTTPS proxy
+       │ 3. Terraform waits for state ACTIVE
+       │    (null_resource.wait_for_managed_cert)
        ▼
   ┌─────────────────────────────────────────────┐
   │  Regional HTTPS Proxy                       │
-  │  • Uses regional SSL certificate            │
+  │  • certificate_manager_certificates         │
   │  • TLS termination enabled                  │
   │  • HTTPS traffic now functional             │
   └─────────────────────────────────────────────┘
@@ -485,35 +407,12 @@ This document provides detailed architecture diagrams for the SFTPGo deployment 
 │ Certificate Renewal Flow (Automatic)                                         │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-  Day 60 (30 days before expiration)
-       │
-       │ cert-manager checks expiration
-       ▼
   ┌─────────────────────────────────────────────┐
-  │  cert-manager Renewal Process               │
-  │  • Detects certificate needs renewal        │
-  │  • Initiates same ACME flow                 │
-  │  • Creates new DNS-01 challenge             │
-  │  • Obtains new certificate                  │
-  └─────────────────────────────────────────────┘
-       │
-       │ Updates Kubernetes secret
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  Kubernetes Secret Updated                  │
-  │  • Secret: sftpgo-admin-tls                 │
-  │  • New certificate written                  │
-  │  • Old certificate replaced                 │
-  └─────────────────────────────────────────────┘
-       │
-       │ Requires terraform apply
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  Manual Terraform Apply (or CI/CD)          │
-  │  • Detects secret change                    │
-  │  • Creates new regional SSL cert            │
-  │  • Updates HTTPS proxy                      │
-  │  • Zero-downtime update                     │
+  │  Certificate Manager                        │
+  │  • Renews before expiration                 │
+  │  • Revalidates via the same CNAME record    │
+  │  • Rotates the cert on the HTTPS proxy      │
+  │  • No Terraform apply required              │
   └─────────────────────────────────────────────┘
 ```
 
@@ -650,56 +549,6 @@ This document provides detailed architecture diagrams for the SFTPGo deployment 
   ┌─────────────────────────────────────────────┐
   │  Regional GCS Bucket                        │
   │  • Operations: read, write, list            │
-  └─────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Workload Identity: cert-manager → Cloud DNS                                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-  ┌─────────────────────────────────────────────┐
-  │  cert-manager Pod                           │
-  │  • Needs: Cloud DNS write access            │
-  │  • For: DNS-01 challenge                    │
-  └─────────────────────────────────────────────┘
-       │
-       │ 1. Pod uses K8s Service Account
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  Kubernetes Service Account                 │
-  │  • Name: cert-manager                       │
-  │  • Namespace: cert-manager                  │
-  │  • Annotation:                              │
-  │    iam.gke.io/gcp-service-account=          │
-  │    cert-manager-dns01@PROJECT.iam           │
-  └─────────────────────────────────────────────┘
-       │
-       │ 2. Workload Identity binding
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  GCP Service Account: cert-manager-dns01    │
-  │  • IAM Binding:                             │
-  │    - Role: iam.workloadIdentityUser         │
-  │    - Member: serviceAccount:PROJECT         │
-  │      .svc.id.goog[cert-manager/cert-manager]│
-  └─────────────────────────────────────────────┘
-       │
-       │ 3. cert-manager requests DNS access
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  Project IAM Policy                         │
-  │  • Member: serviceAccount:                  │
-  │    cert-manager-dns01@PROJECT.iam           │
-  │  • Role: roles/dns.admin                    │
-  │  • Scope: Project-wide                      │
-  └─────────────────────────────────────────────┘
-       │
-       │ 4. Access granted
-       ▼
-  ┌─────────────────────────────────────────────┐
-  │  Cloud DNS Managed Zone                     │
-  │  • Zone: sftpgo-admin-zone                  │
-  │  • Operations: Create/delete TXT records    │
-  │  • For: ACME DNS-01 challenges              │
   └─────────────────────────────────────────────┘
 ```
 
@@ -914,7 +763,7 @@ This document provides detailed architecture diagrams for the SFTPGo deployment 
   • Regional Secret Manager: us-central1
 
   Security:
-  • SSL Certificate: Regional (us-central1)
+  • SSL Certificate: Certificate Manager, regional (us-central1)
   • Firewall Rules: Regional enforcement
 
   ══════════════════════════════════════════════════════════════════════════

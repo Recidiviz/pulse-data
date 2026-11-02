@@ -15,12 +15,11 @@ This component provisions:
   - Regional static IP for SFTP (L4 load balancer)
   - Regional static IP for HTTPS admin interface (Regional L7 load balancer)
 - **SSL Certificates**:
-  - cert-manager for automated certificate management
-  - Let's Encrypt certificates via DNS-01 challenge
-  - Regional SSL certificates uploaded to GCP for load balancer
+  - Google-managed regional certificate from Certificate Manager
+  - DNS authorization record in Cloud DNS, so Google issues and renews the certificate
+    without any Terraform applies
 - **Cloud DNS**: Managed DNS zone for subdomain delegation
 - **Helm Releases**:
-  - cert-manager for certificate automation
   - SFTPGo application
 - **Kubernetes Services**:
   - L4 load balancer for SFTP
@@ -115,15 +114,12 @@ We want to route all traffic to the SFTPGo Admin panel through the VPN. Reach ou
 
 #### 3. Initial Partial Deployment
 
-To avoid chicken-and-egg dependency issues, create the compute address, service, and cert CRD first:
+To avoid chicken-and-egg dependency issues, create the DNS zone, compute address, and
+service first:
 
 ```bash
-# Install cert-manager chart
-atmos terraform deploy sftpgo-kubernetes-resources -s recidiviz-ingest-<state-code> \
-  -- -target=helm_release.cert_manager
-
 # Create the Cloud DNS hosted zone so its nameservers can be delegated from
-# Squarespace *before* the ClusterIssuer and Certificate are created
+# Squarespace *before* Certificate Manager tries to validate the domain
 atmos terraform deploy sftpgo-kubernetes-resources -s recidiviz-ingest-<state-code> \
   -- -target=google_dns_managed_zone.sftpgo_admin
 
@@ -134,25 +130,14 @@ atmos terraform deploy sftpgo-kubernetes-resources -s recidiviz-ingest-<state-co
 ```
 
 **Why the hosted zone gets its own targeted apply**: the zone must exist before you
-can read its nameservers delegate them from Squarespace. Creating the zone on its own
-first lets the delegation propagate before anything asks cert-manager to solve a
-challenge.
-
-This prevents the following error:
-```
-│ Error: API did not recognize GroupVersionKind from manifest (CRD may not be installed)
-│ 
-│   with kubernetes_manifest.letsencrypt_issuer,
-│   on ssl.tf line 84, in resource "kubernetes_manifest" "letsencrypt_issuer":
-│   84: resource "kubernetes_manifest" "letsencrypt_issuer" {
-│ 
-│ no matches for kind "ClusterIssuer" in group "cert-manager.io"
-```
+can read its nameservers and delegate them from Squarespace. Creating the zone on its
+own first lets the delegation propagate before Certificate Manager tries to read the
+DNS authorization record.
 
 ### Manual Steps for HTTPS Setup
 
-After the initial partial deployment above (which creates cert-manager and the Cloud
-DNS hosted zone), complete these manual steps *before* running the full apply:
+After the initial partial deployment above (which creates the Cloud DNS hosted
+zone), complete these manual steps *before* running the full apply:
 
 #### 1. Get Cloud DNS Nameservers
 
@@ -206,50 +191,24 @@ nslookup sftpgo-admin-us-xx.recidiviz.org
 
 You should see the Cloud DNS nameservers in the NS query response.
 
-#### 4. Restart cert-manager (If Needed)
-
-If cert-manager was already running when Workload Identity was configured, restart it to pick up the annotation:
-
-```bash
-kubectl rollout restart deployment cert-manager -n cert-manager
-```
-
-**Note**: This step may not be needed on a fresh installation where cert-manager is deployed with Workload Identity already configured.
-
-#### 5. Monitor Certificate Issuance
-
-Watch cert-manager obtain the Let's Encrypt certificate:
-
-```bash
-# Check certificate status
-kubectl describe certificate sftpgo-admin-cert -n sftpgo
-
-# Watch for challenges (should appear and complete)
-kubectl get challenges -n sftpgo --watch
-
-# Check cert-manager logs if issues occur
-kubectl logs -n cert-manager -l app.kubernetes.io/name=cert-manager -f
-
-# Verify certificate is ready
-kubectl get certificate sftpgo-admin-cert -n sftpgo
-```
-
-The certificate will show `Ready: True` once successfully obtained. This typically takes 2-5 minutes after DNS delegation is complete.
-
-#### 6. Complete Terraform Apply
-
-After the certificate is obtained, Terraform can complete the SSL certificate upload:
+#### 4. Complete Terraform Apply
 
 ```bash
 atmos terraform apply sftpgo-kubernetes-resources -s recidiviz-ingest-<state-code>
 ```
 
 This will:
-- Read the certificate from the Kubernetes secret
-- Create the regional SSL certificate in GCP
-- Configure the HTTPS proxy and forwarding rule
+- Create a Certificate Manager DNS authorization and add its CNAME record to the
+  Cloud DNS zone
+- Create a Google-managed regional certificate for the admin domain
+- Wait (via `null_resource.wait_for_managed_cert`, up to 30 minutes) for the
+  certificate to become `ACTIVE`
+- Attach the certificate to the HTTPS proxy and create the forwarding rule
 
-#### 7. Verify HTTPS Access
+Issuance usually takes a few minutes after DNS delegation is complete. If the wait
+times out, see [Certificate Not Issuing](#certificate-not-issuing) and rerun the apply.
+
+#### 5. Verify HTTPS Access
 
 Test that HTTPS is working correctly:
 
@@ -280,6 +239,9 @@ The Terraform service account needs the following permissions:
 - `dns.managedZones.create`
 - `dns.resourceRecordSets.create`
 - `iam.serviceAccounts.create`
+- `certificatemanager.dnsauthorizations.create`
+- `certificatemanager.certs.create`
+- `serviceusage.services.enable` (to enable `certificatemanager.googleapis.com`)
 
 **SOPS KMS Decryption:**
 - `cloudkms.cryptoKeyVersions.useToDecrypt` (on the KMS key for SOPS)
@@ -311,17 +273,9 @@ The following values can be modified in `main.tf`:
   - Throughput: Line 93 - `provisioned-throughput-on-create` (currently `250Mi`)
   - IOPS: Line 94 - `provisioned-iops-on-create` (currently `7000`)
 
-### cert-manager Configuration
-
-In `ssl.tf`:
-
-- **cert-manager Version**: Line 9 - `version` (currently `v1.13.0`)
-- **Let's Encrypt Contact Email**: Line 94 - `email` (currently `security@recidiviz.org`)
-- **Certificate Issuer**: Line 93 - ACME server URL (currently Let's Encrypt production)
-
 ## HTTPS/SSL Configuration
 
-This component provides secure HTTPS access to the SFTPGo admin interface using Let's Encrypt certificates managed by cert-manager. The configuration uses a Regional External Application Load Balancer with automated certificate renewal.
+This component provides secure HTTPS access to the SFTPGo admin interface using a Google-managed certificate from Certificate Manager. The configuration uses a Regional External Application Load Balancer, and Google renews the certificate automatically.
 
 ### Architecture
 
@@ -332,7 +286,7 @@ Admin User (Browser)
        v
 Regional L7 Load Balancer (EXTERNAL_MANAGED)
        |
-       | SSL Termination (Regional SSL Certificate)
+       | SSL Termination (Certificate Manager certificate)
        v
 Backend Service
        |
@@ -357,8 +311,8 @@ SFTPGo Pod (port 22)
 **Key Points:**
 - SFTP traffic uses a regional L4 load balancer (supports TCP, no SSL overhead)
 - Admin interface traffic uses a regional L7 Application Load Balancer with SSL termination
-- SSL certificates are automatically obtained and renewed by cert-manager using Let's Encrypt
-- DNS-01 challenge via Cloud DNS for domain validation
+- SSL certificates are automatically obtained and renewed by Certificate Manager
+- DNS authorization (a CNAME record in Cloud DNS) for domain validation
 - HTTP to HTTPS redirect (301 permanent redirect)
 - SSL is terminated at the load balancer, internal traffic is HTTP
 - Both services connect to the same SFTPGo pod on different ports
@@ -366,37 +320,31 @@ SFTPGo Pod (port 22)
 
 ### How SSL Automation Works
 
-1. **cert-manager Installation**: Deployed via Helm with CRD installation
-2. **Workload Identity Setup**: cert-manager service account linked to GCP service account with DNS admin permissions
-3. **ClusterIssuer**: Configures Let's Encrypt ACME protocol with DNS-01 solver
-4. **Certificate Resource**: Requests certificate for admin domain
-5. **DNS-01 Challenge**: cert-manager creates TXT records in Cloud DNS to prove domain ownership
-6. **Certificate Storage**: Stored as Kubernetes secret (`sftpgo-admin-tls`)
-7. **Upload to GCP**: Regional SSL certificate created from Kubernetes secret
-8. **HTTPS Proxy**: Uses regional SSL certificate for TLS termination
-9. **Automatic Renewal**: cert-manager renews certificates before expiration (90 days)
-
-
+1. **DNS Authorization**: `google_certificate_manager_dns_authorization` gives a CNAME
+   record that proves ownership of the admin domain. Terraform adds it to the Cloud DNS
+   zone.
+2. **Managed Certificate**: `google_certificate_manager_certificate` requests a
+   Google-managed certificate for the admin domain using that DNS authorization.
+3. **Wait for Issuance**: `null_resource.wait_for_managed_cert` polls until the
+   certificate is `ACTIVE`, so the proxy never serves a certificate that is still
+   provisioning.
+4. **HTTPS Proxy**: References the certificate through `certificate_manager_certificates`
+   for TLS termination.
 
 ### Certificate Renewal
 
-cert-manager automatically renews certificates before expiration:
+Certificate Manager renews the certificate and rotates it on the load balancer
+automatically. No Terraform apply is required. Renewal depends on the DNS
+authorization CNAME record staying in place, so do not delete it from the
+`sftpgo-admin-zone` zone.
 
-- **Certificate Validity**: 90 days
-- **Renewal Window**: Starts 30 days before expiration
-- **Renewal Method**: Same DNS-01 challenge process
-- **Monitoring**: Check certificate status regularly:
-  ```bash
-  kubectl get certificate sftpgo-admin-cert -n sftpgo -o wide
-  ```
+Check the certificate's state and expiration:
 
-No manual intervention is required for renewals. cert-manager will:
-1. Request a new certificate from Let's Encrypt
-2. Complete DNS-01 challenge via Cloud DNS
-3. Update the Kubernetes secret with new certificate
-4. Trigger Terraform to update the regional SSL certificate (requires terraform apply)
-
-**Important**: You may need to run `terraform apply` periodically to upload renewed certificates to the load balancer, or implement automated Terraform runs.
+```bash
+gcloud certificate-manager certificates describe sftpgo-admin-cert \
+  --location=<region> \
+  --project=<project-id>
+```
 
 ## Network Architecture
 
@@ -686,28 +634,17 @@ terraform apply -var-file=your-vars.tfvars
 
 For a complete fresh deployment:
 
-1. **Initial partial apply** (create address and service):
-   ```bash
-   atmos terraform apply sftpgo-kubernetes-resources -s recidiviz-ingest-<state> \
-     -- -target=google_compute_address.default \
-        -target=kubernetes_service_v1.sftpgo_admin_http
-   ```
+1. **Initial partial applies** (create the DNS zone, address, and service; see
+   [Initial Partial Deployment](#3-initial-partial-deployment))
 
-2. **Full terraform apply** (create all infrastructure):
+2. **Configure DNS delegation** (see Manual Steps section above)
+
+3. **Full terraform apply** (create all infrastructure and wait for the certificate):
    ```bash
    atmos terraform apply sftpgo-kubernetes-resources -s recidiviz-ingest-<state>
    ```
 
-3. **Configure DNS delegation** (see Manual Steps section above)
-
-4. **Wait for certificate issuance** (2-5 minutes after DNS delegation)
-
-5. **Final terraform apply** (upload SSL certificate):
-   ```bash
-   atmos terraform apply sftpgo-kubernetes-resources -s recidiviz-ingest-<state>
-   ```
-
-6. **Verify HTTPS access**
+4. **Verify HTTPS access**
 
 ## SFTP User Configuration
 
@@ -841,79 +778,39 @@ gcloud container clusters get-credentials <cluster-name> \
 
 ### Certificate Not Issuing
 
-**Symptoms**: Certificate stuck in `Pending` or showing `False` for Ready condition
+**Symptoms**: `null_resource.wait_for_managed_cert` times out, or the certificate stays
+in `PROVISIONING`
 
 **Solutions**:
 
 1. **Verify DNS delegation is complete**:
    ```bash
-   dig NS sftpgo-admin-us-tn.recidiviz.org
-   dig A sftpgo-admin-us-tn.recidiviz.org
+   dig NS sftpgo-admin-<state-code>.recidiviz.org
+   dig A sftpgo-admin-<state-code>.recidiviz.org
    ```
 
-2. **Check cert-manager logs**:
+2. **Examine certificate status**. `managed.provisioningIssue` and
+   `managed.authorizationAttemptInfo` explain why issuance is blocked:
    ```bash
-   kubectl logs -n cert-manager -l app.kubernetes.io/name=cert-manager -f
+   gcloud certificate-manager certificates describe sftpgo-admin-cert \
+     --location=<region> \
+     --project=<project-id>
    ```
 
-3. **Examine certificate status**:
+3. **Verify the DNS authorization record is publicly resolvable**:
    ```bash
-   kubectl describe certificate sftpgo-admin-cert -n sftpgo
+   # The CNAME record Certificate Manager expects
+   gcloud certificate-manager dns-authorizations describe sftpgo-admin-dns-auth \
+     --location=<region> \
+     --project=<project-id> \
+     --format='value(dnsResourceRecord.name,dnsResourceRecord.data)'
+
+   # Should return the expected data
+   dig +short CNAME <dnsResourceRecord.name> @8.8.8.8
    ```
 
-4. **Check for challenges**:
-   ```bash
-   kubectl get challenges -n sftpgo
-   kubectl describe challenge <challenge-name> -n sftpgo
-   ```
-
-5. **Verify Workload Identity**:
-   ```bash
-   # Check service account annotation
-   kubectl get sa cert-manager -n cert-manager -o yaml | grep gcp-service-account
-
-   # Check IAM binding
-   gcloud iam service-accounts get-iam-policy cert-manager-dns01@<project-id>.iam.gserviceaccount.com
-   ```
-
-6. **Verify Cloud DNS zone and permissions**:
-   ```bash
-   gcloud dns managed-zones describe sftpgo-admin-zone --project=<project-id>
-   ```
-
-7. **Rule out a poisoned zone-delegation cache**. If the challenge sits `pending` with
-   `Waiting for DNS-01 challenge propagation: DNS record for ... not yet propagated`,
-   first confirm the TXT record really is live on every authoritative nameserver:
-
-   ```bash
-   # The TXT value cert-manager expects
-   kubectl get challenge -n sftpgo -o jsonpath='{.items[0].spec.key}'; echo
-
-   # Should return that same value from all four zone nameservers
-   for ns in $(gcloud dns managed-zones describe sftpgo-admin-zone \
-       --project=<project-id> --format='value(nameServers.list())' | tr ',' ' '); do
-     printf '%-32s ' "$ns"
-     dig +short TXT _acme-challenge.sftpgo-admin-<state-code>.recidiviz.org @"$ns"
-   done
-   ```
-
-   If all four return the expected value but cert-manager still reports "not yet
-   propagated", the controller is holding a stale zone cache from a self-check that ran
-   before the Squarespace delegation existed (see
-   [Restart cert-manager](#4-restart-cert-manager) for the mechanism). Restart it — the
-   existing `Challenge` object is reused, so issuance completes within seconds:
-
-   ```bash
-   kubectl rollout restart deployment cert-manager -n cert-manager
-   ```
-
-   This is also the restart to run if Workload Identity was configured after
-   cert-manager started.
-
-8. **Check ClusterIssuer status**:
-   ```bash
-   kubectl describe clusterissuer letsencrypt-prod
-   ```
+4. **Rerun the apply** once the certificate is `ACTIVE`; the wait step will pass
+   immediately.
 
 ### HTTPS Domain Not Accessible
 
@@ -948,17 +845,12 @@ gcloud container clusters get-credentials <cluster-name> \
      --project=<project-id>
    ```
 
-5. **Verify certificate was uploaded to GCP**:
+5. **Verify the certificate is ACTIVE**:
    ```bash
-   gcloud compute ssl-certificates list \
-     --filter="name:sftpgo-admin-cert-regional*" \
-     --project=<project-id>
-   ```
-
-6. **Check Kubernetes secret exists**:
-   ```bash
-   kubectl get secret sftpgo-admin-tls -n sftpgo
-   kubectl get secret sftpgo-admin-tls -n sftpgo -o jsonpath='{.data.tls\.crt}' | base64 -d
+   gcloud certificate-manager certificates describe sftpgo-admin-cert \
+     --location=<region> \
+     --project=<project-id> \
+     --format='value(managed.state,expireTime)'
    ```
 
 ### HTTP Not Redirecting to HTTPS
@@ -996,16 +888,6 @@ gcloud container clusters get-credentials <cluster-name> \
 2. Run terraform apply
 3. Verify new version: `kubectl get pods -n sftpgo -o wide`
 
-### Updating cert-manager
-
-1. Update version in `ssl.tf` line 9
-2. Run terraform apply
-3. Verify cert-manager is healthy:
-   ```bash
-   kubectl get pods -n cert-manager
-   kubectl get certificate sftpgo-admin-cert -n sftpgo
-   ```
-
 ### Rotating SFTP User Password
 
 1. Update the secret in Secret Manager:
@@ -1020,16 +902,14 @@ gcloud container clusters get-credentials <cluster-name> \
 
 ### Monitoring Certificate Expiration
 
-cert-manager provides metrics and status:
+Certificate Manager renews automatically, but you can confirm the current
+certificate's state and expiration:
 
 ```bash
-# Check certificate expiration
-kubectl get certificate sftpgo-admin-cert -n sftpgo -o jsonpath='{.status.notAfter}'
-
-# Check renewal status
-kubectl get certificate sftpgo-admin-cert -n sftpgo -o yaml
-
-# Set up monitoring alerts for certificate expiration (recommended)
+gcloud certificate-manager certificates describe sftpgo-admin-cert \
+  --location=<region> \
+  --project=<project-id> \
+  --format='value(managed.state,expireTime)'
 ```
 
 ## Resources
@@ -1037,7 +917,7 @@ kubectl get certificate sftpgo-admin-cert -n sftpgo -o yaml
 - [SFTPGo Documentation](https://github.com/drakkan/sftpgo)
 - [SFTPGo Helm Chart](https://github.com/sftpgo/helm-charts)
 - [GKE Hyperdisk Documentation](https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/hyperdisk)
-- [cert-manager Documentation](https://cert-manager.io/docs/)
+- [Certificate Manager: Regional Google-managed certificates](https://cloud.google.com/certificate-manager/docs/deploy-google-managed-dns-auth)
 - [GKE Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)
 - [Cloud DNS Documentation](https://cloud.google.com/dns/docs)
 - [Regional External Application Load Balancer](https://cloud.google.com/load-balancing/docs/https)

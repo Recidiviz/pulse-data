@@ -127,11 +127,14 @@ resource "google_compute_region_ssl_policy" "tls12_modern" {
 }
 
 resource "google_compute_region_target_https_proxy" "sftpgo" {
-  name             = "sftpgo-https-proxy-regional"
-  region           = var.region
-  url_map          = google_compute_region_url_map.sftpgo_admin.id
-  ssl_certificates = [google_compute_region_ssl_certificate.sftpgo.id]
-  ssl_policy       = google_compute_region_ssl_policy.tls12_modern.id
+  name       = "sftpgo-https-proxy-regional"
+  region     = var.region
+  url_map    = google_compute_region_url_map.sftpgo_admin.id
+  ssl_policy = google_compute_region_ssl_policy.tls12_modern.id
+
+  certificate_manager_certificates = [google_certificate_manager_certificate.sftpgo_admin.id]
+
+  depends_on = [null_resource.wait_for_managed_cert]
 }
 
 resource "google_compute_forwarding_rule" "sftpgo_https" {

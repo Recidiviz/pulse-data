@@ -15,7 +15,7 @@ vars:
 
 components:
   terraform:
-    # Provisions the recidiviz-ingest-us-nyc project
+    # Provisions the recidiviz-ingest-us-nv project
     vendor/core-project-factory:
       vars:
         name: "{{ .settings.context.project_id }}"
