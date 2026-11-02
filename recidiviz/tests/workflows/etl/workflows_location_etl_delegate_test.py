@@ -15,8 +15,10 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests the ability for LocationRecordETLDelegate to parse json rows."""
-import os
+import json
+from copy import deepcopy
 from datetime import datetime, timezone
+from typing import Any
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import MagicMock, patch
 
@@ -31,6 +33,26 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.workflows_location_etl_delegate import (
     WorkflowsLocationETLDelegate,
 )
+
+LOCATION_FILENAME = "location_record.json"
+
+TEST_DATA: dict[str, Any] = {
+    "id": "U2",
+    "location_id": "U2",
+    "state_code": "US_XX",
+    "name": "Unit 2",
+    "system": "INCARCERATION",
+    "id_type": "unitId",
+}
+
+EXPECTED_DOCUMENT: dict[str, Any] = {
+    "id": "U2",
+    "locationId": "U2",
+    "stateCode": "US_XX",
+    "name": "Unit 2",
+    "system": "INCARCERATION",
+    "idType": "unitId",
+}
 
 
 class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
@@ -57,80 +79,24 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
         Test that the transform_row method correctly parses the json
         """
         delegate = WorkflowsLocationETLDelegate(StateCode.US_XX)
+        doc_id, row = delegate.transform_row(json.dumps(TEST_DATA), LOCATION_FILENAME)
+        self.assertEqual("U2", doc_id)
+        self.assertEqual(EXPECTED_DOCUMENT, row)
 
-        path_to_fixture = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "fixtures",
-            "location_record.json",
-        )
-        with open(path_to_fixture, "r", encoding="utf-8") as fp:
-            fixture = fp.readline()
+    def test_transform_row_with_special_characters_in_id(self) -> None:
+        """
+        Test that transform_row method leaves an apostrophe and a slash in the doc id
+        since WorkflowsFirestoreETLDelegate sanitizes them before uploading
+        """
+        delegate = WorkflowsLocationETLDelegate(StateCode.US_XX)
+        data = deepcopy(TEST_DATA)
+        data["id"] = "WOMEN'S FACILITY 1/2"
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected["id"] = "WOMEN'S FACILITY 1/2"
 
-            doc_id, row = delegate.transform_row(fixture, "location_record.json")
-            self.assertEqual(doc_id, "WOMEN'S FACILITY 1")
-            # WorkflowsFirestoreETLDelegate will sanitize special
-            # characters in the doc_id before uploading
-            self.assertEqual(
-                row,
-                {
-                    "id": "WOMEN'S FACILITY 1",
-                    "locationId": "WOMEN'S FACILITY 1",
-                    "stateCode": "US_XX",
-                    "name": "Women's Facility 1",
-                    "system": "INCARCERATION",
-                    "idType": "facilityId",
-                },
-            )
-
-            fixture = fp.readline()
-
-            doc_id, row = delegate.transform_row(fixture, "location_record.json")
-            self.assertEqual(doc_id, "U2")
-            self.assertEqual(
-                row,
-                {
-                    "id": "U2",
-                    "locationId": "U2",
-                    "stateCode": "US_XX",
-                    "name": "Unit 2",
-                    "system": "INCARCERATION",
-                    "idType": "unitId",
-                },
-            )
-
-            fixture = fp.readline()
-
-            doc_id, row = delegate.transform_row(fixture, "location_record.json")
-            self.assertEqual(doc_id, "DISTRICT 1/2")
-            # WorkflowsFirestoreETLDelegate will sanitize the
-            # prohibited slash in this doc_id before uploading
-            self.assertEqual(
-                row,
-                {
-                    "id": "DISTRICT 1/2",
-                    "locationId": "DISTRICT 1/2",
-                    "stateCode": "US_XX",
-                    "name": "Supervision district 1/2",
-                    "system": "SUPERVISION",
-                    "idType": "district",
-                },
-            )
-
-            fixture = fp.readline()
-
-            doc_id, row = delegate.transform_row(fixture, "location_record.json")
-            self.assertEqual(doc_id, "D3")
-            self.assertEqual(
-                row,
-                {
-                    "id": "D3",
-                    "locationId": "D3",
-                    "stateCode": "US_XX",
-                    "name": "Supervision district 3",
-                    "system": "SUPERVISION",
-                    "idType": "district",
-                },
-            )
+        doc_id, row = delegate.transform_row(json.dumps(data), LOCATION_FILENAME)
+        self.assertEqual("WOMEN'S FACILITY 1/2", doc_id)
+        self.assertEqual(expected, row)
 
     @patch("google.cloud.firestore_v1.AsyncClient")
     @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
