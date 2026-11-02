@@ -167,6 +167,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     TREATMENT_STARTS,
     VIOLATIONS,
     VIOLATIONS_BY_TYPE_METRICS,
+    VIOLENT_INCARCERATION_INCIDENTS,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
@@ -249,6 +250,7 @@ METRICS_BY_POPULATION_TYPE: dict[MetricPopulationType, list[AggregatedMetric]] =
         SUPERVISION_STARTS,
         SUPERVISION_STARTS_FROM_INCARCERATION,
         INCARCERATION_INCIDENTS,
+        VIOLENT_INCARCERATION_INCIDENTS,
         DAYS_SINCE_MOST_RECENT_INCARCERATION_INCIDENT,
         AVG_DAILY_POPULATION_WITH_PRIOR_INCARCERATION_INCIDENT,
         INCARCERATION_ENDS,

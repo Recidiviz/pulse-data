@@ -1589,6 +1589,20 @@ INCARCERATION_INCIDENTS = EventCountMetric(
         event_conditions_dict={},
     ),
 )
+
+VIOLENT_INCARCERATION_INCIDENTS = EventCountMetric(
+    name="violent_incarceration_incidents",
+    display_name="Violent Incarceration Incidents",
+    description="Number of incarceration incidents that meet the state's "
+    "classification policy definition of a violent incident. This is narrower "
+    "than incident_type = VIOLENCE and excludes some incidents in that bucket. "
+    "States that don't ingest is_violent have none",
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_INCIDENT,
+        event_conditions_dict={"is_violent": ["true"]},
+    ),
+)
+
 INCARCERATION_STARTS = EventCountMetric(
     name="incarceration_starts",
     display_name="Incarceration Starts",
