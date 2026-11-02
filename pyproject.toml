@@ -38,6 +38,7 @@ dependencies = [
     # TODO(#18145): Remove the <2.0.0 pin
     "sqlalchemy>=1.4.25,<2.0.0",
     "flask[async]>=2.0.0",
+    "Faker",
     "Flask-Limiter",
     "Flask-SQLAlchemy-Session",
     "Flask-WTF",
@@ -232,7 +233,6 @@ dev = [
     "twilio-stubs",
     "msal",
     "types-pysftp",
-    "Faker",
     # TODO(https://github.com/getsentry/responses/issues/556): Unpin once responses package ships a version that doesn't break mypy
     "responses==0.20.0",
     "shellcheck-py",
