@@ -112,6 +112,8 @@ US_MI_DOC_BOOK: Final = "US_MI_DOC_BOOK"
 US_MI_COMPAS_USER: Final = "US_MI_COMPAS_USER"
 # Identifier for the type of state staff id provided by the MI OMNI system
 US_MI_OMNI_USER: Final = "US_MI_OMNI_USER"
+# Identifier for the type of state staff id provided by the MI COMS system
+US_MI_COMS_USER: Final = "US_MI_COMS_USER"
 
 
 # US_MO

@@ -3,6 +3,7 @@ manifest_language: 1.0.0
 launch_env:
   $env: feature__coms_2026_enabled
 input_columns:
+  COMS_Case_Mgmt_Staff_Id: STRING
   OMNI_Staff_Omni_Employee_Id: STRING
   RecId: STRING
   First_Name: STRING
@@ -21,8 +22,15 @@ output:
   StateStaff:
     external_ids:
       - StateStaffExternalId:
-          external_id: OMNI_Staff_Omni_Employee_Id
-          id_type: $literal("US_MI_OMNI_USER")
+          external_id: COMS_Case_Mgmt_Staff_Id
+          id_type: $literal("US_MI_COMS_USER")
+      - $conditional:
+          - $if:
+              $not_null: OMNI_Staff_Omni_Employee_Id
+            $then:
+              StateStaffExternalId:
+                external_id: OMNI_Staff_Omni_Employee_Id
+                id_type: $literal("US_MI_OMNI_USER")
       - $conditional:
           - $if:
               $not_null: RecId
@@ -48,7 +56,7 @@ output:
                   $concat:
                     $values:
                       - $literal("COMS-2026-")
-                      - OMNI_Staff_Omni_Employee_Id
+                      - COMS_Case_Mgmt_Staff_Id
                       - period_id
                 start_date: period_start
                 end_date: period_end
@@ -71,7 +79,7 @@ output:
                   $concat:
                     $values:
                       - $literal("COMS-2026-")
-                      - OMNI_Staff_Omni_Employee_Id
+                      - COMS_Case_Mgmt_Staff_Id
                       - period_id
                 start_date: period_start
                 end_date: period_end
