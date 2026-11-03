@@ -77,6 +77,7 @@ export const LOOKER_EMBED_PERMISSIONS_LABELS = {
 
 export const PAROLE_PERMISSIONS_LABELS = {
   parole: "Parole Board",
+  parole_publicCalendar: "Public Calendar",
 };
 
 export const ROUTES_PERMISSIONS_LABELS = {
