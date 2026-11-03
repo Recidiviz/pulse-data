@@ -29,6 +29,11 @@ from recidiviz.sentence_calculator.models.inputs import (
     SentenceType,
     Term,
 )
+from recidiviz.sentence_calculator.models.state_inputs.inputs_az import (
+    ArizonaOffenseCategory,
+    ArizonaOffenseGroup,
+    ArizonaSentence,
+)
 from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import (
     NevadaOffenseCategory,
     NevadaOffenseGroup,
@@ -53,6 +58,11 @@ class _StateSentenceTypes:
 
 # Supporting a new state means adding its types here.
 _STATE_SENTENCE_TYPES: dict[StateCode, _StateSentenceTypes] = {
+    StateCode.US_AZ: _StateSentenceTypes(
+        sentence_class=ArizonaSentence,
+        offense_category_type=ArizonaOffenseCategory,
+        offense_group_type=ArizonaOffenseGroup,
+    ),
     StateCode.US_NV: _StateSentenceTypes(
         sentence_class=NevadaSentence,
         offense_category_type=NevadaOffenseCategory,
