@@ -31,6 +31,9 @@ from recidiviz.documents.extraction.document_extraction_processor import (
     DocumentExtractionProcessor,
     ExtractionRunSummary,
 )
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
+)
 from recidiviz.documents.extraction.llm_client.types import (
     LLMClientDocumentExtractionResult,
     LLMDocumentExtractionRequest,
@@ -81,6 +84,7 @@ from recidiviz.tests.big_query.big_query_emulator_with_gcs_test_case import (
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    FAKE_LOCATION_ER_COLLECTION_NAME,
     patch_fake_entity_resolution_model_config_name,
 )
 from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
@@ -101,6 +105,7 @@ from recidiviz.tools.documents.sandbox_extraction_runners import (
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
+from recidiviz.utils.types import assert_type
 
 _STATE_CODE = StateCode.US_XX
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
@@ -318,14 +323,8 @@ _RAW_INPUT_NOTES_SCHEMA = [
 class SandboxDocumentStoreRunnerTest(BigQueryEmulatorWithGCSTestCase):
     """Runs SandboxDocumentStoreRunner's discovery → batch → GCS upload → record
     pipeline end-to-end against the BQ emulator and a fake GCS for a first-order
-    collection, asserting on the metadata/contents rows and GCS text it writes.
-
-    TODO(OBT-42814): there is no end-to-end entity-resolution case here. The ER
-    composite generation writes its entry→source map via a CREATE TABLE AS SELECT that
-    emits an ARRAY<STRUCT<...TIMESTAMP...>>, which the bigquery-emulator cannot
-    round-trip (it fails scanning the stored value). Add the ER case once that emulator
-    bug is fixed; the ER pass's control flow is covered meanwhile by
-    RunEntityResolutionPassTest.
+    collection and an entity-resolution composite collection, asserting on the
+    metadata/contents rows, entry->source map rows, and GCS text it writes.
     """
 
     # The source tables are created once in setUpClass; keep them across tests and only
@@ -336,9 +335,8 @@ class SandboxDocumentStoreRunnerTest(BigQueryEmulatorWithGCSTestCase):
 
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
-        # The ER model config patch is needed only so the ER composite collections'
-        # document-store tables can be collected; those tables are created but unused by
-        # the first-order test below.
+        # The ER model config patch is needed so the ER composite collections'
+        # document-store tables can be collected.
         with (
             patch_fake_entity_resolution_model_config_name(),
             patch_fake_config_states_exist_in_env(),
@@ -380,6 +378,7 @@ class SandboxDocumentStoreRunnerTest(BigQueryEmulatorWithGCSTestCase):
             fake_config,
         )
         self.config_module_patcher.start()
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
 
     def tearDown(self) -> None:
         self.config_module_patcher.stop()
@@ -402,6 +401,31 @@ class SandboxDocumentStoreRunnerTest(BigQueryEmulatorWithGCSTestCase):
                 )
             },
             extractor_collection_read_prefixes={},
+        )
+
+    def _location_er_collection(self) -> EntityResolutionDocumentCollectionConfig:
+        return assert_type(
+            get_document_collection_config(
+                _STATE_CODE, FAKE_LOCATION_ER_COLLECTION_NAME, fake_config
+            ),
+            EntityResolutionDocumentCollectionConfig,
+        )
+
+    def _er_sandbox(
+        self, er_collection: EntityResolutionDocumentCollectionConfig
+    ) -> DocumentStoreSandboxContext:
+        # Mirrors the sandbox run_sandbox_extraction builds: the first-order source
+        # documents are read from production, the first-order extraction results from
+        # the sandbox, and the ER collection is written to and diffed against its own
+        # sandbox copy.
+        return DocumentStoreSandboxContext(
+            document_collection_locations={
+                _INPUT_COLLECTION_NAME: None,
+                er_collection.name: DocumentCollectionSandboxLocation(
+                    output_prefix=_SANDBOX_PREFIX, diff_read_prefix=_SANDBOX_PREFIX
+                ),
+            },
+            extractor_collection_read_prefixes={_COLLECTION_NAME: _SANDBOX_PREFIX},
         )
 
     def _run(
@@ -518,3 +542,142 @@ class SandboxDocumentStoreRunnerTest(BigQueryEmulatorWithGCSTestCase):
             ),
         )
         self.assertEqual([], self.fs.all_paths)
+
+    def test_entity_resolution_generates_uploads_and_records(self) -> None:
+        er_collection = self._location_er_collection()
+        self.load_rows_into_table(
+            self._first_order_collection().document_contents_table_address(
+                sandbox_dataset_prefix=None
+            ),
+            [
+                {
+                    "document_contents_id": "CID_A",
+                    "document_text": "some case note text",
+                    "document_length_bytes": 19,
+                    "row_create_datetime": "2026-01-02T12:00:00",
+                },
+                {
+                    "document_contents_id": "CID_B",
+                    "document_text": "another case note",
+                    "document_length_bytes": 17,
+                    "row_create_datetime": "2026-02-02T12:00:00",
+                },
+            ],
+        )
+        pre_resolution_address = er_collection.pre_resolution_view_materialized_address(
+            sandbox_dataset_prefix=_SANDBOX_PREFIX
+        )
+        self.create_mock_table(
+            pre_resolution_address,
+            schema=[
+                bigquery.SchemaField("person_id", SqlTypeNames.INTEGER.value),
+                bigquery.SchemaField(
+                    DOCUMENT_CONTENTS_ID_COLUMN_NAME, SqlTypeNames.STRING.value
+                ),
+                bigquery.SchemaField(
+                    "document_update_datetime", SqlTypeNames.TIMESTAMP.value
+                ),
+                bigquery.SchemaField("location", SqlTypeNames.STRING.value),
+            ],
+        )
+        self.load_rows_into_table(
+            pre_resolution_address,
+            [
+                {
+                    "person_id": 1001,
+                    "document_contents_id": "CID_A",
+                    "document_update_datetime": "2026-01-01T10:00:00Z",
+                    "location": "Kitchen",
+                },
+                {
+                    "person_id": 1002,
+                    "document_contents_id": "CID_B",
+                    "document_update_datetime": "2026-02-01T10:00:00Z",
+                    "location": "Cafeteria",
+                },
+            ],
+        )
+
+        self._run(
+            document_collection=er_collection,
+            document_store_sandbox=self._er_sandbox(er_collection),
+        )
+
+        # Each person's location mention renders to one composite document, recorded in
+        # the sandbox metadata table and uploaded to GCS at the sandbox path.
+        self.assertEqual(
+            [
+                {
+                    "person_id": 1001,
+                    "document_contents_id": (
+                        "e57b3021e2b0c1341180865276cc0a65f81a26c3b7e9419f0274e29f5bd7f86e"
+                    ),
+                },
+                {
+                    "person_id": 1002,
+                    "document_contents_id": (
+                        "359bc319686f1dbf1142656254d1572dc84db5751f079601ccb471ecb0453d8c"
+                    ),
+                },
+            ],
+            self._table_rows(
+                er_collection.metadata_table_address(
+                    sandbox_dataset_prefix=_SANDBOX_PREFIX
+                ),
+                ["person_id", DOCUMENT_CONTENTS_ID_COLUMN_NAME],
+            ),
+        )
+        self.assertEqual(
+            {
+                "e57b3021e2b0c1341180865276cc0a65f81a26c3b7e9419f0274e29f5bd7f86e": (
+                    "=== Source document — 2026-01-01 ===\n"
+                    "document_text: some case note text\n"
+                    "\n"
+                    "[Entry 1]\n"
+                    "location: Kitchen"
+                ),
+                "359bc319686f1dbf1142656254d1572dc84db5751f079601ccb471ecb0453d8c": (
+                    "=== Source document — 2026-02-01 ===\n"
+                    "document_text: another case note\n"
+                    "\n"
+                    "[Entry 1]\n"
+                    "location: Cafeteria"
+                ),
+            },
+            self._gcs_text_by_contents_id(
+                er_collection,
+                [
+                    "e57b3021e2b0c1341180865276cc0a65f81a26c3b7e9419f0274e29f5bd7f86e",
+                    "359bc319686f1dbf1142656254d1572dc84db5751f079601ccb471ecb0453d8c",
+                ],
+            ),
+        )
+        # Each composite's single entry maps back to the first-order source document
+        # it was rendered from.
+        self.assertEqual(
+            [
+                {
+                    "person_id": 1001,
+                    "entry_num": 1,
+                    "source_document_contents_id": "CID_A",
+                    "source_array_index": None,
+                },
+                {
+                    "person_id": 1002,
+                    "entry_num": 1,
+                    "source_document_contents_id": "CID_B",
+                    "source_array_index": None,
+                },
+            ],
+            self._table_rows(
+                er_collection.entry_source_map_table_address(
+                    sandbox_dataset_prefix=_SANDBOX_PREFIX
+                ),
+                [
+                    "person_id",
+                    "entry_num",
+                    "source_document_contents_id",
+                    "source_array_index",
+                ],
+            ),
+        )

@@ -46,14 +46,9 @@ class TestBuildMapReplacementQuery(BigQueryEmulatorTestCase):
     """Tests for build_entry_source_map_query, run over a hand-seeded
     generation-output table.
 
-    The generation-output tables are seeded with streamed rows rather than by
-    running the real composite generation query: the BQ emulator cannot
-    round-trip an ARRAY<STRUCT<TIMESTAMP>> column written by a CREATE TABLE AS
-    SELECT, while streamed rows scan fine. The query's job — flattening the
-    composite's entry_source_map into one row per entry, keyed by root entity —
-    is unaffected by how the input table was populated.
-    TODO(OBT-42814): Seed via the real generation query once the emulator bug
-    is fixed.
+    The generation-output tables are seeded with literal rows, so each case's
+    entry_source_map is spelled out in the test. The query flattens the
+    composite's entry_source_map into one row per entry, keyed by root entity.
     """
 
     def setUp(self) -> None:

@@ -117,14 +117,10 @@ class TestEntrySourceMapHydratorWriteArgs(unittest.TestCase):
 class TestEntrySourceMapHydrator(BigQueryEmulatorTestCase):
     """Tests the hydrator's real write path against the emulator.
 
-    Generation-output tables are seeded with streamed rows rather than by
-    running the real composite generation query: the BQ emulator cannot scan
-    an ARRAY<STRUCT<TIMESTAMP>> column written by a CREATE TABLE AS SELECT
-    (streamed rows work), which also rules out running full discovery for an
-    ER collection here — the discovery-level wiring is pinned by mock tests in
-    new_document_discovery_test.py instead.
-    TODO(OBT-42814): Once the emulator bug is fixed, seed via the real
-    generation query and add a true end-to-end ER discovery round-trip test.
+    Generation-output tables are seeded with literal rows, so each case's
+    entry_source_map is spelled out in the test. SandboxDocumentStoreRunnerTest
+    covers the hydrator end to end, from the real composite generation query
+    through discovery.
     """
 
     def setUp(self) -> None:

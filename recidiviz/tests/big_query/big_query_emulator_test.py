@@ -753,6 +753,45 @@ FROM UNNEST([
             expected_result=[{"$col1": "1987-01-25 00:00:00"}],
         )
 
+    def test_cast_date_string_as_date(self) -> None:
+        self.run_query_test(
+            "SELECT CAST('2024-10-11' AS DATE) AS a",
+            expected_result=[{"a": date(2024, 10, 11)}],
+        )
+
+    def test_cast_datetime_string_as_date_raises(self) -> None:
+        """BigQuery rejects a DATETIME-formatted string cast to DATE with
+        "Invalid date: '2024-10-11 00:00:00'"."""
+        with self.assertRaisesRegex(
+            Exception, r"failed to analyze: SQL logic error: invalid date literal"
+        ):
+            self.query(
+                """
+                WITH input AS (
+                    SELECT CAST(DATETIME(2024, 10, 11, 0, 0, 0) AS STRING) AS s
+                )
+                SELECT CAST(s AS DATE) AS a FROM input
+                """
+            )
+
+    def test_cast_iso_datetime_string_as_date_raises(self) -> None:
+        """BigQuery rejects an ISO 8601 datetime string cast to DATE with
+        "Invalid date: '2024-10-11T00:00:00'"."""
+        with self.assertRaisesRegex(
+            Exception, r"failed to analyze: SQL logic error: invalid date literal"
+        ):
+            self.query("SELECT CAST('2024-10-11T00:00:00' AS DATE) AS a")
+
+    def test_safe_cast_datetime_strings_as_date(self) -> None:
+        self.run_query_test(
+            """
+            SELECT
+                SAFE_CAST('2024-10-11 00:00:00' AS DATE) AS space_separated,
+                SAFE_CAST('2024-10-11T00:00:00' AS DATE) AS t_separated
+            """,
+            expected_result=[{"space_separated": None, "t_separated": None}],
+        )
+
     def test_integer_type_alias(self) -> None:
         self.run_query_test(
             "SELECT CAST(null AS INT64)", expected_result=[{"$col1": None}]

@@ -62,22 +62,6 @@ class TestIntercomExportBigQueryTableManager(unittest.TestCase):
             status=IntercomCloudRunJobStatus.SUCCESS,
         )
 
-    def test_write_to_table(self) -> None:
-        """Test that IntercomExportBigQueryTableManager.write_to_table() runs without errors"""
-
-        mock_job = MagicMock(spec=LoadJob)
-        self.mock_client.load_into_table_async.return_value = mock_job
-
-        self.bq_table_manager.write_to_table(self.cloud_run_job_info)
-        big_query_address = BigQueryAddress(
-            dataset_id=INTERCOM_EXPORT_METADATA_DATASET,
-            table_id=INTERCOM_EXPORT_METADATA_EXPORT_TRACKER_TABLE_ID,
-        )
-
-        self.mock_client.load_into_table_async.assert_called_once_with(
-            address=big_query_address, rows=[self.cloud_run_job_info.to_json()]
-        )
-
     def test_write_to_table_fails(self) -> None:
         """Test that IntercomExportBigQueryTableManager.write_to_table() properly raises GoogleAPICallError"""
 
@@ -143,6 +127,56 @@ class TestIntercomExportBigQueryTableManagerWithEmulator(BigQueryEmulatorTestCas
             EXPORT_WINDOW_END_INCLUSIVE_COLUMN_NAME: window_end,
             STATUS_COLUMN_NAME: status.value,
         }
+
+    def test_write_to_table(self) -> None:
+        self.bq_table_manager.write_to_table(
+            IntercomCloudRunJobInfo(
+                export_datetime=datetime(2026, 7, 10, 6, 0, tzinfo=timezone.utc),
+                export_window_start_inclusive=datetime(2026, 7, 9, tzinfo=timezone.utc),
+                export_window_end_inclusive=datetime(2026, 7, 10, tzinfo=timezone.utc),
+                status=IntercomCloudRunJobStatus.SUCCESS,
+            )
+        )
+        self.bq_table_manager.write_to_table(
+            IntercomCloudRunJobInfo(
+                export_datetime=datetime(2026, 7, 11, 6, 0, tzinfo=timezone.utc),
+                export_window_start_inclusive=datetime(
+                    2026, 7, 10, tzinfo=timezone.utc
+                ),
+                export_window_end_inclusive=datetime(2026, 7, 11, tzinfo=timezone.utc),
+                status=IntercomCloudRunJobStatus.FAILURE,
+            )
+        )
+
+        self.compare_table_to_results(
+            self.tracker_address,
+            expected_result=[
+                {
+                    EXPORT_DATETIME_COLUMN_NAME: datetime(
+                        2026, 7, 10, 6, 0, tzinfo=timezone.utc
+                    ),
+                    EXPORT_WINDOW_START_INCLUSIVE_COLUMN_NAME: datetime(
+                        2026, 7, 9, tzinfo=timezone.utc
+                    ),
+                    EXPORT_WINDOW_END_INCLUSIVE_COLUMN_NAME: datetime(
+                        2026, 7, 10, tzinfo=timezone.utc
+                    ),
+                    STATUS_COLUMN_NAME: "SUCCESS",
+                },
+                {
+                    EXPORT_DATETIME_COLUMN_NAME: datetime(
+                        2026, 7, 11, 6, 0, tzinfo=timezone.utc
+                    ),
+                    EXPORT_WINDOW_START_INCLUSIVE_COLUMN_NAME: datetime(
+                        2026, 7, 10, tzinfo=timezone.utc
+                    ),
+                    EXPORT_WINDOW_END_INCLUSIVE_COLUMN_NAME: datetime(
+                        2026, 7, 11, tzinfo=timezone.utc
+                    ),
+                    STATUS_COLUMN_NAME: "FAILURE",
+                },
+            ],
+        )
 
     def test_returns_latest_successful_window_end(self) -> None:
         """

@@ -28,6 +28,7 @@ from typing import Any, Dict, Iterator, List
 from unittest.mock import MagicMock, call, create_autospec, patch
 
 import __main__
+import google.api_core.exceptions
 from freezegun import freeze_time
 from google.api_core.future.polling import DEFAULT_RETRY, PollingFuture
 from google.api_core.retry import Retry
@@ -1269,28 +1270,6 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.get_table.assert_called()
         self.mock_client.insert_rows.assert_called()
-
-    def test_load_into_table_async(self) -> None:
-        self.bq_client.load_into_table_async(
-            address=self.mock_table_address,
-            rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
-        )
-
-        self.mock_client.get_table.assert_called()
-        self.mock_client.load_table_from_json.assert_called()
-
-    def test_load_into_table_async_invalid_table(self) -> None:
-        error_message = "TEST - Something went wrong"
-        self.mock_client.get_table.side_effect = ValueError(error_message)
-
-        with self.assertRaisesRegex(ValueError, error_message):
-            self.bq_client.load_into_table_async(
-                address=self.mock_table_address,
-                rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
-            )
-
-        self.mock_client.get_table.assert_called()
-        self.mock_client.load_table_from_json.assert_not_called()
 
     @patch("google.cloud.bigquery.QueryJobConfig")
     def test_delete_from_table(self, mock_job_config: MagicMock) -> None:
@@ -3879,8 +3858,7 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
         )
         self.assertSetEqual({"RECORD", "STRUCT"}, valid_field_types)
 
-    # TODO(#31105) un-underscore when emulator rejects null values in required fields
-    def _test_insert_into_table_from_table_async_dest_required(self) -> None:
+    def test_insert_into_table_from_table_async_dest_required(self) -> None:
         """Test that should fail as the rows being loaded are nullable in the source
         schema (and are null) but are required in the destination schema
         """
@@ -3927,14 +3905,18 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
 
         self.load_rows_into_table(source, fake_data_fail)
 
-        job = self.bq_client.insert_into_table_from_table_async(
-            source_address=source,
-            destination_address=destination,
-            use_query_cache=False,
-        )
-
         # should fail
-        job.result()
+        with self.assertRaisesRegex(
+            google.api_core.exceptions.BadRequest,
+            r".+NOT NULL constraint failed.+",
+        ):
+            job = self.bq_client.insert_into_table_from_table_async(
+                source_address=source,
+                destination_address=destination,
+                use_query_cache=False,
+            )
+
+            job.result()
 
         # if one row fails to be inserted, the whole statement is rolled back so we
         # should have the same table as before
@@ -3945,8 +3927,7 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
 
         self.run_query_test(f"select * from `{destination.to_str()}`", fake_output)
 
-    # TODO(#31105) un-underscore when emulator rejects null values in required fields
-    def _test_insert_into_table_from_table_async_dest_required_but_missing(
+    def test_insert_into_table_from_table_async_dest_required_but_missing(
         self,
     ) -> None:
         """Test that should fail as a required schema field that will always is missing
@@ -3979,13 +3960,164 @@ class BigQueryClientImplEmulatorTest(BigQueryEmulatorTestCase):
 
         self.load_rows_into_table(source, fake_data)
 
-        job = self.bq_client.insert_into_table_from_table_async(
-            source_address=source,
-            destination_address=destination,
-            use_query_cache=False,
-        )
+        with self.assertRaisesRegex(
+            google.api_core.exceptions.BadRequest,
+            r".+NOT NULL constraint failed.+",
+        ):
+            job = self.bq_client.insert_into_table_from_table_async(
+                source_address=source,
+                destination_address=destination,
+                use_query_cache=False,
+            )
 
-        # this will always fail
-        job.result()
+            # this will always fail
+            job.result()
 
         self.run_query_test(f"select * from `{destination.to_str()}`", [])
+
+    def test_create_table_with_schema_clustering_field_not_in_schema(self) -> None:
+        self.bq_client.create_dataset_if_necessary("dataset")
+
+        with self.assertRaisesRegex(
+            google.api_core.exceptions.BadRequest,
+            r"^400 POST .+: The field specified for clustering cannot be found in the "
+            r"schema\. Invalid field: col_3\.$",
+        ):
+            self.bq_client.create_table_with_schema(
+                address=BigQueryAddress(dataset_id="dataset", table_id="table"),
+                schema_fields=self.simple_schema,
+                clustering_fields=["col_3"],
+            )
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                BigQueryAddress(dataset_id="dataset", table_id="table")
+            )
+        )
+
+    def test_materialize_view_to_table_clustering_field_not_in_view(self) -> None:
+        view = SimpleBigQueryViewBuilder(
+            dataset_id="dataset",
+            view_id="test_view",
+            description="test_view description",
+            view_query_template="SELECT 'val_1' AS col_1, 'val_2' AS col_2",
+            should_materialize=True,
+            clustering_fields=["col_3"],
+            schema=[
+                String(name="col_1", description="first column", mode="NULLABLE"),
+                String(name="col_2", description="second column", mode="NULLABLE"),
+            ],
+        ).build()
+        self.bq_client.create_dataset_if_necessary("dataset")
+        self.bq_client.create_or_update_view(view)
+
+        with self.assertRaisesRegex(
+            google.api_core.exceptions.BadRequest,
+            r"^400 POST .+: The field specified for clustering cannot be found in the "
+            r"schema\. Invalid field: col_3\.$",
+        ):
+            self.bq_client.materialize_view_to_table(
+                view=view, use_query_cache=False, view_configuration_changed=True
+            )
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                BigQueryAddress(dataset_id="dataset", table_id="test_view_materialized")
+            )
+        )
+
+    def test_create_table_from_query_clustering_field_not_in_query(self) -> None:
+        self.bq_client.create_dataset_if_necessary("dataset")
+
+        with self.assertRaisesRegex(
+            google.api_core.exceptions.BadRequest,
+            r"^400 POST .+: The field specified for clustering cannot be found in the "
+            r"schema\. Invalid field: col_3\n\nLocation: US\nJob ID: [0-9a-f-]+\n$",
+        ):
+            self.bq_client.create_table_from_query(
+                address=BigQueryAddress(dataset_id="dataset", table_id="table"),
+                query="SELECT 'val_1' AS col_1, 'val_2' AS col_2",
+                overwrite=True,
+                use_query_cache=False,
+                clustering_fields=["col_3"],
+            )
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                BigQueryAddress(dataset_id="dataset", table_id="table")
+            )
+        )
+
+    def test_load_into_table_async_appends(self) -> None:
+        address = BigQueryAddress(dataset_id="dataset", table_id="table")
+        self.create_mock_table(address, self.simple_schema)
+
+        self.bq_client.load_into_table_async(
+            address=address,
+            rows=[{"col_1": "val_1", "col_2": "val_2"}],
+        ).result()
+        self.bq_client.load_into_table_async(
+            address=address,
+            rows=[{"col_1": "val_3", "col_2": None}],
+        ).result()
+
+        self.compare_table_to_results(
+            address,
+            expected_result=[
+                {"col_1": "val_1", "col_2": "val_2"},
+                {"col_1": "val_3", "col_2": None},
+            ],
+        )
+
+    def test_load_into_table_async_write_truncate_replaces_rows(self) -> None:
+        address = BigQueryAddress(dataset_id="dataset", table_id="table")
+        self.create_mock_table(address, self.simple_schema)
+        self.load_rows_into_table(address, [{"col_1": "old_1", "col_2": "old_2"}])
+
+        self.bq_client.load_into_table_async(
+            address=address,
+            rows=[{"col_1": "new_1", "col_2": "new_2"}],
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+        ).result()
+
+        self.compare_table_to_results(
+            address, expected_result=[{"col_1": "new_1", "col_2": "new_2"}]
+        )
+
+    def test_load_into_table_async_bad_row_loads_nothing(self) -> None:
+        address = BigQueryAddress(dataset_id="dataset", table_id="table")
+        self.create_mock_table(
+            address,
+            [
+                bigquery.SchemaField(
+                    mode="REQUIRED", field_type="STRING", name="col_1"
+                ),
+                bigquery.SchemaField(
+                    mode="NULLABLE", field_type="INTEGER", name="col_2"
+                ),
+            ],
+        )
+
+        with self.assertRaisesRegex(
+            google.api_core.exceptions.BadRequest, r"Error while reading data"
+        ):
+            self.bq_client.load_into_table_async(
+                address=address,
+                rows=[
+                    {"col_1": "val_1", "col_2": 1},
+                    {"col_1": "val_2", "col_2": "not_an_integer"},
+                ],
+            ).result()
+
+        self.compare_table_to_results(address, expected_result=[])
+
+    def test_load_into_table_async_missing_table(self) -> None:
+        self.bq_client.create_dataset_if_necessary("dataset")
+
+        with self.assertRaisesRegex(
+            google.api_core.exceptions.NotFound, r"(?i)not found"
+        ):
+            self.bq_client.load_into_table_async(
+                address=BigQueryAddress(dataset_id="dataset", table_id="table"),
+                rows=[{"col_1": "val_1", "col_2": "val_2"}],
+            )

@@ -16,9 +16,9 @@
 # =============================================================================
 """Tests for document_collection_diff_query_builder.py."""
 
+import datetime
 from pathlib import Path
 
-import pandas as pd
 from freezegun import freeze_time
 from google.cloud.bigquery import SchemaField
 from google.cloud.bigquery.enums import SqlTypeNames
@@ -155,15 +155,8 @@ class TestBuildDocumentDiffQueryEntityResolution(BigQueryEmulatorTestCase):
     entry_source_map column must survive the table read — including the
     deleted-documents branch's typed empty-array cast.
 
-    The BQ emulator cannot round-trip ARRAY<STRUCT<TIMESTAMP>> columns through
-    a CREATE TABLE AS SELECT write (and cannot stream them to the client at
-    all), so this test seeds the generation-output table with streamed rows
-    rather than running the real generation query, and reads the diff through
-    wrapper queries (scalar columns + ARRAY_LENGTH, and UNNEST) instead of
-    materializing it.
-    TODO(OBT-42814): Once the emulator bug is fixed, materialize the
-    generation output through the real generation query and the diff through a
-    real temp-table write.
+    The generation-output table is seeded with literal rows, so each case's
+    composite and its entry_source_map are spelled out in the test.
     """
 
     def setUp(self) -> None:
@@ -260,78 +253,65 @@ class TestBuildDocumentDiffQueryEntityResolution(BigQueryEmulatorTestCase):
             ],
         )
 
-        scalar_rows = self.query(
-            "SELECT person_id, document_contents_id, document_text, "
-            "document_update_datetime, ARRAY_LENGTH(entry_source_map) AS num_entries "
-            f"FROM ({self._diff_query()}) ORDER BY person_id"
-        ).to_dict("records")
-        self.assertEqual(
-            [
+        self.run_query_test(
+            f"SELECT * FROM ({self._diff_query()}) ORDER BY person_id",
+            expected_result=[
                 {
                     "person_id": 1001,
                     "document_contents_id": "composite_hash_1001_v2",
                     "document_text": "composite text for person 1001",
-                    "document_update_datetime": pd.Timestamp("2026-01-15T00:00:00Z"),
-                    "num_entries": 2,
+                    "document_update_datetime": datetime.datetime(
+                        2026, 1, 15, tzinfo=datetime.timezone.utc
+                    ),
+                    "entry_source_map": [
+                        {
+                            "entry_num": 1,
+                            "source_document_contents_id": "doc_aaa",
+                            "source_document_update_datetime": datetime.datetime(
+                                2026, 1, 15, tzinfo=datetime.timezone.utc
+                            ),
+                            "source_array_index": 0,
+                        },
+                        {
+                            "entry_num": 2,
+                            "source_document_contents_id": "doc_aaa",
+                            "source_document_update_datetime": datetime.datetime(
+                                2026, 1, 15, tzinfo=datetime.timezone.utc
+                            ),
+                            "source_array_index": 1,
+                        },
+                    ],
                 },
                 {
                     "person_id": 1002,
                     "document_contents_id": "composite_hash_1002",
                     "document_text": "composite text for person 1002",
-                    "document_update_datetime": pd.Timestamp("2026-01-20T00:00:00Z"),
-                    "num_entries": 1,
+                    "document_update_datetime": datetime.datetime(
+                        2026, 1, 20, tzinfo=datetime.timezone.utc
+                    ),
+                    "entry_source_map": [
+                        {
+                            "entry_num": 1,
+                            "source_document_contents_id": "doc_bbb",
+                            "source_document_update_datetime": datetime.datetime(
+                                2026, 1, 20, tzinfo=datetime.timezone.utc
+                            ),
+                            "source_array_index": 0,
+                        },
+                    ],
                 },
                 {
                     "person_id": 1003,
                     "document_contents_id": None,
                     "document_text": None,
-                    "document_update_datetime": pd.NaT,
-                    # The deleted stub's typed NULL-array cast reads as NULL in-query
-                    # (ARRAY_LENGTH(NULL) is NULL), becoming a stored empty array only once
-                    # written to the temp table.
-                    # TODO(OBT-42814): Assert against the stored (empty array) form once
-                    # the emulator bug is fixed.
-                    "num_entries": None,
+                    "document_update_datetime": None,
+                    # The deleted stub's typed NULL-array cast is NULL in-query, which
+                    # the client reads as an empty array. BigQuery also stores it as an
+                    # empty array once the diff is written to its temp table, but the
+                    # emulator stores NULL.
+                    # TODO(Recidiviz/zigquery#114): Materialize the diff and assert
+                    # ARRAY_LENGTH(entry_source_map) is 0 for this row.
+                    "entry_source_map": [],
                 },
             ],
-            scalar_rows,
-        )
-
-        map_rows = self.query(
-            "SELECT t.person_id, e.entry_num, e.source_document_contents_id, "
-            "e.source_document_update_datetime, e.source_array_index "
-            f"FROM ({self._diff_query()}) t, UNNEST(t.entry_source_map) AS e "
-            "ORDER BY t.person_id, e.entry_num"
-        ).to_dict("records")
-        self.assertEqual(
-            [
-                {
-                    "person_id": 1001,
-                    "entry_num": 1,
-                    "source_document_contents_id": "doc_aaa",
-                    "source_document_update_datetime": pd.Timestamp(
-                        "2026-01-15T00:00:00Z"
-                    ),
-                    "source_array_index": 0,
-                },
-                {
-                    "person_id": 1001,
-                    "entry_num": 2,
-                    "source_document_contents_id": "doc_aaa",
-                    "source_document_update_datetime": pd.Timestamp(
-                        "2026-01-15T00:00:00Z"
-                    ),
-                    "source_array_index": 1,
-                },
-                {
-                    "person_id": 1002,
-                    "entry_num": 1,
-                    "source_document_contents_id": "doc_bbb",
-                    "source_document_update_datetime": pd.Timestamp(
-                        "2026-01-20T00:00:00Z"
-                    ),
-                    "source_array_index": 0,
-                },
-            ],
-            map_rows,
         )

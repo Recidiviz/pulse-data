@@ -15,9 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """End-to-end tests for run_sandbox_extraction: drives the real orchestration
-against the BQ emulator and a local Postgres, faking only the Vertex client, the
-GCS->BQ CSV load transport, and the one composite-generation step the emulator
-cannot execute.
+against the BQ emulator and a local Postgres, faking only the Vertex client and the
+GCS->BQ CSV load transport.
 """
 
 import argparse
@@ -30,16 +29,10 @@ from unittest import mock
 from google.cloud import bigquery
 from google.cloud.bigquery.enums import SqlTypeNames
 
-from recidiviz.big_query.big_query_address import (
-    BigQueryAddress,
-    ProjectSpecificBigQueryAddress,
-)
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.document_extraction_processor import (
     ExtractionRunSummary,
-)
-from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
-    EntityResolutionDocumentCollectionConfig,
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_source_map_table import (
     EntityResolutionEntrySourceMapBQTable,
@@ -73,7 +66,6 @@ from recidiviz.documents.extraction.views.llm_extractor_entity_mentions_view_bui
 from recidiviz.documents.store.document_store_gcs_path_utils import (
     gcs_path_for_document,
 )
-from recidiviz.documents.store.new_document_discovery import NewDocumentDiscoverer
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -107,8 +99,6 @@ from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_te
     FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
     FAKE_LOCATION_ER_COLLECTION_NAME,
     FAKE_PAY_RATE_ER_COLLECTION_NAME,
-    build_fake_composite_generation_output_row,
-    build_fake_entry_source_map_entry,
     fake_first_order_extractor_config,
     patch_fake_entity_resolution_model_config_name,
 )
@@ -250,9 +240,9 @@ def _person_external_id_address() -> BigQueryAddress:
 
 class RunSandboxExtractionTestBase(BigQueryEmulatorWithGCSTestCase):
     """Stands up the emulator + local Postgres environment run_sandbox_extraction
-    needs and fakes the seams the emulator cannot execute (the Vertex client, the
-    GCS->BQ CSV load transport, and the composite-generation materialization),
-    exposing the seeding and assertion helpers the end-to-end tests build on."""
+    needs and fakes the dependencies the emulator cannot stand in for (the Vertex
+    client and the GCS->BQ CSV load transport), exposing the seeding and assertion
+    helpers the end-to-end tests build on."""
 
     wipe_emulator_data_on_teardown = False
 
@@ -349,30 +339,9 @@ class RunSandboxExtractionTestBase(BigQueryEmulatorWithGCSTestCase):
             )
         )
         self._point_config_resolution_at_fake_module()
-        # The ER composite-document generation query emits an entry_source_map
-        # ARRAY<STRUCT<...TIMESTAMP...>>, which the BQ emulator cannot round-trip
-        # when written via CREATE TABLE AS SELECT (streamed rows work). Seed the
-        # composite generation output for an ER collection with streamed rows
-        # instead; a first-order collection runs the real materialization.
-        # TODO(OBT-42814): drop this once the emulator supports the nested-timestamp
-        # CTAS and let ER composite generation run for real here too.
-        self._real_materialize = (
-            # pylint: disable-next=protected-access
-            NewDocumentDiscoverer._materialize_document_generation_output
-        )
-        self.enterContext(
-            mock.patch.object(
-                NewDocumentDiscoverer,
-                "_materialize_document_generation_output",
-                autospec=True,
-                side_effect=self._materialize_document_generation_output,
-            )
-        )
-        # Composite generation-output rows the seam streams per ER collection name,
-        # and the clustering result the fake ER client returns per composite
-        # document; both populated by a test before it runs the ER pass.
-        self._composite_rows_by_collection: dict[str, list[dict[str, Any]]] = {}
-        self._er_result_by_contents_id: dict[str, dict[str, Any]] = {}
+        # The clustering result the fake ER client returns per composite document text;
+        # populated by a test before it runs the ER pass.
+        self._er_result_by_composite_text: dict[str, dict[str, Any]] = {}
 
     def tearDown(self) -> None:
         local_persistence_helpers.teardown_on_disk_postgresql_database(
@@ -407,41 +376,24 @@ class RunSandboxExtractionTestBase(BigQueryEmulatorWithGCSTestCase):
     def _result_fn(
         self, request: LLMDocumentExtractionRequest
     ) -> LLMClientDocumentExtractionResult:
-        """Returns the canned result for |request|, keyed on the document it extracts
-        from: a composite document (its contents id is a seeded ER result) gets that
-        clustering result, a first-order document its own grounded result."""
+        """Returns the canned result for |request|: a first-order document gets its
+        own grounded result, keyed on its contents id; a composite document gets its
+        seeded clustering result, keyed on the text the real composite generation
+        query rendered for it."""
         result_json = (
-            self._er_result_by_contents_id[request.document_contents_id]
-            if request.document_contents_id in self._er_result_by_contents_id
-            else copy.deepcopy(
+            copy.deepcopy(
                 _GROUNDED_FIRST_ORDER_RESULT_BY_DOC[
                     request.document_contents_id
                 ].result_json
             )
+            if request.document_contents_id in _GROUNDED_FIRST_ORDER_RESULT_BY_DOC
+            else self._er_result_by_composite_text[request.document_text]
         )
         return LLMClientDocumentExtractionResult.from_success(
             document_contents_id=request.document_contents_id,
             result_json=result_json,
             token_counts=fake_token_counts(),
         )
-
-    def _materialize_document_generation_output(
-        self, discoverer: NewDocumentDiscoverer
-    ) -> ProjectSpecificBigQueryAddress:
-        config = discoverer.config
-        if not isinstance(config, EntityResolutionDocumentCollectionConfig):
-            return self._real_materialize(discoverer)
-
-        address = config.temp_document_generation_output_table_address(
-            discoverer.run_id, discoverer.output_prefix
-        )
-        self.create_mock_table(
-            address, schema=config.build_bq_document_generation_output_schema()
-        )
-        rows = self._composite_rows_by_collection.get(config.name, [])
-        if rows:
-            self.load_rows_into_table(address, rows)
-        return address.to_project_specific_address(self.project_id)
 
 
 # TODO(OBT-46375) Add more tests: partial failures, etc.
@@ -519,122 +471,124 @@ class RunSandboxExtractionTest(RunSandboxExtractionTestBase):
         )
 
     def _seed_entity_resolution_composites(self) -> None:
-        """Sets up the ER pass's inputs for every entity group: the composite
-        generation-output rows the seam streams, and the clustering result the fake
-        ER client returns for each composite.
+        """Seeds the clustering result the fake ER client returns for each composite
+        document the real composite generation query renders from the first-order
+        results: one composite per (entity group, person).
 
-        One composite per (group, person), carrying that person's own resolved entity
-        values so the ER output differs person to person. The top-level location group
-        renders one entry per person (source_array_index null); the array-sourced
-        assignment and pay_rate groups render one entry per assignments-array element
-        (the fake first-order result carries two). Each composite's mentions are
-        clustered into a single entity, so every entry maps back to that entity.
+        Each composite's mentions are clustered into a single entity carrying that
+        person's own resolved values, so the ER output differs person to person. The
+        top-level location group renders one entry per person; the array-sourced
+        assignment and pay_rate groups render one entry per element of the
+        first-order assignments array, which holds two per person.
         """
-        people = [
+        self._er_result_by_composite_text = {
+            # Location, person 1001.
             (
-                _PERSON_ID_A,
-                DOC_A,
-                _DOC_A_UPDATE_DATETIME,
-                {"location": "Kitchen"},
-                {"assignment_name": "Dish duty", "assignment_type": "internal"},
-                {"rate_amount": 12.5},
+                "=== Source document — 2026-01-01 ===\n"
+                "document_text: some case note text\n"
+                "\n"
+                "[Entry 1]\n"
+                "location: Kitchen"
+            ): build_fake_entity_resolution_result_content(
+                [
+                    build_fake_entity_resolution_entity_result_json(
+                        1, entry_nums=[1], location="Kitchen"
+                    )
+                ]
             ),
+            # Location, person 1002.
             (
-                _PERSON_ID_B,
-                DOC_B,
-                _DOC_B_UPDATE_DATETIME,
-                {"location": "Cafeteria"},
-                {"assignment_name": "Yard crew", "assignment_type": "external"},
-                {"rate_amount": 8.0},
+                "=== Source document — 2026-02-01 ===\n"
+                "document_text: another case note\n"
+                "\n"
+                "[Entry 1]\n"
+                "location: Cafeteria"
+            ): build_fake_entity_resolution_result_content(
+                [
+                    build_fake_entity_resolution_entity_result_json(
+                        1, entry_nums=[1], location="Cafeteria"
+                    )
+                ]
             ),
-        ]
-        for (
-            person_id,
-            source_doc,
-            source_datetime,
-            location_fields,
-            assignment_fields,
-            pay_rate_fields,
-        ) in people:
-            self._add_composite_document(
-                collection_name=FAKE_LOCATION_ER_COLLECTION_NAME,
-                person_id=person_id,
-                document_update_datetime=source_datetime,
-                entries=[
-                    build_fake_entry_source_map_entry(
-                        entry_num=1,
-                        source_document_contents_id=source_doc,
-                        source_document_update_datetime=source_datetime,
-                        source_array_index=None,
-                    )
-                ],
-                entities=[
+            # Assignment, person 1001.
+            (
+                "=== Source document — 2026-01-01 ===\n"
+                "document_text: some case note text\n"
+                "\n"
+                "[Entry 1]\n"
+                "assignment_name: Dish duty\n"
+                "assignment_type: internal\n"
+                "\n"
+                "[Entry 2]\n"
+                "assignment_name: Laundry\n"
+                "assignment_type: internal"
+            ): build_fake_entity_resolution_result_content(
+                [
                     build_fake_entity_resolution_entity_result_json(
-                        1, entry_nums=[1], **location_fields
+                        1,
+                        entry_nums=[1, 2],
+                        assignment_name="Dish duty",
+                        assignment_type="internal",
                     )
-                ],
-            )
-            self._add_composite_document(
-                collection_name=FAKE_ASSIGNMENT_ER_COLLECTION_NAME,
-                person_id=person_id,
-                document_update_datetime=source_datetime,
-                entries=[
-                    build_fake_entry_source_map_entry(
-                        entry_num=array_index + 1,
-                        source_document_contents_id=source_doc,
-                        source_document_update_datetime=source_datetime,
-                        source_array_index=array_index,
-                    )
-                    for array_index in (0, 1)
-                ],
-                entities=[
+                ]
+            ),
+            # Assignment, person 1002.
+            (
+                "=== Source document — 2026-02-01 ===\n"
+                "document_text: another case note\n"
+                "\n"
+                "[Entry 1]\n"
+                "assignment_name: Yard crew\n"
+                "assignment_type: external\n"
+                "\n"
+                "[Entry 2]\n"
+                "assignment_name: Kitchen porter\n"
+                "assignment_type: internal"
+            ): build_fake_entity_resolution_result_content(
+                [
                     build_fake_entity_resolution_entity_result_json(
-                        1, entry_nums=[1, 2], **assignment_fields
+                        1,
+                        entry_nums=[1, 2],
+                        assignment_name="Yard crew",
+                        assignment_type="external",
                     )
-                ],
-            )
-            self._add_composite_document(
-                collection_name=FAKE_PAY_RATE_ER_COLLECTION_NAME,
-                person_id=person_id,
-                document_update_datetime=source_datetime,
-                entries=[
-                    build_fake_entry_source_map_entry(
-                        entry_num=array_index + 1,
-                        source_document_contents_id=source_doc,
-                        source_document_update_datetime=source_datetime,
-                        source_array_index=array_index,
-                    )
-                    for array_index in (0, 1)
-                ],
-                entities=[
+                ]
+            ),
+            # Pay rate, person 1001.
+            (
+                "=== Source document — 2026-01-01 ===\n"
+                "document_text: some case note text\n"
+                "\n"
+                "[Entry 1]\n"
+                "rate_amount: 12.5\n"
+                "\n"
+                "[Entry 2]\n"
+                "rate_amount: 9"
+            ): build_fake_entity_resolution_result_content(
+                [
                     build_fake_entity_resolution_entity_result_json(
-                        1, entry_nums=[1, 2], **pay_rate_fields
+                        1, entry_nums=[1, 2], rate_amount=12.5
                     )
-                ],
-            )
-
-    def _add_composite_document(
-        self,
-        *,
-        collection_name: str,
-        person_id: int,
-        document_update_datetime: datetime.datetime,
-        entries: list[dict[str, Any]],
-        entities: list[dict[str, Any]],
-    ) -> None:
-        document_contents_id = f"comp_{collection_name.lower()}_{person_id}"
-        self._composite_rows_by_collection.setdefault(collection_name, []).append(
-            build_fake_composite_generation_output_row(
-                root_entity_id_column="person_id",
-                root_entity_id=person_id,
-                document_contents_id=document_contents_id,
-                document_update_datetime=document_update_datetime,
-                entries=entries,
-            )
-        )
-        self._er_result_by_contents_id[
-            document_contents_id
-        ] = build_fake_entity_resolution_result_content(entities)
+                ]
+            ),
+            # Pay rate, person 1002.
+            (
+                "=== Source document — 2026-02-01 ===\n"
+                "document_text: another case note\n"
+                "\n"
+                "[Entry 1]\n"
+                "rate_amount: 8\n"
+                "\n"
+                "[Entry 2]\n"
+                "rate_amount: 10.5"
+            ): build_fake_entity_resolution_result_content(
+                [
+                    build_fake_entity_resolution_entity_result_json(
+                        1, entry_nums=[1, 2], rate_amount=8.0
+                    )
+                ]
+            ),
+        }
 
     def _seed_gcs(self, document_contents_id: str, text: str) -> None:
         self.fs.upload_from_string(
@@ -723,14 +677,6 @@ class RunSandboxExtractionTest(RunSandboxExtractionTestBase):
         # Each array-level pre-resolution view carries one parsed row per element of an
         # ARRAY_OF_STRUCT field an entity group is sourced from (the fake collection's is
         # `assignments`) — the same fields the deploy produces a pre-resolution view for.
-        #
-        # We assert against the view address, not its materialized table: these views
-        # carry nested companion-metadata STRUCT columns, and the emulator cannot
-        # round-trip that nested schema through the CREATE TABLE AS SELECT the deploy
-        # materializes with, so the materialized table it produces here is unusable.
-        # Reading the view re-runs the SELECT over the streamed result rows instead.
-        # TODO(OBT-42814): assert against the materialized table once the emulator
-        # supports the nested-schema CTAS.
         for array_field in collection.output_schema.array_of_struct_user_fields:
             if not collection.entity_groups_for_array_field(array_field):
                 continue
@@ -741,7 +687,11 @@ class RunSandboxExtractionTest(RunSandboxExtractionTestBase):
                 sandbox_dataset_prefix=SANDBOX_PREFIX,
             )
             self._assert_sandbox_table_matches_fixture(
-                address=address,
+                address=LLMExtractorPreResolutionArrayFieldResultsViewBuilder.materialized_address_for_array_field(
+                    config=first_order_config,
+                    array_field=array_field,
+                    sandbox_dataset_prefix=SANDBOX_PREFIX,
+                ),
                 fixture_name=f"pre_resolution/{address.table_id}.csv",
                 columns_to_ignore=[VALIDATION_DATETIME_UTC_COLUMN_NAME],
             )

@@ -902,13 +902,6 @@ class SqlCastEmulatorTest(BigQueryEmulatorTestCase):
     casts BigQuery rejects do in fact raise.
     """
 
-    # These tests create no tables — the only datasets in the emulator are the
-    # anonymous query-cache datasets it materializes for each distinct query (one
-    # per matrix entry, ~100+ per test). Wiping fans out parallel delete_dataset
-    # calls over all of them, which crashes the emulator and hangs teardown
-    # (see: OBT-40787).
-    wipe_emulator_data_on_teardown = False
-
     def test_valid_casts_produce_expected_values(self) -> None:
         for case in _CAST_TARGET_MATRIX:
             for source, expected in case.castable_source_to_expected.items():
@@ -982,10 +975,6 @@ class JsonExtractionClauseEmulatorTest(BigQueryEmulatorTestCase):
     shape, and that a shape mismatch or a missing path yields NULL rather than
     an error.
     """
-
-    # No tables are created; skip the teardown wipe of query-cache datasets (see
-    # SqlCastEmulatorTest).
-    wipe_emulator_data_on_teardown = False
 
     _SOURCE_JSON_EXPRESSION = (
         """JSON '{"name": "ann", "job": {"title": "dev"}, "tags": ["a", "b"]}'"""

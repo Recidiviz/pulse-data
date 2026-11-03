@@ -536,20 +536,16 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             append_ready_file.append_ready_table_address, raw_data_table
         )
 
-        # TODO(#31751) add logs asserts back once num_dml_affected_rows is populated
-        # by the emulator
+        with self.assertLogs(level="ERROR") as logs:
+            _ = self.manager.append_to_raw_data_table(append_ready_file)
 
-        # with self.assertLogs(level="ERROR") as logs:
-
-        _ = self.manager.append_to_raw_data_table(append_ready_file)
-
-        # assert len(logs.output) == 1
-        # self.assertRegex(
-        #     logs.output[0],
-        #     re.escape(
-        #         "Found [2] already existing rows with file id [1] in [us_xx_raw_data.singlePrimaryKey]"
-        #     ),
-        # )
+        assert len(logs.output) == 1
+        self.assertRegex(
+            logs.output[0],
+            re.escape(
+                "Found [2] already existing rows with file id [1] in [us_xx_raw_data.singlePrimaryKey]"
+            ),
+        )
 
         self.compare_output_against_expected(raw_data_table, append_output)
 

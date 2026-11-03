@@ -1,5 +1,5 @@
 person_id,document_contents_id,entry_num,source_document_contents_id,source_document_update_datetime,source_array_index
-1001,comp_fake_extractor_collection_assignment_entity_resolution_1001,1,CID_A,2026-01-01 10:00:00+00:00,0
-1001,comp_fake_extractor_collection_assignment_entity_resolution_1001,2,CID_A,2026-01-01 10:00:00+00:00,1
-1002,comp_fake_extractor_collection_assignment_entity_resolution_1002,1,CID_B,2026-02-01 10:00:00+00:00,0
-1002,comp_fake_extractor_collection_assignment_entity_resolution_1002,2,CID_B,2026-02-01 10:00:00+00:00,1
+1001,63f04fd1b16945abaa34e371432414d9bfb023d3508dd3aee2f41dd322e96a84,1,CID_A,2026-01-01 10:00:00+00:00,0
+1001,63f04fd1b16945abaa34e371432414d9bfb023d3508dd3aee2f41dd322e96a84,2,CID_A,2026-01-01 10:00:00+00:00,1
+1002,7563b1211085add71e5e80c0a0de07c31ffc9ff3943ff5a67dfebcc7493e0182,1,CID_B,2026-02-01 10:00:00+00:00,0
+1002,7563b1211085add71e5e80c0a0de07c31ffc9ff3943ff5a67dfebcc7493e0182,2,CID_B,2026-02-01 10:00:00+00:00,1

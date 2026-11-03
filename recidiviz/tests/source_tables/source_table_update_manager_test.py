@@ -1461,8 +1461,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
             ),
         )
 
-    # TODO(#37283) re-add when emulator supports partitioning
-    def _test_partitioning_fields(self) -> None:
+    def test_partitioning_fields(self) -> None:
         """test for update manager's handling of time partitioning"""
         table_address = BigQueryAddress(
             dataset_id="test_dataset", table_id="test_table"
@@ -1476,6 +1475,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
             ],
             description="partitioned table",
             time_partitioning=bigquery.TimePartitioning(field="dt"),
+            require_partition_filter=False,
         )
         with_partitioning = SourceTableCollection(
             update_groups={SourceTableUpdateGroup.CALC},
@@ -1500,7 +1500,9 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         )
 
         with self.assertRaisesRegex(
-            SourceTableFailedToUpdateError, "has time partitioning.+that does not match"
+            SourceTableFailedToUpdateError,
+            r"Cannot apply changes of type\(s\) \['MISMATCH_PARTITIONING_FIELDS'\] to "
+            r"table \[test_dataset.test_table\].",
         ):
             self.source_table_update_manager.update(
                 source_table_collection=SourceTableCollection(
@@ -1518,7 +1520,9 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                 )
             )
         with self.assertRaisesRegex(
-            SourceTableFailedToUpdateError, "has time partitioning.+that does not match"
+            SourceTableFailedToUpdateError,
+            r"Cannot apply changes of type\(s\) \['MISMATCH_PARTITIONING_FIELDS'\] to "
+            r"table \[test_dataset.test_table\].",
         ):
             self.source_table_update_manager.update(
                 source_table_collection=SourceTableCollection(

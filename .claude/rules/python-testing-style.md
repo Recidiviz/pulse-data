@@ -118,7 +118,7 @@ class OpenSessionsViewTest(BigQueryEmulatorTestCase):
 ```
 
 - **Share table setup, not expectations.** When several test files exercise views over the same tables, put the `create_mock_table`/`load_rows_into_table` boilerplate in shared helpers that take the test case as an argument — see `recidiviz/tests/task_eligibility/task_eligibility_big_query_emulator_utils.py` (e.g. `load_data_for_task_criteria_view(emulator, view_builder, criteria_data)`) — or a shared base test case with `load_*` methods. Each test still states its own rows and its own literal expected output.
-- **Know the emulator's limits.** The emulator supports a large subset of BigQuery SQL, not all of it; notably its `CAST` is more lenient than real BigQuery, so an emulator test alone can hide date-cast bugs (see `recidiviz/tests/ingest/CLAUDE.md`).
+- **Know the emulator's limits.** The emulator supports a large subset of BigQuery SQL, not all of it.
 
 ## Testing YAML parsing
 
