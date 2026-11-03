@@ -34,6 +34,10 @@ from recidiviz.common.str_field_utils import (
     safe_parse_days_from_duration_pieces,
 )
 
+# Matches a statute in Idaho Code Title 37, Chapter 27 (Uniform Controlled Substances
+# Act), wherever it appears, e.g. "I37-2732(A)(1)(A) {F}" or "IPART II(37-2737) {F}".
+_US_IX_CONTROLLED_SUBSTANCE_STATUTE_REGEX = re.compile(r"(?<!\d)37-27\d{2}")
+
 # Sex Offense Statute Codes
 US_IX_SEX_OFFENSE_STATUTE_CODES = [
     "I18-1505B",
@@ -270,6 +274,11 @@ def parse_charge_is_sex_offense(statute: str) -> bool:
     if statute.upper() in US_IX_SEX_OFFENSE_STATUTE_CODES:
         return True
     return False
+
+
+def parse_charge_is_drug(statute: str) -> bool:
+    """Returns whether statute is a controlled substance offense or enhancement."""
+    return bool(_US_IX_CONTROLLED_SUBSTANCE_STATUTE_REGEX.search(statute))
 
 
 def is_county_jail(supervision_site: str) -> bool:

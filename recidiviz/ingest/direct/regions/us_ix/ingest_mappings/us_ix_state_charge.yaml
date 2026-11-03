@@ -36,6 +36,15 @@ variables:
               $function: us_ix_custom_parsers.parse_charge_is_sex_offense
               $args:
                 statute: Offense_statute
+  - drug_bool:
+      $conditional:
+        - $if:
+            $not_null: Offense_statute
+          $then:
+            $custom:
+              $function: us_ix_custom_parsers.parse_charge_is_drug
+              $args:
+                statute: Offense_statute
 output:
   StatePerson:
     external_ids:
@@ -67,6 +76,7 @@ output:
                 offense_type: OffenseTypeId # The id for a specific crime, not a crime category
                 is_violent: $variable(violent_bool)
                 is_sex_offense: $variable(sex_offense_bool)
+                is_drug: $variable(drug_bool)
                 counts: Count
                 judge_external_id: JudgeLegistId
                 judge_full_name:
