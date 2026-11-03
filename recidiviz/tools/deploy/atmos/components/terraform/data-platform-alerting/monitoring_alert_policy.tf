@@ -715,12 +715,12 @@ resource "google_monitoring_alert_policy" "cloud_function_failure" {
   conditions {
     condition_threshold {
       aggregations {
-        alignment_period   = "300s"
+        alignment_period   = "1800s"
         per_series_aligner = "ALIGN_MAX"
       }
 
       aggregations {
-        alignment_period     = "300s"
+        alignment_period     = "1800s"
         cross_series_reducer = "REDUCE_MAX"
         group_by_fields      = ["resource.label.project_id", "resource.label.function_name", "metric.label.status"]
         per_series_aligner   = "ALIGN_MAX"
