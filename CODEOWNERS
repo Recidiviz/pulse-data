@@ -30,6 +30,7 @@ recidiviz/public_pathways/individual_level_export.py @matthewroot @catacola
 recidiviz/airflow/** @Recidiviz/doppler-codeowners
 recidiviz/big_query/** @Recidiviz/doppler-codeowners
 recidiviz/calculator/query/state/views/reference/product_person_external_id_helpers.py @Recidiviz/doppler-codeowners
+recidiviz/documents/** @emilyemilyemilyemilyemilyemily
 recidiviz/ingest/direct/gating.py @Recidiviz/doppler-codeowners
 recidiviz/ingest/direct/raw_data/documentation_exemptions.py @Recidiviz/doppler-codeowners
 recidiviz/ingest/direct/raw_data/datetime_sql_parser_exemptions.py @Recidiviz/doppler-codeowners
@@ -51,12 +52,9 @@ recidiviz/source_tables/untracked_source_table_exemptions.py @Recidiviz/doppler-
 recidiviz/tools/validate_source_visibility.py @Recidiviz/doppler-codeowners
 recidiviz/tests/tools/validate_source_visibility_integration_test.py @Recidiviz/doppler-codeowners
 recidiviz/tests/big_query/known_undocumented_columns.py @Recidiviz/doppler-codeowners
-recidiviz/tests/view_registry/sentence_v1_migration_burndown_test.py @klickyfan
-recidiviz/tests/view_registry/sentences_v1_migration_burndown/** @klickyfan
 recidiviz/tests/view_registry/us_tn_tomis_migration_burndown_test.py @elisegonzal @gheidkamp11
 recidiviz/tests/view_registry/us_tn_tomis_migration_exemptions.py @elisegonzal @gheidkamp11
 recidiviz/ingest/direct/regions/us_tn/us_tn_tomis_migration_file_tags.py @elisegonzal @gheidkamp11
-recidiviz/view_registry/deprecated_view_reference_exemptions.py @klickyfan
 recidiviz/view_registry/deployed_view_external_id_exemptions.py @Recidiviz/doppler-codeowners
 recidiviz/view_registry/raw_data_reference_reasons.yaml @Recidiviz/doppler-codeowners
 recidiviz/view_registry/raw_data_table_reference_exemptions.py @Recidiviz/doppler-codeowners
