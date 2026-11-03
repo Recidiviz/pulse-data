@@ -2,6 +2,9 @@
 # This file associates the columns outputted from the query in `view_VantagePointAssessments` to corresponding
 # Ingest Object fields.
 manifest_language: 1.0.0
+# Keep this view running after the TOMIS 2.0 cutover. It is the only source of need
+# levels and LOW_COMPLIANT_ELIGIBLE for assessments completed before go-live, which
+# MiCase migrated without them; VantagePointAssessments_v2 skips those assessments.
 input_columns:
   OffenderID: STRING
   AssessmentID: STRING
