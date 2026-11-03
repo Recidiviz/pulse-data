@@ -25,7 +25,11 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
-from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentLevel,
+    StateAssessmentSubtype,
+    StateAssessmentType,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodCustodyLevel,
 )
@@ -58,6 +62,14 @@ _ASSESSMENT_LEVEL_SUGGESTIONS = [
     snake_to_title(level.value) for level in StateAssessmentLevel
 ]
 
+_ASSESSMENT_TYPE_SUGGESTIONS = [
+    snake_to_title(assessment_type.value) for assessment_type in StateAssessmentType
+]
+
+_ASSESSMENT_SUBTYPE_SUGGESTIONS = [
+    snake_to_title(subtype.value) for subtype in StateAssessmentSubtype
+]
+
 INCARCERATION_SYSTEM_HEALTH_JSON_FIELD_FILTERS_WITH_SUGGESTIONS: dict[
     str, list[str]
 ] = {
@@ -66,4 +78,6 @@ INCARCERATION_SYSTEM_HEALTH_JSON_FIELD_FILTERS_WITH_SUGGESTIONS: dict[
     "assessment_level": _ASSESSMENT_LEVEL_SUGGESTIONS,
     "assessment_override_level": _ASSESSMENT_LEVEL_SUGGESTIONS,
     "assessment_result_level": _ASSESSMENT_LEVEL_SUGGESTIONS,
+    "assessment_type": _ASSESSMENT_TYPE_SUGGESTIONS,
+    "assessment_subtype": _ASSESSMENT_SUBTYPE_SUGGESTIONS,
 }
