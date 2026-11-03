@@ -143,3 +143,53 @@ class TestPredicates(unittest.TestCase):
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
         self.assertTrue(should_trigger)
+
+    def test_sftp_find_files_single_failure_silenced(self) -> None:
+        now = datetime.now(tz=timezone.utc)
+        job_id = "US_PA.remote_file_discovery.find_sftp_files_to_download"
+
+        incident = AirflowAlertingIncident(
+            dag_id="test_project_sftp_dag",
+            dag_run_config="{}",
+            job_id=job_id,
+            failed_execution_dates=[now],
+            incident_type="Task Run",
+        )
+        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
+        self.assertFalse(should_trigger, messages)
+        self.assertIn(
+            "a single failed SFTP file discovery run is usually transient", messages
+        )
+
+        incident = AirflowAlertingIncident(
+            dag_id="test_project_sftp_dag",
+            dag_run_config="{}",
+            job_id=job_id,
+            failed_execution_dates=[now - timedelta(hours=1), now],
+            incident_type="Task Run",
+        )
+        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
+        self.assertTrue(should_trigger, messages)
+
+    def test_sftp_other_tasks_and_dags_not_gated(self) -> None:
+        now = datetime.now(tz=timezone.utc)
+
+        incident = AirflowAlertingIncident(
+            dag_id="test_project_sftp_dag",
+            dag_run_config="{}",
+            job_id="US_PA.remote_file_download.download_sftp_files",
+            failed_execution_dates=[now],
+            incident_type="Task Run",
+        )
+        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
+        self.assertTrue(should_trigger, messages)
+
+        incident = AirflowAlertingIncident(
+            dag_id="test_project_calculation_dag",
+            dag_run_config="{}",
+            job_id="US_PA.remote_file_discovery.find_sftp_files_to_download",
+            failed_execution_dates=[now],
+            incident_type="Task Run",
+        )
+        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
+        self.assertTrue(should_trigger, messages)

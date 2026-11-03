@@ -23,7 +23,10 @@ import attr
 from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
-from recidiviz.airflow.dags.monitoring.dag_registry import get_raw_data_import_dag_id
+from recidiviz.airflow.dags.monitoring.dag_registry import (
+    get_raw_data_import_dag_id,
+    get_sftp_dag_id,
+)
 from recidiviz.airflow.dags.utils.branch_utils import BRANCH_END_TASK_NAME
 from recidiviz.airflow.dags.utils.constants import RAW_DATA_TASKS_ALLOWED_TO_FAIL
 from recidiviz.airflow.dags.utils.environment import get_project_id
@@ -65,6 +68,13 @@ def _incident_has_been_updated_recently(incident: AirflowAlertingIncident) -> bo
     return timedelta(days=2) > now_utc - most_recent_update
 
 
+# The SFTP DAG runs hourly, so a lone failed run of the discovery task is almost always a
+# transient connection problem that clears on the next run. We only alert once the task
+# has failed this many runs in a row.
+SFTP_FIND_FILES_TASK_NAME = "remote_file_discovery.find_sftp_files_to_download"
+SFTP_FIND_FILES_MIN_CONSECUTIVE_FAILURES = 2
+
+
 def _get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
     project_id = get_project_id()
     return [
@@ -88,6 +98,16 @@ def _get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
                 )
             ),
             failure_message="errors for this task will be handled by file-level errors",
+        ),
+        AlertingIncidentTriggerPredicate(
+            method=TriggerPredicateMethod.SILENCE,
+            dag_id=get_sftp_dag_id(project_id),
+            condition=lambda incident: (
+                incident.job_id.endswith(SFTP_FIND_FILES_TASK_NAME)
+                and len(incident.failed_execution_dates)
+                < SFTP_FIND_FILES_MIN_CONSECUTIVE_FAILURES
+            ),
+            failure_message="a single failed SFTP file discovery run is usually transient",
         ),
     ]
 
