@@ -16,8 +16,10 @@
 #  =============================================================================
 """Tests the ability for SupervisionStaffRecordEtlDelegate to parse json rows."""
 
-import os
+import json
+from copy import deepcopy
 from datetime import datetime, timezone
+from typing import Any
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import MagicMock, patch
 
@@ -32,6 +34,34 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.workflows_supervision_staff_etl_delegate import (
     WorkflowsSupervisionStaffETLDelegate,
 )
+
+SUPERVISION_STAFF_FILENAME = "supervision_staff_record.json"
+
+TEST_DATA: dict[str, Any] = {
+    "id": "100",
+    "staff_external_id": "100",
+    "state_code": "US_XX",
+    "email": "fakename@testdomain.com",
+    "district": "District 1",
+    "given_names": "JOEY",
+    "surname": "JOE-JOE JR. III",
+    "role_subtype": "SUPERVISION_OFFICER",
+    "supervisor_external_id": "SUPER123",
+    "pseudonymized_id": "p100",
+}
+
+EXPECTED_DOCUMENT: dict[str, Any] = {
+    "id": "100",
+    "staffExternalId": "100",
+    "stateCode": "US_XX",
+    "email": "fakename@testdomain.com",
+    "district": "District 1",
+    "givenNames": "Joey",
+    "surname": "Joe-Joe Jr. III",
+    "roleSubtype": "SUPERVISION_OFFICER",
+    "supervisorExternalId": "SUPER123",
+    "pseudonymizedId": "p100",
+}
 
 
 class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
@@ -58,98 +88,73 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
         Test that the transform_row method correctly parses the json
         """
         delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_XX)
-
-        path_to_fixture = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "fixtures",
-            "supervision_staff_record.json",
+        doc_id, row = delegate.transform_row(
+            json.dumps(TEST_DATA), SUPERVISION_STAFF_FILENAME
         )
-        with open(path_to_fixture, "r", encoding="utf-8") as fp:
-            fixture = fp.readline()
+        self.assertEqual("100", doc_id)
+        self.assertEqual(EXPECTED_DOCUMENT, row)
 
-            doc_id, row = delegate.transform_row(
-                fixture, "supervision_staff_record.json"
-            )
-            self.assertEqual(doc_id, "100")
-            self.assertEqual(
-                row,
-                {
-                    "id": "100",
-                    "staffExternalId": "100",
-                    "stateCode": "US_XX",
-                    "email": "jjjj3@xx.gov",
-                    "district": "District 1",
-                    "givenNames": "Joey",
-                    "surname": "Joe-Joe Jr. III",
-                    "roleSubtype": "SUPERVISION_OFFICER",
-                    "supervisorExternalId": "SUPER123",
-                    "pseudonymizedId": "p100",
-                },
-            )
+    def test_transform_row_missing_fields(self) -> None:
+        """
+        Test that transform_row method omits email, supervisorExternalId, roleSubtype
+        when they are missing
+        """
+        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_XX)
+        data = deepcopy(TEST_DATA)
+        del data["email"]
+        del data["role_subtype"]
+        del data["supervisor_external_id"]
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        del expected["email"]
+        del expected["roleSubtype"]
+        del expected["supervisorExternalId"]
 
-            fixture = fp.readline()
+        doc_id, row = delegate.transform_row(
+            json.dumps(data), SUPERVISION_STAFF_FILENAME
+        )
+        self.assertEqual("100", doc_id)
+        self.assertEqual(expected, row)
 
-            doc_id, row = delegate.transform_row(
-                fixture, "supervision_staff_record.json"
-            )
-            self.assertEqual(doc_id, "101")
-            self.assertEqual(
-                row,
-                {
-                    "id": "101",
-                    "staffExternalId": "101",
-                    "stateCode": "US_XX",
-                    "email": "sal.sli@xx.gov",
-                    "district": "District 2",
-                    "givenNames": "Sally S.",
-                    "surname": "Slithers",
-                    "roleSubtype": "SUPERVISION_OFFICER_SUPERVISOR",
-                    "pseudonymizedId": "p101",
-                },
-            )
+    def test_transform_row_with_missing_names(self) -> None:
+        """
+        Test that transform_row method defaults the names to empty strings when they are
+        missing
+        """
+        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_XX)
+        data = deepcopy(TEST_DATA)
+        del data["given_names"]
+        del data["surname"]
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected["givenNames"] = ""
+        expected["surname"] = ""
 
-            fixture = fp.readline()
+        doc_id, row = delegate.transform_row(
+            json.dumps(data), SUPERVISION_STAFF_FILENAME
+        )
+        self.assertEqual("100", doc_id)
+        self.assertEqual(expected, row)
 
-            doc_id, row = delegate.transform_row(
-                fixture, "supervision_staff_record.json"
-            )
-            self.assertEqual(doc_id, "102")
-            self.assertEqual(
-                row,
-                {
-                    "id": "102",
-                    "staffExternalId": "102",
-                    "stateCode": "US_XX",
-                    "district": "District 3",
-                    "givenNames": "Foghorn",
-                    "surname": "Leghorn",
-                    "supervisorExternalId": "13857943",
-                    "pseudonymizedId": "p102",
-                },
-            )
+    def test_transform_row_with_us_ix_state_specific_data(self) -> None:
+        """
+        Test that transform_row method parses the state_specific_data JSON string and
+        remaps a US_IX state code within it to US_ID
+        """
+        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_XX)
+        data = deepcopy(TEST_DATA)
+        data["state_specific_data"] = json.dumps(
+            {"state_code": "US_IX", "some_field": "some_value"}
+        )
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected["stateSpecificData"] = {
+            "stateCode": "US_ID",
+            "someField": "some_value",
+        }
 
-            fixture = fp.readline()
-
-            doc_id, row = delegate.transform_row(
-                fixture, "supervision_staff_record.json"
-            )
-            self.assertEqual(doc_id, "103")
-            self.assertEqual(
-                row,
-                {
-                    "id": "103",
-                    "staffExternalId": "103",
-                    "stateCode": "US_XX",
-                    "district": "District 4",
-                    "givenNames": "",
-                    "surname": "",
-                    "pseudonymizedId": "p103",
-                    "stateSpecificData": {
-                        "stateCode": "US_ID",
-                        "someField": "some_value",
-                    },
-                },
-            )
+        doc_id, row = delegate.transform_row(
+            json.dumps(data), SUPERVISION_STAFF_FILENAME
+        )
+        self.assertEqual("100", doc_id)
+        self.assertEqual(expected, row)
 
     @patch("google.cloud.firestore_v1.AsyncClient")
     @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
