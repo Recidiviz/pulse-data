@@ -27,12 +27,6 @@ from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common import attr_validators, recidiviz_attr_validators
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
-    EntityResolutionDocumentCollectionConfig,
-)
-from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_source_map_hydrator import (
-    EntityResolutionEntrySourceMapHydrator,
-)
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
 )
@@ -42,9 +36,8 @@ from recidiviz.documents.store.document_collection_config_collectors import (
 from recidiviz.documents.store.document_collection_diff_query_builder import (
     DocumentCollectionDiffQueryBuilder,
 )
-from recidiviz.documents.store.document_generation_query_builder import (
-    DocumentGenerationQueryBuilder,
-    build_document_generation_query_builder,
+from recidiviz.documents.store.document_generation_output_materializer import (
+    DocumentGenerationOutputMaterializer,
 )
 from recidiviz.documents.store.document_metadata_updates_query_builder import (
     DocumentMetadataUpdatesQueryBuilder,
@@ -81,9 +74,9 @@ class NewDocumentDiscoverer:
         validator=attr_validators.is_positive_int,
         default=DEFAULT_TARGET_UPLOAD_BATCH_BYTES,
     )
-    generation_query_builder: DocumentGenerationQueryBuilder = attr.ib(
+    materializer: DocumentGenerationOutputMaterializer = attr.ib(
         init=False,
-        validator=attr.validators.instance_of(DocumentGenerationQueryBuilder),
+        validator=attr.validators.instance_of(DocumentGenerationOutputMaterializer),
     )
     sandbox_context: DocumentStoreSandboxContext | None = attr.ib(
         default=None,
@@ -96,9 +89,10 @@ class NewDocumentDiscoverer:
     )
 
     def __attrs_post_init__(self) -> None:
-        self.generation_query_builder = build_document_generation_query_builder(
+        self.materializer = DocumentGenerationOutputMaterializer(
             config=self.config,
             project_id=self.project_id,
+            big_query_client=self.big_query_client,
             sandbox_context=self.sandbox_context,
         )
         self.diff_query_builder = DocumentCollectionDiffQueryBuilder()
@@ -112,37 +106,7 @@ class NewDocumentDiscoverer:
         """The sandbox dataset prefix the run writes this collection's tables under,
         or None when the run writes to the production document store. The run's temp
         tables follow this prefix so a sandbox run writes them to a dataset it owns."""
-        if self.sandbox_context is None:
-            return None
-        return self.sandbox_context.output_prefix_for_writing(self.config.name)
-
-    def _materialize_document_generation_output(
-        self,
-    ) -> ProjectSpecificBigQueryAddress:
-        """Runs the collection's document_generation_query and materializes its
-        full output — every document for every root entity — to a run-scoped
-        temp table, returning that table's address. This single snapshot is what
-        every consumer of one run's generation output reads.
-        """
-        document_generation_output_address = (
-            self.config.temp_document_generation_output_table_address(
-                self.run_id, self.output_prefix
-            ).to_project_specific_address(self.project_id)
-        )
-        generation_query = self.generation_query_builder.build_query()
-
-        logging.info(
-            "Materializing generation output for collection [%s] to [%s]",
-            self.config.name,
-            document_generation_output_address.to_str(),
-        )
-        self.big_query_client.create_table_from_query(
-            address=document_generation_output_address.to_project_agnostic_address(),
-            query=generation_query,
-            use_query_cache=False,
-            overwrite=True,
-        )
-        return document_generation_output_address
+        return self.materializer.output_prefix
 
     def run(self) -> SingleCollectionDocumentDiscoveryResult | None:
         """Discovers new documents for the collection by diffing the
@@ -155,31 +119,27 @@ class NewDocumentDiscoverer:
 
         Steps:
           1. Materializes the results of the collection's full document_generation_query
-             to a temp table. This single snapshot is what every consumer of one run's
-             generation output reads.
-          2. For an entity-resolution collection, rebuilds its entry→source map
-             table from that output. This runs before the diff and regardless of its
-             outcome because a composite's map can change while its text, and
-             therefore its document_contents_id, does not.
-          3. Diffs the generation output against the collection's "latest"
+             to a temp table, and for an entity-resolution collection rebuilds its
+             entry→source map table from that output. This single snapshot is what
+             every consumer of one run's generation output reads. The map is
+             rebuilt before the diff and regardless of its outcome because a
+             composite's map can change while its text, and therefore its
+             document_contents_id, does not.
+          2. Diffs the generation output against the collection's "latest"
              metadata view (which returns the most up-to-date row per document
              primary key) to identify added, updated, and deleted documents.
              Writes the diff results to a temp document metadata updates table.
-          4. From the temp document metadata updates table, selects distinct
+          3. From the temp document metadata updates table, selects distinct
              (document_contents_id, document_text) pairs whose
              document_contents_id is not already present in the collection's
              persistent document_contents table. Each row is assigned a batch
              number based on cumulative byte size and written to a temp new
              document contents table.
-          5. Deletes the generation-output temp table: it is consumed entirely
+          4. Deletes the generation-output temp table: it is consumed entirely
              within discovery. If discovery raises before deletion, the table
              deliberately survives for debugging and the temp dataset's table
              expiration reaps it.
         """
-
-        document_generation_output_address = (
-            self._materialize_document_generation_output()
-        )
         # The tables this run writes for the collection (the entry->source map, and the
         # metadata/contents rows it records downstream) go under the output prefix; the
         # existing state discovery diffs against — the metadata table below and the
@@ -195,13 +155,11 @@ class NewDocumentDiscoverer:
             else None
         )
 
-        if isinstance(self.config, EntityResolutionDocumentCollectionConfig):
-            EntityResolutionEntrySourceMapHydrator(
-                project_id=self.project_id,
-                big_query_client=self.big_query_client,
-                config=self.config,
-                output_sandbox_prefix=output_prefix,
-            ).run(document_generation_output_address)
+        document_generation_output_address = self.materializer.materialize(
+            output_address=self.config.temp_document_generation_output_table_address(
+                self.run_id, output_prefix
+            )
+        )
 
         temp_metadata_address = (
             self.config.temp_document_metadata_updates_table_address(

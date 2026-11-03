@@ -360,7 +360,7 @@ class TestNewDocumentDiscoverySandboxScoping(unittest.TestCase):
         self.bq_client.create_table_from_query.return_value = mock_row_iterator
 
         with patch(
-            "recidiviz.documents.store.new_document_discovery."
+            "recidiviz.documents.store.document_generation_output_materializer."
             "EntityResolutionEntrySourceMapHydrator"
         ) as mock_hydrator:
             self._run_discovery(
