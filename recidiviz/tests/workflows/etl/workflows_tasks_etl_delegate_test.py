@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests the ability for WorkflowsTasksETLDelegate to parse json rows."""
-import os
 from datetime import datetime, timezone
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import MagicMock, patch
@@ -32,6 +31,8 @@ from recidiviz.workflows.etl.workflows_tasks_etl_delegate import (
     WorkflowsTasksETLDelegate,
 )
 
+TASKS_FILENAME = "us_ix_supervision_tasks_record_v2.json"
+
 
 class WorkflowsTasksETLDelegateTest(IsolatedAsyncioTestCase):
     """
@@ -43,35 +44,34 @@ class WorkflowsTasksETLDelegateTest(IsolatedAsyncioTestCase):
         delegate = WorkflowsTasksETLDelegate(StateCode.US_ID)
         self.assertFalse(delegate.supports_file("not_tasks_record.json"))
 
-    def test_transform_row(self) -> None:
-        """
-        Test that the transform_row method correctly parses the json
-        """
+    def test_transform_row_with_us_ix_state_code(self) -> None:
+        """Test that transform_row method remaps a US_IX state code to US_ID"""
         delegate = WorkflowsTasksETLDelegate(StateCode.US_ID)
-
-        path_to_fixture = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "fixtures", "tasks_record.json"
+        data = (
+            '{"person_external_id": "100", '
+            '"officer_id": "200", '
+            '"state_code": "US_IX", '
+            '"tasks": [{"type": "homeVisit", '
+            '"due_date": "2023-02-01","details": {"supervision_level": "HIGH"}}]} '
         )
-        with open(path_to_fixture, "r", encoding="utf-8") as fp:
-            fixture = fp.readline()
 
-            doc_id, row = delegate.transform_row(fixture, "tasks_record.json")
-            self.assertEqual(doc_id, "100")
-            self.assertEqual(
-                row,
-                {
-                    "externalId": "100",
-                    "stateCode": "US_ID",
-                    "officerId": "200",
-                    "tasks": [
-                        {
-                            "type": "homeVisit",
-                            "dueDate": "2023-02-01",
-                            "details": {"supervisionLevel": "HIGH"},
-                        }
-                    ],
-                },
-            )
+        doc_id, row = delegate.transform_row(data, TASKS_FILENAME)
+        self.assertEqual(doc_id, "100")
+        self.assertEqual(
+            row,
+            {
+                "externalId": "100",
+                "stateCode": "US_ID",
+                "officerId": "200",
+                "tasks": [
+                    {
+                        "type": "homeVisit",
+                        "dueDate": "2023-02-01",
+                        "details": {"supervisionLevel": "HIGH"},
+                    }
+                ],
+            },
+        )
 
     @patch("google.cloud.firestore_v1.AsyncClient")
     @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
