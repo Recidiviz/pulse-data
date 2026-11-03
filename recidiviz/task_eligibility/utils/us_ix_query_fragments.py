@@ -250,6 +250,16 @@ IX_CRC_LIKE_BED_FACILITIES = (
 
 DETAINER_TYPE_LST_CRC = ["59"]
 HOLD_TYPE_LST_CRC = ["84", "112", "85", "61", "87", "86", "62", "88", "67", "83", "113"]
+# Detainer types that IDOC counts when placing riders in a facility. Misdemeanor and
+# federal holds don't count. ("F" is for "Felony", not "Federal".)
+DETAINER_TYPE_LST_MOVES_MANAGEMENT = [
+    "59",  # Detainer
+    "67",  # Hold - Local County
+    "83",  # Rider: Hold - Local
+    "85",  # Hold: Local (F)
+    "87",  # Hold: Untried (F)
+    "112",  # Hold: Tried (F)
+]
 # detainer types related to felonies and immigration (https://docs.google.com/spreadsheets/d/1sV6BLWQQiQ4mrtzWJiooaHzO_sgk-bNkCMdwolQ8aVk/edit?usp=sharing)
 DETAINER_TYPE_LST_CLD = [
     "2",
