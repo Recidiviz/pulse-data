@@ -16,8 +16,9 @@
 #  =============================================================================
 """Tests the ability for WorkflowsResidentETLDelegate to parse json rows."""
 import json
-import os
+from copy import deepcopy
 from datetime import datetime, timezone
+from typing import Any
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import MagicMock, patch
 
@@ -32,6 +33,62 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.workflows_resident_etl_delegate import (
     WorkflowsResidentETLDelegate,
 )
+
+RESIDENT_FILENAME = "resident_record.json"
+
+TEST_DATA: dict[str, Any] = {
+    "person_external_id": "300",
+    "pseudonymized_id": "p300",
+    "display_id": "d300",
+    "state_code": "US_TN",
+    "person_name": json.dumps(
+        {
+            "given_names": "STASSI",
+            "middle_names": "FAKE",
+            "name_suffix": "",
+            "surname": "SCHROEDER",
+        }
+    ),
+    "custody_level": "MEDIUM",
+    "officer_id": "100",
+    "facility_id": "ABC",
+    "unit_id": "ABC 123",
+    "facility_unit_id": "ABC-_-ABC 123",
+    "admission_date": "2023-01-01",
+    "release_date": "2027-03-28",
+    "all_eligible_opportunities": ["usTnCustodyLevelDowngrade"],
+    "all_ineligible_opportunities": ["usTnAnnualReclassification2026Policy"],
+    "gender": "FEMALE",
+    "metadata": json.dumps({"state_code": "US_TN"}),
+}
+
+EXPECTED_DOCUMENT: dict[str, Any] = {
+    "pseudonymizedId": "p300",
+    "personExternalId": "300",
+    "displayId": "d300",
+    "stateCode": "US_TN",
+    "personName": {
+        "givenNames": "Stassi",
+        "middleNames": "Fake",
+        "nameSuffix": "",
+        "surname": "Schroeder",
+    },
+    "custodyLevel": "MEDIUM",
+    "portionServedNeeded": None,
+    "officerId": "100",
+    "facilityId": "ABC",
+    "unitId": "ABC 123",
+    "facilityUnitId": "ABC-_-ABC 123",
+    "gender": "FEMALE",
+    "admissionDate": "2023-01-01",
+    "releaseDate": "2027-03-28",
+    "metadata": {"stateCode": "US_TN"},
+    "sccpEligibilityDate": None,
+    "allEligibleOpportunities": ["usTnCustodyLevelDowngrade"],
+    "allIneligibleOpportunities": ["usTnAnnualReclassification2026Policy"],
+    "usTnFacilityAdmissionDate": None,
+    "usMePortionNeededEligibleDate": None,
+}
 
 
 class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
@@ -60,207 +117,64 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
         """
         Test that the transform_row method correctly parses the json
         """
-        path_to_fixture = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "fixtures",
-            "resident_record.json",
+        delegate = WorkflowsResidentETLDelegate(StateCode.US_MO)
+        doc_id, row = delegate.transform_row(json.dumps(TEST_DATA), RESIDENT_FILENAME)
+        self.assertEqual("300", doc_id)
+        self.assertEqual(EXPECTED_DOCUMENT, row)
+
+    def test_transform_row_for_us_mo_resident(self) -> None:
+        """
+        Test that transform_row method correctly parses the json for US_MO resident with
+        RestrictiveHousingOpp and metadata blob
+        """
+        delegate = WorkflowsResidentETLDelegate(StateCode.US_MO)
+        data = deepcopy(TEST_DATA)
+        data["state_code"] = "US_MO"
+        del data["custody_level"]
+        data["all_eligible_opportunities"] = [
+            "usMoOverdueRestrictiveHousingReviewHearing"
+        ]
+        data["all_ineligible_opportunities"] = ["usMoWorkRelease"]
+        data["metadata"] = json.dumps(
+            {
+                "top_level_key": {
+                    "first_nested_key": "don't_reformat_me",
+                    "second_nested_key": 17,
+                },
+                "another_top_level_key": "jackalope",
+            }
         )
 
-        with open(path_to_fixture, "r", encoding="utf-8") as fp:
-            fixture = fp.readline()
-            delegate = WorkflowsResidentETLDelegate(StateCode.US_MO)
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected["stateCode"] = "US_MO"
+        expected["custodyLevel"] = None
+        expected["allEligibleOpportunities"] = [
+            "usMoOverdueRestrictiveHousingReviewHearing"
+        ]
+        expected["allIneligibleOpportunities"] = ["usMoWorkRelease"]
+        expected["metadata"] = {
+            "topLevelKey": {
+                "firstNestedKey": "don't_reformat_me",
+                "secondNestedKey": 17,
+            },
+            "anotherTopLevelKey": "jackalope",
+        }
 
-            doc_id, row = delegate.transform_row(fixture, "resident_record.json")
-            # First row US_MO Resident with RestrictiveHousingOpp
-            # and metadata blob
-            self.assertEqual(doc_id, "300")
-            self.assertEqual(
-                {
-                    "pseudonymizedId": "p300",
-                    "personExternalId": "300",
-                    "displayId": "d300",
-                    "stateCode": "US_MO",
-                    "personName": {
-                        "givenNames": "Stassi",
-                        "middleNames": "Fake",
-                        "nameSuffix": "",
-                        "surname": "Schroeder",
-                    },
-                    "custodyLevel": None,
-                    "portionServedNeeded": None,
-                    "officerId": "100",
-                    "facilityId": "ABC",
-                    "unitId": "ABC 123",
-                    "facilityUnitId": "ABC-_-ABC 123",
-                    "gender": "FEMALE",
-                    "admissionDate": "2023-01-01",
-                    "releaseDate": "2027-03-28",
-                    "metadata": {
-                        "topLevelKey": {
-                            "firstNestedKey": "don't_reformat_me",
-                            "secondNestedKey": 17,
-                        },
-                        "anotherTopLevelKey": "jackalope",
-                    },
-                    "sccpEligibilityDate": None,
-                    "allEligibleOpportunities": [
-                        "usMoOverdueRestrictiveHousingReviewHearing"
-                    ],
-                    "allIneligibleOpportunities": ["usMoWorkRelease"],
-                    "usTnFacilityAdmissionDate": None,
-                    "usMePortionNeededEligibleDate": None,
-                },
-                row,
-            )
-
-            fixture = fp.readline()
-            delegate = WorkflowsResidentETLDelegate(StateCode.US_ME)
-
-            doc_id, row = delegate.transform_row(fixture, "resident_record.json")
-            # Second row US_ME Resident with all Opp
-            self.assertEqual(doc_id, "301")
-            self.assertEqual(
-                {
-                    "pseudonymizedId": "p301",
-                    "personExternalId": "301",
-                    "displayId": "d301",
-                    "stateCode": "US_ME",
-                    "personName": {
-                        "givenNames": "Kristen",
-                        "middleNames": "Fake",
-                        "nameSuffix": "",
-                        "surname": "Doute",
-                    },
-                    "custodyLevel": "MINIMUM",
-                    "portionServedNeeded": "1/2",
-                    "officerId": "100",
-                    "facilityId": "FAKE CORRECTIONAL FACILITY",
-                    "unitId": "UNIT 1",
-                    "facilityUnitId": "FAKE CORRECTIONAL FACILITY-_-UNIT 1",
-                    "gender": "FEMALE",
-                    "admissionDate": "2023-01-01",
-                    "releaseDate": "2024-03-28",
-                    "metadata": {},
-                    "sccpEligibilityDate": "2023-08-14",
-                    "usMePortionNeededEligibleDate": "2023-08-14",
-                    "allEligibleOpportunities": [
-                        "usMeSCCP",
-                        "usMeWorkRelease",
-                        "usMeFurloughRelease",
-                    ],
-                    "allIneligibleOpportunities": None,
-                    "usTnFacilityAdmissionDate": None,
-                },
-                row,
-            )
-
-            fixture = fp.readline()
-            delegate = WorkflowsResidentETLDelegate(StateCode.US_ME)
-
-            doc_id, row = delegate.transform_row(fixture, "resident_record.json")
-            # Third row US_ME Resident 2/3
-            self.assertEqual(doc_id, "302")
-            self.assertEqual(
-                {
-                    "pseudonymizedId": "p302",
-                    "personExternalId": "302",
-                    "displayId": "d302",
-                    "stateCode": "US_ME",
-                    "personName": {
-                        "givenNames": "Jax",
-                        "middleNames": "Fake",
-                        "nameSuffix": "",
-                        "surname": "Taylor",
-                    },
-                    "custodyLevel": "COMMUNITY",
-                    "portionServedNeeded": "2/3",
-                    "officerId": "100",
-                    "facilityId": "FAKE VIEW CORRECTIONAL FACILITY",
-                    "unitId": "UNIT 1",
-                    "facilityUnitId": "FAKE VIEW CORRECTIONAL FACILITY-_-UNIT 1",
-                    "gender": "MALE",
-                    "admissionDate": "2020-07-11",
-                    "releaseDate": "2026-01-23",
-                    "metadata": {},
-                    "sccpEligibilityDate": "2023-03-17",
-                    "usMePortionNeededEligibleDate": "2024-03-20",
-                    "allEligibleOpportunities": [
-                        "usMeWorkRelease",
-                        "usMeFurloughRelease",
-                    ],
-                    "allIneligibleOpportunities": None,
-                    "usTnFacilityAdmissionDate": None,
-                },
-                row,
-            )
-
-            fixture = fp.readline()
-            delegate = WorkflowsResidentETLDelegate(StateCode.US_TN)
-
-            doc_id, row = delegate.transform_row(fixture, "resident_record.json")
-            # Fourth row US_TN
-            self.assertEqual(doc_id, "303")
-            self.assertEqual(
-                {
-                    "pseudonymizedId": "p303",
-                    "personExternalId": "303",
-                    "displayId": "d303",
-                    "stateCode": "US_TN",
-                    "personName": {
-                        "givenNames": "James",
-                        "middleNames": "Fake",
-                        "nameSuffix": "",
-                        "surname": "Kennedy",
-                    },
-                    "custodyLevel": "MEDIUM",
-                    "portionServedNeeded": None,
-                    "officerId": "100",
-                    "facilityId": "FACILITY NAME",
-                    "unitId": None,
-                    "facilityUnitId": "FACILITY NAME-_-",
-                    "gender": "UNKNOWN",
-                    "admissionDate": "2023-05-01",
-                    "releaseDate": "2024-05-01",
-                    "metadata": {
-                        "stateCode": "US_TN",
-                    },
-                    "sccpEligibilityDate": None,
-                    "allEligibleOpportunities": ["usTnCustodyLevelDowngrade"],
-                    "allIneligibleOpportunities": [
-                        "usTnAnnualReclassification2026Policy"
-                    ],
-                    "usTnFacilityAdmissionDate": None,
-                    "usMePortionNeededEligibleDate": None,
-                },
-                row,
-            )
+        doc_id, row = delegate.transform_row(json.dumps(data), RESIDENT_FILENAME)
+        self.assertEqual("300", doc_id)
+        self.assertEqual(expected, row)
 
     def test_transform_row_with_missing_gender(self) -> None:
         """Test that the transform_row method handles missing gender gracefully."""
-        # Create test data with missing gender
-        test_data = {
-            "person_external_id": "TEST123",
-            "pseudonymized_id": "pTEST123",
-            "display_id": "dTEST123",
-            "state_code": "US_TN",
-            "person_name": '{"given_names":"TEST","middle_names":"","name_suffix":"","surname":"USER"}',
-            "officer_id": "OFFICER123",
-            "facility_id": "FACILITY123",
-            "unit_id": "UNIT123",
-            "facility_unit_id": "FACILITY123-_-UNIT123",
-            "admission_date": "2023-01-01",
-            "release_date": "2024-01-01",
-            "all_eligible_opportunities": [],
-            # Explicitly omitting gender field to simulate null/missing value
-        }
+        delegate = WorkflowsResidentETLDelegate(StateCode.US_MO)
+        data = deepcopy(TEST_DATA)
+        del data["gender"]
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected["gender"] = None
 
-        delegate = WorkflowsResidentETLDelegate(StateCode.US_TN)
-        doc_id, row = delegate.transform_row(
-            json.dumps(test_data), "resident_record.json"
-        )
-
-        self.assertEqual(doc_id, "TEST123")
-        self.assertIsNone(row["gender"])
+        doc_id, row = delegate.transform_row(json.dumps(data), RESIDENT_FILENAME)
+        self.assertEqual("300", doc_id)
+        self.assertEqual(expected, row)
 
     @patch("google.cloud.firestore_v1.AsyncClient")
     @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
