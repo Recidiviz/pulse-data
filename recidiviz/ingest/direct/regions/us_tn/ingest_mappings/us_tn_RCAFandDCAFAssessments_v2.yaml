@@ -133,9 +133,9 @@ output:
                     $raw_text: ClassificationDecision
                     $mappings:
                       StateAssessmentDecision.APPROVED:
-                        - "AGREE"
+                        - "A"
                       StateAssessmentDecision.DENIED:
-                        - "DISAGREE"
+                        - "D"
           assessment_decision_date:
             $conditional:
               - $if:
@@ -178,11 +178,11 @@ output:
               DateOfFinalApprovalAndEntry: DateOfFinalApprovalAndEntry
               OverallScore: OverallScore
               CLASSIFICATIONDATE: ClassificationDate
-              CLASSIFICATIONDECISION: ClassificationDecision # AGREE or DISAGREE
+              CLASSIFICATIONDECISION: ClassificationDecision
               CLASSIFICATIONDECISIONDATE: ClassificationDecisionDate
               ClassificationFormType: ClassificationFormType
               LastClassificationDate: LastClassificationDate
               firstFormEdit: firstFormEdit
               lastFormEdit: lastFormEdit
               CAFDate: CAFDate
-              RecommendedCustody: RecommendedCustody # Note some slight code changes from v1: CLS becomes CLO, TRS becomes T
+              RecommendedCustody: RecommendedCustody
