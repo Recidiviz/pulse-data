@@ -30,13 +30,17 @@ from recidiviz.cloud_resources.platform_resource_labels import (
     StateCodeResourceLabel,
 )
 from recidiviz.cloud_resources.resource_label import ResourceLabel
-from recidiviz.documents.extraction.eval.golden_eval_document import GoldenEvalDocument
+from recidiviz.documents.extraction.eval.golden_eval_document import (
+    GoldenEvalDocument,
+    GoldenEvalEntityResolutionDocument,
+)
 from recidiviz.documents.extraction.eval.golden_eval_document_reader import (
     GoldenEvalDocumentReader,
 )
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_helpers import (
     first_order_config_for,
     seed_golden_eval_document_contents,
+    seed_golden_eval_pre_resolution_tables,
 )
 from recidiviz.documents.extraction.eval.golden_eval_result import (
     GoldenEvalFieldScore,
@@ -186,23 +190,43 @@ class GoldenEvalRunner:
         run_datetime_utc = datetime.datetime.now(tz=datetime.UTC)
         job_id = self.build_run_job_id(config=config, run_datetime_utc=run_datetime_utc)
 
-        documents = self._read_golden_eval_documents(config=config)
-
         if config.extraction_stage == LLMExtractionViewGraphStage.ENTITY_RESOLUTION:
-            seed_golden_eval_document_contents(
+            first_order_config = first_order_config_for(config)
+            entity_resolution_documents = (
+                self._read_entity_resolution_golden_eval_documents(
+                    first_order_config=first_order_config
+                )
+            )
+
+            # Seed the pre-resolution tables with golden documents and expected values
+            document_contents_id_by_golden_document_id = (
+                seed_golden_eval_document_contents(
+                    bq_client=self.bq_client,
+                    sandbox_prefix=self.sandbox_prefix,
+                    first_order_config=first_order_config,
+                    documents=entity_resolution_documents,
+                )
+            )
+            seed_golden_eval_pre_resolution_tables(
                 bq_client=self.bq_client,
                 sandbox_prefix=self.sandbox_prefix,
-                first_order_config=first_order_config_for(config),
-                documents=documents,
+                first_order_config=first_order_config,
+                documents=entity_resolution_documents,
+                first_order_values_by_golden_document_id={
+                    document.golden_document_id: document.expected_values
+                    for document in entity_resolution_documents
+                },
+                document_contents_id_by_golden_document_id=document_contents_id_by_golden_document_id,
+                validation_datetime_utc=run_datetime_utc,
             )
-            # TODO(OBT-53821): Seed the __pre_resolution table, keyed by the
-            # document_contents_id mapping the seeding above returns.
             # TODO(OBT-53823): Build the composite documents and run them through
             # the extraction session.
             raise ValueError(
                 f"Entity-resolution golden eval is not supported yet, so extractor "
                 f"[{config.extractor_id}] cannot be golden eval'd."
             )
+
+        documents = self._read_golden_eval_documents(config=config)
 
         session = SyncLLMDocumentExtractionSession(
             config=config,
@@ -280,30 +304,36 @@ class GoldenEvalRunner:
             GoldenEvaluationResourceLabel(),
         ]
 
-    def _read_golden_eval_documents(
-        self, *, config: LLMExtractorConfig
-    ) -> list[GoldenEvalDocument]:
-        """Returns every golden eval document |config| declares, having reported
-        every problem in the eval set at once. An entity-resolution extractor's
-        documents come from its parent first-order extractor's entity-resolution
-        eval set.
-        """
-        sheets_reader = (
+    def _sheets_reader(self) -> GoogleSheetReader:
+        return (
             GoogleSheetReader(sheets_service=self.sheets_service)
             if self.sheets_service is not None
             else GoogleSheetReader.from_application_default_credentials()
         )
-        if config.extraction_stage == LLMExtractionViewGraphStage.ENTITY_RESOLUTION:
-            return GoldenEvalDocumentReader.from_config(
-                config=first_order_config_for(config),
-                sheets_reader=sheets_reader,
-                stage=LLMExtractionViewGraphStage.ENTITY_RESOLUTION,
-            ).load_all_documents()
+
+    def _read_golden_eval_documents(
+        self, *, config: LLMExtractorConfig
+    ) -> list[GoldenEvalDocument]:
+        """Returns every golden eval document first-order extractor |config|
+        declares, having reported every problem in the eval set at once.
+        """
         return GoldenEvalDocumentReader.from_config(
             config=config,
-            sheets_reader=sheets_reader,
+            sheets_reader=self._sheets_reader(),
             stage=LLMExtractionViewGraphStage.FIRST_ORDER,
         ).load_all_documents()
+
+    def _read_entity_resolution_golden_eval_documents(
+        self, *, first_order_config: LLMExtractorConfig
+    ) -> list[GoldenEvalEntityResolutionDocument]:
+        """Returns every document of |first_order_config|'s entity-resolution eval
+        set, having reported every problem in the eval set at once.
+        """
+        return GoldenEvalDocumentReader.from_config(
+            config=first_order_config,
+            sheets_reader=self._sheets_reader(),
+            stage=LLMExtractionViewGraphStage.ENTITY_RESOLUTION,
+        ).load_all_entity_resolution_documents()
 
     @staticmethod
     def _actual_output_values(

@@ -51,11 +51,17 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.git import get_normalized_git_username
+from recidiviz.documents.dataset_config import (
+    document_extraction_pre_resolution_results_dataset_for_region,
+)
 from recidiviz.documents.extraction.eval.golden_eval_console_summary import (
     render_golden_eval_console_summary,
 )
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_helpers import (
     first_order_config_for,
+)
+from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
+    GoldenEvalPreResolutionBQTable,
 )
 from recidiviz.documents.extraction.eval.golden_eval_results_table import (
     GoldenEvalResultsBQTable,
@@ -74,11 +80,15 @@ from recidiviz.source_tables.document_store_source_table_collection import (
     collect_document_store_source_tables_for_configs,
 )
 from recidiviz.source_tables.extraction_results_source_table_collection import (
+    LLM_EXTRACTION_UPDATE_GROUPS,
     collect_extraction_results_source_table_collections,
     collect_golden_eval_documents_source_table_collection,
     collect_golden_eval_results_source_table_collection,
 )
-from recidiviz.source_tables.source_table_config import SourceTableCollection
+from recidiviz.source_tables.source_table_config import (
+    SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
+)
 from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -148,10 +158,10 @@ def _sandbox_source_table_collections(
     table_expiration_ms: int,
 ) -> list[SourceTableCollection]:
     """Returns every sandbox source table collection this run writes to: the golden
-    eval results table always, the first-order document contents and golden eval
-    documents tables for an entity-resolution extractor, and the extractor's raw,
-    validated, and audit result tables when the run is also persisting its
-    processed results.
+    eval results table always; the first-order document contents, golden eval
+    documents, and __pre_resolution tables for an entity-resolution extractor; and
+    the extractor's raw, validated, and audit result tables when the run is also
+    persisting its processed results.
     """
     collections = [
         # TODO(OBT-53824): Decide which golden eval results table an
@@ -172,6 +182,13 @@ def _sandbox_source_table_collections(
         )
         collections.append(
             golden_eval_documents_sandbox_source_table_collection(
+                config=config,
+                sandbox_prefix=sandbox_prefix,
+                table_expiration_ms=table_expiration_ms,
+            )
+        )
+        collections.append(
+            pre_resolution_sandbox_source_table_collection(
                 config=config,
                 sandbox_prefix=sandbox_prefix,
                 table_expiration_ms=table_expiration_ms,
@@ -253,6 +270,52 @@ def golden_eval_documents_sandbox_source_table_collection(
             first_order_config_for(config).extractor_collection.name
         ]
     ).as_sandbox_collection(sandbox_prefix, table_expiration_ms=table_expiration_ms)
+
+
+def pre_resolution_sandbox_source_table_collection(
+    *, config: LLMExtractorConfig, sandbox_prefix: str, table_expiration_ms: int
+) -> SourceTableCollection:
+    """Returns the sandbox collection holding the first-order __pre_resolution
+    tables an entity-resolution golden eval run seeds, one per level the
+    first-order collection's entity groups are sourced from.
+    """
+    first_order_config = first_order_config_for(config)
+    collection = SourceTableCollection(
+        update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
+        dataset_id=document_extraction_pre_resolution_results_dataset_for_region(
+            first_order_config.state_code, None
+        ),
+        labels=[],
+        update_config=SourceTableCollectionUpdateConfig.regenerable(),
+        description=(
+            f"Sandbox copies of the [{first_order_config.extractor_collection.name}] "
+            f"collection's __pre_resolution tables, seeded with golden first-order "
+            f"values by an entity-resolution golden eval run. Each run replaces "
+            f"the rows."
+        ),
+    )
+    for (
+        array_field
+    ) in first_order_config.extractor_collection.entity_group_source_array_fields():
+        collection.add_source_table(
+            table_id=GoldenEvalPreResolutionBQTable.address(
+                first_order_config=first_order_config,
+                array_field=array_field,
+                sandbox_prefix=None,
+            ).table_id,
+            description=GoldenEvalPreResolutionBQTable.description(
+                first_order_config=first_order_config, array_field=array_field
+            ),
+            schema_fields=GoldenEvalPreResolutionBQTable.schema(
+                first_order_config=first_order_config, array_field=array_field
+            ),
+            clustering_fields=GoldenEvalPreResolutionBQTable.clustering_fields(
+                first_order_config
+            ),
+        )
+    return collection.as_sandbox_collection(
+        sandbox_prefix, table_expiration_ms=table_expiration_ms
+    )
 
 
 def _narrowed_sandbox_collection(

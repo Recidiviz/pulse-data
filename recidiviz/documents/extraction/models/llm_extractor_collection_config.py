@@ -412,6 +412,24 @@ class LLMExtractorCollectionConfig:
             ).update(entity_field.name for entity_field in entity_group.entity_fields)
         return sub_field_names_by_array_field_name
 
+    def entity_group_source_array_fields(
+        self,
+    ) -> list[ArrayOfStructLLMRequestOutputSchemaField | None]:
+        """Returns the levels this collection's entity groups are sourced from, in
+        output-schema order: None when any group has top-level entity_fields, then
+        each ARRAY_OF_STRUCT field at least one group names as its
+        source_array_field. Empty when the collection declares no entity groups.
+        """
+        levels: list[ArrayOfStructLLMRequestOutputSchemaField | None] = []
+        if self.entity_groups_for_array_field(None):
+            levels.append(None)
+        levels.extend(
+            array_field
+            for array_field in self.output_schema.array_of_struct_user_fields
+            if self.entity_groups_for_array_field(array_field)
+        )
+        return levels
+
     def generate_json_schema(self) -> JSONSchemaDict:
         """Returns the deterministic JSON output schema that will be provided to
         the LLM.

@@ -69,6 +69,7 @@ from recidiviz.tools.documents.run_sandbox_golden_eval import (
     golden_eval_sandbox_source_table_collection,
     main,
     parse_arguments,
+    pre_resolution_sandbox_source_table_collection,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -240,6 +241,37 @@ class TestGoldenEvalDocumentsSandboxSourceTableCollection(TestCase):
                     dataset_id="my_prefix_document_extraction_golden_eval_results",
                     table_id="fake_extractor_collection__documents",
                 )
+            ],
+            [table.address for table in collection.source_tables],
+        )
+        self.assertEqual(72 * _ONE_HOUR_MS, collection.table_expiration_ms)
+
+
+class TestPreResolutionSandboxSourceTableCollection(TestCase):
+    """Tests for the sandbox __pre_resolution collection an entity-resolution run
+    seeds.
+    """
+
+    def setUp(self) -> None:
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+
+    def test_holds_one_table_per_level_with_entity_groups(self) -> None:
+        collection = pre_resolution_sandbox_source_table_collection(
+            config=fake_entity_resolution_extractor_config("location"),
+            sandbox_prefix=_SANDBOX_PREFIX,
+            table_expiration_ms=72 * _ONE_HOUR_MS,
+        )
+
+        self.assertEqual(
+            [
+                BigQueryAddress(
+                    dataset_id="my_prefix_us_xx_document_extraction_results__pre_resolution",
+                    table_id="fake_extractor_collection_materialized",
+                ),
+                BigQueryAddress(
+                    dataset_id="my_prefix_us_xx_document_extraction_results__pre_resolution",
+                    table_id="fake_extractor_collection_assignments_materialized",
+                ),
             ],
             [table.address for table in collection.source_tables],
         )

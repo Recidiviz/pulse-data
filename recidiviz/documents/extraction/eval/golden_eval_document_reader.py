@@ -18,6 +18,7 @@
 orchestrating the source that reads the sheet's rows, the parser that turns each
 row into a document, and the validator that checks the values parsed from it.
 """
+import datetime
 import logging
 from collections import defaultdict
 from collections.abc import Iterator
@@ -311,6 +312,9 @@ class GoldenEvalDocumentReader:
         """
         documents: list[GoldenEvalDocument] = []
         row_numbers_by_document_id: dict[str, list[int]] = defaultdict(list)
+        row_numbers_by_mention_occurrence: dict[
+            tuple[int, datetime.date, str], list[int]
+        ] = defaultdict(list)
         row_issues: list[GoldenEvalRowIssue] = []
         row_count = 0
         for result in self.documents():
@@ -322,11 +326,24 @@ class GoldenEvalDocumentReader:
             row_numbers_by_document_id[result.document.golden_document_id].append(
                 result.row_number
             )
+            if isinstance(result.document, GoldenEvalEntityResolutionDocument):
+                row_numbers_by_mention_occurrence[
+                    (
+                        result.document.test_group_id,
+                        result.document.document_date,
+                        result.document.document_text,
+                    )
+                ].append(result.row_number)
 
         issues = self._rendered_row_issues(row_issues=row_issues, row_count=row_count)
         issues.extend(
             self._duplicate_document_id_issues(
                 row_numbers_by_document_id=row_numbers_by_document_id
+            )
+        )
+        issues.extend(
+            self._duplicate_mention_occurrence_issues(
+                row_numbers_by_mention_occurrence=row_numbers_by_mention_occurrence
             )
         )
         if issues:
@@ -475,6 +492,28 @@ class GoldenEvalDocumentReader:
         return [
             f"golden_document_id [{document_id}] is reused in multiple rows {row_numbers}"
             for document_id, row_numbers in sorted(row_numbers_by_document_id.items())
+            if len(row_numbers) > 1
+        ]
+
+    @staticmethod
+    def _duplicate_mention_occurrence_issues(
+        *,
+        row_numbers_by_mention_occurrence: dict[
+            tuple[int, datetime.date, str], list[int]
+        ],
+    ) -> list[str]:
+        """Returns one issue per (test_group_id, document_date, document_text)
+        shared by more than one entity-resolution row. Duplicate rows would be read as
+        one mention in the ER compound document.
+        """
+        return [
+            f"rows {row_numbers} share test_group_id [{test_group_id}], "
+            f"document_date [{document_date.isoformat()}], and document_text, so "
+            f"entity resolution would read them as one mention occurrence; give "
+            f"each row a distinct document_text or document_date"
+            for (test_group_id, document_date, _), row_numbers in sorted(
+                row_numbers_by_mention_occurrence.items()
+            )
             if len(row_numbers) > 1
         ]
 

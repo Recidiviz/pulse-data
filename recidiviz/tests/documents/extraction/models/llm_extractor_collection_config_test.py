@@ -515,6 +515,21 @@ class LLMExtractorCollectionConfigTest(TestCase):
         self.assertEqual([], collection.resolver_fields)
         self.assertEqual({}, collection.resolver_sub_field_names_by_array_field_name)
 
+    def test_entity_group_source_array_fields(self) -> None:
+        collection = get_llm_extractor_collection_config(
+            "FAKE_EXTRACTOR_COLLECTION", config_module=fake_config
+        )
+        assignments = assert_type(
+            collection.output_schema.get_field("assignments"),
+            ArrayOfStructLLMRequestOutputSchemaField,
+        )
+        self.assertEqual(
+            [None, assignments], collection.entity_group_source_array_fields()
+        )
+
+    def test_entity_group_source_array_fields_empty_without_groups(self) -> None:
+        self.assertEqual([], self._collection().entity_group_source_array_fields())
+
     def test_non_upper_snake_case_name_raises(self) -> None:
         with self.assertRaisesRegex(ValueError, "must be UPPER_SNAKE_CASE"):
             self._collection(name="lowercase")

@@ -52,6 +52,7 @@ from recidiviz.documents.extraction.eval.golden_eval_document_parser import (
 )
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
     GoldenEvalDocumentsBQTable,
+    GoldenEvalPreResolutionBQTable,
 )
 from recidiviz.documents.extraction.eval.golden_eval_result import (
     GoldenEvalFieldScore,
@@ -93,6 +94,9 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
 )
 from recidiviz.documents.extraction.models.llm_model_registry import LLMModelConfig
+from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
+    ArrayOfStructLLMRequestOutputSchemaField,
+)
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     IS_RELEVANT_FIELD_NAME,
 )
@@ -122,12 +126,16 @@ from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
 from recidiviz.tests.documents.extraction.llm_client.fake_sync_llm_client import (
     FakeSyncLLMClient,
 )
+from recidiviz.tools.documents.run_sandbox_golden_eval import (
+    pre_resolution_sandbox_source_table_collection,
+)
 from recidiviz.utils import metadata
 from recidiviz.utils.google_sheets_reader import (
     GoogleSheetReader,
     GoogleSheetTable,
     GoogleSheetTableRow,
 )
+from recidiviz.utils.types import assert_type
 
 _STATE_CODE = StateCode.US_XX
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
@@ -958,11 +966,18 @@ class GoldenEvalRunnerEmulatorTest(BigQueryEmulatorTestCase):
 
 class GoldenEvalRunnerEntityResolutionEmulatorTest(BigQueryEmulatorTestCase):
     """Tests the part of an entity-resolution golden eval run that exists so far:
-    seeding the sandbox document contents table from the ER sheet tab.
+    seeding the sandbox document contents and __pre_resolution tables from the
+    ER sheet tab.
     """
 
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
+        with patch_fake_entity_resolution_model_config_name():
+            pre_resolution_collection = pre_resolution_sandbox_source_table_collection(
+                config=fake_entity_resolution_extractor_config("location"),
+                sandbox_prefix=_SANDBOX_PREFIX,
+                table_expiration_ms=60 * 60 * 1000,
+            )
         return [
             collect_golden_eval_documents_source_table_collection(
                 extractor_collection_names=["FAKE_EXTRACTOR_COLLECTION"]
@@ -973,6 +988,7 @@ class GoldenEvalRunnerEntityResolutionEmulatorTest(BigQueryEmulatorTestCase):
                     [_config().input_document_collection]
                 )
             ],
+            pre_resolution_collection,
         ]
 
     def setUp(self) -> None:
@@ -980,7 +996,9 @@ class GoldenEvalRunnerEntityResolutionEmulatorTest(BigQueryEmulatorTestCase):
         self.enterContext(patch_fake_entity_resolution_model_config_name())
         self.config = fake_entity_resolution_extractor_config("location")
 
-    def test_entity_resolution_config_seeds_contents_then_raises(self) -> None:
+    def test_entity_resolution_config_seeds_contents_and_pre_resolution_then_raises(
+        self,
+    ) -> None:
         sheet = GoogleSheetTable(
             title=f"{_STATE_CODE.value}__ER",
             column_names=list(_ER_CELLS_UNIT_1),
@@ -1054,6 +1072,53 @@ class GoldenEvalRunnerEntityResolutionEmulatorTest(BigQueryEmulatorTestCase):
                     "document_text": "No fictional assignment record here.",
                     "document_length_bytes": 36,
                 },
+            ],
+        )
+        first_order_config = _config()
+        doc_level_address = GoldenEvalPreResolutionBQTable.address(
+            first_order_config=first_order_config,
+            array_field=None,
+            sandbox_prefix=_SANDBOX_PREFIX,
+        )
+        # unit_2 is is_relevant false in the sheet, so it has no row.
+        self.run_query_test(
+            f"SELECT person_id, document_update_datetime, primary_status, "
+            f"status_note, location "
+            f"FROM `{self.project_id}.{doc_level_address.to_str()}`",
+            [
+                {
+                    "person_id": 1,
+                    "document_update_datetime": datetime.datetime(
+                        2026, 3, 1, tzinfo=datetime.UTC
+                    ),
+                    "primary_status": "active",
+                    "status_note": "Currently active.",
+                    "location": "Kitchen",
+                }
+            ],
+        )
+        assignments_address = GoldenEvalPreResolutionBQTable.address(
+            first_order_config=first_order_config,
+            array_field=assert_type(
+                first_order_config.extractor_collection.output_schema.get_field(
+                    "assignments"
+                ),
+                ArrayOfStructLLMRequestOutputSchemaField,
+            ),
+            sandbox_prefix=_SANDBOX_PREFIX,
+        )
+        self.run_query_test(
+            f"SELECT source_array_index, assignment_name, assignment_type, "
+            f"rate_amount, rate_period "
+            f"FROM `{self.project_id}.{assignments_address.to_str()}`",
+            [
+                {
+                    "source_array_index": 0,
+                    "assignment_name": "Dish duty",
+                    "assignment_type": "internal",
+                    "rate_amount": 12.5,
+                    "rate_period": "hourly",
+                }
             ],
         )
 

@@ -15,21 +15,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for golden_eval_entity_resolution_helpers."""
+import datetime
+from typing import Any
 from unittest import TestCase
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.documents.extraction.eval.golden_eval_document import GoldenEvalDocument
+from recidiviz.documents.extraction.eval.golden_eval_document import (
+    GoldenEvalDocument,
+    GoldenEvalEntityResolutionDocument,
+)
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_helpers import (
+    build_pre_resolution_rows,
     first_order_config_for,
     load_golden_eval_documents,
     normalize_golden_eval_documents,
     seed_golden_eval_document_contents,
+    seed_golden_eval_pre_resolution_tables,
 )
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
     GoldenEvalDocumentsBQTable,
+    GoldenEvalPreResolutionBQTable,
 )
 from recidiviz.documents.extraction.models.llm_document_extraction_golden_eval_config import (
     GoldenEvalTestType,
+)
+from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
+    ArrayOfStructLLMRequestOutputSchemaField,
 )
 from recidiviz.source_tables.document_store_source_table_collection import (
     collect_document_store_source_tables_for_configs,
@@ -46,8 +57,13 @@ from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_te
     fake_first_order_extractor_config,
     patch_fake_entity_resolution_model_config_name,
 )
+from recidiviz.tools.documents.run_sandbox_golden_eval import (
+    pre_resolution_sandbox_source_table_collection,
+)
+from recidiviz.utils.types import assert_type
 
 _SANDBOX_PREFIX = "my_prefix"
+_RUN_DATETIME_UTC = datetime.datetime(2026, 10, 20, 12, tzinfo=datetime.UTC)
 
 _DISH_DUTY_HTML_TEXT = "<p>The record is active.   Assigned to <b>dish duty</b>.</p>"
 _DISH_DUTY_TEXT = "The record is active. Assigned to dish duty."
@@ -90,6 +106,30 @@ def _document(*, golden_document_id: str, document_text: str) -> GoldenEvalDocum
     )
 
 
+def _er_document(
+    *,
+    golden_document_id: str,
+    test_group_id: int,
+    document_date: datetime.date,
+    expected_values: dict[str, Any],
+) -> GoldenEvalEntityResolutionDocument:
+    """Returns an entity-resolution golden eval document. Row building reads only
+    the id, test group, date, and expected values, so the other fields hold fixed
+    placeholder values.
+    """
+    return GoldenEvalEntityResolutionDocument(
+        golden_document_id=golden_document_id,
+        test_type=GoldenEvalTestType.UNIT,
+        test_case="base_case",
+        state_code=StateCode.US_XX,
+        document_text="Placeholder text.",
+        expected_values=expected_values,
+        test_group_id=test_group_id,
+        document_date=document_date,
+        expected_resolved_values={},
+    )
+
+
 class FirstOrderConfigForTest(TestCase):
     """Tests for first_order_config_for."""
 
@@ -107,6 +147,373 @@ class FirstOrderConfigForTest(TestCase):
             first_order_config_for(fake_first_order_extractor_config())
 
 
+class BuildPreResolutionRowsTest(TestCase):
+    """Tests for build_pre_resolution_rows."""
+
+    def setUp(self) -> None:
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+        self.config = fake_first_order_extractor_config()
+        self.assignments = assert_type(
+            self.config.extractor_collection.output_schema.get_field("assignments"),
+            ArrayOfStructLLMRequestOutputSchemaField,
+        )
+        self.unit_1 = _er_document(
+            golden_document_id="unit_1",
+            test_group_id=1,
+            document_date=datetime.date(2026, 3, 1),
+            expected_values={
+                "is_relevant": True,
+                "primary_status": "active",
+                "status_note": "Currently active.",
+                "location": "Kitchen",
+                "assignments": [
+                    {
+                        "assignment_name": "Dish duty",
+                        "assignment_type": "internal",
+                        "rate_amount": 12.5,
+                        "rate_period": "hourly",
+                    },
+                    {
+                        "assignment_name": "Laundry",
+                        "assignment_type": "internal",
+                        "rate_amount": None,
+                        "rate_period": None,
+                    },
+                ],
+            },
+        )
+        self.unit_2_irrelevant = _er_document(
+            golden_document_id="unit_2",
+            test_group_id=1,
+            document_date=datetime.date(2026, 3, 15),
+            expected_values={
+                "is_relevant": False,
+                "primary_status": None,
+                "status_note": None,
+                "location": None,
+                "assignments": None,
+            },
+        )
+
+    def _rows(
+        self,
+        *,
+        array_field: ArrayOfStructLLMRequestOutputSchemaField | None,
+        documents: list[GoldenEvalEntityResolutionDocument],
+        first_order_values_by_golden_document_id: dict[str, dict[str, Any]],
+        document_contents_id_by_golden_document_id: dict[str, str],
+    ) -> list[dict[str, Any]]:
+        """Builds rows for |documents| against the fake first-order config at the
+        fixed run datetime.
+        """
+        return build_pre_resolution_rows(
+            first_order_config=self.config,
+            array_field=array_field,
+            documents=documents,
+            first_order_values_by_golden_document_id=first_order_values_by_golden_document_id,
+            document_contents_id_by_golden_document_id=document_contents_id_by_golden_document_id,
+            validation_datetime_utc=_RUN_DATETIME_UTC,
+        )
+
+    def test_doc_level_rows_one_per_relevant_document(self) -> None:
+        rows = self._rows(
+            array_field=None,
+            documents=[self.unit_1, self.unit_2_irrelevant],
+            first_order_values_by_golden_document_id={
+                "unit_1": self.unit_1.expected_values,
+                "unit_2": self.unit_2_irrelevant.expected_values,
+            },
+            document_contents_id_by_golden_document_id={
+                "unit_1": "abc",
+                "unit_2": "def",
+            },
+        )
+
+        self.assertEqual(
+            [
+                {
+                    "state_code": "US_XX",
+                    "person_id": 1,
+                    "document_contents_id": "abc",
+                    "document_update_datetime": datetime.datetime(
+                        2026, 3, 1, tzinfo=datetime.UTC
+                    ),
+                    "validation_datetime_utc": _RUN_DATETIME_UTC,
+                    "extractor_version_id": self.config.extractor_version_id,
+                    "primary_status": "active",
+                    "status_note": "Currently active.",
+                    "location": "Kitchen",
+                    "confidence_levels": None,
+                    "null_reasons": None,
+                    "adversarial_interpretations": None,
+                    "citations": None,
+                }
+            ],
+            rows,
+        )
+
+    def test_doc_level_row_written_even_when_every_entity_field_is_null(
+        self,
+    ) -> None:
+        document = _er_document(
+            golden_document_id="unit_1",
+            test_group_id=1,
+            document_date=datetime.date(2026, 3, 1),
+            expected_values={
+                "is_relevant": True,
+                "primary_status": "active",
+                "status_note": None,
+                "location": None,
+                "assignments": None,
+            },
+        )
+
+        rows = self._rows(
+            array_field=None,
+            documents=[document],
+            first_order_values_by_golden_document_id={
+                "unit_1": document.expected_values
+            },
+            document_contents_id_by_golden_document_id={"unit_1": "abc"},
+        )
+
+        self.assertEqual(
+            [
+                {
+                    "state_code": "US_XX",
+                    "person_id": 1,
+                    "document_contents_id": "abc",
+                    "document_update_datetime": datetime.datetime(
+                        2026, 3, 1, tzinfo=datetime.UTC
+                    ),
+                    "validation_datetime_utc": _RUN_DATETIME_UTC,
+                    "extractor_version_id": self.config.extractor_version_id,
+                    "primary_status": "active",
+                    "status_note": None,
+                    "location": None,
+                    "confidence_levels": None,
+                    "null_reasons": None,
+                    "adversarial_interpretations": None,
+                    "citations": None,
+                }
+            ],
+            rows,
+        )
+
+    def test_array_level_rows_one_per_element(self) -> None:
+        unit_2 = _er_document(
+            golden_document_id="unit_2",
+            test_group_id=1,
+            document_date=datetime.date(2026, 3, 15),
+            expected_values={
+                "is_relevant": True,
+                "primary_status": "inactive",
+                "status_note": None,
+                "location": None,
+                "assignments": None,
+            },
+        )
+
+        rows = self._rows(
+            array_field=self.assignments,
+            documents=[self.unit_1, unit_2],
+            first_order_values_by_golden_document_id={
+                "unit_1": self.unit_1.expected_values,
+                "unit_2": unit_2.expected_values,
+            },
+            document_contents_id_by_golden_document_id={
+                "unit_1": "abc",
+                "unit_2": "def",
+            },
+        )
+
+        self.assertEqual(
+            [
+                {
+                    "state_code": "US_XX",
+                    "person_id": 1,
+                    "document_contents_id": "abc",
+                    "document_update_datetime": datetime.datetime(
+                        2026, 3, 1, tzinfo=datetime.UTC
+                    ),
+                    "validation_datetime_utc": _RUN_DATETIME_UTC,
+                    "extractor_version_id": self.config.extractor_version_id,
+                    "source_array_index": 0,
+                    "assignment_name": "Dish duty",
+                    "assignment_type": "internal",
+                    "rate_amount": 12.5,
+                    "rate_period": "hourly",
+                    "confidence_levels": None,
+                    "null_reasons": None,
+                    "adversarial_interpretations": None,
+                    "citations": None,
+                },
+                {
+                    "state_code": "US_XX",
+                    "person_id": 1,
+                    "document_contents_id": "abc",
+                    "document_update_datetime": datetime.datetime(
+                        2026, 3, 1, tzinfo=datetime.UTC
+                    ),
+                    "validation_datetime_utc": _RUN_DATETIME_UTC,
+                    "extractor_version_id": self.config.extractor_version_id,
+                    "source_array_index": 1,
+                    "assignment_name": "Laundry",
+                    "assignment_type": "internal",
+                    "rate_amount": None,
+                    "rate_period": None,
+                    "confidence_levels": None,
+                    "null_reasons": None,
+                    "adversarial_interpretations": None,
+                    "citations": None,
+                },
+            ],
+            rows,
+        )
+
+    def test_array_element_missing_sub_field_is_null(self) -> None:
+        document = _er_document(
+            golden_document_id="unit_1",
+            test_group_id=1,
+            document_date=datetime.date(2026, 3, 1),
+            expected_values={
+                "is_relevant": True,
+                "primary_status": "active",
+                "status_note": None,
+                "location": None,
+                "assignments": [{"assignment_name": "Dish duty"}],
+            },
+        )
+
+        rows = self._rows(
+            array_field=self.assignments,
+            documents=[document],
+            first_order_values_by_golden_document_id={
+                "unit_1": document.expected_values
+            },
+            document_contents_id_by_golden_document_id={"unit_1": "abc"},
+        )
+
+        self.assertEqual(
+            [
+                {
+                    "state_code": "US_XX",
+                    "person_id": 1,
+                    "document_contents_id": "abc",
+                    "document_update_datetime": datetime.datetime(
+                        2026, 3, 1, tzinfo=datetime.UTC
+                    ),
+                    "validation_datetime_utc": _RUN_DATETIME_UTC,
+                    "extractor_version_id": self.config.extractor_version_id,
+                    "source_array_index": 0,
+                    "assignment_name": "Dish duty",
+                    "assignment_type": None,
+                    "rate_amount": None,
+                    "rate_period": None,
+                    "confidence_levels": None,
+                    "null_reasons": None,
+                    "adversarial_interpretations": None,
+                    "citations": None,
+                }
+            ],
+            rows,
+        )
+
+    def test_irrelevant_document_has_no_rows_at_any_level(self) -> None:
+        document = _er_document(
+            golden_document_id="unit_2",
+            test_group_id=1,
+            document_date=datetime.date(2026, 3, 15),
+            expected_values={
+                "is_relevant": False,
+                "primary_status": "active",
+                "status_note": None,
+                "location": "Kitchen",
+                "assignments": [{"assignment_name": "Dish duty"}],
+            },
+        )
+
+        values = {"unit_2": document.expected_values}
+        contents_ids = {"unit_2": "def"}
+
+        self.assertEqual(
+            [],
+            self._rows(
+                array_field=None,
+                documents=[document],
+                first_order_values_by_golden_document_id=values,
+                document_contents_id_by_golden_document_id=contents_ids,
+            ),
+        )
+        self.assertEqual(
+            [],
+            self._rows(
+                array_field=self.assignments,
+                documents=[document],
+                first_order_values_by_golden_document_id=values,
+                document_contents_id_by_golden_document_id=contents_ids,
+            ),
+        )
+
+    def test_values_without_is_relevant_field_are_relevant(self) -> None:
+        # A synthesized entity-resolution schema declares no is_relevant field, so
+        # every document is relevant.
+        er_config = fake_entity_resolution_extractor_config("location")
+        document = _er_document(
+            golden_document_id="unit_1",
+            test_group_id=1,
+            document_date=datetime.date(2026, 3, 1),
+            expected_values={},
+        )
+
+        rows = build_pre_resolution_rows(
+            first_order_config=er_config,
+            array_field=None,
+            documents=[document],
+            first_order_values_by_golden_document_id={"unit_1": {}},
+            document_contents_id_by_golden_document_id={"unit_1": "abc"},
+            validation_datetime_utc=_RUN_DATETIME_UTC,
+        )
+
+        self.assertEqual(1, len(rows))
+
+    def test_extra_keys_in_values_are_ignored(self) -> None:
+        rows = self._rows(
+            array_field=None,
+            documents=[self.unit_1],
+            first_order_values_by_golden_document_id={
+                "unit_1": {**self.unit_1.expected_values, "not_a_field": "x"}
+            },
+            document_contents_id_by_golden_document_id={"unit_1": "abc"},
+        )
+
+        self.assertNotIn("not_a_field", rows[0])
+
+    def test_document_without_contents_id_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"\[unit_1\] has no document_contents_id"
+        ):
+            self._rows(
+                array_field=None,
+                documents=[self.unit_1],
+                first_order_values_by_golden_document_id={
+                    "unit_1": self.unit_1.expected_values
+                },
+                document_contents_id_by_golden_document_id={},
+            )
+
+    def test_document_without_values_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"\[unit_1\] has no first-order values"
+        ):
+            self._rows(
+                array_field=None,
+                documents=[self.unit_1],
+                first_order_values_by_golden_document_id={},
+                document_contents_id_by_golden_document_id={"unit_1": "abc"},
+            )
+
+
 class GoldenEvalEntityResolutionHelpersEmulatorTestCase(BigQueryEmulatorTestCase):
     """Shared sandbox setup for the helpers that write to BigQuery."""
 
@@ -118,6 +525,12 @@ class GoldenEvalEntityResolutionHelpersEmulatorTestCase(BigQueryEmulatorTestCase
 
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
+        with patch_fake_entity_resolution_model_config_name():
+            pre_resolution_collection = pre_resolution_sandbox_source_table_collection(
+                config=fake_entity_resolution_extractor_config("location"),
+                sandbox_prefix=_SANDBOX_PREFIX,
+                table_expiration_ms=60 * 60 * 1000,
+            )
         return [
             collect_golden_eval_documents_source_table_collection(
                 extractor_collection_names=["FAKE_EXTRACTOR_COLLECTION"]
@@ -128,11 +541,27 @@ class GoldenEvalEntityResolutionHelpersEmulatorTestCase(BigQueryEmulatorTestCase
                     [fake_first_order_extractor_config().input_document_collection]
                 )
             ],
+            pre_resolution_collection,
         ]
 
     def setUp(self) -> None:
         super().setUp()
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
         self.config = fake_first_order_extractor_config()
+        self.assignments = assert_type(
+            self.config.extractor_collection.output_schema.get_field("assignments"),
+            ArrayOfStructLLMRequestOutputSchemaField,
+        )
+        self.doc_level_address = GoldenEvalPreResolutionBQTable.address(
+            first_order_config=self.config,
+            array_field=None,
+            sandbox_prefix=_SANDBOX_PREFIX,
+        )
+        self.assignments_address = GoldenEvalPreResolutionBQTable.address(
+            first_order_config=self.config,
+            array_field=self.assignments,
+            sandbox_prefix=_SANDBOX_PREFIX,
+        )
         self.documents_address = GoldenEvalDocumentsBQTable.address(
             collection_name=self.config.extractor_collection.name,
             sandbox_prefix=_SANDBOX_PREFIX,
@@ -374,4 +803,176 @@ class SeedGoldenEvalDocumentContentsTest(
                     "document_length_bytes": 26,
                 },
             ]
+        )
+
+    def test_replaces_contents_rows_from_a_prior_run(self) -> None:
+        seed_golden_eval_document_contents(
+            bq_client=self.bq_client,
+            sandbox_prefix=_SANDBOX_PREFIX,
+            first_order_config=self.config,
+            documents=[
+                _document(
+                    golden_document_id="unit_1", document_text=_DISH_DUTY_HTML_TEXT
+                )
+            ],
+        )
+        seed_golden_eval_document_contents(
+            bq_client=self.bq_client,
+            sandbox_prefix=_SANDBOX_PREFIX,
+            first_order_config=self.config,
+            documents=[
+                _document(
+                    golden_document_id="unit_2", document_text=_NO_ASSIGNMENT_TEXT
+                )
+            ],
+        )
+
+        self._assert_contents_rows(
+            [
+                {
+                    "document_contents_id": _NO_ASSIGNMENT_DOCUMENT_CONTENTS_ID,
+                    "document_text": _NO_ASSIGNMENT_TEXT,
+                    "document_length_bytes": 26,
+                }
+            ]
+        )
+
+
+class SeedGoldenEvalPreResolutionTablesTest(
+    GoldenEvalEntityResolutionHelpersEmulatorTestCase
+):
+    """Tests for seed_golden_eval_pre_resolution_tables."""
+
+    def _seed(self, documents: list[GoldenEvalEntityResolutionDocument]) -> None:
+        seed_golden_eval_pre_resolution_tables(
+            bq_client=self.bq_client,
+            sandbox_prefix=_SANDBOX_PREFIX,
+            first_order_config=self.config,
+            documents=documents,
+            first_order_values_by_golden_document_id={
+                d.golden_document_id: d.expected_values for d in documents
+            },
+            document_contents_id_by_golden_document_id={
+                "unit_1": "abc",
+                "unit_2": "def",
+            },
+            validation_datetime_utc=_RUN_DATETIME_UTC,
+        )
+
+    def test_seeds_a_table_per_level(self) -> None:
+        self._seed(
+            [
+                _er_document(
+                    golden_document_id="unit_1",
+                    test_group_id=1,
+                    document_date=datetime.date(2026, 3, 1),
+                    expected_values={
+                        "is_relevant": True,
+                        "primary_status": "active",
+                        "status_note": "Currently active.",
+                        "location": "Kitchen",
+                        "assignments": [
+                            {
+                                "assignment_name": "Dish duty",
+                                "assignment_type": "internal",
+                                "rate_amount": 12.5,
+                                "rate_period": "hourly",
+                            },
+                            {
+                                "assignment_name": "Laundry",
+                                "assignment_type": "internal",
+                                "rate_amount": None,
+                                "rate_period": None,
+                            },
+                        ],
+                    },
+                ),
+                _er_document(
+                    golden_document_id="unit_2",
+                    test_group_id=1,
+                    document_date=datetime.date(2026, 3, 15),
+                    expected_values={
+                        "is_relevant": False,
+                        "primary_status": None,
+                        "status_note": None,
+                        "location": None,
+                        "assignments": None,
+                    },
+                ),
+            ]
+        )
+
+        self.run_query_test(
+            f"SELECT person_id, document_contents_id, document_update_datetime, "
+            f"location, citations "
+            f"FROM `{self.project_id}.{self.doc_level_address.to_str()}`",
+            [
+                {
+                    "person_id": 1,
+                    "document_contents_id": "abc",
+                    "document_update_datetime": datetime.datetime(
+                        2026, 3, 1, tzinfo=datetime.UTC
+                    ),
+                    "location": "Kitchen",
+                    "citations": None,
+                }
+            ],
+        )
+        self.run_query_test(
+            f"SELECT person_id, source_array_index, assignment_name, rate_amount "
+            f"FROM `{self.project_id}.{self.assignments_address.to_str()}`",
+            [
+                {
+                    "person_id": 1,
+                    "source_array_index": 0,
+                    "assignment_name": "Dish duty",
+                    "rate_amount": 12.5,
+                },
+                {
+                    "person_id": 1,
+                    "source_array_index": 1,
+                    "assignment_name": "Laundry",
+                    "rate_amount": None,
+                },
+            ],
+        )
+
+    def test_replaces_rows_from_a_prior_run(self) -> None:
+        self._seed(
+            [
+                _er_document(
+                    golden_document_id="unit_1",
+                    test_group_id=1,
+                    document_date=datetime.date(2026, 3, 1),
+                    expected_values={
+                        "is_relevant": True,
+                        "primary_status": "active",
+                        "status_note": None,
+                        "location": "Kitchen",
+                        "assignments": None,
+                    },
+                )
+            ]
+        )
+        self._seed(
+            [
+                _er_document(
+                    golden_document_id="unit_2",
+                    test_group_id=1,
+                    document_date=datetime.date(2026, 3, 15),
+                    expected_values={
+                        "is_relevant": True,
+                        "primary_status": "active",
+                        "status_note": None,
+                        "location": "Yard",
+                        "assignments": None,
+                    },
+                )
+            ]
+        )
+
+        self.run_query_test(
+            f"SELECT person_id, document_contents_id, location "
+            f"FROM `{self.project_id}.{self.doc_level_address.to_str()}`",
+            [{"person_id": 1, "document_contents_id": "def", "location": "Yard"}],
         )

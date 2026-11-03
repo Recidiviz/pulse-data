@@ -1713,8 +1713,8 @@ class GoldenEvalDocumentReaderEntityResolutionTest(TestCase):
     def test_load_all_documents_reports_duplicate_document_ids(self) -> None:
         self.sheets_reader.read_tab_as_table.return_value = _er_tab(
             _er_cells(document_id="unit_1"),
-            _er_cells(document_id="unit_2"),
-            _er_cells(document_id="unit_1"),
+            _er_cells(document_id="unit_2", document_date="2026-03-15"),
+            _er_cells(document_id="unit_1", document_date="2026-03-20"),
         )
 
         with self.assertRaises(GoldenEvalDocumentSourceError) as caught:
@@ -1723,6 +1723,43 @@ class GoldenEvalDocumentReaderEntityResolutionTest(TestCase):
         self.assertEqual(
             ["golden_document_id [unit_1] is reused in multiple rows [2, 4]"],
             caught.exception.issues,
+        )
+
+    def test_load_all_documents_reports_rows_that_are_one_mention_occurrence(
+        self,
+    ) -> None:
+        # unit_1 and unit_3 share a test group, date, and text, so the
+        # composite document would hold them as one mention occurrence.
+        self.sheets_reader.read_tab_as_table.return_value = _er_tab(
+            _er_cells(document_id="unit_1"),
+            _er_cells(document_id="unit_2", document_date="2026-03-15"),
+            _er_cells(document_id="unit_3"),
+        )
+
+        with self.assertRaises(GoldenEvalDocumentSourceError) as caught:
+            self.reader.load_all_documents()
+
+        self.assertEqual(
+            [
+                "rows [2, 4] share test_group_id [1], document_date [2026-03-01], "
+                "and document_text, so entity resolution would read them as one "
+                "mention occurrence; give each row a distinct document_text or "
+                "document_date"
+            ],
+            caught.exception.issues,
+        )
+
+    def test_load_all_documents_accepts_same_text_in_different_test_groups(
+        self,
+    ) -> None:
+        self.sheets_reader.read_tab_as_table.return_value = _er_tab(
+            _er_cells(document_id="unit_1"),
+            _er_cells(document_id="unit_3", test_group_id="2"),
+        )
+
+        self.assertEqual(
+            ["unit_1", "unit_3"],
+            [d.golden_document_id for d in self.reader.load_all_documents()],
         )
 
 
