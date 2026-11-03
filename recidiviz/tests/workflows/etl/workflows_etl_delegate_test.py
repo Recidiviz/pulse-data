@@ -15,13 +15,22 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests for the Workflows ETL delegates."""
+import io
+import json
+from datetime import datetime, timezone
 from typing import List
-from unittest import TestCase
+from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest.mock import patch
+
+from freezegun import freeze_time
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsETLDelegate
+from recidiviz.workflows.etl.workflows_etl_delegate import (
+    WorkflowsETLDelegate,
+    WorkflowsFirestoreETLDelegate,
+)
 
 SEED = "A123456"
 
@@ -191,3 +200,211 @@ class TestPseudonymizeRecord(TestCase):
                 record={"person_name": "Jane"},
                 seed=SEED,
             )
+
+
+class TestFirestoreETLDelegate(WorkflowsFirestoreETLDelegate):
+    COLLECTION_BY_FILENAME = {"export_filename.json": "testCollection"}
+
+    def get_supported_files(self) -> List[str]:
+        return ["export_filename.json"]
+
+    def transform_row(self, row: str, filename: str) -> tuple[str | None, dict | None]:
+        record = json.loads(row)
+        return record["id"], record["document"]
+
+
+class FakeAsyncBatch:
+    """
+    Fake Firestore batch that records the documents set on it and, on commit,
+    appends them to committed_batches.
+    """
+
+    def __init__(self, committed_batches: list[dict[str, dict]]) -> None:
+        self._documents: dict[str, dict] = {}
+        self._committed_batches = committed_batches
+
+    def set(self, document_id: str, document: dict) -> None:
+        self._documents[document_id] = document
+
+    async def commit(self) -> None:
+        self._committed_batches.append(self._documents)
+
+    def __len__(self) -> int:
+        return len(self._documents)
+
+
+class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
+    """Tests for WorkflowsFirestoreETLDelegate.run_etl."""
+
+    def setUp(self) -> None:
+        self.committed_batches: list[dict[str, dict]] = []
+
+        self.mock_firestore_client = self.enterContext(
+            patch("recidiviz.workflows.etl.workflows_etl_delegate.FirestoreClientImpl")
+        ).return_value
+        self.mock_firestore_client.async_batch.side_effect = lambda: FakeAsyncBatch(
+            self.committed_batches
+        )
+        # Return the document ID itself as the document reference so that committed
+        # batches are keyed by document ID.
+        self.mock_firestore_client.get_collection.return_value.document.side_effect = (
+            lambda document_id: document_id
+        )
+
+        self.mock_get_file_stream = self.enterContext(
+            patch.object(WorkflowsETLDelegate, "get_file_stream")
+        )
+        self.enterContext(local_project_id_override("test-project"))
+
+        self.delegate = TestFirestoreETLDelegate(StateCode.US_XX)
+
+    @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
+    async def test_run_etl_writes_transformed_documents(self) -> None:
+        self.mock_get_file_stream.return_value = [
+            io.StringIO(
+                '{"id": "A1", "document": {"stateCode": "US_XX", "name": "Ann"}}\n'
+                '{"id": "B2", "document": {"stateCode": "US_XX", "name": "Bea"}}\n'
+            )
+        ]
+
+        await self.delegate.run_etl("export_filename.json")
+
+        self.assertEqual(
+            [
+                {
+                    "us_xx_a1": {
+                        "stateCode": "US_XX",
+                        "name": "Ann",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                    "us_xx_b2": {
+                        "stateCode": "US_XX",
+                        "name": "Bea",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                }
+            ],
+            self.committed_batches,
+        )
+        self.assertEqual(2, self.delegate.total_records_written)
+
+    @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
+    async def test_run_etl_skips_rows_without_id_or_document(self) -> None:
+        self.mock_get_file_stream.return_value = [
+            io.StringIO(
+                '{"id": "A1", "document": {"stateCode": "US_XX"}}\n'
+                '{"id": null, "document": {"stateCode": "US_XX"}}\n'
+                '{"id": "C3", "document": null}\n'
+            )
+        ]
+
+        await self.delegate.run_etl("export_filename.json")
+
+        self.assertEqual(
+            [
+                {
+                    "us_xx_a1": {
+                        "stateCode": "US_XX",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                }
+            ],
+            self.committed_batches,
+        )
+        self.assertEqual(1, self.delegate.total_records_written)
+
+    @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
+    async def test_run_etl_skips_rows_that_fail_to_transform(self) -> None:
+        self.mock_get_file_stream.return_value = [
+            io.StringIO(
+                '{"id": "A1", "document": {"stateCode": "US_XX"}}\nnot valid json\n'
+            )
+        ]
+
+        with self.assertLogs(level="ERROR") as logs:
+            await self.delegate.run_etl("export_filename.json")
+
+        self.assertEqual(
+            [
+                {
+                    "us_xx_a1": {
+                        "stateCode": "US_XX",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                }
+            ],
+            self.committed_batches,
+        )
+        self.assertEqual(1, len(logs.records))
+        self.assertIn("Transform row failed on [not valid json", logs.output[0])
+
+    @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
+    @patch(
+        "recidiviz.workflows.etl.workflows_etl_delegate.MAX_FIRESTORE_RECORDS_PER_BATCH",
+        2,
+    )
+    async def test_run_etl_splits_documents_into_batches(self) -> None:
+        self.mock_get_file_stream.return_value = [
+            io.StringIO(
+                '{"id": "A1", "document": {"stateCode": "US_XX"}}\n'
+                '{"id": "B2", "document": {"stateCode": "US_XX"}}\n'
+                '{"id": "C3", "document": {"stateCode": "US_XX"}}\n'
+            )
+        ]
+
+        await self.delegate.run_etl("export_filename.json")
+
+        self.assertEqual(
+            [
+                {
+                    "us_xx_a1": {
+                        "stateCode": "US_XX",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                    "us_xx_b2": {
+                        "stateCode": "US_XX",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                },
+                {
+                    "us_xx_c3": {
+                        "stateCode": "US_XX",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                },
+            ],
+            self.committed_batches,
+        )
+        self.assertEqual(3, self.delegate.total_records_written)
+
+    @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
+    @patch("recidiviz.workflows.etl.workflows_etl_delegate.INPUT_CHUNK_SIZE", 1)
+    async def test_run_etl_commits_each_input_chunk_separately(self) -> None:
+        # With a 1-byte chunk size, each readlines call returns a single line.
+        self.mock_get_file_stream.return_value = [
+            io.StringIO(
+                '{"id": "A1", "document": {"stateCode": "US_XX"}}\n'
+                '{"id": "B2", "document": {"stateCode": "US_XX"}}\n'
+            )
+        ]
+
+        await self.delegate.run_etl("export_filename.json")
+
+        self.assertEqual(
+            [
+                {
+                    "us_xx_a1": {
+                        "stateCode": "US_XX",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                },
+                {
+                    "us_xx_b2": {
+                        "stateCode": "US_XX",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                },
+            ],
+            self.committed_batches,
+        )
+        self.assertEqual(2, self.delegate.total_records_written)
