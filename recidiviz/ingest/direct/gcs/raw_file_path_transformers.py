@@ -65,6 +65,35 @@ def _transform_us_nyc_file_path(blob_name: str) -> str:
     return f"{match.group('file_tag')}.{match.group('extension')}"
 
 
+# US_NV prefixes every file name with RECID_ and ends it with a 23-digit timestamp: 14
+# digits of YYYYMMDDHHMMSS followed by 9 digits of fractional seconds.
+_US_NV_TIMESTAMP_FORMAT = "%Y%m%d%H%M%S"
+_US_NV_TIMESTAMP_DATETIME_DIGITS = 14
+_US_NV_PREFIXED_FILE_NAME_REGEX = re.compile(
+    r"^RECID_(?P<file_tag>.+?)_(?P<timestamp>\d{23})\.(?P<extension>[^.]+)$"
+)
+
+
+def _transform_us_nv_file_path(blob_name: str) -> str:
+    """Returns blob_name without its RECID_ prefix and trailing timestamp, or
+    blob_name unchanged if it has neither.
+
+    For example, "RECID_sentkeydates_20261028110456781998000.csv" becomes
+    "sentkeydates.csv".
+    """
+    match = _US_NV_PREFIXED_FILE_NAME_REGEX.match(blob_name)
+    if not match:
+        return blob_name
+    try:
+        datetime.datetime.strptime(
+            match.group("timestamp")[:_US_NV_TIMESTAMP_DATETIME_DIGITS],
+            _US_NV_TIMESTAMP_FORMAT,
+        )
+    except ValueError:
+        return blob_name
+    return f"{match.group('file_tag')}.{match.group('extension')}"
+
+
 # TN's "cashless" SFTP vendor account uploads directly to this subfolder of the
 # ingest bucket instead of the bucket root; TN's MiCase (TOMIS 2.0) vendor
 # uploads into a dated subfolder under this prefix, e.g.
@@ -96,6 +125,7 @@ def _transform_us_tn_file_path(blob_name: str) -> str:
 # this map has no transformation applied. A transformer returns the transformed
 # relative path, or the unmodified path if it does not match its expected pattern.
 _RAW_FILE_PATH_TRANSFORMERS: dict[str, Callable[[str], str]] = {
+    StateCode.US_NV.value: _transform_us_nv_file_path,
     StateCode.US_NYC.value: _transform_us_nyc_file_path,
     StateCode.US_TN.value: _transform_us_tn_file_path,
 }

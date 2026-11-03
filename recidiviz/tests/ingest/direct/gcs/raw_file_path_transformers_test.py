@@ -70,6 +70,72 @@ class TestTransformRawFilePath(TestCase):
             ),
         )
 
+    def test_us_nv_strips_recid_prefix_and_timestamp(self) -> None:
+        self.assertEqual(
+            "sentkeydates.csv",
+            transform_raw_file_path(
+                StateCode.US_NV.value,
+                "RECID_sentkeydates_20261028110456781998000.csv",
+            ),
+        )
+        self.assertEqual(
+            "propertyvalues.csv",
+            transform_raw_file_path(
+                StateCode.US_NV.value,
+                "RECID_propertyvalues_20261023113127067267000.csv",
+            ),
+        )
+
+    def test_us_nv_region_code_is_case_insensitive(self) -> None:
+        self.assertEqual(
+            "ofdproperties.csv",
+            transform_raw_file_path(
+                "us_nv", "RECID_ofdproperties_20261023113127067267000.csv"
+            ),
+        )
+
+    def test_us_nv_keeps_underscores_in_file_tag(self) -> None:
+        self.assertEqual(
+            "some_file_tag.csv",
+            transform_raw_file_path(
+                StateCode.US_NV.value,
+                "RECID_some_file_tag_20261028110456781998000.csv",
+            ),
+        )
+
+    def test_us_nv_name_without_recid_prefix_is_unchanged(self) -> None:
+        self.assertEqual(
+            "sentkeydates_20261028110456781998000.csv",
+            transform_raw_file_path(
+                StateCode.US_NV.value, "sentkeydates_20261028110456781998000.csv"
+            ),
+        )
+
+    def test_us_nv_name_without_timestamp_is_unchanged(self) -> None:
+        self.assertEqual(
+            "RECID_sentkeydates.csv",
+            transform_raw_file_path(StateCode.US_NV.value, "RECID_sentkeydates.csv"),
+        )
+
+    def test_us_nv_does_not_strip_wrong_length_timestamp(self) -> None:
+        self.assertEqual(
+            "RECID_sentkeydates_202610281104.csv",
+            transform_raw_file_path(
+                StateCode.US_NV.value, "RECID_sentkeydates_202610281104.csv"
+            ),
+        )
+
+    def test_us_nv_does_not_strip_invalid_date(self) -> None:
+        """A 23-digit run whose first 14 digits are not a valid datetime is not a
+        timestamp, so the name is left untouched."""
+        self.assertEqual(
+            "RECID_sentkeydates_99999999999999999999999.csv",
+            transform_raw_file_path(
+                StateCode.US_NV.value,
+                "RECID_sentkeydates_99999999999999999999999.csv",
+            ),
+        )
+
     def test_region_without_transformer_is_unchanged(self) -> None:
         self.assertEqual(
             "PIC_FEED_081920260030.csv",
