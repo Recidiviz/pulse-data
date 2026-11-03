@@ -116,6 +116,8 @@ functionality.
 - [Document Extraction](./recidiviz/NOT_FOR_PRODUCTION_USE/documents/CLAUDE.md)
 - [Task Eligibility Spans](./recidiviz/task_eligibility/CLAUDE.md)
 - [Classification](./recidiviz/calculator/query/state/views/classification/CLAUDE.md)
+- [Aggregated Metrics](./recidiviz/aggregated_metrics/CLAUDE.md)
+- [Observations](./recidiviz/observations/CLAUDE.md)
 - [Deploy Tooling and Versioning](./recidiviz/tools/deploy/CLAUDE.md)
 - [Research Notebooks](./recidiviz/research/notebooks/CLAUDE.md)
 
