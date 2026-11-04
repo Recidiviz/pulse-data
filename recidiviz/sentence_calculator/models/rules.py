@@ -569,6 +569,12 @@ class LawRegime:
                 f"Rename the projected date."
             )
         available_names = {*PROJECTED_DATE_VALUE_TYPES, *self.projected_dates}
+        # This only checks the names a formula uses. A formula with an
+        # unsupported operator or a malformed duration, e.g. start_date ** 2 or
+        # start_date + months(1.5), still loads and raises only when a
+        # calculation evaluates it. Tests for each regime should compute its
+        # projected dates so that errors like these fail there with a clear
+        # message instead of at calculation time.
         unknown_names = (
             expression_variable_names(expression=rule.formula, rule_name=rule.name)
             - available_names
