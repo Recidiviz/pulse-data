@@ -8,6 +8,7 @@ from recidiviz.tools.pii_detection import pii_check
 from recidiviz.tools.pii_detection.pii_check import (
     CONTEXT_LENGTH_ERROR_TEXT,
     FIND_PII_PROMPT,
+    _backoff_seconds,
     _split_file_diff,
     build_markdown_comment,
     estimate_tokens_from_chars,
@@ -284,9 +285,26 @@ class TestPIICheck(unittest.TestCase):
         session = MagicMock()
         session.post.return_value = _chat_response(503, {"error": "unavailable"})
 
-        with self.assertRaisesRegex(RuntimeError, "failed after 3 attempts: HTTP 503"):
+        with self.assertRaisesRegex(RuntimeError, "failed after 6 attempts: HTTP 503"):
             run_prompt_and_collect_findings(session, _ENDPOINT, "the prompt")
-        self.assertEqual(3, session.post.call_count)
+        self.assertEqual(6, session.post.call_count)
+
+    @patch.object(pii_check.random, "uniform", side_effect=lambda low, high: high)
+    def test_backoff_doubles_from_five_seconds_up_to_a_minute(
+        self, _uniform: MagicMock
+    ) -> None:
+        self.assertEqual(5, _backoff_seconds(1))
+        self.assertEqual(10, _backoff_seconds(2))
+        self.assertEqual(20, _backoff_seconds(3))
+        self.assertEqual(40, _backoff_seconds(4))
+        self.assertEqual(60, _backoff_seconds(5))
+
+    @patch.object(pii_check.random, "uniform", side_effect=lambda low, high: low)
+    def test_backoff_jitter_waits_at_least_half_the_backoff(
+        self, _uniform: MagicMock
+    ) -> None:
+        self.assertEqual(2.5, _backoff_seconds(1))
+        self.assertEqual(30, _backoff_seconds(5))
 
     @patch.object(pii_check.time, "sleep")
     def test_run_prompt_raises_context_length_error_without_retrying(

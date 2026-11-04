@@ -6,6 +6,7 @@ It uses a generative AI model to detect PII and updates the pull request with fi
 import argparse
 import json
 import os
+import random
 import re
 import subprocess
 import sys
@@ -39,7 +40,13 @@ MODEL_REASONING_EFFORT = "high"
 CHARS_PER_TOKEN = 2
 CONTEXT_LENGTH_ERROR_TEXT = "longer than the model's context length"
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
-MAX_ATTEMPTS = 3
+# Vertex throttles gpt-oss by concurrent requests ("The request is throttled due to too
+# many concurrent requests."), and no project quota raises that limit. Each call holds
+# a slot for about 30 seconds, so PR runs that start together need several spaced,
+# jittered retries before one gets through.
+MAX_ATTEMPTS = 6
+BASE_BACKOFF_SECONDS = 5
+MAX_BACKOFF_SECONDS = 60
 
 
 def model_endpoint(project: str) -> str:
@@ -331,6 +338,15 @@ def generate_prompts(
         yield prompt
 
 
+def _backoff_seconds(attempt: int) -> float:
+    """
+    Returns how long to wait after failed attempt number attempt: a random time between
+    half of and the full doubling backoff, so runs throttled together do not retry together.
+    """
+    full = min(MAX_BACKOFF_SECONDS, BASE_BACKOFF_SECONDS * 2 ** (attempt - 1))
+    return random.uniform(full / 2, full)  # nosec B311 (jitter, not security)
+
+
 def run_prompt_and_collect_findings(
     session: AuthorizedSession, endpoint: str, prompt: str
 ) -> list[dict]:
@@ -386,9 +402,9 @@ def run_prompt_and_collect_findings(
                 )
 
         if attempt < MAX_ATTEMPTS:
-            backoff_time = 2**attempt
+            backoff_time = _backoff_seconds(attempt)
             print(
-                f"::warning::Model call failed on attempt {attempt} ({last_error}). Retrying in {backoff_time}s..."
+                f"::warning::Model call failed on attempt {attempt} ({last_error}). Retrying in {backoff_time:.0f}s..."
             )
             time.sleep(backoff_time)
 
