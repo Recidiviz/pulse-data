@@ -19,6 +19,14 @@
       "type": "array",
       "items": { "$ref": "#/$defs/term_multiplier" }
     },
+    "credit_rates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/credit_rate" }
+    },
+    "credit_caps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/credit_cap" }
+    },
     "projected_dates": {
       "type": "object",
       "additionalProperties": { "$ref": "#/$defs/date_formula" }
@@ -59,6 +67,37 @@
           }
         }
       ]
+    },
+    "credit_rate": {
+      "type": "object",
+      "required": ["name", "description", "rate", "applies_to"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "when": { "$ref": "#/$defs/sentence_condition" },
+        "rate": { "type": "number", "minimum": 0 },
+        "applies_to": { "$ref": "#/$defs/applies_to" },
+        "statute": { "type": "string" }
+      }
+    },
+    "credit_cap": {
+      "type": "object",
+      "required": ["name", "description", "max_credit_days", "binds"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "when": { "$ref": "#/$defs/sentence_condition" },
+        "max_credit_days": { "type": "string" },
+        "binds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["min_term", "max_term"] }
+        },
+        "statute": { "type": "string" }
+      }
     },
     "date_formula": {
       "type": "object",

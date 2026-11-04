@@ -31,6 +31,8 @@ from recidiviz.sentence_calculator.models.conditions import (
 )
 from recidiviz.sentence_calculator.models.rules import (
     LAW_REGIME_SCHEMA_PATH,
+    CreditCapRule,
+    CreditRateRule,
     DateFormulaRule,
     LawRegime,
     ReductionTarget,
@@ -60,6 +62,8 @@ _MAX_AND_MIN_TERMS = [
 def _law_regime(
     *,
     term_multipliers: list[TermMultiplierRule],
+    credit_rates: list[CreditRateRule],
+    credit_caps: list[CreditCapRule],
     projected_dates: dict[str, DateFormulaRule],
 ) -> LawRegime:
     return LawRegime(
@@ -70,6 +74,8 @@ def _law_regime(
         days_per_month=30.0,
         days_per_year=365.0,
         term_multipliers=term_multipliers,
+        credit_rates=credit_rates,
+        credit_caps=credit_caps,
         projected_dates=projected_dates,
     )
 
@@ -171,6 +177,8 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                         statute="Test Statute 2",
                     ),
                 ],
+                credit_rates=[],
+                credit_caps=[],
                 projected_dates={
                     "parole_eligibility_date": DateFormulaRule(
                         name="parole_eligibility_date",
@@ -192,6 +200,126 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                         ),
                         formula="start_date + adjusted_max_days",
                         statute="Test Statute 3",
+                    ),
+                },
+            ),
+            regime,
+        )
+
+    def test_parse_credit_regime(self) -> None:
+        shared_conditions = parse_state_conditions(
+            fixtures.as_filepath("us_xx_rules/conditions.yaml"),
+            sentence_class=NevadaSentence,
+        )
+
+        regime = LawRegime.from_yaml(
+            fixtures.as_filepath("us_xx_law_regime_credits.yaml"),
+            sentence_class=NevadaSentence,
+            shared_conditions=shared_conditions,
+        )
+
+        self.assertEqual(
+            LawRegime(
+                name="US_XX_LAW_REGIME_CREDITS",
+                description="Test regime that exercises every credit regime section.",
+                effective_date=date(2020, 1, 1),
+                use_calendar_term_conversion=True,
+                days_per_month=30.44,
+                # Not set in the file, so it gets the default.
+                days_per_year=365.0,
+                term_multipliers=[],
+                credit_rates=[
+                    CreditRateRule(
+                        name="enhanced_credit_rate",
+                        description="Enhanced credits for qualified offenders outside category A",
+                        when=AllOf(
+                            conditions=[
+                                FieldCondition(
+                                    field="qualified_for_enhanced_good_time",
+                                    operator=ConditionOperator.EQUALS,
+                                    value=True,
+                                ),
+                                FieldCondition(
+                                    field="offense_category",
+                                    operator=ConditionOperator.NOT_IN,
+                                    value=[NevadaOffenseCategory.CATEGORY_A],
+                                ),
+                            ]
+                        ),
+                        rate=30.0,
+                        applies_to=[
+                            ReductionTarget(term=TermType.MAX_TERM, when=None),
+                            ReductionTarget(term=TermType.MIN_TERM, when=None),
+                        ],
+                        statute="Test Statute 1(a)",
+                    ),
+                    CreditRateRule(
+                        name="default_credit_rate",
+                        description=(
+                            "Credits for every other offender, off the max term, and "
+                            "off the min term outside these offenses"
+                        ),
+                        when=None,
+                        rate=20.0,
+                        applies_to=[
+                            ReductionTarget(term=TermType.MAX_TERM, when=None),
+                            ReductionTarget(
+                                term=TermType.MIN_TERM,
+                                # The named conditions are filled in where they
+                                # are used.
+                                when=AllOf(
+                                    conditions=[
+                                        FieldCondition(
+                                            field="offense_group",
+                                            operator=ConditionOperator.NOT_IN,
+                                            value=[
+                                                NevadaOffenseGroup.VIOLENCE,
+                                                NevadaOffenseGroup.SEX,
+                                            ],
+                                        ),
+                                        FieldCondition(
+                                            field="offense_id",
+                                            operator=ConditionOperator.NOT_IN,
+                                            value=[1001, 1002],
+                                        ),
+                                    ]
+                                ),
+                            ),
+                        ],
+                        statute="Test Statute 2",
+                    ),
+                ],
+                credit_caps=[
+                    CreditCapRule(
+                        name="credit_cap",
+                        description="Credits against the min term are capped at half the term",
+                        when=None,
+                        max_credit_days="sentence_length_days * 0.5",
+                        binds=frozenset({TermType.MIN_TERM}),
+                        statute=None,
+                    )
+                ],
+                projected_dates={
+                    "parole_eligibility_date": DateFormulaRule(
+                        name="parole_eligibility_date",
+                        description="Eligible once the adjusted min term is served",
+                        when=None,
+                        formula="start_date + adjusted_min_days",
+                        statute=None,
+                    ),
+                    "release_date": DateFormulaRule(
+                        name="release_date",
+                        description=(
+                            "Release once the adjusted max term is served, for max "
+                            "terms over three years"
+                        ),
+                        when=FieldCondition(
+                            field="unadjusted_max_days",
+                            operator=ConditionOperator.GREATER_THAN,
+                            value=1094,
+                        ),
+                        formula="start_date + adjusted_max_days",
+                        statute=None,
                     ),
                 },
             ),
@@ -232,6 +360,7 @@ class TestLawRegimeFromYaml(unittest.TestCase):
             ],
             regime.term_multipliers,
         )
+        self.assertEqual([], regime.credit_rates)
         self.assertEqual({}, regime.projected_dates)
         # The file sets none of these, so they get their defaults.
         self.assertFalse(regime.use_calendar_term_conversion)
@@ -252,6 +381,19 @@ class TestLawRegimeFromYaml(unittest.TestCase):
         ):
             LawRegime.from_yaml(
                 fixtures.as_filepath("us_xx_law_regime_rule_missing_applies_to.yaml"),
+                sentence_class=NevadaSentence,
+                shared_conditions={},
+            )
+
+    def test_parse_regime_with_both_reductions(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Law regime \[US_XX_LAW_REGIME_BOTH_REDUCTIONS\] has both "
+            r"term_multipliers and "
+            r"credit_rates\. A regime shortens sentences one way; remove one\.$",
+        ):
+            LawRegime.from_yaml(
+                fixtures.as_filepath("us_xx_law_regime_both_reductions.yaml"),
                 sentence_class=NevadaSentence,
                 shared_conditions={},
             )
@@ -485,6 +627,15 @@ term_multipliers:
             list(schema["$defs"]["applies_to"]["properties"]),
         )
 
+    def test_schema_credit_cap_terms_match_python_enum(self) -> None:
+        with open(LAW_REGIME_SCHEMA_PATH, encoding="utf-8") as f:
+            schema = json.load(f)
+
+        self.assertEqual(
+            [e.value for e in TermType],
+            schema["$defs"]["credit_cap"]["properties"]["binds"]["items"]["enum"],
+        )
+
 
 class TestLawRegimeValidation(unittest.TestCase):
     """Tests for the cross-field validation in LawRegime.__attrs_post_init__."""
@@ -515,6 +666,8 @@ class TestLawRegimeValidation(unittest.TestCase):
                         statute=None,
                     ),
                 ],
+                credit_rates=[],
+                credit_caps=[],
                 projected_dates={},
             )
 
@@ -536,6 +689,126 @@ class TestLawRegimeValidation(unittest.TestCase):
                         applies_to=_MAX_AND_MIN_TERMS,
                         statute=None,
                     )
+                ],
+                credit_rates=[],
+                credit_caps=[],
+                projected_dates={},
+            )
+
+    def test_credit_rates_without_unconditional_last_rule(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Law regime \[TEST_REGIME\] has when conditions on "
+            r"\[category_e_credit_rate\], the last rule in credit_rates, so "
+            r"sentences that match no rule get no reduction\. Add a last rule "
+            r"without when conditions for every other sentence\.$",
+        ):
+            _law_regime(
+                term_multipliers=[],
+                credit_rates=[
+                    CreditRateRule(
+                        name="category_e_credit_rate",
+                        description="Credits for category E offenses",
+                        when=_CATEGORY_E,
+                        rate=20.0,
+                        applies_to=[
+                            ReductionTarget(term=TermType.MAX_TERM, when=None),
+                            ReductionTarget(term=TermType.MIN_TERM, when=None),
+                        ],
+                        statute=None,
+                    )
+                ],
+                credit_caps=[],
+                projected_dates={},
+            )
+
+    def test_credit_caps_without_credit_rates(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Law regime \[TEST_REGIME\] has credit_caps but no credit_rates, so "
+            r"there are no credits to cap\. Add credit_rates or remove "
+            r"credit_caps\.$",
+        ):
+            _law_regime(
+                term_multipliers=[],
+                credit_rates=[],
+                credit_caps=[
+                    CreditCapRule(
+                        name="credit_cap",
+                        description="Credits against the min term are capped at half the term",
+                        when=None,
+                        max_credit_days="sentence_length_days * 0.5",
+                        binds=frozenset({TermType.MIN_TERM}),
+                        statute=None,
+                    )
+                ],
+                projected_dates={},
+            )
+
+    def test_credit_caps_without_unconditional_last_rule(self) -> None:
+        # Unlike term_multipliers and credit_rates, credit_caps can leave
+        # sentences that match no rule uncapped, so this regime loads.
+        _law_regime(
+            term_multipliers=[],
+            credit_rates=[
+                CreditRateRule(
+                    name="stat_time",
+                    description="Stat time for every offense",
+                    when=None,
+                    rate=20.0,
+                    applies_to=_MAX_AND_MIN_TERMS,
+                    statute=None,
+                )
+            ],
+            credit_caps=[
+                CreditCapRule(
+                    name="category_e_credit_cap",
+                    description="Credits against the min term are capped for category E",
+                    when=_CATEGORY_E,
+                    max_credit_days="sentence_length_days * 0.5",
+                    binds=frozenset({TermType.MIN_TERM}),
+                    statute=None,
+                )
+            ],
+            projected_dates={},
+        )
+
+    def test_unconditional_credit_cap_before_others(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Law regime \[TEST_REGIME\] has rule \[credit_cap\] in credit_caps "
+            r"with no when conditions, so the rules after it never apply\. Move it "
+            r"to the end of credit_caps\.$",
+        ):
+            _law_regime(
+                term_multipliers=[],
+                credit_rates=[
+                    CreditRateRule(
+                        name="stat_time",
+                        description="Stat time for every offense",
+                        when=None,
+                        rate=20.0,
+                        applies_to=_MAX_AND_MIN_TERMS,
+                        statute=None,
+                    )
+                ],
+                credit_caps=[
+                    CreditCapRule(
+                        name="credit_cap",
+                        description="Credits against the min term are capped at half the term",
+                        when=None,
+                        max_credit_days="sentence_length_days * 0.5",
+                        binds=frozenset({TermType.MIN_TERM}),
+                        statute=None,
+                    ),
+                    CreditCapRule(
+                        name="category_e_credit_cap",
+                        description="Credits against the min term are capped for category E",
+                        when=_CATEGORY_E,
+                        max_credit_days="sentence_length_days * 0.25",
+                        binds=frozenset({TermType.MIN_TERM}),
+                        statute=None,
+                    ),
                 ],
                 projected_dates={},
             )
@@ -560,6 +833,25 @@ class TestLawRegimeValidation(unittest.TestCase):
                 statute=None,
             )
 
+    def test_credit_rate_with_repeated_term(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Credit rate \[stat_time\] lists the terms \['max_term'\] more than "
+            r"once in applies_to\. List each term once, and combine its conditions "
+            r"with any_of or all_of\.$",
+        ):
+            CreditRateRule(
+                name="stat_time",
+                description="Stat time for every offense",
+                when=None,
+                rate=20.0,
+                applies_to=[
+                    ReductionTarget(term=TermType.MAX_TERM, when=None),
+                    ReductionTarget(term=TermType.MAX_TERM, when=_CATEGORY_E),
+                ],
+                statute=None,
+            )
+
     def test_duplicate_rule_names(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -577,6 +869,8 @@ class TestLawRegimeValidation(unittest.TestCase):
                         statute=None,
                     )
                 ],
+                credit_rates=[],
+                credit_caps=[],
                 projected_dates={
                     "parole_eligibility_date": _date_rule(
                         name="parole_eligibility_date",
@@ -594,6 +888,8 @@ class TestLawRegimeValidation(unittest.TestCase):
         ):
             _law_regime(
                 term_multipliers=[],
+                credit_rates=[],
+                credit_caps=[],
                 projected_dates={
                     "parole_eligibility_date": _date_rule(
                         name="parole_eligibility_date",
@@ -605,6 +901,8 @@ class TestLawRegimeValidation(unittest.TestCase):
     def test_formula_with_duration_function(self) -> None:
         regime = _law_regime(
             term_multipliers=[],
+            credit_rates=[],
+            credit_caps=[],
             projected_dates={
                 "mandatory_parole_release_date": _date_rule(
                     name="mandatory_parole_release_date",
@@ -630,6 +928,8 @@ class TestLawRegimeValidation(unittest.TestCase):
         ):
             _law_regime(
                 term_multipliers=[],
+                credit_rates=[],
+                credit_caps=[],
                 projected_dates={
                     "parole_eligibility_date": _date_rule(
                         name="parole_eligibility_date",
@@ -648,6 +948,8 @@ class TestLawRegimeValidation(unittest.TestCase):
         ):
             _law_regime(
                 term_multipliers=[],
+                credit_rates=[],
+                credit_caps=[],
                 projected_dates={
                     "release_date": _date_rule(
                         name="release_date",
@@ -666,6 +968,8 @@ class TestLawRegimeValidation(unittest.TestCase):
         ):
             _law_regime(
                 term_multipliers=[],
+                credit_rates=[],
+                credit_caps=[],
                 projected_dates={
                     "release_date": _date_rule(
                         name="release_date",
@@ -687,6 +991,8 @@ class TestLawRegimeValidation(unittest.TestCase):
         ):
             _law_regime(
                 term_multipliers=[],
+                credit_rates=[],
+                credit_caps=[],
                 projected_dates={
                     "start_date": _date_rule(
                         name="start_date",
@@ -702,6 +1008,8 @@ class TestProjectedDateEvaluationOrder(unittest.TestCase):
     def test_dates_come_after_the_dates_they_use(self) -> None:
         regime = _law_regime(
             term_multipliers=[],
+            credit_rates=[],
+            credit_caps=[],
             projected_dates={
                 "mandatory_release_date": _date_rule(
                     name="mandatory_release_date",
@@ -722,6 +1030,40 @@ class TestProjectedDateEvaluationOrder(unittest.TestCase):
             ["parole_eligibility_date", "release_date", "mandatory_release_date"],
             regime.projected_date_evaluation_order,
         )
+
+
+class TestRuleValidation(unittest.TestCase):
+    """Tests for the validation on individual rules."""
+
+    def test_cap_that_binds_no_terms(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Credit cap \[credit_cap\] binds no terms\. List one or more of "
+            r"\['min_term', 'max_term'\] in binds\.$",
+        ):
+            CreditCapRule(
+                name="credit_cap",
+                description="Credits against the min term are capped at half the term",
+                when=None,
+                max_credit_days="sentence_length_days * 0.5",
+                binds=frozenset(),
+                statute=None,
+            )
+
+    def test_cap_with_unknown_variable(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Credit cap \[credit_cap\] uses \['term_days'\] in max_credit_days, "
+            r"but it can only use \[sentence_length_days\]\.$",
+        ):
+            CreditCapRule(
+                name="credit_cap",
+                description="Credits against the min term are capped at half the term",
+                when=None,
+                max_credit_days="term_days * 0.5",
+                binds=frozenset({TermType.MIN_TERM}),
+                statute=None,
+            )
 
 
 if __name__ == "__main__":

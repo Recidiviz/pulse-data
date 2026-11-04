@@ -83,6 +83,10 @@ STATE_CONDITIONS_SCHEMA_PATH = os.path.join(_SCHEMA_DIR, "state_conditions_schem
 DEFAULT_DAYS_PER_MONTH = 30.0
 DEFAULT_DAYS_PER_YEAR = 365.0
 
+# The variable a credit cap's max_credit_days expression uses to refer to the
+# length of the term being capped.
+SENTENCE_LENGTH_DAYS_VARIABLE = "sentence_length_days"
+
 # The values a projected date's formula and conditions can use.
 # A formula can also use any other projected date.
 PROJECTED_DATE_VALUE_TYPES: dict[str, type] = {
@@ -288,6 +292,10 @@ class TermType(Enum):
     MAX_TERM = "max_term"
 
 
+# The TermType values, as error messages list them, e.g. ['min_term', 'max_term'].
+_TERM_TYPE_VALUES = [term.value for term in TermType]
+
+
 @attr.define(frozen=True, kw_only=True)
 class ReductionTarget:
     """A term that a reduction comes off, and the sentences it comes off for."""
@@ -344,6 +352,21 @@ def _pop_applies_to(
     return targets
 
 
+def _check_applies_to_lists_each_term_once(
+    *, rule_label: str, applies_to: list[ReductionTarget]
+) -> None:
+    """Raises if applies_to lists a term more than once. rule_label names the
+    rule in the error, e.g. Term multiplier [standard_term_reduction]."""
+    terms = [target.term.value for target in applies_to]
+    duplicate_terms = sorted({term for term in terms if terms.count(term) > 1})
+    if duplicate_terms:
+        raise ValueError(
+            f"{rule_label} lists the terms {duplicate_terms} more than once in "
+            f"applies_to. List each term once, and combine its conditions with "
+            f"any_of or all_of."
+        )
+
+
 @attr.define(frozen=True, kw_only=True)
 class TermMultiplierRule:
     """A flat reduction applied to a sentence's terms at sentencing."""
@@ -375,14 +398,9 @@ class TermMultiplierRule:
     """Citation for the law the rule encodes, if any."""
 
     def __attrs_post_init__(self) -> None:
-        terms = [target.term.value for target in self.applies_to]
-        duplicate_terms = sorted({term for term in terms if terms.count(term) > 1})
-        if duplicate_terms:
-            raise ValueError(
-                f"Term multiplier [{self.name}] lists the terms {duplicate_terms} "
-                f"more than once in applies_to. List each term once, and combine "
-                f"its conditions with any_of or all_of."
-            )
+        _check_applies_to_lists_each_term_once(
+            rule_label=f"Term multiplier [{self.name}]", applies_to=self.applies_to
+        )
 
     @classmethod
     def from_yaml_dict(
@@ -398,6 +416,125 @@ class TermMultiplierRule:
             multiplier=_pop_number(yaml_dict, "multiplier"),
             applies_to=_pop_applies_to(
                 yaml_dict, parser=parser, rule_location=location
+            ),
+            statute=yaml_dict.pop_optional("statute", str),
+        )
+        _check_no_unexpected_keys(yaml_dict, location=location)
+        return rule
+
+
+@attr.define(frozen=True, kw_only=True)
+class CreditRateRule:
+    """Sentence-reducing credits a sentence earns for each month served."""
+
+    name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Identifier for the rule, unique within its regime."""
+
+    description: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Plain-language explanation of what the rule does and why."""
+
+    when: Condition | None = attr.ib(validator=is_opt_condition)
+    """Conditions a sentence must meet for the rule to apply, or None if it
+    applies to every sentence."""
+
+    rate: float = attr.ib(validator=attr_validators.is_non_negative_float)
+    """Credit days earned per month served."""
+
+    applies_to: list[ReductionTarget] = attr.ib(
+        validator=[
+            attr_validators.is_non_empty_list,
+            attr_validators.is_list_of(ReductionTarget),
+        ]
+    )
+    """The terms the credits come off. The credits never come off a term that
+    isn't listed."""
+
+    statute: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    """Citation for the law the rule encodes, if any."""
+
+    def __attrs_post_init__(self) -> None:
+        _check_applies_to_lists_each_term_once(
+            rule_label=f"Credit rate [{self.name}]", applies_to=self.applies_to
+        )
+
+    @classmethod
+    def from_yaml_dict(
+        cls, yaml_dict: YAMLDict, *, parser: ConditionParser
+    ) -> "CreditRateRule":
+        """Returns the CreditRateRule defined by one credit_rates entry."""
+        name = yaml_dict.pop("name", str)
+        location = f"credit_rates entry [{name}]"
+        rule = CreditRateRule(
+            name=name,
+            description=yaml_dict.pop("description", str),
+            when=_pop_when(yaml_dict, parser=parser, location=location),
+            rate=_pop_number(yaml_dict, "rate"),
+            applies_to=_pop_applies_to(
+                yaml_dict, parser=parser, rule_location=location
+            ),
+            statute=yaml_dict.pop_optional("statute", str),
+        )
+        _check_no_unexpected_keys(yaml_dict, location=location)
+        return rule
+
+
+@attr.define(frozen=True, kw_only=True)
+class CreditCapRule:
+    """A ceiling on the credits a sentence can earn against its terms."""
+
+    name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Identifier for the rule, unique within its regime."""
+
+    description: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Plain-language explanation of what the rule does and why."""
+
+    when: Condition | None = attr.ib(validator=is_opt_condition)
+    """Conditions a sentence must meet for the rule to apply, or None if it
+    applies to every sentence."""
+
+    max_credit_days: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """An arithmetic expression over sentence_length_days, the length of the term
+    being capped, e.g. "sentence_length_days * 0.58"."""
+
+    binds: frozenset[TermType] = attr.ib(
+        validator=attr_validators.is_frozenset_of(TermType)
+    )
+    """The terms whose credits the cap limits. Credits against any other term
+    are uncapped."""
+
+    statute: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    """Citation for the law the rule encodes, if any."""
+
+    def __attrs_post_init__(self) -> None:
+        if not self.binds:
+            raise ValueError(
+                f"Credit cap [{self.name}] binds no terms. List one or more of "
+                f"{_TERM_TYPE_VALUES} in binds."
+            )
+        unknown_names = expression_variable_names(
+            expression=self.max_credit_days, rule_name=self.name
+        ) - {SENTENCE_LENGTH_DAYS_VARIABLE}
+        if unknown_names:
+            raise ValueError(
+                f"Credit cap [{self.name}] uses {sorted(unknown_names)} in "
+                f"max_credit_days, but it can only use "
+                f"[{SENTENCE_LENGTH_DAYS_VARIABLE}]."
+            )
+
+    @classmethod
+    def from_yaml_dict(
+        cls, yaml_dict: YAMLDict, *, parser: ConditionParser
+    ) -> "CreditCapRule":
+        """Returns the CreditCapRule defined by one credit_caps entry."""
+        name = yaml_dict.pop("name", str)
+        location = f"credit_caps entry [{name}]"
+        rule = CreditCapRule(
+            name=name,
+            description=yaml_dict.pop("description", str),
+            when=_pop_when(yaml_dict, parser=parser, location=location),
+            max_credit_days=yaml_dict.pop("max_credit_days", str),
+            binds=frozenset(
+                TermType(term) for term in yaml_dict.pop_list("binds", str)
             ),
             statute=yaml_dict.pop_optional("statute", str),
         )
@@ -451,10 +588,15 @@ class DateFormulaRule:
 
 
 def _check_rule_order(
-    *, regime_name: str, section: str, rules: list[TermMultiplierRule]
+    *,
+    regime_name: str,
+    section: str,
+    rules: list[TermMultiplierRule] | list[CreditRateRule] | list[CreditCapRule],
+    requires_unconditional_last_rule: bool,
 ) -> None:
     """Raises if a rule without conditions, which applies to everything, comes
-    before other rules in section, or if the last rule has conditions."""
+    before other rules in section, or if requires_unconditional_last_rule and the
+    last rule has conditions."""
     for rule in rules[:-1]:
         if rule.when is None:
             raise ValueError(
@@ -462,7 +604,7 @@ def _check_rule_order(
                 f"with no when conditions, so the rules after it never apply. Move "
                 f"it to the end of {section}."
             )
-    if rules and rules[-1].when is not None:
+    if requires_unconditional_last_rule and rules and rules[-1].when is not None:
         raise ValueError(
             f"Law regime [{regime_name}] has when conditions on [{rules[-1].name}], "
             f"the last rule in {section}, so sentences that match no rule get no "
@@ -475,8 +617,8 @@ def _check_rule_order(
 class LawRegime:
     """A collection of rules for a specific law regime.
 
-    A regime shortens sentences with term_multipliers, or doesn't shorten them at
-    all.
+    A regime shortens sentences with term_multipliers or credit_rates, not both,
+    or doesn't shorten them at all.
     """
 
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
@@ -495,7 +637,7 @@ class LawRegime:
     days, rather than with the flat days_per_year and days_per_month below."""
 
     days_per_month: float = attr.ib(validator=attr_validators.is_positive_float)
-    """Days in a month for flat term conversion."""
+    """Days in a month for flat term conversion and for accruing monthly credits."""
 
     days_per_year: float = attr.ib(validator=attr_validators.is_positive_float)
     """Days in a year for flat term conversion."""
@@ -505,6 +647,21 @@ class LawRegime:
     )
     """Flat reductions applied at sentencing. The first rule whose conditions a
     sentence meets applies."""
+
+    credit_rates: list[CreditRateRule] = attr.ib(
+        validator=attr_validators.is_list_of(CreditRateRule)
+    )
+    """Credits earned per month served. The first rule whose conditions a
+    sentence meets applies."""
+
+    # TODO(NV-54): Apply the most conservative cap that applies to a sentence or
+    # group of sentences, rather than the first match, once a regime has more
+    # than one cap.
+    credit_caps: list[CreditCapRule] = attr.ib(
+        validator=attr_validators.is_list_of(CreditCapRule)
+    )
+    """Ceilings on the credits from credit_rates. The first rule whose conditions
+    a sentence meets applies, and a sentence that meets none is uncapped."""
 
     projected_dates: dict[str, DateFormulaRule] = attr.ib(
         validator=attr_validators.is_dict_of(str, DateFormulaRule)
@@ -518,6 +675,8 @@ class LawRegime:
         """Returns the names of every rule in the regime."""
         return [
             *(rule.name for rule in self.term_multipliers),
+            *(rule.name for rule in self.credit_rates),
+            *(rule.name for rule in self.credit_caps),
             *(rule.name for rule in self.projected_dates.values()),
         ]
 
@@ -546,10 +705,34 @@ class LawRegime:
             ) from e
 
     def __attrs_post_init__(self) -> None:
+        if self.term_multipliers and self.credit_rates:
+            raise ValueError(
+                f"Law regime [{self.name}] has both term_multipliers and "
+                f"credit_rates. A regime shortens sentences one way; remove one."
+            )
+        if self.credit_caps and not self.credit_rates:
+            raise ValueError(
+                f"Law regime [{self.name}] has credit_caps but no credit_rates, so "
+                f"there are no credits to cap. Add credit_rates or remove "
+                f"credit_caps."
+            )
         _check_rule_order(
             regime_name=self.name,
             section="term_multipliers",
             rules=self.term_multipliers,
+            requires_unconditional_last_rule=True,
+        )
+        _check_rule_order(
+            regime_name=self.name,
+            section="credit_rates",
+            rules=self.credit_rates,
+            requires_unconditional_last_rule=True,
+        )
+        _check_rule_order(
+            regime_name=self.name,
+            section="credit_caps",
+            rules=self.credit_caps,
+            requires_unconditional_last_rule=False,
         )
         for date_name, rule in self.projected_dates.items():
             self._check_projected_date(date_name=date_name, rule=rule)
@@ -646,6 +829,14 @@ class LawRegime:
             term_multipliers=[
                 TermMultiplierRule.from_yaml_dict(rule_dict, parser=sentence_parser)
                 for rule_dict in yaml_dict.pop_dicts_optional("term_multipliers") or []
+            ],
+            credit_rates=[
+                CreditRateRule.from_yaml_dict(rule_dict, parser=sentence_parser)
+                for rule_dict in yaml_dict.pop_dicts_optional("credit_rates") or []
+            ],
+            credit_caps=[
+                CreditCapRule.from_yaml_dict(rule_dict, parser=sentence_parser)
+                for rule_dict in yaml_dict.pop_dicts_optional("credit_caps") or []
             ],
             projected_dates=_parse_projected_dates(
                 yaml_dict.pop_dict_optional("projected_dates") or YAMLDict({}),

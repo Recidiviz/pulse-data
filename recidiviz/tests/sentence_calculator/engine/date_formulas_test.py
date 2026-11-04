@@ -80,6 +80,8 @@ def _regime(projected_dates: dict[str, DateFormulaRule]) -> LawRegime:
         days_per_month=30.0,
         days_per_year=365.0,
         term_multipliers=[],
+        credit_rates=[],
+        credit_caps=[],
         projected_dates=projected_dates,
     )
 

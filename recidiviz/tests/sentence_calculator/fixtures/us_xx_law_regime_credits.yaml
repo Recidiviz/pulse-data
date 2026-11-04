@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
+description: Test regime that exercises every credit regime section.
+effective_date: "2020-01-01"
+use_calendar_term_conversion: true
+days_per_month: 30.44
+
+conditions:
+  not_violent_or_sex:
+    offense_group: { not_in: [VIOLENCE, SEX] }
+  credits_reach_min_term:
+    all_of:
+      - condition: not_violent_or_sex
+      - condition: not_shared_offense_ids
+
+credit_rates:
+  - name: enhanced_credit_rate
+    description: Enhanced credits for qualified offenders outside category A
+    when:
+      qualified_for_enhanced_good_time: true
+      offense_category: { not_in: [A] }
+    rate: 30
+    applies_to:
+      max_term: always
+      min_term: always
+    statute: Test Statute 1(a)
+  - name: default_credit_rate
+    description: >-
+      Credits for every other offender, off the max term, and off the min term
+      outside these offenses
+    rate: 20.0
+    applies_to:
+      max_term: always
+      min_term:
+        when:
+          condition: credits_reach_min_term
+    statute: Test Statute 2
+
+credit_caps:
+  - name: credit_cap
+    description: Credits against the min term are capped at half the term
+    max_credit_days: sentence_length_days * 0.5
+    binds: [min_term]
+
+projected_dates:
+  parole_eligibility_date:
+    description: Eligible once the adjusted min term is served
+    formula: start_date + adjusted_min_days
+  release_date:
+    description: Release once the adjusted max term is served, for max terms over three years
+    when:
+      unadjusted_max_days: { greater_than: 1094 }
+    formula: start_date + adjusted_max_days

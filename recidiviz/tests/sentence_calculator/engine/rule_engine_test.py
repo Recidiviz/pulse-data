@@ -112,6 +112,8 @@ def _engine(*, term_multipliers: list[TermMultiplierRule]) -> RuleEngine:
             days_per_month=30.0,
             days_per_year=365.0,
             term_multipliers=term_multipliers,
+            credit_rates=[],
+            credit_caps=[],
             projected_dates={},
         )
     )

@@ -46,6 +46,8 @@ _NO_ADJUSTMENT_ENGINE = RuleEngine(
         days_per_month=30.0,
         days_per_year=365.0,
         term_multipliers=[],
+        credit_rates=[],
+        credit_caps=[],
         projected_dates={},
     )
 )
@@ -844,6 +846,8 @@ class TestSentenceGraphAdjustments(unittest.TestCase):
                         statute=None,
                     )
                 ],
+                credit_rates=[],
+                credit_caps=[],
                 projected_dates={},
             )
         )
@@ -910,6 +914,8 @@ class TestSentenceGraphAdjustments(unittest.TestCase):
                 days_per_month=30.0,
                 days_per_year=365.0,
                 term_multipliers=[],
+                credit_rates=[],
+                credit_caps=[],
                 projected_dates={},
             )
         )

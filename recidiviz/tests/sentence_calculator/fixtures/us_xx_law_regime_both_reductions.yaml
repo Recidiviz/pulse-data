@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
+description: Test regime with both term multipliers and credit rates.
+effective_date: "2020-01-01"
+term_multipliers:
+  - name: standard_term_reduction
+    description: 35% reduction for every offense
+    multiplier: 0.65
+    applies_to:
+      max_term: always
+      min_term: always
+credit_rates:
+  - name: stat_time
+    description: Stat time for every offense
+    rate: 20.0
+    applies_to:
+      max_term: always
+      min_term: always
