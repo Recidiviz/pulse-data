@@ -16,7 +16,7 @@
 # =============================================================================
 """Output data models for sentence calculator."""
 
-from datetime import date
+from datetime import date, timedelta
 
 import attr
 
@@ -100,6 +100,47 @@ class TrackedSentenceAdjustment:
 
 
 @attr.define(frozen=True, kw_only=True)
+class SentenceTermCalculation:
+    """The result of computing a single sentence's term: when it starts, how the
+    regime adjusts it, its length in days, the date it ends, and the date it
+    reaches its (not yet overlap-adjusted) parole eligibility."""
+
+    start_date: TrackedValue[date] = attr.ib(
+        validator=attr.validators.instance_of(TrackedValue)
+    )
+    """Date the sentence starts: its own start date for a root sentence, or the
+    day after its parent ends for a consecutive sentence."""
+
+    adjustment: TrackedSentenceAdjustment = attr.ib(
+        validator=attr.validators.instance_of(TrackedSentenceAdjustment)
+    )
+    """The sentence's original and regime-adjusted min and max terms."""
+
+    sentence_ped: TrackedValue[date] = attr.ib(
+        validator=attr.validators.instance_of(TrackedValue)
+    )
+    """Date the sentence becomes eligible to go before the parole board: its start
+    date plus its adjusted min term."""
+
+    @property
+    def total_days(self) -> TrackedValue[int]:
+        """The sentence's regime-adjusted max term, in days."""
+        return self.adjustment.adjusted_max_days
+
+    @property
+    def end_date(self) -> date:
+        """Last day served on the sentence's term (inclusive). A consecutive
+        sentence starts the day after. The start date is the first day served, so
+        a term of n days ends n - 1 days after the start."""
+        # TODO(NV-49): An adjusted term can be 0 days, when jail credit covers the
+        # whole term or a term multiplier truncates a 1 day term to 0. The - 1 then
+        # puts end_date the day before start_date, so a Nevada sentence can end the day
+        # before it begins. Revisit once we better understand how this case should
+        # be handled for different start dates.
+        return self.start_date.value + timedelta(days=self.total_days.value - 1)
+
+
+@attr.define(frozen=True, kw_only=True)
 class TrackedLongestSentencePath:
     """Aggregated result with derivation."""
 
@@ -114,10 +155,10 @@ class TrackedLongestSentencePath:
     # Latest date any sentence becomes eligible to go before the parole board. Tracked
     # value shows derivation from the sentence's MIN and start date (derived from
     # earlier sentences in the chain if it's not a root sentence).
-    # TODO(NV-9): The sentence start dates aren't yet calculated from previous
-    # sentences.
-    # Latest date any sentence becomes eligible to go before the parole board. Tracked
-    # value shows the controlling sentences that led up to it.
     max_ped: "TrackedValue[date]" = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)
+    )
+    # The term calculation for every sentence in the graph, keyed by sentence ID.
+    sentence_terms: dict[str, SentenceTermCalculation] = attr.ib(
+        validator=attr_validators.is_dict_of(str, SentenceTermCalculation)
     )

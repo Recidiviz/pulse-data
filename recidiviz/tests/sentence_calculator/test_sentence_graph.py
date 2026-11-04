@@ -19,12 +19,35 @@
 import unittest
 from datetime import date
 
+from recidiviz.sentence_calculator.engine.rule_engine import RuleEngine
 from recidiviz.sentence_calculator.engine.sentence_graph import SentenceGraph
 from recidiviz.sentence_calculator.models.inputs import Sentence, SentenceType, Term
+from recidiviz.sentence_calculator.models.rules import (
+    LawRegime,
+    ReductionTarget,
+    TermMultiplierRule,
+    TermType,
+)
 from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import (
     NevadaOffenseCategory,
     NevadaOffenseGroup,
     NevadaSentence,
+)
+
+# A regime with no reductions and flat 365/30 conversion, so each sentence's adjusted
+# terms are its original terms less any jail credit. Tests of the traversal itself use it so
+# term lengths can be read directly off the inputs.
+_NO_ADJUSTMENT_ENGINE = RuleEngine(
+    LawRegime(
+        name="NO_ADJUSTMENT",
+        description="Regime that leaves every term unchanged",
+        effective_date=date(2020, 1, 1),
+        use_calendar_term_conversion=False,
+        days_per_month=30.0,
+        days_per_year=365.0,
+        term_multipliers=[],
+        projected_dates={},
+    )
 )
 
 
@@ -35,6 +58,7 @@ def _sentence(
     start_date: date | None = None,
     min_term: Term = Term(),
     max_term: Term = Term(),
+    initial_time_served: Term = Term(),
     offense_category: NevadaOffenseCategory = NevadaOffenseCategory.CATEGORY_C,
     offense_group: NevadaOffenseGroup = NevadaOffenseGroup.OTHER,
 ) -> Sentence:
@@ -50,6 +74,7 @@ def _sentence(
         sentence_id=sentence_id,
         min_term=min_term,
         max_term=max_term,
+        initial_time_served=initial_time_served,
         offense_category=offense_category,
         offense_group=offense_group,
         sentence_type=SentenceType.OTHER,
@@ -105,6 +130,24 @@ class TestSentenceGraphConstruction(unittest.TestCase):
                 ]
             )
 
+    def test_consecutive_sentence_with_jail_credit_surfaces_error(self) -> None:
+        root = _sentence("S1", start_date=date(2024, 1, 1), max_term=Term(days=100))
+        consecutive = _sentence(
+            "S2",
+            parent_sentence_id="S1",
+            max_term=Term(days=100),
+            initial_time_served=Term(days=30),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Consecutive sentence \[S2\] has jail credit "
+            r"\[Term\(years=0, months=0, days=30\)\]\. Jail credit applies to the "
+            r"root sentence of a chain, which here is reached through \[S1\]\. Move "
+            r"the jail credit to the root sentence\.$",
+        ):
+            SentenceGraph([root, consecutive])
+
 
 class TestSentenceGraphLongestPath(unittest.TestCase):
     """Tests for SentenceGraph.longest_path()."""
@@ -112,10 +155,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
     def test_empty_graph_returns_none(self) -> None:
         graph = SentenceGraph([])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         self.assertIsNone(result)
 
@@ -124,10 +164,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
             [_sentence("S1", start_date=date(2024, 1, 1), max_term=Term(days=100))]
         )
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["S1"])
@@ -153,10 +190,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
             ]
         )
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["S1", "S2", "S3"])
@@ -177,10 +211,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError, r"^No start date for root / Level 1 sentence \[S1\]$"
         ):
-            graph.longest_path(
-                adjustments={},
-                use_calendar_days_per_month=False,
-            )
+            graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
     def test_concurrent_chains_pick_the_active_sentence_not_one_per_index(
         self,
@@ -232,10 +263,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         graph = SentenceGraph([c1a, c1b, c1c, c1d, c2a, c2b])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C1a", "C2b", "C1d"])
@@ -272,10 +300,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         graph = SentenceGraph([c1a, c1b, c2a, c2b])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C1a", "C2b", "C1b"])
@@ -312,10 +337,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         graph = SentenceGraph([c1a, c1b, c1c, c2a])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C1a", "C1b", "C2a"])
@@ -346,10 +368,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         graph = SentenceGraph([c1a, c1b, c2a])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C1a", "C2a", "C1b"])
@@ -375,10 +394,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         graph = SentenceGraph([c1a, c2a, c3a])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C1a", "C2a", "C3a"])
@@ -405,12 +421,10 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         )
 
         shorter_sibling_first = SentenceGraph([c1a, c1b, c1c]).longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
+            engine=_NO_ADJUSTMENT_ENGINE
         )
         longer_sibling_first = SentenceGraph([c1a, c1c, c1b]).longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
+            engine=_NO_ADJUSTMENT_ENGINE
         )
 
         assert shorter_sibling_first is not None
@@ -478,10 +492,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         graph = SentenceGraph([c1a, c1b, c1c, c2a, c2b])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C1a", "C2b", "C1c"])
@@ -516,10 +527,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         graph = SentenceGraph([c2a, c2b, c1a])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C2a", "C2b"])
@@ -563,10 +571,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         graph = SentenceGraph([c1a, c1b, c2a, c2b])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C2a", "C1b", "C2b"])
@@ -604,10 +609,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         graph = SentenceGraph([c1a, c1b, c2a])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C1a", "C1b"])
@@ -647,10 +649,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         graph = SentenceGraph([c1a, c2a, c2b])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C1a", "C2b"])
@@ -667,10 +666,7 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
             ]
         )
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(
@@ -678,10 +674,46 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
             {
                 "label": "S1.ped",
                 "value": "2024-02-09",
-                "formula": "S1.start_date + S1.min_term_days - 1 day",
+                "formula": "S1.start_date + S1.adjusted_min_days - 1 day",
                 "derived_from": [
                     {"label": "S1.start_date", "value": "2024-01-01"},
-                    {"label": "S1.min_term_days", "value": 40},
+                    {
+                        "label": "S1.adjusted_min_days",
+                        "value": 40,
+                        "formula": (
+                            "max(0, 40 - 0) = 40 (S1.term_multiplier not applied)"
+                        ),
+                        "derived_from": [
+                            {
+                                "label": "S1.original_min_days",
+                                "value": 40,
+                                "formula": "0y × 365.0 + 0m × 30.0 + 40d = 40 days",
+                                "derived_from": [
+                                    {"label": "S1.original_min_days.years", "value": 0},
+                                    {
+                                        "label": "S1.original_min_days.months",
+                                        "value": 0,
+                                    },
+                                    {"label": "S1.original_min_days.days", "value": 40},
+                                ],
+                            },
+                            {
+                                "label": "S1.term_multiplier",
+                                "value": 1.0,
+                                "formula": ("No term_multipliers rule; default 1.0"),
+                            },
+                            {
+                                "label": "S1.jail_credit",
+                                "value": 0,
+                                "formula": "0y × 365.0 + 0m × 30.0 + 0d = 0 days",
+                                "derived_from": [
+                                    {"label": "S1.jail_credit.years", "value": 0},
+                                    {"label": "S1.jail_credit.months", "value": 0},
+                                    {"label": "S1.jail_credit.days", "value": 0},
+                                ],
+                            },
+                        ],
+                    },
                 ],
             },
         )
@@ -732,33 +764,26 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         graph = SentenceGraph([c1a, c1b, c1c, c2a])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C1a", "C1b", "C2a"])
+        # The full shape of a PED's derivation tree is checked in
+        # test_max_ped_for_single_sentence_is_start_date_plus_min_term.
+        self.assertEqual("C1c.ped", result.max_ped.label)
+        self.assertEqual(date(2029, 2, 2), result.max_ped.value)
         self.assertEqual(
-            result.max_ped.to_derivation_tree(),
             {
-                "label": "C1c.ped",
-                "value": "2029-02-02",
-                "formula": "C1c.start_date + C1c.min_term_days - 1 day",
+                "label": "C1c.start_date",
+                "value": "2027-12-31",
+                "formula": "C1b.end_date + 1 day",
                 "derived_from": [
-                    {
-                        "label": "C1c.start_date",
-                        "value": "2027-12-31",
-                        "formula": "C1b.end_date + 1 day",
-                        "derived_from": [
-                            # C1b starts 2024-12-31, the day after C1a ends, and
-                            # runs 1095 days.
-                            {"label": "C1b.end_date", "value": "2027-12-30"},
-                        ],
-                    },
-                    {"label": "C1c.min_term_days", "value": 400},
+                    # C1b starts 2024-12-31, the day after C1a ends, and runs
+                    # 1095 days.
+                    {"label": "C1b.end_date", "value": "2027-12-30"},
                 ],
             },
+            result.sentence_terms["C1c"].start_date.to_derivation_tree(),
         )
 
     def test_max_ped_from_only_sentence_on_late_starting_chain(self) -> None:
@@ -785,25 +810,128 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
 
         graph = SentenceGraph([c1a, c2a])
 
-        result = graph.longest_path(
-            adjustments={},
-            use_calendar_days_per_month=False,
-        )
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
 
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C1a"])
-        self.assertEqual(
-            result.max_ped.to_derivation_tree(),
-            {
-                "label": "C2a.ped",
-                "value": "2026-05-15",
-                "formula": "C2a.start_date + C2a.min_term_days - 1 day",
-                "derived_from": [
-                    {"label": "C2a.start_date", "value": "2025-01-01"},
-                    {"label": "C2a.min_term_days", "value": 500},
+        self.assertEqual("C2a.ped", result.max_ped.label)
+        # The last day of C2a's 500 day min term, counting its start date as day one.
+        self.assertEqual(date(2026, 5, 15), result.max_ped.value)
+
+
+class TestSentenceGraphAdjustments(unittest.TestCase):
+    """Tests that SentenceGraph.longest_path uses the regime's adjusted terms."""
+
+    def test_consecutive_sentence_starts_after_parent_adjusted_end(self) -> None:
+        engine = RuleEngine(
+            LawRegime(
+                name="HALF_TERMS",
+                description="Regime that halves every term",
+                effective_date=date(2020, 1, 1),
+                use_calendar_term_conversion=False,
+                days_per_month=30.0,
+                days_per_year=365.0,
+                term_multipliers=[
+                    TermMultiplierRule(
+                        name="half_term_reduction",
+                        description="50% reduction on both terms",
+                        when=None,
+                        multiplier=0.5,
+                        applies_to=[
+                            ReductionTarget(term=TermType.MAX_TERM, when=None),
+                            ReductionTarget(term=TermType.MIN_TERM, when=None),
+                        ],
+                        statute=None,
+                    )
                 ],
-            },
+                projected_dates={},
+            )
         )
+        s1 = _sentence(
+            "S1",
+            start_date=date(2024, 1, 1),
+            min_term=Term(days=100),
+            max_term=Term(days=200),
+        )
+        s2 = _sentence(
+            "S2",
+            parent_sentence_id="S1",
+            min_term=Term(days=60),
+            max_term=Term(days=80),
+        )
+
+        result = SentenceGraph([s1, s2]).longest_path(engine=engine)
+
+        assert result is not None
+        self.assertEqual(["S1", "S2"], result.path_sentence_ids)
+        # 100 + 40 adjusted days.
+        self.assertEqual(140, result.total_days.value)
+        # S1 runs 100 adjusted days, 2024-01-01 through 2024-04-09.
+        self.assertEqual(date(2024, 4, 9), result.sentence_terms["S1"].end_date)
+        self.assertEqual(
+            date(2024, 4, 10), result.sentence_terms["S2"].start_date.value
+        )
+        # The last day of S2's 30 adjusted min days, counting its start date as day one.
+        self.assertEqual(date(2024, 5, 9), result.max_ped.value)
+
+    def test_root_jail_credit_moves_consecutive_sentence_start_date(self) -> None:
+        s1 = _sentence(
+            "S1",
+            start_date=date(2024, 1, 1),
+            min_term=Term(days=50),
+            max_term=Term(days=100),
+            initial_time_served=Term(days=30),
+        )
+        s2 = _sentence(
+            "S2",
+            parent_sentence_id="S1",
+            min_term=Term(days=20),
+            max_term=Term(days=40),
+        )
+
+        result = SentenceGraph([s1, s2]).longest_path(engine=_NO_ADJUSTMENT_ENGINE)
+
+        assert result is not None
+        self.assertEqual(["S1", "S2"], result.path_sentence_ids)
+        # S1's 100 day max term less 30 days of jail credit, plus S2's full 40 days.
+        self.assertEqual(110, result.total_days.value)
+        # S1 runs 70 days, 2024-01-01 through 2024-03-10.
+        self.assertEqual(
+            date(2024, 3, 11), result.sentence_terms["S2"].start_date.value
+        )
+
+    def test_calendar_conversion_counts_from_inherited_start_date(self) -> None:
+        engine = RuleEngine(
+            LawRegime(
+                name="CALENDAR",
+                description="Regime that converts terms using the calendar",
+                effective_date=date(2020, 1, 1),
+                use_calendar_term_conversion=True,
+                days_per_month=30.0,
+                days_per_year=365.0,
+                term_multipliers=[],
+                projected_dates={},
+            )
+        )
+        s1 = _sentence(
+            "S1",
+            start_date=date(2024, 1, 1),
+            min_term=Term(days=31),
+            max_term=Term(days=31),
+        )
+        s2 = _sentence(
+            "S2",
+            parent_sentence_id="S1",
+            min_term=Term(months=1),
+            max_term=Term(months=1),
+        )
+
+        result = SentenceGraph([s1, s2]).longest_path(engine=engine)
+
+        assert result is not None
+        self.assertEqual(date(2024, 2, 1), result.sentence_terms["S2"].start_date.value)
+        # One month from 2024-02-01 is 29 days, since 2024 is a leap year.
+        self.assertEqual(29, result.sentence_terms["S2"].total_days.value)
 
 
 if __name__ == "__main__":

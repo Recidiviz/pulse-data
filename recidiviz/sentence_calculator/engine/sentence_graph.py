@@ -20,15 +20,16 @@ from datetime import date, timedelta
 
 import networkx as nx
 
+from recidiviz.sentence_calculator.engine.rule_engine import RuleEngine
+from recidiviz.sentence_calculator.engine.sentence_adjustments import (
+    calculate_sentence_adjustment,
+)
 from recidiviz.sentence_calculator.models.inputs import Sentence, Term
 from recidiviz.sentence_calculator.models.outputs import (
     DisplayGraph,
     GraphEdge,
-    TrackedLongestSentencePath,
-    TrackedSentenceAdjustment,
-)
-from recidiviz.sentence_calculator.models.sentence_term_calculation import (
     SentenceTermCalculation,
+    TrackedLongestSentencePath,
 )
 from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import (
     NvSentenceWithSortableEndDate,
@@ -77,6 +78,15 @@ class SentenceGraph:
                     f"Sentence [{sentence.sentence_id}] has an invalid term (0 days)."
                     f"Min term: [{sentence.min_term}], Max term: [{sentence.max_term}]"
                 )
+            if sentence.parent_sentence_id and sentence.initial_time_served != Term():
+                # TODO(NV-5): Log errors rather than throwing.
+                raise ValueError(
+                    f"Consecutive sentence [{sentence.sentence_id}] has jail credit "
+                    f"[{sentence.initial_time_served}]. Jail credit applies to the "
+                    f"root sentence of a chain, which here is reached through "
+                    f"[{sentence.parent_sentence_id}]. Move the jail credit to the "
+                    f"root sentence."
+                )
             graph.add_node(sentence.sentence_id)
             if sentence.parent_sentence_id:
                 graph.add_edge(sentence.parent_sentence_id, sentence.sentence_id)
@@ -99,14 +109,7 @@ class SentenceGraph:
     def display_graph(self) -> DisplayGraph:
         return self._display_graph
 
-    def longest_path(
-        self,
-        *,
-        adjustments: dict[  # pylint: disable=unused-argument # TODO(NV-9)
-            str, TrackedSentenceAdjustment
-        ],
-        use_calendar_days_per_month: bool,  # pylint: disable=unused-argument # TODO(NV-9)
-    ) -> TrackedLongestSentencePath | None:
+    def longest_path(self, *, engine: RuleEngine) -> TrackedLongestSentencePath | None:
         """Compute the path of controlling sentences from earliest start date to latest
         end date.
 
@@ -144,16 +147,19 @@ class SentenceGraph:
         sentence date, with that date moving forward as we choose each controlling
         sentence.
 
+        Each sentence's terms are adjusted by the regime's rules (a term multiplier,
+        plus jail credit) before its end date and PED are computed. Calendar-based term conversion counts from the date the
+        sentence starts, which for a consecutive sentence depends on when its
+        parent ends.
+
         Args:
-            adjustments: For each sentence, calculated the "adjusted" term based on
-                projected credits or a percentage reduction.
-            use_calendar_days_per_month: Whether to use calendar days for year/month
-                conversion.
+            engine: Rule engine for the regime that governs the sentences.
 
         Returns:
             The IDs of the controlling sentences in the order they became controlling,
-                the tracked total days of those sentences, and the tracked latest PED
-                across all sentences. None if the graph is empty.
+                the tracked total days of those sentences, the tracked latest PED
+                across all sentences, and the term calculation for every sentence.
+                None if the graph is empty.
 
         Raises:
             ValueError: If the graph contains cycles.
@@ -164,10 +170,7 @@ class SentenceGraph:
         # Keyed by sentence ID
         sentence_term_calculations: dict[str, SentenceTermCalculation] = {}
 
-        # TODO(NV-9) Stubbed until a subsequent PR - the real date calc and adjustment
-        # logic is a lot.
-        # TODO(NV-9) Ensure jail time is added correctly in adjustments and only to the
-        # correct sentences!
+        # TODO(NV-9) Ensure jail time is added only to the correct sentences.
         # TODO(NV-17): Handle the case where there's sentences from two JOCs and
         # they have different amounts of jail time.
         def get_start_date(sentence: Sentence) -> TrackedValue[date]:
@@ -202,32 +205,23 @@ class SentenceGraph:
             # many days each controlling sentence contributed. If we don't, then the
             # total days will fall very neatly out of the final end date - start date,
             # and we won't need to be careful here about the intermediate intervals.
-            sentence_id = sentence.sentence_id
             # TODO(NV-9) This logic doesn't account yet for the mandatory parole min -
             # not positive it needs to, given the 40% requirement, but should check.
-            total_days = days_from_term(sentence.max_term)
             start_date = get_start_date(sentence)
-            min_term_days = TrackedValue.input(
-                days_from_term(sentence.min_term), f"{sentence_id}.min_term_days"
+            adjustment = calculate_sentence_adjustment(
+                sentence=sentence, start_date=start_date.value, engine=engine
             )
+            min_term_days = adjustment.adjusted_min_days
             return SentenceTermCalculation(
-                total_days=TrackedValue.input(total_days, f"{sentence_id}.total_days"),
-                # The start date is the first day served, so a term of n days ends
-                # n - 1 days after the start.
-                end_date=start_date.value + timedelta(days=total_days - 1),
+                start_date=start_date,
+                adjustment=adjustment,
                 sentence_ped=start_date.derive(
                     new_value=start_date.value + timedelta(min_term_days.value - 1),
-                    label=f"{sentence_id}.ped",
+                    label=f"{sentence.sentence_id}.ped",
                     formula=f"{start_date.label} + {min_term_days.label} - 1 day",
                     other_sources=[min_term_days],
                 ),
             )
-
-        # TODO(NV-9): This is wrong! but this is just a stub and this logic will
-        # be implemented correctly later. What values to use for "how many days are
-        # in a month/year" is configured by the rule set.
-        def days_from_term(term: Term) -> int:
-            return (term.years * 365) + (term.months * 30) + term.days
 
         def get_sentence_length(sentence: Sentence) -> TrackedValue[int]:
             return get_sentence_term_calculation(sentence).total_days
@@ -393,4 +387,5 @@ class SentenceGraph:
             path_sentence_ids=[s.sentence.sentence_id for s in controlling_sentences],
             total_days=total_days,
             max_ped=assert_type(max_ped, TrackedValue),
+            sentence_terms=sentence_term_calculations,
         )
