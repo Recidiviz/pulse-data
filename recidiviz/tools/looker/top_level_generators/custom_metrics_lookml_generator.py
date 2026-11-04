@@ -61,6 +61,7 @@ from recidiviz.tools.looker.aggregated_metrics.custom_global_metrics_configurati
 from recidiviz.tools.looker.aggregated_metrics.custom_incarceration_system_health_metrics_configurations import (
     INCARCERATION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES,
     INCARCERATION_SYSTEM_HEALTH_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
+    INCARCERATION_SYSTEM_HEALTH_LOOKER_METRICS,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_insights_metrics_configurations import (
     INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES,
@@ -199,7 +200,7 @@ class CustomMetricsLookMLGenerator(LookMLGenerator):
         collect_and_build_custom_metrics_views_for_package(
             lookml_views_package_name="incarceration_system_health_metrics",
             output_directory=output_subdir,
-            metrics=METRICS_BY_POPULATION_TYPE[MetricPopulationType.INCARCERATION],
+            metrics=INCARCERATION_SYSTEM_HEALTH_LOOKER_METRICS,
             assignment_types_dict=INCARCERATION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions=INCARCERATION_SYSTEM_HEALTH_JSON_FIELD_FILTERS_WITH_SUGGESTIONS,
         )

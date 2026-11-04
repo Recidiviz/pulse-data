@@ -19,6 +19,14 @@ Additional configurations for autogeneration of LookML for a custom aggregated
 metrics explore for incarceration system health metrics
 """
 
+from recidiviz.aggregated_metrics.configuration.collections.standard import (
+    METRICS_BY_POPULATION_TYPE,
+)
+from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
+from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    APPROVED_RISK_ASSESSMENT_OVERRIDES,
+    APPROVED_RISK_ASSESSMENTS,
+)
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
@@ -34,6 +42,14 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodCustodyLevel,
 )
 from recidiviz.common.str_field_utils import snake_to_title
+
+# Risk assessment metrics live only here, not in the standard collection, to keep
+# the materialized aggregated_metrics views under their time limits.
+INCARCERATION_SYSTEM_HEALTH_LOOKER_METRICS: list[AggregatedMetric] = [
+    *METRICS_BY_POPULATION_TYPE[MetricPopulationType.INCARCERATION],
+    APPROVED_RISK_ASSESSMENTS,
+    APPROVED_RISK_ASSESSMENT_OVERRIDES,
+]
 
 INCARCERATION_SYSTEM_HEALTH_ASSIGNMENT_NAMES_TO_TYPES = {
     "ALL_INCARCERATION_STATES": (
