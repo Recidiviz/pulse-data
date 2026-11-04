@@ -201,26 +201,29 @@ def calculate_sentence_adjustment(
     )
 
     term_multiplier = engine.get_term_multiplier(sentence)
+    adjusted_min_days, _ = _apply_term_multiplier(
+        sentence_id=sentence_id,
+        original_days=original_min_days,
+        jail_credit=jail_credit,
+        term_multiplier=term_multiplier,
+        term=TermType.MIN_TERM,
+        term_label=MIN_TERM_LABEL,
+    )
+    adjusted_max_days, max_term_reduction_days = _apply_term_multiplier(
+        sentence_id=sentence_id,
+        original_days=original_max_days,
+        jail_credit=jail_credit,
+        term_multiplier=term_multiplier,
+        term=TermType.MAX_TERM,
+        term_label=MAX_TERM_LABEL,
+    )
     return TrackedSentenceAdjustment(
         sentence_id=sentence_id,
         original_min_days=original_min_days,
         original_max_days=original_max_days,
-        adjusted_min_days=_apply_term_multiplier(
-            sentence_id=sentence_id,
-            original_days=original_min_days,
-            jail_credit=jail_credit,
-            term_multiplier=term_multiplier,
-            term=TermType.MIN_TERM,
-            term_label=MIN_TERM_LABEL,
-        ),
-        adjusted_max_days=_apply_term_multiplier(
-            sentence_id=sentence_id,
-            original_days=original_max_days,
-            jail_credit=jail_credit,
-            term_multiplier=term_multiplier,
-            term=TermType.MAX_TERM,
-            term_label=MAX_TERM_LABEL,
-        ),
+        adjusted_min_days=adjusted_min_days,
+        adjusted_max_days=adjusted_max_days,
+        max_term_reduction_days=max_term_reduction_days,
         term_multiplier=term_multiplier,
         jail_credit=jail_credit,
     )
@@ -234,22 +237,34 @@ def _apply_term_multiplier(
     term_multiplier: TermMultiplier,
     term: TermType,
     term_label: str,
-) -> TrackedValue[int]:
-    """Returns term after subtracting jail credit and multiplying by the multiplier,
-    if appropriate. The derivation tree keeps the multiplier in the formula, so it says
-    why the reduction does or doesn't reach the term."""
+) -> tuple[TrackedValue[int], TrackedValue[int]]:
+    """Returns the term after subtracting jail credit and multiplying by the
+    multiplier, if appropriate, and the days the multiplier took off the term.
+    Those days count in full even when jail credit covers the rest of the term,
+    and are 0 when the multiplier doesn't reduce the term. The derivation trees
+    keep the multiplier in the formula, so they say why the reduction does or
+    doesn't reach the term."""
     multiplier = term_multiplier.multiplier
     label = f"{sentence_id}.adjusted_{term_label}_days"
+    reduction_label = f"{sentence_id}.{term_label}_term_reduction_days"
     if term not in term_multiplier.reduced_terms:
         adjusted = max(0, original_days.value - jail_credit.value)
-        return original_days.derive(
-            new_value=adjusted,
-            label=label,
-            formula=(
-                f"max(0, {original_days.value} - {jail_credit.value}) = "
-                f"{adjusted} ({multiplier.label} not applied)"
+        return (
+            original_days.derive(
+                new_value=adjusted,
+                label=label,
+                formula=(
+                    f"max(0, {original_days.value} - {jail_credit.value}) = "
+                    f"{adjusted} ({multiplier.label} not applied)"
+                ),
+                other_sources=[multiplier, jail_credit],
             ),
-            other_sources=[multiplier, jail_credit],
+            TrackedValue(
+                value=0,
+                label=reduction_label,
+                sources=(multiplier,),
+                formula=f"0 ({multiplier.label} not applied)",
+            ),
         )
     # Fraction keeps the product exact; with floats, 90 days × 0.7 truncates to 62.
     # TODO(NV-9): OSM rounds credits up to a whole day. Truncating the reduced term
@@ -257,14 +272,26 @@ def _apply_term_multiplier(
     # multiplier.
     reduced_days = int(Fraction(original_days.value) * _to_fraction(multiplier.value))
     adjusted = max(0, reduced_days - jail_credit.value)
-    return original_days.derive(
-        new_value=adjusted,
-        label=label,
-        formula=(
-            f"max(0, int({original_days.value} × {multiplier.value}) - "
-            f"{jail_credit.value}) = {adjusted}"
+    reduction_days = original_days.value - reduced_days
+    return (
+        original_days.derive(
+            new_value=adjusted,
+            label=label,
+            formula=(
+                f"max(0, int({original_days.value} × {multiplier.value}) - "
+                f"{jail_credit.value}) = {adjusted}"
+            ),
+            other_sources=[multiplier, jail_credit],
         ),
-        other_sources=[multiplier, jail_credit],
+        original_days.derive(
+            new_value=reduction_days,
+            label=reduction_label,
+            formula=(
+                f"{original_days.value} - int({original_days.value} × "
+                f"{multiplier.value}) = {reduction_days}"
+            ),
+            other_sources=[multiplier],
+        ),
     )
 
 

@@ -286,6 +286,8 @@ class TestTermMultiplierAdjustment(unittest.TestCase):
         self.assertEqual(444, adjustment.adjusted_min_days.value)
         # int(1825 * 0.65) - 30
         self.assertEqual(1156, adjustment.adjusted_max_days.value)
+        # 1825 - int(1825 * 0.65)
+        self.assertEqual(639, adjustment.max_term_reduction_days.value)
         self.assertEqual(0.65, adjustment.term_multiplier.multiplier.value)
         self.assertEqual(30, adjustment.jail_credit.value)
         self.assertEqual(
@@ -455,6 +457,8 @@ class TestTermMultiplierAdjustment(unittest.TestCase):
 
         self.assertEqual(0, adjustment.adjusted_min_days.value)
         self.assertEqual(0, adjustment.adjusted_max_days.value)
+        # 20 - int(20 * 0.65), counted in full though jail credit covers the term
+        self.assertEqual(7, adjustment.max_term_reduction_days.value)
 
 
 class TestReductionOffMinTermOnly(unittest.TestCase):
@@ -486,6 +490,7 @@ class TestReductionOffMinTermOnly(unittest.TestCase):
         self.assertEqual(444, adjustment.adjusted_min_days.value)
         # 1825 - 30, with no reduction
         self.assertEqual(1795, adjustment.adjusted_max_days.value)
+        self.assertEqual(0, adjustment.max_term_reduction_days.value)
         self.assertEqual(
             frozenset({TermType.MIN_TERM}), adjustment.term_multiplier.reduced_terms
         )

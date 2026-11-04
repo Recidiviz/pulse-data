@@ -57,6 +57,7 @@ def _context(
         adjusted_max_days=_ADJUSTED_MAX_DAYS,
         jail_credit_days=TrackedValue.input(0, "jail_credit_days"),
         good_time_days=TrackedValue.input(639, "good_time_days"),
+        max_ped=TrackedValue.input(date(2026, 4, 19), "max_ped"),
     )
 
 

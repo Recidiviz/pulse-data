@@ -21,6 +21,10 @@ from datetime import date, timedelta
 import attr
 
 from recidiviz.common import attr_validators
+from recidiviz.sentence_calculator.models.inputs import (
+    SentenceCalculationInput,
+    SentenceType,
+)
 from recidiviz.sentence_calculator.models.rules import TermType
 from recidiviz.sentence_calculator.models.tracked import TrackedValue
 
@@ -86,6 +90,12 @@ class TrackedSentenceAdjustment:
     # MAX date (time to release) in days, adjusted for earned or projected credit, jail
     # time, or other adjustments.
     adjusted_max_days: "TrackedValue[int]" = attr.ib(
+        validator=attr.validators.instance_of(TrackedValue)
+    )
+    # Days the regime's reduction took off the max term. They count in full even when
+    # jail credit covers the rest of the term, and are 0 when the reduction doesn't
+    # reach the max term.
+    max_term_reduction_days: "TrackedValue[int]" = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)
     )
     # The regime's flat reduction (e.g. a .65 multiplier for the 35% off in SB413) and
@@ -158,7 +168,74 @@ class TrackedLongestSentencePath:
     max_ped: "TrackedValue[date]" = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)
     )
+    # Latest date any currently active sentence becomes eligible to go before the
+    # parole board, or None until the sentence graph computes it.
+    # TODO(NV-9): Compute this in SentenceGraph.longest_path alongside max_ped, since
+    # the graph knows which sentences are active.
+    # TODO(NV-46): Check with Nevada whether min_ped should ever be in the past.
+    min_ped: "TrackedValue[date] | None" = attr.ib(
+        validator=attr_validators.is_opt(TrackedValue)
+    )
     # The term calculation for every sentence in the graph, keyed by sentence ID.
     sentence_terms: dict[str, SentenceTermCalculation] = attr.ib(
         validator=attr_validators.is_dict_of(str, SentenceTermCalculation)
     )
+
+
+@attr.define(frozen=True, kw_only=True)
+class TrackedProjectedDates:
+    """The projected dates a regime's projected_dates rules computed, with their
+    derivations."""
+
+    start_date: TrackedValue[date] = attr.ib(
+        validator=attr.validators.instance_of(TrackedValue)
+    )
+    """Date the first sentence on the controlling path starts."""
+
+    dates: dict[str, TrackedValue[date]] = attr.ib(
+        validator=attr_validators.is_dict_of(str, TrackedValue)
+    )
+    """Each computed date keyed by its name, e.g.
+    parole_eligibility_date. A date whose rules' conditions didn't hold is absent."""
+
+
+@attr.define(frozen=True, kw_only=True)
+class SentenceCalculationResult:
+    """The result of calculating dates for a set of sentences."""
+
+    input: SentenceCalculationInput = attr.ib(
+        validator=attr.validators.instance_of(SentenceCalculationInput)
+    )
+    """The input the result was calculated from."""
+
+    indeterminate_sentence_type: SentenceType | None = attr.ib(
+        validator=attr.validators.optional(attr.validators.in_(SentenceType))
+    )
+    """The most severe of DEATH, LWO, or LIFE among the sentences, or None if every
+    sentence is determinate. DEATH and LWO sentences have no path or projected
+    dates; LIFE sentences have a path but no projected dates."""
+
+    graph: DisplayGraph = attr.ib(validator=attr.validators.instance_of(DisplayGraph))
+    """The sentence graph, for display."""
+
+    longest_path: TrackedLongestSentencePath | None = attr.ib(
+        validator=attr_validators.is_opt(TrackedLongestSentencePath)
+    )
+    """The controlling sentences and the term calculation for every sentence, or
+    None if there are no sentences or one is a DEATH or LWO sentence."""
+
+    projected_dates: TrackedProjectedDates | None = attr.ib(
+        validator=attr_validators.is_opt(TrackedProjectedDates)
+    )
+    """The regime's projected dates, or None when there is no path or a sentence
+    is indeterminate."""
+
+    @property
+    def sentence_adjustments(self) -> list[TrackedSentenceAdjustment]:
+        """Returns the adjustment for every sentence, in input order."""
+        if self.longest_path is None:
+            return []
+        return [
+            self.longest_path.sentence_terms[sentence.sentence_id].adjustment
+            for sentence in self.input.sentences
+        ]

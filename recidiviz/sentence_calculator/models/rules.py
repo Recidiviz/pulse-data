@@ -95,12 +95,17 @@ PROJECTED_DATE_VALUE_TYPES: dict[str, type] = {
     "adjusted_max_days": int,
     # Whole years in unadjusted_max_days, for statutes that set thresholds in
     # years. With calendar term conversion these are calendar years counted from
-    # start_date, so a term that spans a leap day isn't a year short.
+    # the RETRO date (start_date minus the first path sentence's jail credit),
+    # where the terms themselves start counting, so a term that spans a leap day
+    # isn't a year short.
     "unadjusted_max_years": int,
     # Sum of the jail credit on the controlling path.
     "jail_credit_days": int,
     # Days the regime's reduction took off the controlling path's max terms.
     "good_time_days": int,
+    # Latest date any sentence, controlling or not, becomes eligible to go before
+    # the parole board.
+    "max_ped": datetime.date,
 }
 
 # The functions a rule expression can call to write a calendar duration, e.g.

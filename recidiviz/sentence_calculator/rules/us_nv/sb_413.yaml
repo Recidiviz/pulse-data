@@ -35,8 +35,10 @@ projected_dates:
   # TODO(NV-46): Handle when this date is in the past or needs to be overriden (e.g.
   # given the result of a parole board action).
   parole_eligibility_date:
-    description: Parole Eligibility Date (PED), based on the adjusted minimum term.
-    formula: start_date + adjusted_min_days - 1
+    description: >-
+      Parole Eligibility Date (PED), the latest date any sentence becomes eligible
+      for parole based on its adjusted minimum term.
+    formula: max_ped
 
   projected_expiration_date:
     description: Projected Expiration Date (PEXD), based on the adjusted maximum term.

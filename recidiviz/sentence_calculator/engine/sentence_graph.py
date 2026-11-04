@@ -73,6 +73,9 @@ class SentenceGraph:
             # TODO(NV-9): This class is probably not the right place for this kind of
             # general validation. Move it elsewhere when there is an 'elsewhere' to do
             # validation.
+            # TODO(NV-53): This compares a Term to the int 0, so it never fires.
+            # Before fixing it, add handling for DEATH and LWO sentences, which can
+            # have empty terms and would start failing this check.
             if sentence.max_term == 0 or sentence.min_term == 0:
                 raise ValueError(
                     f"Sentence [{sentence.sentence_id}] has an invalid term (0 days)."
@@ -387,5 +390,6 @@ class SentenceGraph:
             path_sentence_ids=[s.sentence.sentence_id for s in controlling_sentences],
             total_days=total_days,
             max_ped=assert_type(max_ped, TrackedValue),
+            min_ped=None,
             sentence_terms=sentence_term_calculations,
         )

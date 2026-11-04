@@ -66,7 +66,8 @@ class DateCalculationContext:
         validator=attr.validators.instance_of(TrackedValue)
     )
     """Whole years in unadjusted_max_days, counted the way the regime converts
-    terms to days."""
+    terms to days. With calendar conversion they count from the RETRO date, where
+    the terms start counting."""
 
     adjusted_min_days: TrackedValue[int] = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)
@@ -88,6 +89,13 @@ class DateCalculationContext:
     )
     """Days the regime's reduction took off the controlling path's max terms."""
 
+    max_ped: TrackedValue[date] = attr.ib(
+        validator=attr.validators.instance_of(TrackedValue)
+    )
+    """Latest date any sentence, controlling or not, becomes eligible to go before
+    the parole board. Unlike the values above, it isn't limited to the controlling
+    path, since a sentence that never controls the max can have the latest PED."""
+
     def formula_variables(self) -> dict[str, TrackedValue[int | float | date]]:
         """Returns the aggregated values keyed by the names formulas use."""
         return {
@@ -99,6 +107,7 @@ class DateCalculationContext:
             "adjusted_max_days": self.adjusted_max_days,
             "jail_credit_days": self.jail_credit_days,
             "good_time_days": self.good_time_days,
+            "max_ped": self.max_ped,
         }
 
     def condition_values(self) -> dict[str, int | float | date]:
