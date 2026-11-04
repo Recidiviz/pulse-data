@@ -151,7 +151,7 @@ class TestListLawRegimeNames(unittest.TestCase):
     """Tests for list_law_regime_names."""
 
     def test_list_nevada_regimes(self) -> None:
-        self.assertEqual(["SB_413"], list_law_regime_names(StateCode.US_NV))
+        self.assertEqual(["PRE_413", "SB_413"], list_law_regime_names(StateCode.US_NV))
 
     def test_list_regimes_for_state_without_rules(self) -> None:
         self.assertEqual([], list_law_regime_names(StateCode.US_XX))

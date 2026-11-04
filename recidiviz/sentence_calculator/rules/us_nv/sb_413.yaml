@@ -47,6 +47,8 @@ projected_dates:
   # The mixing of units here (3 years, 12 months) is because that's what the statute
   # says.
   # TODO(NV-43): Determine if we need to add eligibility checks to this date.
+  # TODO(NV-59): NDOC floors MPR at PED, but this formula doesn't, so MPR can
+  # come before PED when the reduction shortens the max term but not the min term.
   mandatory_parole_release_date:
     description: >-
       Mandatory Parole Release (MPR), PEXD minus 12 months, for an original

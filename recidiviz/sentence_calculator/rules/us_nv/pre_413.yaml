@@ -1,0 +1,129 @@
+# yaml-language-server: $schema=../schema/law_regime_schema.json
+description: |
+  Nevada sentencing rules covering good time credits, parole eligibility,
+  and date calculations. Pre-413 rules.
+
+# NRS 209.4465(1) grants its credits to offenders sentenced for a crime
+# committed on or after July 17, 1997.
+effective_date: "1997-07-17"
+
+# Terms convert using actual calendar days, matching SB_413. The per-month
+# credits in NRS 209.4465(1)-(2), which the statute grants "for each month the
+# offender serves", accrue by calendar month served, prorated in the final month.
+# days_per_month only sets the rate at which jail credit time earns credits.
+#
+# TODO(NV-61): days_per_month shouldn't be used when use_calendar_term_conversion
+# is true. Right now it's used for adjusting jail credits -- jail time doesn't earn
+# work credits. Because jail time is always in the past, we can remove days_per_month
+# once we correctly apply past credits.
+use_calendar_term_conversion: true
+days_per_month: 30.0
+
+conditions:
+  # TODO(NV-55): The subsection (8) carve-outs only apply to offenses committed on
+  # or after the 2007 amendments took effect; for earlier offenses, credits reach
+  # the minimum term even for these offenses (see Williams v. Nevada Department
+  # of Corrections, 2017). Sentences have no offense date field to condition on,
+  # so the carve-outs currently apply to every sentence under this regime.
+  #
+  # TODO(NV-56): NRS 209.4465(8)(e) also carves out a violation of NRS 574.100
+  # punishable under subsection 6 of that section. There is no offense field
+  # that identifies it, so it is not modeled here.
+  #
+  # NRS 209.4465(7)(a) deducts credits from the maximum term for everyone, and
+  # (8) also deducts them from the minimum term except for the offenses below.
+  credits_reach_min_term:
+    # (8)(a)-(b): not a violent felony or a felony sexual offense.
+    offense_group: { not_in: [VIOLENCE, SEX] }
+    # (8)(c): not a felony DUI under NRS 484C.110/.120/.130/.430.
+    condition: not_felony_dui
+    # (8)(d): not a category A or B felony.
+    offense_category: { not_in: [A, B] }
+
+# ===========================================================================
+# Credits
+# ===========================================================================
+credit_rates:
+  # TODO(NV-62): Offenders in MIN or CT custody earn 20 days of work time a month
+  # rather than 10. Add the ability to determine rate based on custody level.
+  - name: work_time
+    description: >-
+      30 days of credit per month served: 20 days of stat time under NRS
+      209.4465(1) plus 10 days of work time under (2) for diligence in labor and
+      study, the total contemplated by (4). The rate is the total, not an
+      increment added to stat_time.
+    when:
+      qualified_for_enhanced_good_time: true
+    rate: 30
+    applies_to:
+      max_term: always
+      min_term:
+        when:
+          condition: credits_reach_min_term
+    statute: NRS 209.4465(2)
+  - name: stat_time
+    description: >-
+      20 days of stat time per month served, which NRS 209.4465(1) grants to
+      every offender.
+    rate: 20
+    applies_to:
+      max_term: always
+      min_term:
+        when:
+          condition: credits_reach_min_term
+    statute: NRS 209.4465(1)
+
+# TODO(NV-57): The cap is limited to offenses committed on or after July 1, 2014
+# and to offenders who elected aggregation under NRS 213.1212 on or after that
+# date. Sentences have no offense date or aggregation election field to
+# condition on, so the cap currently applies to every sentence under this
+# regime.
+credit_caps:
+  - name: credit_cap
+    description: >-
+      NRS 209.4465(9) caps the reduction of the minimum term at 58% of that
+      term. Nothing caps the reduction of the maximum term.
+    max_credit_days: sentence_length_days * 0.58
+    binds: [min_term]
+    statute: NRS 209.4465(9)
+
+# ===========================================================================
+# Projected dates
+# ===========================================================================
+#
+# adjusted_min_days and adjusted_max_days already have jail credit and good
+# time deducted, so these formulas must not subtract jail credit again.
+projected_dates:
+  # TODO(NV-58): (7)(b) does not apply credits to parole eligibility when the
+  # offender was sentenced under a statute that specifies a minimum sentence that
+  # must be served before parole eligibility. Sentences have no field that
+  # identifies such statutes, so this proviso is not modeled.
+  parole_eligibility_date:
+    description: >-
+      Parole Eligibility Date (PED), the latest date any sentence becomes
+      eligible for parole once its credit-reduced minimum term is served. NRS
+      209.4465 sets no percentage-of-sentence threshold, and under subsections
+      (7)(b) and (8) credits apply to parole eligibility.
+    formula: max_ped
+
+  projected_expiration_date:
+    description: >-
+      Projected Expiration Date (PEXD), the last day of the maximum term after
+      the credits NRS 209.4465(7)(a) deducts from it.
+    formula: start_date + adjusted_max_days - 1
+    statute: NRS 209.4465(7)(a)
+
+  # TODO(NV-43): NRS 213.1215 only applies to offenders not previously released on
+  # parole for the sentence. There is no field for prior parole release, so this
+  # rule assumes none.
+  # TODO(NV-59): NDOC floors MPR at PED, but this formula doesn't, so MPR can
+  # come before PED when credits shorten the max term but not the min term.
+  mandatory_parole_release_date:
+    description: >-
+      Mandatory Parole Release (MPR). NRS 213.1215 releases an offender on
+      parole 12 months before the end of the credit-reduced maximum term, for
+      an original maximum term of 3 years or more.
+    when:
+      unadjusted_max_years: { greater_than_or_equal: 3 }
+    formula: projected_expiration_date - months(12)
+    statute: NRS 213.1215

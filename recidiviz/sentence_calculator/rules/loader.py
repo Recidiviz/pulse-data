@@ -65,7 +65,7 @@ def load_state_conditions(state_code: StateCode) -> dict[str, Condition]:
 
 def list_law_regime_names(state_code: StateCode) -> list[str]:
     """Returns the names of every law regime defined for state_code, e.g.
-    ["SB_413"] for US_NV, or an empty list if the state has none."""
+    ["PRE_413", "SB_413"] for US_NV, or an empty list if the state has none."""
     state_dir = _state_rules_dir(state_code)
     if not os.path.isdir(state_dir):
         return []
