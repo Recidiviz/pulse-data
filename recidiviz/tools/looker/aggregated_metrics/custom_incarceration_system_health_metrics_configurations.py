@@ -80,4 +80,5 @@ INCARCERATION_SYSTEM_HEALTH_JSON_FIELD_FILTERS_WITH_SUGGESTIONS: dict[
     "assessment_result_level": _ASSESSMENT_LEVEL_SUGGESTIONS,
     "assessment_type": _ASSESSMENT_TYPE_SUGGESTIONS,
     "assessment_subtype": _ASSESSMENT_SUBTYPE_SUGGESTIONS,
+    "assessment_score": [],
 }
