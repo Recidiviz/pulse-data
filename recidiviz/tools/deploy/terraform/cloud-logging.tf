@@ -213,3 +213,37 @@ import {
   to       = google_logging_project_sink.default[each.key]
   id       = "projects/${each.key}/sinks/_Default"
 }
+
+# Holds the org-wide Cloud Audit Logs for 730 days. The org-level sink
+# recidiviz_org_all_audit_logs writes here from every project in the org; that
+# sink is not managed in this repo. The bucket is locked, so its retention can
+# only go up and it cannot be deleted until every entry is 730 days old.
+locals {
+  org_audit_log_projects = toset(var.project_id == "recidiviz-123" ? [var.project_id] : [])
+}
+
+resource "google_logging_project_bucket_config" "org_all_audit_logs" {
+  for_each = local.org_audit_log_projects
+  # The import stores the project in this form; a bare project id forces a
+  # replacement.
+  project          = "projects/${each.key}"
+  location         = "global"
+  bucket_id        = "recidiviz_org_all_audit_logs"
+  retention_days   = 730
+  enable_analytics = false
+  # The lock cannot be undone; Cloud Logging rejects an apply that sets this to
+  # false.
+  locked = true
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+# The bucket already exists; Terraform adopts it. This block can be removed once
+# production has applied it.
+import {
+  for_each = local.org_audit_log_projects
+  to       = google_logging_project_bucket_config.org_all_audit_logs[each.key]
+  id       = "projects/${each.key}/locations/global/buckets/recidiviz_org_all_audit_logs"
+}
