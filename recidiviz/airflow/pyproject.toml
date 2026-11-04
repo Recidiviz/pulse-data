@@ -14,6 +14,7 @@ dependencies = [
     "dateparser==1.2.0",
     "opentelemetry-exporter-gcp-monitoring==1.15.0a0",
     "opentelemetry-exporter-gcp-trace==1.15.0",
+    "pillow==13.0.0",
     # We pin all dependencies to make sure they remain on versions supported by our current
     # Cloud Composer environment. We must manually update the dependencies when we update
     # our Cloud Composer version. https://cloud.google.com/composer/docs/concepts/versioning/composer-versions
@@ -333,7 +334,6 @@ dependencies = [
     "pathspec==1.0.4",
     "pem==23.1.0",
     "pendulum==3.2.0",
-    "pillow==12.3.0",
     # TODO(#55635): Uncomment when Cloud Composer upgrade includes pip >= 25.3
     # "pip==23.2.1",
     "pipdeptree==4.2.5",
@@ -521,3 +521,8 @@ exclude-newer = "7 days"
 # those packages alone so the security fix can land now. Safe to delete once
 # exclude-newer has moved past both releases.
 exclude-newer-package = { certifi = "2026-10-22T00:00:00Z", pip = "2026-10-22T00:00:00Z" }
+# Override pillow to >=13.0.0 to fix the Pillow CVEs that are fixed only in 13
+# (security-operations-automation#17783). apache-beam 2.77.0 declares pillow<13; Beam 2.78.0rc1
+# relaxes it to <14. Safe to delete once the Composer image ships a Beam release that allows
+# pillow>=13.
+override-dependencies = ["pillow>=13.0.0"]

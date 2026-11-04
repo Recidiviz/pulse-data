@@ -115,6 +115,7 @@ resource "google_composer_environment" "default_v2" {
         "certifi"                               = "==2026.10.19"
         "opentelemetry-exporter-gcp-monitoring" = "==1.15.0a0"
         "opentelemetry-exporter-gcp-trace"      = "==1.15.0"
+        "pillow"                                = "==13.0.0"
       }
       image_version = "composer-2.17.15-airflow-2.11.1"
     }

@@ -314,4 +314,8 @@ exclude-newer-package = { certifi = "2026-10-22T00:00:00Z", brotli = "2026-10-23
 # (<=0.54b1) pins wrapt<2.0.0, but upgrading it requires opentelemetry-api>=1.34.0
 # which conflicts with the intentional opentelemetry-api<1.34.0 pin. The override
 # relaxes the transitive bound so the resolver can select a patched wrapt release.
-override-dependencies = ["wrapt>=2.4.0"]
+# Override pillow to >=13.0.0 to fix the Pillow CVEs that are fixed only in 13
+# (tracked in security-operations-automation#17783). apache-beam 2.77.0 declares
+# pillow<13, but Beam only uses Pillow in its ML and interactive modules, which this
+# repo does not import. Safe to delete once a Beam release allows pillow>=13.
+override-dependencies = ["wrapt>=2.4.0", "pillow>=13.0.0"]
