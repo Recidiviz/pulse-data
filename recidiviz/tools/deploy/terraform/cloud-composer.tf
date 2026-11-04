@@ -112,6 +112,7 @@ resource "google_composer_environment" "default_v2" {
         "dateparser"                            = "==1.2.0"
         "apache-airflow-providers-github"       = "==2.6.2"
         "pygithub"                              = "==2.5.0"
+        "certifi"                               = "==2026.10.19"
         "opentelemetry-exporter-gcp-monitoring" = "==1.15.0a0"
         "opentelemetry-exporter-gcp-trace"      = "==1.15.0"
       }
