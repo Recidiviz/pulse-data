@@ -1048,6 +1048,16 @@ def is_opt_non_empty_set_of(set_item_expected_type: Type) -> AttrValidator:
     return attr.validators.optional(is_non_empty_set_of(set_item_expected_type))
 
 
+# Frozenset field validators
+class IsFrozensetOfValidator(_IsContainerOfValidator):
+    def __init__(self, item_expected_type: Type) -> None:
+        super().__init__(frozenset, item_expected_type)
+
+
+def is_frozenset_of(frozenset_item_expected_type: Type) -> IsFrozensetOfValidator:
+    return IsFrozensetOfValidator(frozenset_item_expected_type)
+
+
 def _assert_value_falls_in_bounds(
     instance: Any,
     attribute: attr.Attribute,

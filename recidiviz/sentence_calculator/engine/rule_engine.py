@@ -18,33 +18,15 @@
 
 from enum import Enum
 
-import attr
-
-from recidiviz.common import attr_validators
 from recidiviz.sentence_calculator.models.conditions import Condition, FieldCondition
 from recidiviz.sentence_calculator.models.inputs import Sentence
+from recidiviz.sentence_calculator.models.outputs import TermMultiplier
 from recidiviz.sentence_calculator.models.rules import (
     LawRegime,
     TermMultiplierRule,
     TermType,
 )
 from recidiviz.sentence_calculator.models.tracked import TrackedValue
-
-
-@attr.define(frozen=True, kw_only=True)
-class TermMultiplier:
-    """The flat reduction a regime's term_multipliers apply to a sentence's terms."""
-
-    multiplier: TrackedValue[float] = attr.ib(
-        validator=attr.validators.instance_of(TrackedValue)
-    )
-    """Fraction of each term left after the reduction, e.g. 0.65."""
-
-    applies_to_min: bool = attr.ib(validator=attr_validators.is_bool)
-    """Whether the reduction comes off the min term."""
-
-    applies_to_max: bool = attr.ib(validator=attr_validators.is_bool)
-    """Whether the reduction comes off the max term."""
 
 
 def sentence_meets_condition(
@@ -145,14 +127,15 @@ class RuleEngine:
 
     def get_term_multiplier(self, sentence: Sentence) -> TermMultiplier:
         """Returns the term_multipliers reduction for sentence, or no reduction
-        (a multiplier of 1.0) if the regime has none. The multiplier's formula
-        gives the sentence field values that decided which rule applies and
-        which terms the rule's applies_to lets the reduction come off, e.g.
+        (a multiplier of 1.0 that reduces no terms) if the regime has none. The
+        multiplier's formula gives the sentence field values that decided which
+        rule applies and which terms the rule's applies_to lets the reduction
+        come off, e.g.
 
             multiplier=0.65 because standard_term_reduction applies to every
-            sentence; applies_to_min=False because applies_to min_term doesn't
-            match offense_group=VIOLENCE; applies_to_max=True because applies_to
-            lists max_term with no conditions
+            sentence; doesn't reduce min_term because applies_to min_term
+            doesn't match offense_group=VIOLENCE; reduces max_term because
+            applies_to lists max_term with no conditions
         """
         rule = self._first_matching_rule(self.regime.term_multipliers, sentence)
         if rule is None:
@@ -162,31 +145,34 @@ class RuleEngine:
                     label=f"{sentence.sentence_id}.term_multiplier",
                     formula="No term_multipliers rule; default 1.0",
                 ),
-                applies_to_min=True,
-                applies_to_max=True,
+                reduced_terms=frozenset(),
             )
         rule_reason = (
             f"{rule.name} applies to every sentence"
             if rule.when is None
             else f"{rule.name} matches {_condition_field_values(rule.when, sentence)}"
         )
-        applies_to_min, min_term_reason = _reduction_reaches_term(
-            rule=rule, term=TermType.MIN_TERM, sentence=sentence
-        )
-        applies_to_max, max_term_reason = _reduction_reaches_term(
-            rule=rule, term=TermType.MAX_TERM, sentence=sentence
-        )
+        reduced_terms = set()
+        term_reasons = []
+        for term in TermType:
+            reaches_term, term_reason = _reduction_reaches_term(
+                rule=rule, term=term, sentence=sentence
+            )
+            if reaches_term:
+                reduced_terms.add(term)
+            reduction_description = "reduces" if reaches_term else "doesn't reduce"
+            term_reasons.append(
+                f"{reduction_description} {term.value} because {term_reason}"
+            )
         return TermMultiplier(
             multiplier=TrackedValue(
                 value=rule.multiplier,
                 label=f"{sentence.sentence_id}.term_multiplier",
                 rule_name=rule.name,
-                formula=(
-                    f"multiplier={rule.multiplier} because {rule_reason}; "
-                    f"applies_to_min={applies_to_min} because {min_term_reason}; "
-                    f"applies_to_max={applies_to_max} because {max_term_reason}"
+                formula="; ".join(
+                    [f"multiplier={rule.multiplier} because {rule_reason}"]
+                    + term_reasons
                 ),
             ),
-            applies_to_min=applies_to_min,
-            applies_to_max=applies_to_max,
+            reduced_terms=frozenset(reduced_terms),
         )

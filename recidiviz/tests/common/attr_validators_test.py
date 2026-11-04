@@ -30,6 +30,7 @@ import pytz
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_validators import (
     is_dict_of,
+    is_frozenset_of,
     is_list_of,
     is_non_empty_list_of,
     is_non_empty_set,
@@ -1619,6 +1620,46 @@ class TestIsSetOfValidator(unittest.TestCase):
             _ = self.TestClass(
                 set_of_str_field=set(),
                 set_of_class_field={None},  # type: ignore[arg-type]
+            )
+
+
+class TestIsFrozensetOfValidator(unittest.TestCase):
+    """Tests for the is_frozenset_of() validator."""
+
+    @attr.define
+    class TestClass:
+        frozenset_of_str_field: frozenset[str] = attr.ib(validator=is_frozenset_of(str))
+
+    def test_frozenset_of_validator_correct_values(self) -> None:
+        _ = self.TestClass(frozenset_of_str_field=frozenset({"a", "b"}))
+
+    def test_frozenset_of_validator_empty_frozenset(self) -> None:
+        _ = self.TestClass(frozenset_of_str_field=frozenset())
+
+    def test_frozenset_of_validator_bad_types(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found item in frozenset type field [frozenset_of_str_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsFrozensetOfValidator.TestClass'>] "
+                "which is not the expected type [<class 'str'>]: <class 'int'>",
+            ),
+        ):
+            _ = self.TestClass(
+                frozenset_of_str_field=frozenset({1}),  # type: ignore[arg-type]
+            )
+
+    def test_frozenset_of_validator_set_input(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found value for frozenset type field [frozenset_of_str_field] on "
+                "class [<class 'recidiviz.tests.common.attr_validators_test.TestIsFrozensetOfValidator.TestClass'>] "
+                "which has non-frozenset type [<class 'set'>]."
+            ),
+        ):
+            _ = self.TestClass(
+                frozenset_of_str_field={"a"},  # type: ignore[arg-type]
             )
 
 

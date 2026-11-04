@@ -21,7 +21,6 @@ from datetime import date
 
 from recidiviz.sentence_calculator.engine.rule_engine import (
     RuleEngine,
-    TermMultiplier,
     sentence_meets_condition,
 )
 from recidiviz.sentence_calculator.models.conditions import (
@@ -31,6 +30,7 @@ from recidiviz.sentence_calculator.models.conditions import (
     FieldCondition,
 )
 from recidiviz.sentence_calculator.models.inputs import Term
+from recidiviz.sentence_calculator.models.outputs import TermMultiplier
 from recidiviz.sentence_calculator.models.rules import (
     LawRegime,
     ReductionTarget,
@@ -131,14 +131,13 @@ class TestGetTermMultiplier(unittest.TestCase):
                     rule_name="standard_term_reduction",
                     formula=(
                         "multiplier=0.65 because standard_term_reduction applies to "
-                        "every sentence; applies_to_min=False because applies_to "
+                        "every sentence; doesn't reduce min_term because applies_to "
                         "min_term doesn't match offense_group=VIOLENCE; "
-                        "applies_to_max=True because applies_to lists max_term with "
+                        "reduces max_term because applies_to lists max_term with "
                         "no conditions"
                     ),
                 ),
-                applies_to_min=False,
-                applies_to_max=True,
+                reduced_terms=frozenset({TermType.MAX_TERM}),
             ),
             engine.get_term_multiplier(_VIOLENT_SENTENCE),
         )
@@ -154,13 +153,12 @@ class TestGetTermMultiplier(unittest.TestCase):
                     rule_name="standard_term_reduction",
                     formula=(
                         "multiplier=0.65 because standard_term_reduction applies to "
-                        "every sentence; applies_to_min=True because applies_to "
-                        "min_term matches offense_group=OTHER; applies_to_max=True "
+                        "every sentence; reduces min_term because applies_to "
+                        "min_term matches offense_group=OTHER; reduces max_term "
                         "because applies_to lists max_term with no conditions"
                     ),
                 ),
-                applies_to_min=True,
-                applies_to_max=True,
+                reduced_terms=frozenset({TermType.MIN_TERM, TermType.MAX_TERM}),
             ),
             engine.get_term_multiplier(_NONVIOLENT_SENTENCE),
         )
@@ -178,14 +176,13 @@ class TestGetTermMultiplier(unittest.TestCase):
                     rule_name="violent_term_reduction",
                     formula=(
                         "multiplier=0.85 because violent_term_reduction matches "
-                        "offense_group=VIOLENCE; applies_to_min=True because "
+                        "offense_group=VIOLENCE; reduces min_term because "
                         "applies_to lists min_term with no conditions; "
-                        "applies_to_max=True because applies_to lists max_term with "
+                        "reduces max_term because applies_to lists max_term with "
                         "no conditions"
                     ),
                 ),
-                applies_to_min=True,
-                applies_to_max=True,
+                reduced_terms=frozenset({TermType.MIN_TERM, TermType.MAX_TERM}),
             ),
             engine.get_term_multiplier(_VIOLENT_SENTENCE),
         )
@@ -197,13 +194,12 @@ class TestGetTermMultiplier(unittest.TestCase):
                     rule_name="standard_term_reduction",
                     formula=(
                         "multiplier=0.65 because standard_term_reduction applies to "
-                        "every sentence; applies_to_min=True because applies_to "
-                        "min_term matches offense_group=OTHER; applies_to_max=True "
+                        "every sentence; reduces min_term because applies_to "
+                        "min_term matches offense_group=OTHER; reduces max_term "
                         "because applies_to lists max_term with no conditions"
                     ),
                 ),
-                applies_to_min=True,
-                applies_to_max=True,
+                reduced_terms=frozenset({TermType.MIN_TERM, TermType.MAX_TERM}),
             ),
             engine.get_term_multiplier(_NONVIOLENT_SENTENCE),
         )
@@ -230,15 +226,49 @@ class TestGetTermMultiplier(unittest.TestCase):
                     rule_name="min_term_reduction",
                     formula=(
                         "multiplier=0.65 because min_term_reduction applies to every "
-                        "sentence; applies_to_min=True because applies_to lists "
-                        "min_term with no conditions; applies_to_max=False because "
+                        "sentence; reduces min_term because applies_to lists "
+                        "min_term with no conditions; doesn't reduce max_term because "
                         "applies_to doesn't list max_term"
                     ),
                 ),
-                applies_to_min=True,
-                applies_to_max=False,
+                reduced_terms=frozenset({TermType.MIN_TERM}),
             ),
             engine.get_term_multiplier(_NONVIOLENT_SENTENCE),
+        )
+
+    def test_matching_rule_can_reduce_no_terms(self) -> None:
+        engine = _engine(
+            term_multipliers=[
+                TermMultiplierRule(
+                    name="nonviolent_max_term_reduction",
+                    description="35% reduction of nonviolent offenses' max terms",
+                    when=None,
+                    multiplier=0.65,
+                    applies_to=[
+                        ReductionTarget(term=TermType.MAX_TERM, when=_IS_NOT_VIOLENT)
+                    ],
+                    statute=None,
+                )
+            ]
+        )
+
+        self.assertEqual(
+            TermMultiplier(
+                multiplier=TrackedValue(
+                    value=0.65,
+                    label="S1.term_multiplier",
+                    rule_name="nonviolent_max_term_reduction",
+                    formula=(
+                        "multiplier=0.65 because nonviolent_max_term_reduction "
+                        "applies to every sentence; doesn't reduce min_term because "
+                        "applies_to doesn't list min_term; doesn't reduce max_term "
+                        "because applies_to max_term doesn't match "
+                        "offense_group=VIOLENCE"
+                    ),
+                ),
+                reduced_terms=frozenset(),
+            ),
+            engine.get_term_multiplier(_VIOLENT_SENTENCE),
         )
 
     def test_formula_lists_each_field_of_nested_conditions_once(self) -> None:
@@ -294,13 +324,12 @@ class TestGetTermMultiplier(unittest.TestCase):
                         # once here, in the order the conditions first read it.
                         "multiplier=0.6 because lower_category_reduction matches "
                         "offense_category=C, offense_group=OTHER; "
-                        "applies_to_min=True because applies_to lists min_term "
-                        "with no conditions; applies_to_max=True because "
+                        "reduces min_term because applies_to lists min_term "
+                        "with no conditions; reduces max_term because "
                         "applies_to lists max_term with no conditions"
                     ),
                 ),
-                applies_to_min=True,
-                applies_to_max=True,
+                reduced_terms=frozenset({TermType.MIN_TERM, TermType.MAX_TERM}),
             ),
             engine.get_term_multiplier(_NONVIOLENT_SENTENCE),
         )
@@ -315,8 +344,7 @@ class TestGetTermMultiplier(unittest.TestCase):
                     label="S2.term_multiplier",
                     formula="No term_multipliers rule; default 1.0",
                 ),
-                applies_to_min=True,
-                applies_to_max=True,
+                reduced_terms=frozenset(),
             ),
             engine.get_term_multiplier(_NONVIOLENT_SENTENCE),
         )

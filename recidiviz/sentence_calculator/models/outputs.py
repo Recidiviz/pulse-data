@@ -21,6 +21,7 @@ from datetime import date
 import attr
 
 from recidiviz.common import attr_validators
+from recidiviz.sentence_calculator.models.rules import TermType
 from recidiviz.sentence_calculator.models.tracked import TrackedValue
 
 
@@ -45,6 +46,23 @@ class DisplayGraph:
 # ==============================================================================
 # TRACKED OUTPUT MODELS (with derivation trees)
 # ==============================================================================
+
+
+@attr.define(frozen=True, kw_only=True)
+class TermMultiplier:
+    """The flat reduction a regime's term_multipliers apply to a sentence's terms."""
+
+    multiplier: TrackedValue[float] = attr.ib(
+        validator=attr.validators.instance_of(TrackedValue)
+    )
+    """Fraction of each reduced term left after the reduction, e.g. 0.65."""
+
+    reduced_terms: frozenset[TermType] = attr.ib(
+        validator=attr_validators.is_frozenset_of(TermType)
+    )
+    """The terms the reduction comes off. Empty when the regime has no
+    term_multipliers rule for the sentence, or when the matching rule's
+    applies_to reaches none of the sentence's terms."""
 
 
 @attr.define(frozen=True, kw_only=True)
