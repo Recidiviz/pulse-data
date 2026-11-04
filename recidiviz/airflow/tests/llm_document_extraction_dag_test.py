@@ -18,12 +18,14 @@
 
 import json
 import os
+import re
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 from airflow.models import DAG, DagBag
 from airflow.utils.context import Context
 from airflow.utils.state import DagRunState
+from airflow.utils.trigger_rule import TriggerRule
 from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.monitoring.dag_registry import (
@@ -41,6 +43,7 @@ from recidiviz.airflow.dags.utils.constants import (
     RUN_EXTRACTION_TASK_ID,
     SYNC_EXTRACTOR_METADATA_TASK_ID,
     UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID,
+    UPDATE_ENTITY_RESOLUTION_VIEWS_TASK_ID,
     UPDATE_FIRST_ORDER_VIEWS_TASK_ID,
     VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID,
 )
@@ -53,6 +56,12 @@ from recidiviz.airflow.tests.utils.kubernetes_helper_functions import (
     fake_noop_kpo_partial,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_collection_names import (
+    entity_resolution_collection_name,
+)
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_source_map_table import (
+    ENTRY_SOURCE_MAP_TABLE_ID_SUFFIX,
+)
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     load_first_order_llm_extractor_configs,
 )
@@ -168,15 +177,72 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             self.us_yy_always_succeeds_tasks_regex,
             self.us_xx_other_document_collections_always_succeeds_tasks_regex,
         ]
-        # The whole us_xx extraction subtree (the per-extractor-collection branch plus
-        # its branching scaffolding).
-        self.us_xx_extraction_subtree_regex = (
-            rf"^{self.us_xx_branch}\.extractor_collections\..*$"
+        # The FAKE_EXTRACTOR_COLLECTION declares three entity groups, so its branch nests
+        # three entity-resolution sub-branches. An ER sub-branch's task statuses vary by
+        # scenario, so the subtree regex below excludes the whole ER sub-branch and each
+        # test matches its three behavior groups (below) explicitly.
+        #
+        # 1. Discovery + check_has_updates always run and succeed once the first-order
+        #    view deploy they run after has succeeded (they rebuild the entry→source map
+        #    regardless of whether any new composites were found).
+        er_branch_regex = (
+            rf"^{self.us_xx_fake_extractor_collection_branch}\."
+            rf"[^.]+_ENTITY_RESOLUTION\."
         )
+        self.us_xx_entity_resolution_always_succeeds_regex = (
+            rf"{er_branch_regex}"
+            rf"(?:{RUN_DOCUMENT_DISCOVERY_TASK_ID}|{CHECK_HAS_UPDATES_TASK_ID})$"
+        )
+        # 2. The upload path (build_args/upload/record) and the ALL_DONE after_upload_noop
+        #    skip when composite discovery finds no new documents (the 'no updates' mock),
+        #    mirroring the first-order upload path, and run when it does. (check_has_updates
+        #    actively skips after_upload_noop via its explicit edge when it short-circuits.)
+        self.us_xx_entity_resolution_upload_path_regex = (
+            rf"{er_branch_regex}"
+            rf"(?:{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|{DOCUMENT_UPLOAD_TASK_ID}|"
+            rf"{AFTER_UPLOAD_NOOP_TASK_ID}|{RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID})$"
+        )
+        # 3. The extraction (sync/identify/check_has_job/run) runs directly after
+        #    record_composites, so it skips whenever the upload path skips (no new
+        #    composites, or the first-order deploy upstream was skipped) and runs when it
+        #    does not. The entity_resolution view deploy is NOT part of an ER sub-branch:
+        #    it is a single task at the extractor-branch level, matched separately below.
+        self.us_xx_entity_resolution_extraction_regex = (
+            rf"{er_branch_regex}"
+            rf"(?:{SYNC_EXTRACTOR_METADATA_TASK_ID}|{IDENTIFY_JOB_DOCUMENTS_TASK_ID}|"
+            rf"{CHECK_HAS_JOB_TASK_ID}|{RUN_EXTRACTION_TASK_ID})$"
+        )
+        # The single entity_resolution view deploy for the extractor. The ER view graph
+        # covers all the extractor's entity groups together, so it is deployed once, at the
+        # extractor-branch level, downstream of every ER sub-branch's run_extraction (with
+        # NONE_FAILED_MIN_ONE_SUCCESS). It succeeds when at least one group extracts, and
+        # skips when every group short-circuits.
+        self.us_xx_entity_resolution_view_deploy_task_id = (
+            f"{self.us_xx_fake_extractor_collection_branch}."
+            f"{UPDATE_ENTITY_RESOLUTION_VIEWS_TASK_ID}"
+        )
+
+        # The whole us_xx extraction subtree (the per-extractor-collection branch plus
+        # its branching scaffolding), minus the ER sub-branches and the single
+        # extractor-level entity_resolution view deploy, which are handled separately (all
+        # vary by scenario). With the sync/identify tasks mocked to return a job, every
+        # first-order task in it succeeds whenever the schema update it depends on does; it
+        # upstream-fails as a unit when the document-collections branching it runs after
+        # fails.
+        self.us_xx_extraction_subtree_regex = (
+            rf"^(?!{re.escape(self.us_xx_entity_resolution_view_deploy_task_id)}$)"
+            rf"{self.us_xx_branch}\.extractor_collections\."
+            rf"(?!.*_ENTITY_RESOLUTION\.).*$"
+        )
+        # us_yy has no extractor config, so its state branch has no extraction branching
+        # at all — nothing to assert for it here.
 
         # Frame tasks (initialize, branching scaffolding, ALL_DONE noops in
         # non-target document collections) that succeed in any happy-path test scoped to
-        # us_xx + fake_case_notes.
+        # us_xx + fake_case_notes. Includes the whole us_xx extraction subtree, which
+        # succeeds in every happy-path test (the sync/identify tasks are mocked to return
+        # a job). The one test that short-circuits part of the subtree does not use this
+        # frame.
         self.us_xx_fake_case_notes_frame_success_regexes = [
             r"^initialize_dag\..*$",
             rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
@@ -184,6 +250,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             r"^extraction\.branch_(start|end)$",
             rf"^{self.us_xx_branch}\.document_collections\.branch_(start|end)$",
             self.us_xx_extraction_subtree_regex,
+            # Each ER sub-branch's discovery/check_has_updates/after_upload_noop succeed in
+            # every happy-path test (the first-order deploy they run after succeeds); the
+            # ER upload path and extraction are scenario-dependent and matched per-test.
+            self.us_xx_entity_resolution_always_succeeds_regex,
             *self.non_target_document_collection_always_succeeds_regexes,
         ]
         # Subset of the frame above for failure-path tests where branch_end
@@ -348,6 +418,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 return self._row_iterator_mock(metadata_rows)
             if "_document_contents_" in address.table_id:
                 return self._row_iterator_mock(content_rows)
+            # Discovery for an entity-resolution composite collection rebuilds its
+            # entry→source map table; the write's return value is not consumed.
+            if address.table_id.endswith(f"_{ENTRY_SOURCE_MAP_TABLE_ID_SUFFIX}"):
+                return MagicMock()
             raise ValueError(
                 f"Unexpected create_table_from_query address [{address.to_str()}]"
             )
@@ -372,6 +446,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
 
     def _us_xx_fake_case_notes_collection_branch_regex(self, task_name: str) -> str:
         return rf"^{self.us_xx_fake_case_notes_collection_branch}\.{task_name}$"
+
+    def _us_xx_entity_resolution_view_deploy_regex(self) -> str:
+        """Anchored exact-match regex for the single extractor-level ER view deploy."""
+        return rf"^{re.escape(self.us_xx_entity_resolution_view_deploy_task_id)}$"
 
     def _get_insert_query_strs(self) -> list[str]:
         return [
@@ -419,6 +497,13 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     self._us_xx_fake_case_notes_collection_branch_regex(
                         RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID
                     ),
+                    # Composite discovery for each ER sub-branch also finds no updates,
+                    # short-circuiting its upload path and, in turn, its extraction. With
+                    # every group's extraction skipped, the extractor-level ER view deploy
+                    # (NONE_FAILED_MIN_ONE_SUCCESS) skips too.
+                    self.us_xx_entity_resolution_upload_path_regex,
+                    self.us_xx_entity_resolution_extraction_regex,
+                    self._us_xx_entity_resolution_view_deploy_regex(),
                     *self.non_target_document_collection_skipped_regexes,
                 ],
                 expected_success_task_id_regexes=[
@@ -433,10 +518,12 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-            # Only the generation-output and metadata-updates temp tables are
-            # written; the new-contents step is short-circuited when there are
-            # no metadata updates.
-            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 2)
+            # The first-order case-notes discovery writes the generation-output and
+            # metadata-updates temp tables (no metadata updates → no contents call) = 2.
+            # Each of the 3 ER composite discoveries additionally rebuilds its
+            # entry→source map table, so writes 3 (generation-output, entry→source map,
+            # metadata-updates) = 9. 2 + 9 = 11.
+            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 11)
             self.mock_bq_client.run_query_async.assert_not_called()
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 
@@ -456,25 +543,33 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_success_task_id_regexes=[
                     *self.us_xx_fake_case_notes_frame_success_regexes,
                     rf"^{self.us_xx_fake_case_notes_collection_branch}\..*$",
+                    # Composite discovery finds updates too, so every ER sub-branch's
+                    # upload path and extraction run and succeed, and the extractor-level
+                    # ER view deploy runs after them.
+                    self.us_xx_entity_resolution_upload_path_regex,
+                    self.us_xx_entity_resolution_extraction_regex,
+                    self._us_xx_entity_resolution_view_deploy_regex(),
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-            # Result recorder ran two INSERTs: one to hydrate the document collection's
-            # document_contents table and one to append to the document collection's
-            # metadata table.
+            # The recorder runs for the first-order case-notes collection and each of the
+            # 3 ER composite collections; each runs two INSERTs (document_contents +
+            # metadata). 4 recorders × 2 = 8.
             insert_queries = self._get_insert_query_strs()
-            self.assertEqual(len(insert_queries), 2)
+            self.assertEqual(len(insert_queries), 8)
 
-            # Status CSV load happened once (content_rows > 0).
+            # Status CSV load happened once per collection with content (content_rows > 0):
+            # case-notes + 3 ER composites = 4.
             self.assertEqual(
-                self.mock_bq_client.load_table_from_cloud_storage.call_count, 1
+                self.mock_bq_client.load_table_from_cloud_storage.call_count, 4
             )
 
-            # All rows inserted, so all three temp tables for the document
-            # collection are deleted: the generation-output table by discovery,
-            # the metadata updates and new contents tables by the recorder.
-            self.assertEqual(self.mock_bq_client.delete_table.call_count, 3)
+            # All rows inserted, so every collection's temp tables are deleted. The
+            # case-notes collection deletes 3 (generation-output by discovery; metadata
+            # updates and new contents by the recorder). Each ER composite collection
+            # deletes the same 3. 4 collections × 3 = 12.
+            self.assertEqual(self.mock_bq_client.delete_table.call_count, 12)
 
     def test_no_filters_runs_all_states_and_document_collections(self) -> None:
         """Without any filter, every (state, document collection) branch launched in
@@ -496,6 +591,13 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     rf"{DOCUMENT_UPLOAD_TASK_ID}|"
                     rf"{AFTER_UPLOAD_NOOP_TASK_ID}|"
                     rf"{RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID})$",
+                    # Each ER sub-branch's composite discovery also finds no updates, so
+                    # its upload path short-circuits too, which skips its extraction. With
+                    # every group's extraction skipped, the extractor-level ER view deploy
+                    # skips too.
+                    self.us_xx_entity_resolution_upload_path_regex,
+                    self.us_xx_entity_resolution_extraction_regex,
+                    self._us_xx_entity_resolution_view_deploy_regex(),
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -503,8 +605,11 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             # Two create_table_from_query calls per document collection (the
             # generation-output and metadata-updates temp tables; 0 metadata
             # rows → no contents call). 2 launched US_XX document collections + 1
-            # launched US_YY document collection = 3 collections × 2 = 6.
-            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 6)
+            # launched US_YY document collection = 3 collections × 2 = 6. Each of the 3
+            # ER composite discoveries additionally rebuilds its entry→source map table,
+            # so writes 3 (generation-output, entry→source map, metadata-updates) = 9.
+            # 6 + 9 = 15.
+            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 15)
             self.mock_bq_client.run_query_async.assert_not_called()
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 
@@ -543,16 +648,26 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     rf"^{self.us_xx_branch}\.document_collections\.branch_end$",
                     r"^extraction\.branch_end$",
                     # Extraction runs after the whole document-collections branching, so
-                    # the failed branch_end upstream-fails the entire extraction subtree.
+                    # the failed branch_end upstream-fails the entire extraction subtree,
+                    # including every task in each ER sub-branch (except its ALL_DONE
+                    # after_upload_noop, which still runs — see successes below) and the
+                    # single extractor-level ER view deploy.
                     self.us_xx_extraction_subtree_regex,
+                    self._us_xx_entity_resolution_view_deploy_regex(),
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"[^.]+_ENTITY_RESOLUTION\."
+                    rf"(?!{AFTER_UPLOAD_NOOP_TASK_ID}$)[^.]+$",
                 ],
                 expected_skipped_task_id_regexes=self.non_target_document_collection_skipped_regexes,
                 expected_success_task_id_regexes=[
                     *self.us_xx_fake_case_notes_frame_success_regexes_excluding_branch_ends,
-                    # after_upload_noop runs (ALL_DONE), but with no work to do.
+                    # after_upload_noop runs (ALL_DONE), but with no work to do — both for
+                    # the case-notes collection and for each ER sub-branch.
                     self._us_xx_fake_case_notes_collection_branch_regex(
                         AFTER_UPLOAD_NOOP_TASK_ID
                     ),
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"[^.]+_ENTITY_RESOLUTION\.{AFTER_UPLOAD_NOOP_TASK_ID}$",
                 ],
             )
             self.mock_bq_client.run_query_async.assert_not_called()
@@ -577,6 +692,12 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_success_task_id_regexes=[
                     *self.us_xx_fake_case_notes_frame_success_regexes,
                     rf"^{self.us_xx_fake_case_notes_collection_branch}\..*$",
+                    # Composite discovery finds updates too, so every ER sub-branch's
+                    # upload path and extraction run and succeed, and the extractor-level
+                    # ER view deploy runs after them.
+                    self.us_xx_entity_resolution_upload_path_regex,
+                    self.us_xx_entity_resolution_extraction_regex,
+                    self._us_xx_entity_resolution_view_deploy_regex(),
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -690,29 +811,44 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     self._us_xx_fake_case_notes_collection_branch_regex(
                         DOCUMENT_UPLOAD_TASK_ID
                     ),
+                    # Only document_upload skips in each ER sub-branch (no new contents);
+                    # the rest of its upload path still runs.
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"[^.]+_ENTITY_RESOLUTION\.{DOCUMENT_UPLOAD_TASK_ID}$",
                     *self.non_target_document_collection_skipped_regexes,
                 ],
                 expected_success_task_id_regexes=[
                     *self.us_xx_fake_case_notes_frame_success_regexes,
                     rf"^{self.us_xx_fake_case_notes_collection_branch}\."
                     rf"(?!{DOCUMENT_UPLOAD_TASK_ID}$)[^.]+$",
+                    # Each ER sub-branch's build-args/after_upload_noop/record tasks run
+                    # (the recorder still inserts the metadata rows), so its extraction
+                    # runs too, and the extractor-level ER view deploy runs after them.
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"[^.]+_ENTITY_RESOLUTION\."
+                    rf"(?:{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|"
+                    rf"{AFTER_UPLOAD_NOOP_TASK_ID}|{RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID})$",
+                    self.us_xx_entity_resolution_extraction_regex,
+                    self._us_xx_entity_resolution_view_deploy_regex(),
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-            # Only the metadata INSERT ran; document_contents hydration was
-            # skipped because num_new_document_contents_rows == 0.
+            # One metadata INSERT per collection; document_contents hydration was
+            # skipped because num_new_document_contents_rows == 0. Case-notes + 3 ER
+            # composites = 4.
             insert_queries = self._get_insert_query_strs()
-            self.assertEqual(len(insert_queries), 1)
-            self.assertNotIn("_document_contents`", insert_queries[0])
+            self.assertEqual(len(insert_queries), 4)
+            for insert_query in insert_queries:
+                self.assertNotIn("_document_contents`", insert_query)
 
             # No upload status CSVs to load.
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 
-            # Full success: discovery deleted the generation-output temp table
-            # and the recorder deleted the metadata updates and new contents
-            # temp tables.
-            self.assertEqual(self.mock_bq_client.delete_table.call_count, 3)
+            # Full success for each collection: discovery deleted the generation-output
+            # temp table and the recorder deleted the metadata updates and new contents
+            # temp tables. Case-notes + 3 ER composites = 4 collections × 3 = 12.
+            self.assertEqual(self.mock_bq_client.delete_table.call_count, 12)
 
     def test_state_filter_fans_out_to_all_document_collections(self) -> None:
         """state_code_filter alone runs all document collections launched for the state.
@@ -730,6 +866,13 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     r"[^.]+\."
                     rf"(?:{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|{DOCUMENT_UPLOAD_TASK_ID}|"
                     rf"{AFTER_UPLOAD_NOOP_TASK_ID}|{RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID})$",
+                    # Each ER sub-branch's composite discovery also finds no updates, so
+                    # its upload path short-circuits too, which skips its extraction. With
+                    # every group's extraction skipped, the extractor-level ER view deploy
+                    # skips too.
+                    self.us_xx_entity_resolution_upload_path_regex,
+                    self.us_xx_entity_resolution_extraction_regex,
+                    self._us_xx_entity_resolution_view_deploy_regex(),
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -737,8 +880,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             # Two create_table_from_query calls per document collection (the
             # generation-output and metadata-updates temp tables; 0 metadata
             # rows → no contents call). The fake config launches 2 US_XX document
-            # collections under staging, so 2 × 2 = 4.
-            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 4)
+            # collections under staging, so 2 × 2 = 4. Each of the 3 ER composite
+            # discoveries additionally rebuilds its entry→source map table, so writes 3
+            # (generation-output, entry→source map, metadata-updates) = 9. 4 + 9 = 13.
+            self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 13)
             self.mock_bq_client.run_query_async.assert_not_called()
             self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
 
@@ -761,8 +906,15 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     rf"^{self.us_xx_branch}\.document_collections\."
                     rf"[^.]+\.(?!{AFTER_UPLOAD_NOOP_TASK_ID}$)[^.]+$",
                     # Extraction runs after the whole document-collections branching, so
-                    # the failed branch_end upstream-fails the entire extraction subtree.
+                    # the failed branch_end upstream-fails the entire extraction subtree,
+                    # including every task in each ER sub-branch except its ALL_DONE
+                    # after_upload_noop (see successes below) and the single extractor-level
+                    # ER view deploy.
                     self.us_xx_extraction_subtree_regex,
+                    self._us_xx_entity_resolution_view_deploy_regex(),
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"[^.]+_ENTITY_RESOLUTION\."
+                    rf"(?!{AFTER_UPLOAD_NOOP_TASK_ID}$)[^.]+$",
                 ],
                 expected_skipped_task_id_regexes=[self.us_yy_all_skippable_tasks_regex],
                 expected_success_task_id_regexes=[
@@ -771,9 +923,11 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
                     r"^extraction\.branch_start$",
                     # All us_xx document collection branches' after_upload_noop tasks
-                    # succeed (ALL_DONE).
+                    # succeed (ALL_DONE), as do each ER sub-branch's.
                     rf"^{self.us_xx_branch}\.document_collections\."
                     rf"[^.]+\.{AFTER_UPLOAD_NOOP_TASK_ID}$",
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"[^.]+_ENTITY_RESOLUTION\.{AFTER_UPLOAD_NOOP_TASK_ID}$",
                     self.us_yy_always_succeeds_tasks_regex,
                 ],
             )
@@ -841,36 +995,58 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     self._us_xx_fake_case_notes_collection_branch_regex(
                         DOCUMENT_UPLOAD_TASK_ID
                     ),
+                    # Every mapped document_upload fails, including each ER sub-branch's.
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"[^.]+_ENTITY_RESOLUTION\.{DOCUMENT_UPLOAD_TASK_ID}$",
                 ],
                 expected_skipped_task_id_regexes=self.non_target_document_collection_skipped_regexes,
                 expected_success_task_id_regexes=[
                     *self.us_xx_fake_case_notes_frame_success_regexes,
                     rf"^{self.us_xx_fake_case_notes_collection_branch}\."
                     rf"(?!{DOCUMENT_UPLOAD_TASK_ID}$)[^.]+$",
+                    # Each ER sub-branch's after_upload_noop absorbs the upload failure, so
+                    # build-args/after_upload_noop/record still succeed and the extraction
+                    # runs, and the extractor-level ER view deploy runs after them.
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"[^.]+_ENTITY_RESOLUTION\."
+                    rf"(?:{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|"
+                    rf"{AFTER_UPLOAD_NOOP_TASK_ID}|{RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID})$",
+                    self.us_xx_entity_resolution_extraction_regex,
+                    self._us_xx_entity_resolution_view_deploy_regex(),
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-            # Recorder still ran both INSERTs (document_contents + metadata)
-            # for the document collection.
+            # The recorder still ran both INSERTs (document_contents + metadata) for the
+            # case-notes collection and each of the 3 ER composites. 4 recorders × 2 = 8.
             insert_queries = self._get_insert_query_strs()
-            self.assertEqual(len(insert_queries), 2)
+            self.assertEqual(len(insert_queries), 8)
 
-            # Partial-success path: the recorder preserves its temp tables
-            # for debugging. Discovery itself succeeded, so it already
-            # deleted the generation-output temp table.
-            self.assertEqual(self.mock_bq_client.delete_table.call_count, 1)
+            # Partial-success path: each recorder preserves its temp tables for debugging.
+            # Discovery itself succeeded, so it already deleted the generation-output temp
+            # table for the case-notes collection and each of the 3 ER composites = 4.
+            self.assertEqual(self.mock_bq_client.delete_table.call_count, 4)
 
-    def _constructed_pod_arguments(self, task_id: str) -> list[str]:
-        """Returns the argv the DAG constructed the KPO named |task_id| with."""
+    def _constructed_pod_arguments(
+        self, task_id: str, *, containing_arg: str | None = None
+    ) -> list[str]:
+        """Returns the argv the DAG constructed the KPO named |task_id| with. When the
+        same task_id is used by multiple KPOs (e.g. the shared run_extraction task across
+        the first-order and ER extractor branches), |containing_arg| disambiguates to the
+        one whose argv contains it."""
         for call in self.mock_kpo_constructor.call_args_list:
-            if call.kwargs.get("task_id") == task_id:
-                return assert_type(call.kwargs["arguments"], list)
+            if call.kwargs.get("task_id") != task_id:
+                continue
+            arguments = assert_type(call.kwargs["arguments"], list)
+            if containing_arg is None or containing_arg in arguments:
+                return arguments
         raise ValueError(f"No KPO constructed with task_id [{task_id}].")
 
     def test_extraction_runs_when_job_is_generated(self) -> None:
         """When identify_job_documents returns a job, check_has_job proceeds and both the
-        extraction pod and the first-order view update pod run."""
+        extraction pod and the first-order view update pod run. The extraction pod's argv
+        pulls the job id from the identify task's XCom; the view update pod names the
+        first_order stage."""
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
                 self._create_dag(),
@@ -885,15 +1061,26 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     r"[^.]+\."
                     rf"(?:{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|{DOCUMENT_UPLOAD_TASK_ID}|"
                     rf"{AFTER_UPLOAD_NOOP_TASK_ID}|{RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID})$",
+                    # Each ER sub-branch's composite upload is short-circuited (no new
+                    # composites), which skips its extraction too. With every group's
+                    # extraction skipped, the extractor-level ER view deploy skips too.
+                    self.us_xx_entity_resolution_upload_path_regex,
+                    self.us_xx_entity_resolution_extraction_regex,
+                    self._us_xx_entity_resolution_view_deploy_regex(),
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-            self.mock_sync_extractor_metadata.assert_called_once()
-            self.mock_identify_job_documents.assert_called_once()
+            # sync/identify run once for the first-order extractor; each ER extraction is
+            # short-circuited before them because its composites found no updates.
+            self.assertEqual(self.mock_sync_extractor_metadata.call_count, 1)
+            self.assertEqual(self.mock_identify_job_documents.call_count, 1)
 
+            # The first-order and the 3 ER extractions share the run_extraction task_id;
+            # disambiguate to the first-order one by its (exact) extractor collection name.
             run_extraction_argv = self._constructed_pod_arguments(
-                RUN_EXTRACTION_TASK_ID
+                RUN_EXTRACTION_TASK_ID,
+                containing_arg=f"--extractor_collection_name={FAKE_EXTRACTOR_COLLECTION_NAME}",
             )
             self.assertIn(
                 "--entrypoint=LLMDocumentExtractionSyncJobEntrypoint",
@@ -928,8 +1115,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
 
     def test_extraction_short_circuits_when_no_job_is_generated(self) -> None:
         """When identify_job_documents returns None (no documents need processing),
-        check_has_job short-circuits and the extraction and view update pods are skipped.
-        """
+        check_has_job short-circuits and the first-order extraction and view update pods
+        are skipped; the metadata sync and job identification still run and succeed. The
+        skipped first-order view deploy propagates into each ER sub-branch, skipping it
+        entirely except its ALL_DONE after_upload_noop."""
         self.mock_identify_job_documents.return_value = None
 
         with Session(bind=self.engine) as session:
@@ -956,9 +1145,23 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     self._us_xx_fake_case_notes_collection_branch_regex(
                         RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID
                     ),
-                    # check_has_job short-circuits the extraction and view update pods.
+                    # check_has_job short-circuits the first-order extraction and view
+                    # update pods. That skips update_first_order_views, which the ER
+                    # sub-branches run after, so the entire ER sub-branch skips with it:
+                    # with no barrier un-skipping the extraction, every ER task skips
+                    # except its ALL_DONE after_upload_noop (see successes below).
                     rf"^{self.us_xx_fake_extractor_collection_branch}\."
                     rf"(?:{RUN_EXTRACTION_TASK_ID}|{UPDATE_FIRST_ORDER_VIEWS_TASK_ID})$",
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"[^.]+_ENTITY_RESOLUTION\."
+                    rf"(?:{RUN_DOCUMENT_DISCOVERY_TASK_ID}|{CHECK_HAS_UPDATES_TASK_ID}|"
+                    rf"{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|{DOCUMENT_UPLOAD_TASK_ID}|"
+                    rf"{RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID}|"
+                    rf"{SYNC_EXTRACTOR_METADATA_TASK_ID}|{IDENTIFY_JOB_DOCUMENTS_TASK_ID}|"
+                    rf"{CHECK_HAS_JOB_TASK_ID}|{RUN_EXTRACTION_TASK_ID})$",
+                    # Every group's ER extraction is skipped, so the extractor-level ER
+                    # view deploy skips too.
+                    self._us_xx_entity_resolution_view_deploy_regex(),
                 ],
                 expected_success_task_id_regexes=[
                     # Frame successes, but NOT the whole extraction subtree (part of it
@@ -977,10 +1180,122 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     self._us_xx_fake_case_notes_collection_branch_regex(
                         CHECK_HAS_UPDATES_TASK_ID
                     ),
-                    # sync, identify, and the short-circuit itself run and succeed.
+                    # sync, identify, and the short-circuit itself run and succeed for the
+                    # first-order extractor.
                     rf"^{self.us_xx_fake_extractor_collection_branch}\."
                     rf"(?:{SYNC_EXTRACTOR_METADATA_TASK_ID}|{IDENTIFY_JOB_DOCUMENTS_TASK_ID}|"
                     rf"{CHECK_HAS_JOB_TASK_ID})$",
+                    # The first-order skip propagates into each ER sub-branch's
+                    # document-store flow, skipping its discovery; only its ALL_DONE
+                    # after_upload_noop still runs (and succeeds with nothing to do).
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"[^.]+_ENTITY_RESOLUTION\.{AFTER_UPLOAD_NOOP_TASK_ID}$",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    def _us_xx_entity_resolution_branch(self, er_collection_name: str) -> str:
+        return f"{self.us_xx_fake_extractor_collection_branch}.{er_collection_name}"
+
+    def test_entity_resolution_pass_runs_per_entity_group(self) -> None:
+        """Each entity group of an extractor that declares them gets its own ER branch —
+        composite generation + upload, then an ER extraction whose pod pulls its own job
+        id — running after the extractor's first-order view deploy. The ER view graph
+        covers all the extractor's groups together, so it is deployed by a SINGLE
+        extractor-level task (keyed on the first-order collection, never an ER collection)
+        downstream of every group's ER extraction."""
+        self._mock_bq_client_has_updates()
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf=self._run_conf(state_code_filter=StateCode.US_XX.value),
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[self.us_yy_all_skippable_tasks_regex],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            dag = self._create_dag()
+            # Exactly one ER view deploy for the extractor — at the extractor-branch level,
+            # NOT one per entity group.
+            er_view_deploy_task_ids = {
+                task.task_id
+                for task in dag.tasks
+                if task.task_id.endswith(f".{UPDATE_ENTITY_RESOLUTION_VIEWS_TASK_ID}")
+            }
+            self.assertEqual(
+                {self.us_xx_entity_resolution_view_deploy_task_id},
+                er_view_deploy_task_ids,
+            )
+
+            # The single ER deploy names the FIRST-ORDER collection (the entrypoint
+            # resolves it via the first-order config map, which never contains an ER
+            # collection name) and the entity_resolution stage.
+            update_views_argv = self._constructed_pod_arguments(
+                UPDATE_ENTITY_RESOLUTION_VIEWS_TASK_ID
+            )
+            self.assertIn(
+                "--entrypoint=UpdateLLMExtractionManagedViewGraphEntrypoint",
+                update_views_argv,
+            )
+            self.assertIn(f"--state_code={StateCode.US_XX.value}", update_views_argv)
+            self.assertIn(
+                f"--extractor_collection_name={FAKE_EXTRACTOR_COLLECTION_NAME}",
+                update_views_argv,
+            )
+            self.assertIn("--stage=entity_resolution", update_views_argv)
+
+            # It runs downstream of every group's ER extraction, with
+            # NONE_FAILED_MIN_ONE_SUCCESS so it deploys once at least one group extracted.
+            er_deploy_task = dag.get_task(
+                self.us_xx_entity_resolution_view_deploy_task_id
+            )
+            self.assertEqual(
+                TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS, er_deploy_task.trigger_rule
+            )
+            self.assertEqual(
+                {
+                    f"{self._us_xx_entity_resolution_branch(entity_resolution_collection_name(first_order_extractor_collection_name=FAKE_EXTRACTOR_COLLECTION_NAME, entity_group_name=group))}.{RUN_EXTRACTION_TASK_ID}"
+                    for group in ("location", "assignment", "pay_rate")
+                },
+                er_deploy_task.upstream_task_ids,
+            )
+
+            # Assert one entity group's ER extraction pod: it extracts its own ER
+            # collection and pulls its own job id (not the first-order one).
+            location_er_name = entity_resolution_collection_name(
+                first_order_extractor_collection_name=FAKE_EXTRACTOR_COLLECTION_NAME,
+                entity_group_name="location",
+            )
+            location_er_branch = self._us_xx_entity_resolution_branch(location_er_name)
+
+            run_extraction_argv = self._constructed_pod_arguments(
+                RUN_EXTRACTION_TASK_ID,
+                containing_arg=f"--extractor_collection_name={location_er_name}",
+            )
+            self.assertIn(
+                "--entrypoint=LLMDocumentExtractionSyncJobEntrypoint",
+                run_extraction_argv,
+            )
+            self.assertIn(f"--state_code={StateCode.US_XX.value}", run_extraction_argv)
+            self.assertIn(
+                f"--extractor_collection_name={location_er_name}", run_extraction_argv
+            )
+            self.assertIn(
+                f"--job_id={{{{ task_instance.xcom_pull(task_ids="
+                f"'{location_er_branch}.{IDENTIFY_JOB_DOCUMENTS_TASK_ID}') }}}}",
+                run_extraction_argv,
+            )
+
+            # The ER composite generation reads the materialized first-order
+            # __pre_resolution views, so the ER branch runs after the first-order view
+            # deploy.
+            er_discovery_task = dag.get_task(
+                f"{location_er_branch}.{RUN_DOCUMENT_DISCOVERY_TASK_ID}"
+            )
+            self.assertIn(
+                f"{self.us_xx_fake_extractor_collection_branch}."
+                f"{UPDATE_FIRST_ORDER_VIEWS_TASK_ID}",
+                er_discovery_task.upstream_task_ids,
+            )

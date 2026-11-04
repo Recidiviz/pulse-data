@@ -17,18 +17,23 @@
 """DAG that runs the LLM document extraction pipeline.
 
 By default every (state, document collection) upload branch launched in this project
-runs, followed by every launched extractor collection's extraction. To target a single
-state, pass `state_code_filter` in the DAG run conf; to additionally target a single
-document collection's upload, pass `document_collection_name_filter` (which requires
-`state_code_filter` to also be set, since document collection names are only unique within
-a state). The filters scope the upload branching only; extraction always runs for every
-launched extractor collection in the targeted state(s).
+runs, followed by every launched extractor collection's extraction. Each extractor runs
+its first-order extraction, then, for every entity group its collection declares, runs
+an entity-resolution pass.
+
+To target a single state, pass `state_code_filter` in the DAG run conf; to additionally
+target a single document collection's upload, pass `document_collection_name_filter`
+(which requires `state_code_filter` to also be set, since document collection names are
+only unique within a state). The filters scope the first-order document upload branching
+only: extraction — including each extractor's entity-resolution composite generation and
+upload — always runs for every launched extractor collection in the targeted state(s).
 """
 
 from typing import Callable
 
 from airflow.decorators import dag
-from airflow.models import DagRun
+from airflow.models import BaseOperator, DagRun
+from airflow.models.xcom_arg import XComArg
 from airflow.operators.empty import EmptyOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
@@ -67,6 +72,7 @@ from recidiviz.airflow.dags.utils.constants import (
     AFTER_UPLOAD_NOOP_TASK_ID,
     DOCUMENT_UPLOAD_TASK_ID,
     RUN_EXTRACTION_TASK_ID,
+    UPDATE_ENTITY_RESOLUTION_VIEWS_TASK_ID,
     UPDATE_FIRST_ORDER_VIEWS_TASK_ID,
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
@@ -80,7 +86,11 @@ from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
     LLMExtractionViewGraphStage,
 )
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
+    collect_entity_resolution_extractor_configs,
     load_launched_first_order_llm_extractor_configs,
+)
+from recidiviz.documents.extraction.models.llm_extractor_config import (
+    LLMExtractorConfig,
 )
 from recidiviz.documents.store.document_collection_config import (
     get_states_with_launched_document_collections,
@@ -140,6 +150,122 @@ def make_document_collection_branch_filter(
     return document_collection_branch_filter
 
 
+def _build_document_store_flow(
+    state_code: StateCode,
+    collection_name: str,
+) -> XComArg:
+    """Wires the discovery → GCS upload → record chain for one document collection into
+    the ambient task group, and returns the chain's record_results leaf.
+    """
+    # --- Step 1: Document Discovery ---
+    collection_result = run_document_discovery(
+        state_code=state_code,
+        collection_name=collection_name,
+        run_id=RUN_ID_FORMAT_ARG,
+    )
+
+    # Short-circuit so build_args, upload, and record are all skipped
+    # when discovery found no new metadata updates.
+    proceed = check_has_updates(collection_result=collection_result)
+
+    # --- Step 2: GCS Upload (KPO) ---
+    upload_pod_arguments = build_document_upload_pod_arguments(
+        state_code=state_code,
+        collection_result=collection_result,
+        upload_task_instance_count=UPLOAD_TASK_INSTANCE_COUNT,
+    )
+    upload_tasks = build_mapped_kubernetes_pod_task(
+        task_id=DOCUMENT_UPLOAD_TASK_ID,
+        expand_arguments=upload_pod_arguments,
+    )
+
+    # ALL_DONE sequencing task downstream of upload_tasks so an upload failure does not block
+    # record_results from running, but any other task failure does block record_results.
+    # This allows us to record partial results when some uploads fail.
+    after_upload_noop = EmptyOperator(
+        task_id=AFTER_UPLOAD_NOOP_TASK_ID,
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
+    # --- Step 3: Record Results ---
+    record_results = record_document_upload_results(
+        collection_result=collection_result,
+        state_code=state_code,
+        run_id=RUN_ID_FORMAT_ARG,
+    )
+
+    # proceed >> after_upload_noop is an explicit edge so the short-circuit's
+    # ignore_downstream_trigger_rules=False also skips the ALL_DONE barrier
+    # (it would otherwise run because skipped uploads still count as "done").
+    proceed >> [upload_pod_arguments, after_upload_noop]
+    upload_tasks >> after_upload_noop >> record_results
+    upload_pod_arguments >> record_results
+
+    return record_results
+
+
+def _build_extraction_flow(
+    state_code: StateCode,
+    extractor_collection_name: str,
+) -> tuple[XComArg, BaseOperator]:
+    """Wires the sync-metadata → identify-job → run-extraction chain for one extractor
+    collection, and returns its (head, run_extraction leaf).
+    """
+    # --- Step 1: Sync extractor metadata ---
+    extractor_version_id = sync_extractor_metadata_task(
+        state_code=state_code,
+        extractor_collection_name=extractor_collection_name,
+    )
+
+    # --- Step 2: Identify the documents for a new job ---
+    job_id = identify_job_documents_task(
+        state_code=state_code,
+        extractor_collection_name=extractor_collection_name,
+        extractor_version_id=extractor_version_id,
+    )
+
+    # Short-circuit so extraction is skipped when no documents needed processing
+    # (no job was generated).
+    proceed = check_has_job(job_id=job_id)
+
+    # --- Step 3: Run the extraction job through the LLM (KPO) ---
+    run_extraction = build_kubernetes_pod_task(
+        task_id=RUN_EXTRACTION_TASK_ID,
+        arguments=[
+            "--entrypoint=LLMDocumentExtractionSyncJobEntrypoint",
+            f"--state_code={state_code.value}",
+            f"--extractor_collection_name={extractor_collection_name}",
+            f"--job_id={{{{ task_instance.xcom_pull(task_ids='{job_id.operator.task_id}') }}}}",
+        ],
+        cloud_sql_connections=[SchemaType.OPERATIONS],
+    )
+
+    proceed >> run_extraction
+
+    return extractor_version_id, run_extraction
+
+
+def _build_view_deploy_task(
+    *,
+    state_code: StateCode,
+    first_order_collection_name: str,
+    view_graph_stage: LLMExtractionViewGraphStage,
+    task_id: str,
+    trigger_rule: TriggerRule,
+) -> BaseOperator:
+    """Builds the KPO that deploys |view_graph_stage|'s view graph."""
+    return build_kubernetes_pod_task(
+        task_id=task_id,
+        trigger_rule=trigger_rule,
+        arguments=[
+            "--entrypoint=UpdateLLMExtractionManagedViewGraphEntrypoint",
+            f"--state_code={state_code.value}",
+            f"--extractor_collection_name={first_order_collection_name}",
+            f"--stage={view_graph_stage.value}",
+        ],
+    )
+
+
 def create_single_document_collection_branch(
     state_code: StateCode,
     document_collection_name: str,
@@ -148,105 +274,91 @@ def create_single_document_collection_branch(
     with TaskGroup(
         get_document_collection_branch_key(document_collection_name)
     ) as branch:
-        # --- Step 1: Document Discovery ---
-        collection_result = run_document_discovery(
+        _build_document_store_flow(
             state_code=state_code,
             collection_name=document_collection_name,
-            run_id=RUN_ID_FORMAT_ARG,
         )
-
-        # Short-circuit so build_args, upload, and record are all skipped
-        # when discovery found no new metadata updates.
-        proceed = check_has_updates(collection_result=collection_result)
-
-        # --- Step 2: GCS Upload (KPO) ---
-        upload_pod_arguments = build_document_upload_pod_arguments(
-            state_code=state_code,
-            collection_result=collection_result,
-            upload_task_instance_count=UPLOAD_TASK_INSTANCE_COUNT,
-        )
-        upload_tasks = build_mapped_kubernetes_pod_task(
-            task_id=DOCUMENT_UPLOAD_TASK_ID,
-            expand_arguments=upload_pod_arguments,
-        )
-
-        # ALL_DONE sequencing task downstream of upload_tasks so an upload failure does not block
-        # record_results from running, but any other task failure does block record_results.
-        # This allows us to record partial results when some uploads fail.
-        after_upload_noop = EmptyOperator(
-            task_id=AFTER_UPLOAD_NOOP_TASK_ID,
-            trigger_rule=TriggerRule.ALL_DONE,
-        )
-
-        # --- Step 3: Record Results ---
-        record_results = record_document_upload_results(
-            collection_result=collection_result,
-            state_code=state_code,
-            run_id=RUN_ID_FORMAT_ARG,
-        )
-
-        # proceed >> after_upload_noop is an explicit edge so the short-circuit's
-        # ignore_downstream_trigger_rules=False also skips the ALL_DONE barrier
-        # (it would otherwise run because skipped uploads still count as "done").
-        proceed >> [upload_pod_arguments, after_upload_noop]
-        upload_tasks >> after_upload_noop >> record_results
-        upload_pod_arguments >> record_results
 
     return [branch]
 
 
+def create_single_entity_resolution_branch(
+    state_code: StateCode,
+    entity_resolution_config: LLMExtractorConfig,
+) -> tuple[TaskGroup, BaseOperator]:
+    """Creates the per-entity-group task group for one entity-resolution config: generate
+    and upload the composite documents, then run the ER extraction over them.
+    """
+    er_collection_name = entity_resolution_config.extractor_collection.name
+    with TaskGroup(er_collection_name) as branch:
+        record_composites = _build_document_store_flow(
+            state_code=state_code,
+            collection_name=er_collection_name,
+        )
+
+        extraction_head, run_extraction = _build_extraction_flow(
+            state_code=state_code,
+            extractor_collection_name=er_collection_name,
+        )
+
+        record_composites >> extraction_head
+
+    return branch, run_extraction
+
+
 def create_single_extractor_collection_branch(
     state_code: StateCode,
-    extractor_collection_name: str,
+    first_order_config: LLMExtractorConfig,
+    entity_resolution_configs: list[LLMExtractorConfig],
 ) -> list[DAGNode]:
     """Creates the per-extractor-collection task group: sync the extractor metadata,
     identify the documents for a new extraction job, run that job through the LLM, and
-    deploy the first-order views over its results.
-
-    TODO(OBT-45428): Add the entity-resolution pass after first-order views.
+    deploy the first-order views over its results. For each of |entity_resolution_configs|
+    (one per entity group the collection declares), an entity-resolution branch then runs
+    after the first-order views, generating composite documents from those views and
+    running the ER extraction over them. The entity_resolution-stage views are deployed
+    once, downstream of every group's ER extraction, since the ER view graph covers all
+    the extractor's entity groups together.
     """
+    extractor_collection_name = first_order_config.extractor_collection.name
     with TaskGroup(extractor_collection_name) as branch:
-        # --- Step 1: Sync extractor metadata ---
-        extractor_version_id = sync_extractor_metadata_task(
+        _, run_first_order_extraction = _build_extraction_flow(
             state_code=state_code,
             extractor_collection_name=extractor_collection_name,
         )
-
-        # --- Step 2: Identify the documents for a new job ---
-        job_id = identify_job_documents_task(
+        update_first_order_views = _build_view_deploy_task(
             state_code=state_code,
-            extractor_collection_name=extractor_collection_name,
-            extractor_version_id=extractor_version_id,
-        )
-
-        # Short-circuit so extraction and the view deploy are skipped when no
-        # documents needed processing (no job was generated).
-        proceed = check_has_job(job_id=job_id)
-
-        # --- Step 3: Run the extraction job through the LLM (KPO) ---
-        run_extraction = build_kubernetes_pod_task(
-            task_id=RUN_EXTRACTION_TASK_ID,
-            arguments=[
-                "--entrypoint=LLMDocumentExtractionSyncJobEntrypoint",
-                f"--state_code={state_code.value}",
-                f"--extractor_collection_name={extractor_collection_name}",
-                f"--job_id={{{{ task_instance.xcom_pull(task_ids='{job_id.operator.task_id}') }}}}",
-            ],
-            cloud_sql_connections=[SchemaType.OPERATIONS],
-        )
-
-        # --- Step 4: Deploy the first-order views over the results (KPO) ---
-        update_first_order_views = build_kubernetes_pod_task(
+            first_order_collection_name=extractor_collection_name,
+            view_graph_stage=LLMExtractionViewGraphStage.FIRST_ORDER,
             task_id=UPDATE_FIRST_ORDER_VIEWS_TASK_ID,
-            arguments=[
-                "--entrypoint=UpdateLLMExtractionManagedViewGraphEntrypoint",
-                f"--state_code={state_code.value}",
-                f"--extractor_collection_name={extractor_collection_name}",
-                f"--stage={LLMExtractionViewGraphStage.FIRST_ORDER.value}",
-            ],
+            trigger_rule=TriggerRule.ALL_SUCCESS,
         )
+        run_first_order_extraction >> update_first_order_views
 
-        proceed >> run_extraction >> update_first_order_views
+        if entity_resolution_configs:
+            update_entity_resolution_views = _build_view_deploy_task(
+                state_code=state_code,
+                first_order_collection_name=extractor_collection_name,
+                view_graph_stage=LLMExtractionViewGraphStage.ENTITY_RESOLUTION,
+                task_id=UPDATE_ENTITY_RESOLUTION_VIEWS_TASK_ID,
+                # Deploy once at least one group extracted and none failed; skip when
+                # every group short-circuited with no new composites (nothing to
+                # re-resolve).
+                trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+            )
+            for entity_resolution_config in entity_resolution_configs:
+                (
+                    entity_resolution_branch,
+                    run_er_extraction,
+                ) = create_single_entity_resolution_branch(
+                    state_code=state_code,
+                    entity_resolution_config=entity_resolution_config,
+                )
+                update_first_order_views >> entity_resolution_branch
+                # The entity-resolution view graph covers all of this extractor's entity
+                # groups together and is keyed on the first-order collection, so it deploys
+                # once per extractor, after every group's ER extraction
+                run_er_extraction >> update_entity_resolution_views
 
     return [branch]
 
@@ -280,23 +392,42 @@ def create_single_state_llm_document_extraction_branch(
                 ),
             )
 
-        extractor_collection_names = sorted(
-            load_launched_first_order_llm_extractor_configs(
-                state_code, project_id=get_project_id()
-            )
+        first_order_configs_by_name = load_launched_first_order_llm_extractor_configs(
+            state_code, project_id=get_project_id()
         )
+        # Generate every entity-resolution config for the state in one pass, then group
+        # them by the parent first-order collection whose branch nests them.
+        entity_resolution_configs_by_parent_name: dict[
+            str, list[LLMExtractorConfig]
+        ] = {name: [] for name in first_order_configs_by_name}
+        for (
+            first_order_config,
+            entity_resolution_config,
+        ) in collect_entity_resolution_extractor_configs(
+            first_order_configs=list(first_order_configs_by_name.values())
+        ):
+            entity_resolution_configs_by_parent_name[
+                first_order_config.extractor_collection.name
+            ].append(entity_resolution_config)
+
         # A state can have document collections but no extractor configs yet; skip the
         # extraction branching entirely in that case, since an empty branch map would
         # produce an orphaned branch_start/branch_end pair that run for no reason.
-        if extractor_collection_names:
+        if first_order_configs_by_name:
             with TaskGroup(
                 EXTRACTOR_COLLECTIONS_BRANCHING
             ) as extractor_collections_branching:
                 extractor_collection_branch_map: dict[str, list[DAGNode] | DAGNode] = {
-                    extractor_collection_name: create_single_extractor_collection_branch(
-                        state_code, extractor_collection_name
+                    collection_name: create_single_extractor_collection_branch(
+                        state_code=state_code,
+                        first_order_config=first_order_config,
+                        entity_resolution_configs=entity_resolution_configs_by_parent_name[
+                            collection_name
+                        ],
                     )
-                    for extractor_collection_name in extractor_collection_names
+                    for collection_name, first_order_config in sorted(
+                        first_order_configs_by_name.items()
+                    )
                 }
                 create_branching_by_key(
                     extractor_collection_branch_map,
