@@ -33,7 +33,10 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_deprecated_storage_directory_path_for_state,
 )
-from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.gcs.filename_parts import (
+    filename_parts_from_path,
+    is_path_normalized,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.gsutil_shell_helpers import gsutil_ls, gsutil_mv
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
@@ -146,11 +149,14 @@ class MoveIngestBucketRawFilesToDeprecatedController:
             )
 
     def _file_matches_filter(self, raw_file: GcsfsFilePath) -> bool:
-        try:
-            file_parts = filename_parts_from_path(raw_file)
-        except ValueError:
-            # Skip files that don't match the expected raw file format
+        if not is_path_normalized(raw_file):
+            logging.warning(
+                "Skipping [%s]: name does not match the raw file format",
+                raw_file.abs_path(),
+            )
             return False
+
+        file_parts = filename_parts_from_path(raw_file)
 
         if self.file_tag_filters and file_parts.file_tag not in self.file_tag_filters:
             return False

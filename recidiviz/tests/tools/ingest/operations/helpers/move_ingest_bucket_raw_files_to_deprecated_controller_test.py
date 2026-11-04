@@ -298,3 +298,31 @@ class MoveIngestBucketRawFilesToDeprecatedControllerTest(unittest.TestCase):
 
         self.assertEqual(0, len(successful_files))
         self.assertEqual(0, len(failed_files))
+
+    def test_files_with_unparseable_names_are_skipped(
+        self,
+    ) -> None:
+        self.gsutil_ls_mock.return_value = [
+            "gs://test_bucket/unprocessed_2024-11-12T12:00:00:000000_raw_file_tag.csv",
+            "gs://test_bucket/unprocessed_2024-11-12T12:00:00:000000_raw_file_tag.csv.gz",
+        ]
+        controller = MoveIngestBucketRawFilesToDeprecatedController(
+            source_ingest_bucket=GcsfsBucketPath("test_bucket"),
+            destination_region_deprecated_storage_dir_path=GcsfsDirectoryPath(
+                bucket_name="test_bucket_storage", relative_path="us_xx/deprecated/"
+            ),
+            start_datetime_inclusive=None,
+            end_datetime_exclusive=None,
+            file_tag_filters=None,
+            dry_run=True,
+            log_output_path="log_output_path",
+        )
+        successful_files, failed_files = controller.run()
+
+        self.assertEqual(
+            [
+                "gs://test_bucket/unprocessed_2024-11-12T12:00:00:000000_raw_file_tag.csv"
+            ],
+            [file.uri() for file in successful_files],
+        )
+        self.assertEqual([], failed_files)
