@@ -48,3 +48,20 @@ resource "google_logging_metric" "bq_deployed_view_too_expensive" {
     table_id   = "REGEXP_EXTRACT(textPayload, \"table_id='([^']+)'\")"
   }
 }
+
+# Counts Cloud Audit Log entries landing in the org-wide audit log bucket. The AU-5
+# alert in monitoring_alert_policy.tf fires when this metric stops receiving data.
+resource "google_logging_metric" "org_audit_log_bucket_entries" {
+  project     = var.project_id
+  name        = "org_audit_log_bucket_entries"
+  description = "Count of Cloud Audit Log entries ingested into the recidiviz_org_all_audit_logs bucket."
+
+  bucket_name = "projects/${var.project_id}/locations/global/buckets/recidiviz_org_all_audit_logs"
+  filter      = "logName:\"cloudaudit.googleapis.com\""
+
+  metric_descriptor {
+    metric_kind = "DELTA"
+    value_type  = "INT64"
+    unit        = "1"
+  }
+}

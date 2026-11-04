@@ -2033,3 +2033,45 @@ resource "google_monitoring_alert_policy" "sftp_ingest_ready_file_stale" {
   notification_channels = [google_monitoring_notification_channel.ie_on_call_general_alerts.id]
   project               = var.project_id
 }
+
+resource "google_monitoring_alert_policy" "au5_audit_log_ingestion_stopped" {
+  alert_strategy {
+    auto_close = "604800s"
+  }
+
+  combiner = "OR"
+
+  conditions {
+    condition_absent {
+      aggregations {
+        alignment_period     = "300s"
+        cross_series_reducer = "REDUCE_SUM"
+        per_series_aligner   = "ALIGN_DELTA"
+      }
+
+      duration = "3600s"
+      filter   = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.org_audit_log_bucket_entries.name}\""
+
+      trigger {
+        count   = "1"
+        percent = "0"
+      }
+    }
+
+    display_name = "No audit log entries ingested for 1 hour"
+  }
+
+  display_name = "AU-5: Audit log ingestion stopped"
+
+  documentation {
+    content   = "AU-5 audit logging failure alert; notifies the Aurora team and the PagerDuty alert forwarder."
+    mime_type = "text/markdown"
+  }
+
+  enabled               = "true"
+  notification_channels = [
+    google_monitoring_notification_channel.security.id,
+    data.google_monitoring_notification_channel.pagerduty_alert_forwarder_service.id,
+  ]
+  project               = var.project_id
+}
