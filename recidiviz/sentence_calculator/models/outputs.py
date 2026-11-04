@@ -71,12 +71,12 @@ class TrackedSentenceAdjustment:
 
     sentence_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # MIN date (time to parole eligibility) in days, as ordered by the court
-    original_min_days: "TrackedValue[int] | None" = attr.ib(
-        validator=attr_validators.is_opt(TrackedValue)
+    original_min_days: "TrackedValue[int]" = attr.ib(
+        validator=attr.validators.instance_of(TrackedValue)
     )
     # MAX date (time to release) in days, as ordered by the court
-    original_max_days: "TrackedValue[int] | None" = attr.ib(
-        validator=attr_validators.is_opt(TrackedValue)
+    original_max_days: "TrackedValue[int]" = attr.ib(
+        validator=attr.validators.instance_of(TrackedValue)
     )
     # MIN date (time to parole eligibility) in days, adjusted for earned or projected
     # credit, jail time, or other adjustments.
@@ -88,10 +88,10 @@ class TrackedSentenceAdjustment:
     adjusted_max_days: "TrackedValue[int]" = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)
     )
-    # A flat multipler by which sentences might be adjusted (e.g. .65 to represent the
-    # 35% off in SB413)
-    multiplier: "TrackedValue[float]" = attr.ib(
-        validator=attr.validators.instance_of(TrackedValue)
+    # The regime's flat reduction (e.g. a .65 multiplier for the 35% off in SB413) and
+    # the terms it comes off. Only jail credit comes off a term it doesn't reduce.
+    term_multiplier: "TermMultiplier" = attr.ib(
+        validator=attr.validators.instance_of(TermMultiplier)
     )
     # Jail credit to apply to root sentences (those consecutive to no other sentences)
     jail_credit: "TrackedValue[int]" = attr.ib(
