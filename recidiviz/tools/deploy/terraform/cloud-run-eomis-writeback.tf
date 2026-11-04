@@ -50,12 +50,14 @@ locals {
       # args are appended to the module invocation; dry-run is the absence of
       # --commit.
       jobs = {
-        # GED and Edovo share one job and eOMIS login session. Starts paused.
+        # GED and Edovo share one job and eOMIS login session. Runs daily
+        # without --commit so the AR-324 soak collects dry-run ledger rows.
         "us-ar-ged" = {
           args      = ["--flow=ar_ged", "--flow=ar_edovo"]
           schedule  = "0 0 * * *"
           time_zone = "Etc/UTC"
           env       = {}
+          paused    = false
         }
         # TODO(CO-302): unpause only after CDOC confirms the cadence.
         "us-co-continuous" = local.eomis_writeback_us_co_job
