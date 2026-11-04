@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_security_classification_assessments` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: feature__coms_2026_enabled
+input_columns:
+  Offender_Number: STRING
+  assessment_date: DATE
+  review_type: STRING
+  oms_source: STRING
+  record_id: STRING
+  Confinement_Level: STRING
+  Management_Level: STRING
+  True_Security_Level: STRING
+  Actual_Placement_Level: STRING
+  Waiver_Reason: STRING
+  Departure_Reason: STRING
+  ScoredSecurityLevel: STRING
+  OverrideReason: STRING
+  Management_Level_Score: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - $literal("SECURITY")
+                - oms_source
+                - record_id
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type: $literal_enum(StateAssessmentType.MI_SECURITY_CLASS)
+          assessment_subtype:
+            $enum_mapping:
+              $raw_text: review_type
+              $mappings:
+                StateAssessmentSubtype.INITIAL:
+                  - "CSJ-480 Security Classification Male Initial"
+                  - "CSJ-482 Security Classification Female Initial"
+                StateAssessmentSubtype.REASSESSMENT:
+                  - "CSJ-481 Security Classification Male Review"
+                  - "CSJ-483 Security Classification Female Review"
+          assessment_date: assessment_date
+          # MI records no approval step; a finalized screen took effect on its
+          # assessment record start date (which we've renamed assessment_date in ingest).
+          assessment_decision:
+            $conditional:
+              - $if:
+                  $not_null: assessment_date
+                $then: $literal_enum(StateAssessmentDecision.APPROVED)
+          assessment_decision_date: assessment_date
+          assessment_score: Management_Level_Score
+          assessment_level:
+            $enum_mapping:
+              $raw_text: ScoredSecurityLevel
+              $mappings:
+                StateAssessmentLevel.VERY_HIGH:
+                  - "V"
+                StateAssessmentLevel.HIGH:
+                  - "IV"
+                StateAssessmentLevel.MEDIUM:
+                  - "II"
+                StateAssessmentLevel.LOW:
+                  - "I"
+                  - "IS"
+          assessment_override_reason: OverrideReason
+          assessment_override_level:
+            $conditional:
+              - $if:
+                  $not_null: OverrideReason
+                $then:
+                  $enum_mapping:
+                    $raw_text: True_Security_Level
+                    $mappings:
+                      StateAssessmentLevel.VERY_HIGH:
+                        - "V"
+                      StateAssessmentLevel.HIGH:
+                        - "IV"
+                      StateAssessmentLevel.MEDIUM:
+                        - "II"
+                      StateAssessmentLevel.LOW:
+                        - "I"
+                        - "IS"
+          assessment_metadata:
+            $normalized_values_json_dict:
+              Confinement_Level_Assessment_Result: Confinement_Level
+              Management_Level_Assessment_Result: Management_Level
+              True_Security_Level_Assessment_Result: True_Security_Level
+              Actual_Placement_Level_Assessment_Result: Actual_Placement_Level
+              screen_type: review_type
+              management_raw_score: Management_Level_Score
+              Waiver_Reason: Waiver_Reason
+              Departure_Reason: Departure_Reason

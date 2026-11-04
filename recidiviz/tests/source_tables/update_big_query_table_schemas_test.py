@@ -1114,6 +1114,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_mi_ingest_view_results.program_assignment_LEGACY",
     "us_mi_ingest_view_results.program_assignment_coms",
     "us_mi_ingest_view_results.security_classification_assessments",
+    "us_mi_ingest_view_results.security_classification_assessments_COMS_2026",
     "us_mi_ingest_view_results.sentence_lengths",
     "us_mi_ingest_view_results.sentence_lengths_COMS_2026",
     "us_mi_ingest_view_results.sentence_status_snapshot",

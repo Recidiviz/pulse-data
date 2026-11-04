@@ -1383,7 +1383,7 @@
       us_mi_COMS_Security_Classification.is_deleted]
     sorts: [us_mi_COMS_Security_Classification.Start_Date__raw]
     note_display: hover
-    note_text: "This table includes data from the COMS system about security classification assessment results for active prisoners. Only includes submitted security classification assessments. Sent as a full dump file every day. Note: see also COMS_Security_Classification for an earlier COMS security classification data format with a different schema."
+    note_text: "This table includes data from the COMS system about security classification assessment results for active prisoners. Only includes submitted security classification assessments. Sent as a full dump file every day. Note: see also COMS_Security_Classification_Legacy for an earlier COMS security classification data format with a different schema."
     listen: 
       View Type: us_mi_ADH_OFFENDER.view_type
       US_MI_DOC_ID: us_mi_ADH_OFFENDER.offender_id
