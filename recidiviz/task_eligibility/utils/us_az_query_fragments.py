@@ -1072,6 +1072,77 @@ def no_denial_in_current_incarceration(opp_name: str) -> str:
         """
 
 
+def within_x_time_of_earliest_release_date(
+    time_interval: int, date_part: str = "MONTH"
+) -> str:
+    """Returns a query finding if the chosen opportunity date is within x time (defaults to x months)
+    of their earliest AZ release date"""
+
+    coalesce_expr = f"""COALESCE(
+    IF (JSON_VALUE(sentence_group_length_metadata, '$.state_specific_attributes__tpr_approval_status') = 'APPROVED', {metadata_date_expr('tpr')}, CAST(NULL AS DATE)),
+    IF (JSON_VALUE(sentence_group_length_metadata, '$.state_specific_attributes__tpr_approval_status') = 'APPROVED', {metadata_date_expr('dpr_tpr')}, CAST(NULL AS DATE)),
+    IF (JSON_VALUE(sentence_group_length_metadata, '$.state_specific_attributes__dtp_approval_status') = 'APPROVED', {metadata_date_expr('dtp')}, CAST(NULL AS DATE)),
+    IF (JSON_VALUE(sentence_group_length_metadata, '$.state_specific_attributes__dtp_approval_status') = 'APPROVED', {metadata_date_expr('dpr_dtp')}, CAST(NULL AS DATE)),
+    {metadata_date_expr('csbd')},
+    {metadata_date_expr('dpr_csbd')},
+    {metadata_date_expr('tr_to_add')},
+    {metadata_date_expr('dpr_tr_to_add')},
+    {metadata_date_expr('ercd')},
+    {metadata_date_expr('dpr_ercd')},
+    {metadata_date_expr('add')},
+    {metadata_date_expr('dpr_add')},
+    {metadata_date_expr('sed')},
+    {metadata_date_expr('csed')},
+    {metadata_date_expr('dpr_csed')})"""
+
+    COALESCE_TBL = f"""
+            SELECT
+              state_code,
+              person_id,
+              start_date,
+              end_date_exclusive,
+              {coalesce_expr} AS release_date
+            FROM
+              `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`
+            WHERE state_code = 'US_AZ'
+            """
+
+    return f"""
+    WITH
+      critical_date_spans AS (
+        SELECT
+          state_code,
+          person_id,
+          start_date AS start_datetime,
+          -- Cap end date so the date expires after {_TPR_DTP_DATE_EXPIRATION_DAYS} days
+          { _cap_span_end_at_date_expiration('end_date_exclusive', 'release_date') }
+            AS end_datetime,
+          release_date AS critical_date
+        FROM
+          (
+            {COALESCE_TBL}
+          )
+        -- Filter out spans where the expiration cap produces an end before start
+        -- (i.e., the date already expired before the span began)
+        WHERE
+          { _cap_span_end_at_date_expiration('end_date_exclusive', 'release_date') }
+            > start_date
+      ),
+      {critical_date_has_passed_spans_cte(
+          meets_criteria_leading_window_time = time_interval,
+          date_part = date_part)}
+    SELECT
+      cd.state_code,
+      cd.person_id,
+      cd.start_date,
+      cd.end_date,
+      cd.critical_date_has_passed AS meets_criteria,
+      TO_JSON(STRUCT(cd.critical_date AS release_date)) AS reason,
+      cd.critical_date AS release_date,
+    FROM critical_date_has_passed_spans cd
+    """
+
+
 def incarceration_past_early_release_date(
     opp_name: str, leading_window_time: int = 0, date_part: str = "DAY"
 ) -> str:
