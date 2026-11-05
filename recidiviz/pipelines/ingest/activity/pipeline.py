@@ -65,6 +65,9 @@ from recidiviz.pipelines.ingest.activity.expected_output_helpers import (
     get_expected_output_pre_normalization_entity_classes,
     get_expected_output_table_ids,
 )
+from recidiviz.pipelines.ingest.activity.generate_keys_from_identity_export import (
+    GenerateKeysFromIdentityExport,
+)
 from recidiviz.pipelines.ingest.activity.merge_root_entities_across_dates import (
     MergeRootEntitiesAcrossDates,
 )
@@ -186,45 +189,59 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         if self.pipeline_parameters.ingest_view_results_only:
             return
 
-        # TODO(OBT-51949): Dispatch to the export key-lookup transform instead
-        # of the clustering block below when the identity source is
-        # IDENTITY_SERVICE_EXPORT.
+        root_entity_external_ids_to_primary_keys: beam.PCollection[
+            Tuple[ExternalIdKey, PrimaryKey]
+        ]
         if (
             self.pipeline_parameters.identity_source
             is ActivityPipelineIdentitySource.IDENTITY_SERVICE_EXPORT
         ):
+            tenant = Tenant(assert_type(self.pipeline_parameters.tenant, str))
             check_identity_service_export_has_usable_rows(
                 project_id=self.pipeline_parameters.project,
                 dataset_id=self.pipeline_parameters.identity_service_export_dataset,
-                tenant=Tenant(assert_type(self.pipeline_parameters.tenant, str)),
+                tenant=tenant,
             )
-
-        # Silence `No value for argument 'pcoll' in function call (no-value-for-parameter)`
-        # pylint: disable=E1120
-        all_root_entities: beam.PCollection[RootEntity] = (
-            merged_root_entities_with_dates
-            | "Remove all of the external ids" >> beam.Values()
-            | "Remove all of the dates and ingest view names"
-            >> beam.Map(lambda item: item[2])
-        )
-
-        root_entity_external_ids_to_primary_keys: beam.PCollection[
-            Tuple[ExternalIdKey, PrimaryKey]
-        ] = (
-            all_root_entities
-            | beam.ParDo(GetRootExternalIdClusterEdges())
-            | ClusterRootExternalIds()
-            | "Generate primary keys for root entities"
-            >> beam.MapTuple(
-                lambda root_external_id, cluster: (
-                    root_external_id,
-                    generate_primary_key_from_external_id_keys(
-                        cluster,
-                        state_code=state_code,
-                    ),
+            # TODO(OBT-51950): Reconcile the export lookup with this run's
+            # ingested entities before the association join; until then a
+            # new-mode run crashes when either side holds an external ID the
+            # other does not (see the GenerateKeysFromIdentityExport
+            # docstring for both directions).
+            root_entity_external_ids_to_primary_keys = (
+                p
+                | "Generate keys from the identity export"
+                >> GenerateKeysFromIdentityExport(
+                    tenant=tenant,
+                    export_dataset=self.pipeline_parameters.identity_service_export_dataset,
+                    project_id=self.pipeline_parameters.project,
+                    resource_labels=self.pipeline_parameters.resource_labels,
                 )
             )
-        )
+        else:
+            all_root_entities: beam.PCollection[RootEntity] = (
+                merged_root_entities_with_dates
+                # Silence `No value for argument 'pcoll' in function call (no-value-for-parameter)`
+                | "Remove all of the external ids"
+                >> beam.Values()  # pylint: disable=E1120
+                | "Remove all of the dates and ingest view names"
+                >> beam.Map(lambda item: item[2])
+            )
+
+            root_entity_external_ids_to_primary_keys = (
+                all_root_entities
+                | beam.ParDo(GetRootExternalIdClusterEdges())
+                | ClusterRootExternalIds()
+                | "Generate primary keys for root entities"
+                >> beam.MapTuple(
+                    lambda root_external_id, cluster: (
+                        root_external_id,
+                        generate_primary_key_from_external_id_keys(
+                            cluster,
+                            state_code=state_code,
+                        ),
+                    )
+                )
+            )
 
         expected_pre_norm_table_ids = get_expected_output_table_ids(
             expected_output_entity_classes, state_entities
