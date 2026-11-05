@@ -70,10 +70,10 @@ components:
             config:
               ingest_instance: PRIMARY
 
-          # LLM document extraction runs hourly at the 30th minute
+          # LLM document extraction runs daily at 8 am PT, after raw data import
           llm_document_extraction_dag:
             schedule:
-              hourly: "30 * * * *"
+              daily-8am-pt: "0 8 * * *"
 
     apps/pagerduty-alert-forwarder:
       vars:
