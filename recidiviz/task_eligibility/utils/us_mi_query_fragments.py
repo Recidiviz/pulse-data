@@ -17,6 +17,8 @@
 """
 Helper SQL queries for Michigan
 """
+from google.cloud import bigquery
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_column import BigQueryViewColumn
 from recidiviz.calculator.query.bq_utils import (
@@ -29,6 +31,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     SENTENCE_SESSIONS_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_state_prison_security_assessment_spans import (
+    US_MI_STATE_PRISON_SECURITY_ASSESSMENT_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     TaskEligibilitySpansSubsetType,
     array_agg_case_notes_by_person_id,
@@ -38,8 +43,12 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.regions.us_mi.constants import ACTIVE_SUPERVISION_STATUSES
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     extract_object_from_json,
@@ -895,3 +904,64 @@ def us_mi_coms_program_recommendations_query() -> str:
 {fix_indent(us_mi_coms_program_legs_query(), indent_level=8)}
     )
 """
+
+
+def custody_level_to_security_level_val_clause(custody_level_column: str) -> str:
+    """Returns a SQL CASE expression that converts custody_level_column (MINIMUM,
+    RESTRICTIVE_MINIMUM, CLOSE, or MAXIMUM) to the numeric value of the matching MI security level
+    (I=1, II=2, IV=4, V=5), so it can be compared against the true_level_val and
+    actual_level_val columns of us_mi_incarceration_security_assessment_sessions.
+    Any other custody level converts to NULL.
+    """
+    return f"""CASE {custody_level_column}
+        WHEN 'MINIMUM' THEN 1
+        WHEN 'RESTRICTIVE_MINIMUM' THEN 2
+        WHEN 'CLOSE' THEN 4
+        WHEN 'MAXIMUM' THEN 5
+    END"""
+
+
+def us_mi_latest_security_assessment_waiver_criteria_view_builder(
+    *,
+    criteria_name: str,
+    description: str,
+    meets_criteria_clause: str,
+    meets_criteria_default: bool,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """Returns a criteria view builder that checks the waiver on a resident's most
+    recent MI_SECURITY_CLASS assessment in their current state prison custody stay.
+
+    Args:
+        criteria_name: Name of the criterion, e.g.
+            "US_MI_NO_WAIVER_ON_LATEST_SECURITY_ASSESSMENT".
+        description: Description of the criterion.
+        meets_criteria_clause: SQL boolean expression over the waiver_reason column
+            that is TRUE when the criterion is met.
+        meets_criteria_default: Whether the criterion is met on days with no
+            assessment yet in the current state prison custody stay.
+    """
+    query_template = f"""
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date_exclusive AS end_date,
+    {meets_criteria_clause} AS meets_criteria,
+    TO_JSON(STRUCT(waiver_reason AS waiver_reason)) AS reason,
+    waiver_reason,
+FROM `{US_MI_STATE_PRISON_SECURITY_ASSESSMENT_SPANS_VIEW_BUILDER.table_for_query.format_address_for_query_template()}`
+"""
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=StateCode.US_MI,
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=query_template,
+        meets_criteria_default=meets_criteria_default,
+        reasons_fields=[
+            ReasonsField(
+                name="waiver_reason",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Waiver reason on the resident's most recent MI_SECURITY_CLASS assessment in their current state prison custody stay, or NULL if there is no waiver",
+            ),
+        ],
+    )

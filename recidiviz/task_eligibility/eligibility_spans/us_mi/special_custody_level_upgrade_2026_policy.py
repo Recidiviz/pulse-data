@@ -24,17 +24,49 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
     custody_level_upgrade_2026_policy,
 )
+from recidiviz.task_eligibility.criteria.general import (
+    in_state_prison_custody_at_least_4_months,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     custody_level_lower_than_recommended_2026_policy,
+    has_bedspace_waiver_on_latest_security_assessment,
     ineligible_for_annual_reclassification,
-    ineligible_for_initial_classification,
+    latest_true_security_level_lower_than_2026_policy_recommended,
+    no_waiver_on_latest_security_assessment,
+    not_has_2026_policy_assessment_in_state_prison_custody,
     originally_assessed_lower_than_2026_policy_recommended_at_assessment_date,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    StateSpecificTaskCriteriaGroupBigQueryViewBuilder,
+    TaskCriteriaGroupLogicType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+# A waiver on the latest assessment usually reflects an operational need that a new
+# recommendation won't change, so residents with one are not surfaced. The exception is
+# a bedspace waiver that places someone below a level the 2026 policy now recommends,
+# since staff should revisit that placement.
+US_MI_NO_WAIVER_OR_BEDSPACE_WAIVER_BELOW_RECOMMENDED_CRITERIA_VIEW_BUILDER = StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+    logic_type=TaskCriteriaGroupLogicType.OR,
+    criteria_name="US_MI_NO_WAIVER_OR_BEDSPACE_WAIVER_BELOW_2026_POLICY_RECOMMENDED",
+    sub_criteria_list=[
+        no_waiver_on_latest_security_assessment.VIEW_BUILDER,
+        StateSpecificTaskCriteriaGroupBigQueryViewBuilder(
+            logic_type=TaskCriteriaGroupLogicType.AND,
+            criteria_name="US_MI_BEDSPACE_WAIVER_AND_LATEST_TRUE_SECURITY_LEVEL_LOWER_THAN_2026_POLICY_RECOMMENDED",
+            sub_criteria_list=[
+                has_bedspace_waiver_on_latest_security_assessment.VIEW_BUILDER,
+                latest_true_security_level_lower_than_2026_policy_recommended.VIEW_BUILDER,
+            ],
+        ),
+    ],
+    # Both waiver criteria read waiver_reason from the same assessment spans.
+    allowed_duplicate_reasons_keys=["waiver_reason"],
+)
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
@@ -42,14 +74,12 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=incarceration_population_state_prison_exclude_safekeeping.VIEW_BUILDER,
     criteria_spans_view_builders=[
+        in_state_prison_custody_at_least_4_months.VIEW_BUILDER,
         ineligible_for_annual_reclassification.VIEW_BUILDER,
-        ineligible_for_initial_classification.VIEW_BUILDER,
+        not_has_2026_policy_assessment_in_state_prison_custody.VIEW_BUILDER,
         custody_level_lower_than_recommended_2026_policy.VIEW_BUILDER,
         originally_assessed_lower_than_2026_policy_recommended_at_assessment_date.VIEW_BUILDER,
-        # TODO(MI-7750): Add has_not_been_classified_under_2026_policy once MI's
-        # classification data distinguishes which policy version an assessment was
-        # made under.
-        # TODO(MI-8306): Finalize criteria for CLU
+        US_MI_NO_WAIVER_OR_BEDSPACE_WAIVER_BELOW_RECOMMENDED_CRITERIA_VIEW_BUILDER,
     ],
     completion_event_builder=custody_level_upgrade_2026_policy.VIEW_BUILDER,
 )
