@@ -16,8 +16,6 @@ input_columns:
   Entered_Date: DATE
 unused_columns: []
 variables:
-  # TODO(MI-8681): Check whether any rows have an End_Date but no End_Reason. This
-  # variable marks those rows IN_PROGRESS even though they carry a discharge date.
   - in_progress_status:
       $and:
         - $is_null: End_Reason
@@ -49,14 +47,16 @@ output:
           discharge_date: End_Date
           referral_metadata:
             $json_dict:
-              PROGRAM_RECOMMENDATION_ID: Interventions_Id
+              PROGRAM_RECOMMENDATION_ID:
+                $concat:
+                  $values:
+                    - $literal("COMS")
+                    - Interventions_Id
               PROGRAM:
                 $concat:
                   $values:
                     - Program_Type
                     - Service_Type
-              # TODO(MI-8681): Confirm this mapping is correct with the real data.  Then decide whether
-              # we keep this language or not.
               PROGRAM_STATUS:
                 $conditional:
                   - $if: $variable(in_progress_status)
@@ -80,6 +80,7 @@ output:
                       StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
                         - "CFA-Completed"
                         - "Successful Completion"
+                        - "CFA-GED/HSE Verified"
                       StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
                         - "CFA-Segregation/Misconduct"
                         - "CFA-Involuntary Termination"
@@ -90,6 +91,7 @@ output:
                         - "Refused to Participate"
                       StateProgramAssignmentParticipationStatus.DENIED:
                         - "CFA-Does Not Meet Criteria"
+                        - "CFA-MSAPP Non-Admission/Amenability"
                       StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
                         - "CFA-Transferred"
                         - "CFA-Discontinued Program"
@@ -98,8 +100,7 @@ output:
                         - "CFA-Discharged"
                         - "CFA-Delay"
                         - "CFA-SORA Needed"
-                        # Waived, Exempt and Override release the person from the
-                        # requirement without them finishing the program.
+                        - "CFA-Medical/Psych Reason"
                         - "CFA-Waived"
                         - "CFA-Exempt"
                         - "CFA-Override"

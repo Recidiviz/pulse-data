@@ -53,20 +53,10 @@ output:
                     - Program_End_Reason
                   $separator: "##"
               $mappings:
-                StateProgramAssignmentParticipationStatus.IN_PROGRESS:
-                  - "Active##NONE"
-                  - "Active##COMS Migration"
-                  # A few Active or Waiting legs carry a stray end reason; the
-                  # status wins.
-                  - "Active##Completed"
-                StateProgramAssignmentParticipationStatus.PENDING:
-                  - "Waiting##NONE"
-                  - "Waiting##Transferred"
-                  - "Waiting##Involuntary Termination"
-                  - "Waiting##COMS Migration"
                 StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
                   - "Closed##Completed"
                   - "Closed##GED/HSE Verified"
+                  - "Active##Completed"
                 StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
                   - "Closed##Segregation/Misconduct"
                   - "Closed##Involuntary Termination"
@@ -94,7 +84,8 @@ output:
                   - "Closed##Waived"
                   - "Closed##Exempt"
                   - "Closed##Override"
-                StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN:
-                  # Every column but the id and person is NULL on these rows.
-                  - "NONE##NONE"
                   - "NONE##COMS Migration"
+                  - "Active##COMS Migration"
+                  - "Waiting##Transferred"
+                  - "Waiting##Involuntary Termination"
+                  - "Waiting##COMS Migration"
