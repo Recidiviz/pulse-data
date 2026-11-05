@@ -46,13 +46,13 @@ output:
             - "Female"
           StateSex.EXTERNAL_UNKNOWN:
             - "7403"
+            - "Unknown"
     races:
       - StatePersonRace:
           race:
             $enum_mapping:
               $raw_text: Race
               $mappings:
-                # TODO(MI-8592): Once real data received, run mappings script to confirm other raw text values
                 StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE:
                   - "American Indian or Alaskan Native"
                 StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER:
@@ -65,6 +65,7 @@ output:
                   - "Asian"
                 StateRace.EXTERNAL_UNKNOWN:
                   - "Unknown"
+                  - "Predates COMS as System of Record"
                 StateRace.INTERNAL_UNKNOWN:
                   - "Middle Eastern/North African"
                   - "Latino"
@@ -98,7 +99,6 @@ output:
                         - "EXTERNAL_UNKNOWN"
                       StatePersonAliasType.INTERNAL_UNKNOWN:
                         - "INTERNAL_UNKNOWN"
-    # TODO(MI-8592): Once real data received, run mappings script to confirm other raw text values
     ethnicity:
       $conditional:
         - $if:
