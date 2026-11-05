@@ -51,6 +51,12 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
         dataset_id="aggregated_metrics",
         table_id="justice_involved_workflows_provisioned_user_metrics_person_assignment_sessions",
     ): (60 * 30),
+    # TODO(OBT-56231) Improve performance of this view, which started exceeding the
+    # materialization threshold (529s observed) after the v1.705 release.
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="incarceration_facility_period_event_aggregated_metrics__years_rolling_last_84_months",
+    ): (60 * 12),
 }
 
 
