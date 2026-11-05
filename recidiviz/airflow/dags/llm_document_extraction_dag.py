@@ -45,6 +45,7 @@ from recidiviz.airflow.dags.llm_document_extraction.document_store_tasks import 
     run_document_discovery,
 )
 from recidiviz.airflow.dags.llm_document_extraction.extraction_tasks import (
+    check_extraction_failures_task,
     check_has_job,
     identify_job_documents_task,
     sync_extractor_metadata_task,
@@ -240,7 +241,14 @@ def _build_extraction_flow(
         cloud_sql_connections=[SchemaType.OPERATIONS],
     )
 
-    proceed >> run_extraction
+    # --- Step 4: Surface attention-required failures ---
+    # Side branch off run_extraction so a failure check surfaces the run as failed
+    # without blocking the view deploy the caller wires off run_extraction.
+    check_failures = check_extraction_failures_task(
+        state_code=state_code, job_id=job_id
+    )
+
+    proceed >> run_extraction >> check_failures
 
     return extractor_version_id, run_extraction
 

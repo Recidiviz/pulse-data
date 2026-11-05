@@ -75,6 +75,17 @@ _FAILURE_JOB_DOCUMENT_RESULT_TYPES = frozenset(
     if not LLMExtractionJobDocumentResultType.is_success_result_type(result_type)
 )
 
+# The per-document result types that are both terminal (the document is "done")
+# and a failure. A document reaches one of these with a non-null error_type only
+# when an LLM request error caused it; validation-originated terminal failures
+# carry no error_type.
+_TERMINAL_FAILURE_JOB_DOCUMENT_RESULT_TYPES = frozenset(
+    result_type
+    for result_type in LLMExtractionJobDocumentResultType
+    if LLMExtractionJobDocumentResultType.is_terminal_result_type(result_type)
+    and not LLMExtractionJobDocumentResultType.is_success_result_type(result_type)
+)
+
 
 @attr.define(frozen=True, kw_only=True)
 class LLMExtractionEligibleDocumentRecord:
@@ -277,6 +288,39 @@ class LLMJobDocumentExtractionResult:
             error_message=raw_result.error_message,
             validation_results=None,
         )
+
+
+@attr.define(frozen=True, kw_only=True)
+class LLMExtractionJobDocumentTerminalFailure:
+    """A job document that reached a terminal failure, projected to the fields
+    needed to identify and categorize it."""
+
+    document_contents_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """Content-addressed (SHA256) identifier of the document that failed."""
+
+    result_type: LLMExtractionJobDocumentResultType = attr.ib(
+        validator=attr.validators.in_(_TERMINAL_FAILURE_JOB_DOCUMENT_RESULT_TYPES)
+    )
+    """The terminal failure classification."""
+
+    error_type: LLMDocumentExtractionErrorType | None = attr.ib(
+        validator=attr_validators.is_opt(LLMDocumentExtractionErrorType)
+    )
+    """The LLM request error that caused the failure, or None for a
+    validation-originated failure."""
+
+    error_message: str | None = attr.ib(validator=attr_validators.is_opt_str)
+    """A human-readable description of the failure, or None for a
+    validation-originated failure."""
+
+    def __attrs_post_init__(self) -> None:
+        if (self.error_type is None) != (self.error_message is None):
+            raise ValueError(
+                f"error_type and error_message must both be set or both be None "
+                f"for document [{self.document_contents_id}]: got "
+                f"error_type=[{self.error_type!r}], "
+                f"error_message=[{self.error_message!r}]."
+            )
 
 
 class LLMExtractionJobManager:
@@ -494,6 +538,45 @@ class LLMExtractionJobManager:
             .all()
         )
         return dict(counts_by_document)
+
+    def get_terminal_failures_with_session(
+        self, session: Session, *, state_code: StateCode, job_id: str
+    ) -> list[LLMExtractionJobDocumentTerminalFailure]:
+        """Returns the job's documents that reached a terminal failure (permanent
+        or retries-exhausted), ordered by document_contents_id. Runs within
+        |session|.
+        """
+        rows = (
+            session.query(schema.LLMExtractionJobDocument)
+            .with_entities(
+                schema.LLMExtractionJobDocument.document_contents_id,
+                schema.LLMExtractionJobDocument.result_type,
+                schema.LLMExtractionJobDocument.error_type,
+                schema.LLMExtractionJobDocument.error_message,
+            )
+            .filter(
+                schema.LLMExtractionJobDocument.state_code == state_code.value,
+                schema.LLMExtractionJobDocument.job_id == job_id,
+                schema.LLMExtractionJobDocument.result_type.in_(
+                    [t.value for t in _TERMINAL_FAILURE_JOB_DOCUMENT_RESULT_TYPES]
+                ),
+            )
+            .order_by(schema.LLMExtractionJobDocument.document_contents_id)
+            .all()
+        )
+        return [
+            LLMExtractionJobDocumentTerminalFailure(
+                document_contents_id=document_contents_id,
+                result_type=LLMExtractionJobDocumentResultType(result_type),
+                error_type=(
+                    LLMDocumentExtractionErrorType(error_type)
+                    if error_type is not None
+                    else None
+                ),
+                error_message=error_message,
+            )
+            for document_contents_id, result_type, error_type, error_message in rows
+        ]
 
     def get_open_job(
         self, *, state_code: StateCode, extractor_version_id: str

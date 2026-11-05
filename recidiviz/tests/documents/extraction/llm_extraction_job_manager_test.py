@@ -36,6 +36,7 @@ from recidiviz.documents.extraction.llm_client.types import (
 )
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
     LLMExtractionEligibleDocumentRecord,
+    LLMExtractionJobDocumentTerminalFailure,
     LLMExtractionJobManager,
     LLMJobDocumentExtractionResult,
 )
@@ -160,6 +161,36 @@ def _failure_result(
         result_datetime_utc=_NOW,
         result_type=result_type,
         error_type=error_type,
+    )
+
+
+def _validation_failure_result(
+    *,
+    job_id: str,
+    document_contents_id: str,
+    result_type: LLMExtractionJobDocumentResultType,
+) -> LLMJobDocumentExtractionResult:
+    """A document-level failure from a validation extraction-error check: the raw call
+    produced JSON, so there is no error_type (and no error_message). The validator only
+    ever classifies a failed check as TRANSIENT; the escalation to |result_type| (e.g.
+    RETRIES_EXHAUSTED once the retry budget is spent) happens outside validation, so the
+    inner validation override stays TRANSIENT regardless of the final |result_type|."""
+    return LLMJobDocumentExtractionResult.for_failed_validation(
+        job_id=job_id,
+        raw_result=_client_result(document_contents_id),
+        result_datetime_utc=_NOW,
+        result_type=result_type,
+        validation_results=_validation_result(
+            validated_output_json=None,
+            result_type_override=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+            audit_issues=[
+                ValidationIssue(
+                    check_type=ValidationCheckType.SCHEMA_CONFORMANCE,
+                    field_name=None,
+                    detail="bad",
+                )
+            ],
+        ),
     )
 
 
@@ -895,6 +926,123 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
             failed_document.error_type,
         )
         self.assertEqual("error for doc4", failed_document.error_message)
+
+    def test_get_terminal_failures(self) -> None:
+        # Every terminal failure is returned: a permanent failure, a retries-exhausted
+        # request failure (carrying an error_type), and a retries-exhausted validation
+        # failure (no error_type). A still-retryable transient failure and a success are
+        # excluded. Returned ordered by document_contents_id.
+        documents = [
+            "doc_permanent",
+            "doc_exhausted_request",
+            "doc_exhausted_validation",
+            "doc_transient",
+            "doc_success",
+        ]
+        self._record_eligible(documents)
+        job = self.manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=_EXTRACTOR_VERSION,
+            document_contents_ids=documents,
+        )
+        self.manager.mark_job_started(state_code=_STATE, job_id=job.job_id)
+        self.manager.set_job_document_results(
+            state_code=_STATE,
+            results=[
+                _failure_result(
+                    job_id=job.job_id,
+                    document_contents_id="doc_permanent",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_CONTENT_FILTERED,
+                ),
+                _failure_result(
+                    job_id=job.job_id,
+                    document_contents_id="doc_exhausted_request",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
+                ),
+                _validation_failure_result(
+                    job_id=job.job_id,
+                    document_contents_id="doc_exhausted_validation",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED,
+                ),
+                _failure_result(
+                    job_id=job.job_id,
+                    document_contents_id="doc_transient",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_TIMEOUT,
+                ),
+                _success_result(job_id=job.job_id, document_contents_id="doc_success"),
+            ],
+        )
+
+        with SessionFactory.using_database(self.database_key) as session:
+            self.assertEqual(
+                [
+                    LLMExtractionJobDocumentTerminalFailure(
+                        document_contents_id="doc_exhausted_request",
+                        result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED,
+                        error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
+                        error_message="error for doc_exhausted_request",
+                    ),
+                    LLMExtractionJobDocumentTerminalFailure(
+                        document_contents_id="doc_exhausted_validation",
+                        result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED,
+                        error_type=None,
+                        error_message=None,
+                    ),
+                    LLMExtractionJobDocumentTerminalFailure(
+                        document_contents_id="doc_permanent",
+                        result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
+                        error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_CONTENT_FILTERED,
+                        error_message="error for doc_permanent",
+                    ),
+                ],
+                self.manager.get_terminal_failures_with_session(
+                    session, state_code=_STATE, job_id=job.job_id
+                ),
+            )
+
+    def test_terminal_failures_scoped_to_job(self) -> None:
+        # A permanent failure under a different job is not returned for this job.
+        self._record_eligible(["doc1", "doc2"])
+        other_job = self.manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=_EXTRACTOR_VERSION,
+            document_contents_ids=["doc1"],
+        )
+        self.manager.mark_job_started(state_code=_STATE, job_id=other_job.job_id)
+        self.manager.set_job_document_results(
+            state_code=_STATE,
+            results=[
+                _failure_result(
+                    job_id=other_job.job_id,
+                    document_contents_id="doc1",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_CONTENT_FILTERED,
+                )
+            ],
+        )
+        self.manager.mark_job_completed(state_code=_STATE, job_id=other_job.job_id)
+
+        job = self.manager.create_job(
+            state_code=_STATE,
+            extractor_version_id=_EXTRACTOR_VERSION,
+            document_contents_ids=["doc2"],
+        )
+        self.manager.mark_job_started(state_code=_STATE, job_id=job.job_id)
+        self.manager.set_job_document_results(
+            state_code=_STATE,
+            results=[_success_result(job_id=job.job_id, document_contents_id="doc2")],
+        )
+
+        with SessionFactory.using_database(self.database_key) as session:
+            self.assertEqual(
+                [],
+                self.manager.get_terminal_failures_with_session(
+                    session, state_code=_STATE, job_id=job.job_id
+                ),
+            )
 
     def test_mark_job_failed(self) -> None:
         self._record_eligible(["doc1"])

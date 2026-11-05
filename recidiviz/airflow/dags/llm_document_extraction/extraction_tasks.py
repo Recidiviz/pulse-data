@@ -23,6 +23,7 @@ from recidiviz.airflow.dags.utils.cloud_sql_session import (
     airflow_cloud_sql_session_for_connection,
 )
 from recidiviz.airflow.dags.utils.constants import (
+    CHECK_EXTRACTION_FAILURES_TASK_ID,
     CHECK_HAS_JOB_TASK_ID,
     IDENTIFY_JOB_DOCUMENTS_TASK_ID,
     SYNC_EXTRACTOR_METADATA_TASK_ID,
@@ -34,6 +35,7 @@ from recidiviz.documents.extraction.llm_extraction_job_manager import (
 )
 from recidiviz.documents.extraction.llm_extraction_job_tasks import (
     identify_job_documents,
+    raise_on_attention_required_extraction_failures,
     sync_extractor_metadata,
 )
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
@@ -84,3 +86,16 @@ def identify_job_documents_task(
 def check_has_job(job_id: str | None) -> bool:
     """Returns True if a job was generated, False otherwise."""
     return job_id is not None
+
+
+@task(task_id=CHECK_EXTRACTION_FAILURES_TASK_ID)
+def check_extraction_failures_task(state_code: StateCode, job_id: str) -> None:
+    with airflow_cloud_sql_session_for_connection(
+        cloud_sql_conn_id_for_schema_type(SchemaType.OPERATIONS)
+    ) as session:
+        raise_on_attention_required_extraction_failures(
+            state_code=state_code,
+            job_id=job_id,
+            job_manager=LLMExtractionJobManager(),
+            session=session,
+        )

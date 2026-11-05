@@ -17,6 +17,10 @@
 """Shared LLM extraction job-lifecycle tasks."""
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.common.constants.operations.llm_extraction_job import (
+    LLMDocumentExtractionErrorType,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.llm_extraction_eligible_document_query_builder import (
     LLMExtractionEligibleDocumentQueryBuilder,
 )
@@ -33,6 +37,7 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
 )
 from recidiviz.persistence.database.session import Session
+from recidiviz.utils.types import assert_type
 
 
 def sync_extractor_metadata(config: LLMExtractorConfig, session: Session) -> str:
@@ -66,3 +71,39 @@ def identify_job_documents(
     )
 
     return job.job_id if job is not None else None
+
+
+def raise_on_attention_required_extraction_failures(
+    *,
+    state_code: StateCode,
+    job_id: str,
+    job_manager: LLMExtractionJobManager,
+    session: Session,
+) -> None:
+    """Raises if |job_id| produced any attention-required failure — a terminal
+    failure that originated from an LLM request error — naming each failing
+    document and its result/error type.
+    """
+    terminal_failures = job_manager.get_terminal_failures_with_session(
+        session, state_code=state_code, job_id=job_id
+    )
+    # TODO(OBT-56097) we currently only raise on terminal failures that originated
+    # from an LLM request error (a non-null error_type), filtering out
+    # validation-originated terminal failures. Because we have a large volume of
+    # validation failures, including them would be too noisy.
+    failures = [
+        failure for failure in terminal_failures if failure.error_type is not None
+    ]
+    if not failures:
+        return
+    failure_details = ", ".join(
+        f"[{failure.document_contents_id}: {failure.result_type.value} "
+        f"({assert_type(failure.error_type, LLMDocumentExtractionErrorType).value}) "
+        f"[{assert_type(failure.error_message, str)}]]"
+        for failure in failures
+    )
+    raise ValueError(
+        f"Job [{job_id}] for state [{state_code.value}] produced "
+        f"[{len(failures)}] document failure(s) requiring attention: "
+        f"{failure_details}."
+    )

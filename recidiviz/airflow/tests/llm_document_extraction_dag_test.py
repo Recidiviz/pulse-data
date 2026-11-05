@@ -34,6 +34,7 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
 from recidiviz.airflow.dags.utils.constants import (
     AFTER_UPLOAD_NOOP_TASK_ID,
     BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID,
+    CHECK_EXTRACTION_FAILURES_TASK_ID,
     CHECK_HAS_JOB_TASK_ID,
     CHECK_HAS_UPDATES_TASK_ID,
     DOCUMENT_UPLOAD_TASK_ID,
@@ -100,6 +101,7 @@ ALL_PER_EXTRACTOR_COLLECTION_TASK_IDS: list[str] = [
     IDENTIFY_JOB_DOCUMENTS_TASK_ID,
     CHECK_HAS_JOB_TASK_ID,
     RUN_EXTRACTION_TASK_ID,
+    CHECK_EXTRACTION_FAILURES_TASK_ID,
     UPDATE_FIRST_ORDER_VIEWS_TASK_ID,
 ]
 
@@ -210,7 +212,8 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         self.us_xx_entity_resolution_extraction_regex = (
             rf"{er_branch_regex}"
             rf"(?:{SYNC_EXTRACTOR_METADATA_TASK_ID}|{IDENTIFY_JOB_DOCUMENTS_TASK_ID}|"
-            rf"{CHECK_HAS_JOB_TASK_ID}|{RUN_EXTRACTION_TASK_ID})$"
+            rf"{CHECK_HAS_JOB_TASK_ID}|{RUN_EXTRACTION_TASK_ID}|"
+            rf"{CHECK_EXTRACTION_FAILURES_TASK_ID})$"
         )
         # The single entity_resolution view deploy for the extractor. The ER view graph
         # covers all the extractor's entity groups together, so it is deployed once, at the
@@ -324,6 +327,12 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         )
         self.mock_identify_job_documents = self.identify_job_documents_patcher.start()
 
+        self.raise_on_failures_patcher = patch(
+            "recidiviz.airflow.dags.llm_document_extraction.extraction_tasks."
+            "raise_on_attention_required_extraction_failures",
+        )
+        self.mock_raise_on_failures = self.raise_on_failures_patcher.start()
+
         self.mock_bq_client = MagicMock()
         self._mock_bq_client_no_updates()
         self.bq_client_patcher = patch(
@@ -347,6 +356,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         self.extraction_session_patcher.stop()
         self.sync_extractor_metadata_patcher.stop()
         self.identify_job_documents_patcher.stop()
+        self.raise_on_failures_patcher.stop()
         self.bq_client_patcher.stop()
         self.kpo_patcher.stop()
         super().tearDown()
@@ -1113,6 +1123,45 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             )
             self.assertIn("--stage=first_order", update_views_argv)
 
+    def test_extraction_failures_fail_run_without_blocking_view_deploy(self) -> None:
+        """When the run produced attention-required document failures, the
+        check_extraction_failures side branch fails but the first-order view deploy
+        proceeds as normal."""
+        self.mock_raise_on_failures.side_effect = ValueError(
+            "attention-required failures"
+        )
+
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf=self._run_conf(state_code_filter=StateCode.US_XX.value),
+                # first order view deploy should not be in the failed or skipped sets.
+                expected_failure_task_id_regexes=[
+                    # Only the first-order extraction runs (each ER extraction
+                    # short-circuits on no composite updates), so only its failure check
+                    # runs and fails.
+                    rf"^{self.us_xx_fake_extractor_collection_branch}\."
+                    rf"{CHECK_EXTRACTION_FAILURES_TASK_ID}$",
+                    # branch_end tasks are ALL_DONE but re-raise when an upstream failed,
+                    # propagating the failure up the extraction branching scaffolding.
+                    r"^extraction\.branch_end$",
+                    rf"^{self.us_xx_branch}\.extractor_collections\.branch_end$",
+                ],
+                expected_skipped_task_id_regexes=[
+                    self.us_yy_all_skippable_tasks_regex,
+                    rf"^{self.us_xx_branch}\.document_collections\."
+                    r"[^.]+\."
+                    rf"(?:{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|{DOCUMENT_UPLOAD_TASK_ID}|"
+                    rf"{AFTER_UPLOAD_NOOP_TASK_ID}|{RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID})$",
+                    self.us_xx_entity_resolution_upload_path_regex,
+                    self.us_xx_entity_resolution_extraction_regex,
+                    # Every group's ER extraction short-circuits, so the extractor-level ER
+                    # view deploy skips too.
+                    self._us_xx_entity_resolution_view_deploy_regex(),
+                ],
+            )
+
     def test_extraction_short_circuits_when_no_job_is_generated(self) -> None:
         """When identify_job_documents returns None (no documents need processing),
         check_has_job short-circuits and the first-order extraction and view update pods
@@ -1145,20 +1194,22 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     self._us_xx_fake_case_notes_collection_branch_regex(
                         RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID
                     ),
-                    # check_has_job short-circuits the first-order extraction and view
-                    # update pods. That skips update_first_order_views, which the ER
-                    # sub-branches run after, so the entire ER sub-branch skips with it:
-                    # with no barrier un-skipping the extraction, every ER task skips
-                    # except its ALL_DONE after_upload_noop (see successes below).
+                    # check_has_job short-circuits the first-order extraction, its failure
+                    # check, and the view update pods. That skips update_first_order_views,
+                    # which the ER sub-branches run after, so the entire ER sub-branch skips
+                    # with it: with no barrier un-skipping the extraction, every ER task
+                    # skips except its ALL_DONE after_upload_noop (see successes below).
                     rf"^{self.us_xx_fake_extractor_collection_branch}\."
-                    rf"(?:{RUN_EXTRACTION_TASK_ID}|{UPDATE_FIRST_ORDER_VIEWS_TASK_ID})$",
+                    rf"(?:{RUN_EXTRACTION_TASK_ID}|{CHECK_EXTRACTION_FAILURES_TASK_ID}|"
+                    rf"{UPDATE_FIRST_ORDER_VIEWS_TASK_ID})$",
                     rf"^{self.us_xx_fake_extractor_collection_branch}\."
                     rf"[^.]+_ENTITY_RESOLUTION\."
                     rf"(?:{RUN_DOCUMENT_DISCOVERY_TASK_ID}|{CHECK_HAS_UPDATES_TASK_ID}|"
                     rf"{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|{DOCUMENT_UPLOAD_TASK_ID}|"
                     rf"{RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID}|"
                     rf"{SYNC_EXTRACTOR_METADATA_TASK_ID}|{IDENTIFY_JOB_DOCUMENTS_TASK_ID}|"
-                    rf"{CHECK_HAS_JOB_TASK_ID}|{RUN_EXTRACTION_TASK_ID})$",
+                    rf"{CHECK_HAS_JOB_TASK_ID}|{RUN_EXTRACTION_TASK_ID}|"
+                    rf"{CHECK_EXTRACTION_FAILURES_TASK_ID})$",
                     # Every group's ER extraction is skipped, so the extractor-level ER
                     # view deploy skips too.
                     self._us_xx_entity_resolution_view_deploy_regex(),
