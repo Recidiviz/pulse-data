@@ -1,0 +1,315 @@
+<title>AZ Classification Ingest Gaps</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column; summary of blockers first, then a field-by-field matrix, then a metric checklist. */
+:root {
+  --bg: #f7f8f6;
+  --surface: #ffffff;
+  --fg: #1d2421;
+  --muted: #5c6862;
+  --rule: #d9dfdb;
+  --accent: #1f5f53;
+  --blocker: #b4362b;
+  --blocker-bg: #fbe9e6;
+  --needed: #9a6200;
+  --needed-bg: #fdf1dc;
+  --ready: #2f6b3a;
+  --ready-bg: #e6f2e7;
+  --verify: #3d5a8a;
+  --verify-bg: #e8eef8;
+  --font-body: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141917; --surface: #1c2320; --fg: #e4ebe7; --muted: #9aa7a0; --rule: #2f3934;
+    --accent: #7cc4b3; --blocker: #f08a7e; --blocker-bg: #3a1f1c; --needed: #e6b45c; --needed-bg: #362a14;
+    --ready: #8fcf98; --ready-bg: #1d3121; --verify: #9db8e6; --verify-bg: #1f2a3d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141917; --surface: #1c2320; --fg: #e4ebe7; --muted: #9aa7a0; --rule: #2f3934;
+  --accent: #7cc4b3; --blocker: #f08a7e; --blocker-bg: #3a1f1c; --needed: #e6b45c; --needed-bg: #362a14;
+  --ready: #8fcf98; --ready-bg: #1d3121; --verify: #9db8e6; --verify-bg: #1f2a3d; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+}
+main { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+header { display: flex; flex-direction: column; gap: 10px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+h1 { font-size: 30px; line-height: 1.2; margin: 0; text-wrap: balance; font-weight: 700; }
+h2 { font-size: 20px; margin: 0 0 12px; text-wrap: balance; font-weight: 650; }
+h3 { font-size: 15px; margin: 0 0 6px; font-weight: 650; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); }
+code { font-family: var(--font-mono); font-size: 0.86em; background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.blockers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.blocker { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--blocker); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.blocker.needed { border-left-color: var(--needed); }
+.blocker p { font-size: 14px; }
+.blocker .unlocks { font-size: 13px; color: var(--muted); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 13.5px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; background: var(--bg); }
+tr:last-child td { border-bottom: none; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.group td { background: var(--bg); font-weight: 650; font-size: 13px; color: var(--accent); }
+.pill { display: inline-block; font-size: 11.5px; font-weight: 650; letter-spacing: 0.03em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.blocker-p { color: var(--blocker); background: var(--blocker-bg); }
+.pill.needed-p { color: var(--needed); background: var(--needed-bg); }
+.pill.ready-p { color: var(--ready); background: var(--ready-bg); }
+.pill.verify-p { color: var(--verify); background: var(--verify-bg); }
+.note { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule); padding-top: 16px; }
+</style>
+
+<main>
+  <header>
+    <span class="eyebrow">US_AZ · Classification diagnosis</span>
+    <h1>What Arizona needs to ingest for the classification metrics</h1>
+    <p class="lede">Every metric on the Initial Diagnosis tab of Looker dashboard 319, plus the score-vs-violence views (#110752) and the state-agnostic violence model (#110836), measured against Arizona's data in staging on 2026-11-03. Arizona currently appears in none of them.</p>
+  </header>
+
+  <section>
+    <h2>Three ingest changes unlock everything</h2>
+    <div class="blockers">
+      <div class="blocker">
+        <h3>1. Mark custody classifications approved</h3>
+        <p>Set <code>assessment_decision = APPROVED</code> on <code>AZ_CUSTODY_CLASS</code> assessments. All 1,401,071 have no decision today, so <code>approved_assessment_events</code> drops every one. AZ records no approval step, so this follows the MI and IX pattern of marking every assessment approved.</p>
+        <p class="unlocks">Unlocks: every metric on this page.</p>
+      </div>
+      <div class="blocker">
+        <h3>2. Flag violent incidents</h3>
+        <p>Set <code>is_violent</code> on <code>state_incarceration_incident</code>. It is empty on all 190,512 AZ incidents. The definition is AZ's to make: it becomes the outcome the model predicts and the safety metric a launch is judged on. See the section below.</p>
+        <p class="unlocks">Unlocks: violent incident rates, ROC/AUC, and the violence model.</p>
+      </div>
+      <div class="blocker needed">
+        <h3>3. Map overrides and reclassifications</h3>
+        <p>Map <code>assessment_override_level</code> from <code>IS_OVERRIDE</code> and <code>ASSIGNED_CUSTODY_LEVEL_DESC</code>, and <code>assessment_subtype</code> from <code>IS_RECLASSIFICATION</code>. Both already sit in <code>assessment_metadata</code>, so this is a mapping change with no new raw data.</p>
+        <p class="unlocks">Unlocks: the four override tiles, and initial vs. reclassification breakdowns.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Defining violence: Arizona decides</h2>
+    <p><code>is_violent</code> should mark the incidents AZ cares about most, because everything downstream rests on it: it is the outcome the violence model is fit to, the yardstick for the current score's AUC, and the safety metric a classification launch is monitored on. We can start from a provisional definition to get the pipeline running, but AZ should confirm or replace it before any result is shown as final.</p>
+    <p>Earlier states combined a severity class with a list of violent incident types rather than using severity alone:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>State</th><th>Violent incident definition</th></tr></thead>
+        <tbody>
+          <tr><td>US_TN</td><td>Class A incidents that are an assault, homicide, hostage-taking, or sexual assault.</td></tr>
+          <tr><td>US_MI</td><td>Class I or II misconducts (the two most severe classes) that are an assault, homicide, sexual assault, riot incitement, or felony.</td></tr>
+          <tr><td>US_IX</td><td>DOR Class A incidents.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Severity alone doesn't work for AZ. Of the 10,954 Class A (HIGHEST) incidents since 2023, most are contraband: promoting contraband (3,727), possessing a weapon (2,685), and possessing a communication device (1,554). Most assaults sit in Class B instead: fighting (9,379), assault on an inmate (3,447), and assault on staff without serious injury (1,495).</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Candidate starting definition</th><th>Incident types</th><th class="num">Incidents since 2023</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Narrow</strong>: Class A violence</td>
+            <td>Aggravated assault (inmate on inmate) 789, assault on staff with serious injury 249, participation in a riot 206, arson 127, murder (1st and 2nd degree) 8</td>
+            <td class="num">1,379</td>
+          </tr>
+          <tr>
+            <td><strong>Broad</strong>: Class A or B violence</td>
+            <td>Narrow, plus Class B fighting 9,379, assault on an inmate 3,447, assault on staff without serious injury 1,495, sexual contact 386, assault on staff by throwing substances 287, rioting 37</td>
+            <td class="num">16,410</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The broad definition matches how TN and MI combined their two most severe classes and gives the model about 12 times as many outcomes to learn from; the narrow one tracks only serious harm. Either is a reasonable provisional choice until AZ weighs in.</p>
+    <div class="note">
+      <h3>Questions for AZ</h3>
+      <ul>
+        <li>Which incidents does AZ most want classification to prevent: serious injury only, any assault, or also fights?</li>
+        <li>Should Class B fighting count? It is the single largest violent type (9,379) and drives the broad definition.</li>
+        <li>Should threats and intimidation (2,521 Class B; 131 Class A for gang activity), weapon possession, or riot participation count as violence or as other serious misconduct?</li>
+        <li>Should assault on staff by throwing substances count?</li>
+        <li>Do any non-violent Class A incidents belong, for example attempts or conspiracies to commit a Class A offense when the target offense was violent?</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Field by field</h2>
+    <p class="lede">What each field feeds, what AZ has in <code>us_az_normalized_state</code> today, and what to do.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Feeds</th><th>AZ today</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group"><td colspan="5">state_assessment (AZ_CUSTODY_CLASS)</td></tr>
+          <tr>
+            <td><code>assessment_decision</code></td>
+            <td>Everything (gate in <code>approved_assessment_events</code>)</td>
+            <td class="num">0 of 1,401,071 set</td>
+            <td><span class="pill blocker-p">Blocker</span></td>
+            <td>Set APPROVED for every custody classification.</td>
+          </tr>
+          <tr>
+            <td><code>assessment_class</code>, <code>assessment_type</code></td>
+            <td>Instrument selection (RISK class)</td>
+            <td>RISK / AZ_CUSTODY_CLASS</td>
+            <td><span class="pill ready-p">Ready</span></td>
+            <td>None.</td>
+          </tr>
+          <tr>
+            <td><code>assessment_date</code></td>
+            <td>Monthly tiles, 3-year window, follow-up</td>
+            <td class="num">100%, 1975–2026</td>
+            <td><span class="pill ready-p">Ready</span></td>
+            <td>None.</td>
+          </tr>
+          <tr>
+            <td><code>assessment_score</code></td>
+            <td>Violence by score, percentiles, ROC/AUC</td>
+            <td class="num">100%</td>
+            <td><span class="pill ready-p">Ready</span></td>
+            <td>None.</td>
+          </tr>
+          <tr>
+            <td><code>assessment_level</code></td>
+            <td>Assessments by resulting level</td>
+            <td class="num">100%</td>
+            <td><span class="pill ready-p">Ready</span></td>
+            <td>None, but see the level-scale caveat below.</td>
+          </tr>
+          <tr>
+            <td><code>assessment_override_level</code></td>
+            <td>Override rate, override rate by level, resulting level vs. override level</td>
+            <td class="num">0 set</td>
+            <td><span class="pill needed-p">Needed</span></td>
+            <td>When <code>IS_OVERRIDE</code> is TRUE, map <code>ASSIGNED_CUSTODY_LEVEL_DESC</code> onto the same enum scale as <code>assessment_level</code>.</td>
+          </tr>
+          <tr>
+            <td><code>assessment_subtype</code></td>
+            <td>Instrument breakdown in by-score, AUC, ROC</td>
+            <td class="num">0 set</td>
+            <td><span class="pill needed-p">Needed</span></td>
+            <td>Map <code>IS_RECLASSIFICATION</code> to INITIAL / REASSESSMENT. Without it AZ shows one pooled instrument.</td>
+          </tr>
+          <tr>
+            <td><code>assessment_override_reason</code></td>
+            <td>No current metric (override-code analysis in the AZ plan)</td>
+            <td class="num">0 set; not in metadata</td>
+            <td><span class="pill verify-p">Later</span></td>
+            <td>Needs the raw override code; not required for these metrics.</td>
+          </tr>
+          <tr class="group"><td colspan="5">state_incarceration_incident</td></tr>
+          <tr>
+            <td><code>is_violent</code></td>
+            <td>Violence outcome for rates, ROC/AUC, model fit</td>
+            <td class="num">0 of 190,512 set</td>
+            <td><span class="pill blocker-p">Blocker</span></td>
+            <td>Start from a provisional definition, then replace it with the one AZ chooses (see "Defining violence").</td>
+          </tr>
+          <tr>
+            <td><code>incident_date</code></td>
+            <td>6-month follow-up, lookback windows</td>
+            <td class="num">Populated; range 1900–5024</td>
+            <td><span class="pill verify-p">Verify</span></td>
+            <td>Clean the out-of-range dates; a 5024 incident never lands in a window but signals a parsing issue.</td>
+          </tr>
+          <tr>
+            <td><code>incident_severity</code></td>
+            <td>Model severity features</td>
+            <td class="num">99.8%: A→HIGHEST, B→SECOND, C→THIRD</td>
+            <td><span class="pill ready-p">Ready</span></td>
+            <td>None.</td>
+          </tr>
+          <tr>
+            <td>Outcomes (dismissed / not guilty)</td>
+            <td><code>non_dismissed_incarceration_incidents</code> filter</td>
+            <td>Outcome types are sanctions only (privilege loss, good time loss, …); no dismissal type</td>
+            <td><span class="pill verify-p">Verify</span></td>
+            <td>Check whether AZ records not-guilty or dismissed findings; if so, map them so they don't count as violence.</td>
+          </tr>
+          <tr class="group"><td colspan="5">Other entities</td></tr>
+          <tr>
+            <td><code>state_incarceration_period</code> custodial authority</td>
+            <td>Prison-stay scoping, current vs. prior stays</td>
+            <td class="num">99.6% STATE_PRISON periods</td>
+            <td><span class="pill ready-p">Ready</span></td>
+            <td>None.</td>
+          </tr>
+          <tr>
+            <td><code>state_person.birthdate</code></td>
+            <td>Model age bands</td>
+            <td class="num">60,866 of 60,866 people classified since May 2023</td>
+            <td><span class="pill ready-p">Ready</span></td>
+            <td>None. (Only 42% of all AZ people have one, but every classified resident does.)</td>
+          </tr>
+          <tr>
+            <td><code>state_program_assignment</code></td>
+            <td>Model program features</td>
+            <td class="num">5.8M assignments; status and dates populated; 803K successful</td>
+            <td><span class="pill ready-p">Ready</span></td>
+            <td>None.</td>
+          </tr>
+          <tr>
+            <td><code>state_charge_v2</code> → <code>is_violent_uniform</code></td>
+            <td>Model violent-offense feature</td>
+            <td class="num">99.6% set</td>
+            <td><span class="pill ready-p">Ready</span></td>
+            <td>None.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Metric by metric</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Where</th><th>Needs</th><th>AZ blocked by</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group"><td colspan="4">Dashboard 319 · Initial Diagnosis · Assessments</td></tr>
+          <tr><td>Monthly assessments</td><td>Looker, <code>ASSESSMENT</code> observation</td><td>decision, class, type, date</td><td>1</td></tr>
+          <tr><td>Monthly override rate</td><td>Looker</td><td>+ override level</td><td>1, 3</td></tr>
+          <tr><td>Monthly assessments by resulting level</td><td>Looker</td><td>+ scored level, override level (resulting = override when present)</td><td>1, 3</td></tr>
+          <tr><td>Monthly override rate by resulting level</td><td>Looker</td><td>+ scored level, override level</td><td>1, 3</td></tr>
+          <tr><td>Resulting level vs. override level</td><td>Looker</td><td>+ scored level, override level</td><td>1, 3</td></tr>
+          <tr class="group"><td colspan="4">#110752 · score vs. violence views</td></tr>
+          <tr><td>Violent incident rate by score and percentile</td><td><code>classification_score_violence_by_assessment</code>, <code>…_by_score</code></td><td>decision, score, prison stay, <code>is_violent</code> (subtype for the breakdown)</td><td>1, 2</td></tr>
+          <tr><td>ROC curve and AUC of the current score</td><td><code>…_by_score</code>, <code>…_auc</code></td><td>same</td><td>1, 2</td></tr>
+          <tr class="group"><td colspan="4">#110836 · state-agnostic violence model</td></tr>
+          <tr><td>Model features, weights, predictions</td><td><code>classification_violence_model_*</code></td><td>above + birthdate, incident severity, programs, violent charges</td><td>1, 2</td></tr>
+          <tr><td>Data-optimized AUC and percentile line</td><td><code>…_by_score</code>, <code>…_auc</code> (<code>DATA_OPTIMIZED</code>)</td><td>same</td><td>1, 2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Things to know before mapping</h2>
+    <div class="note">
+      <ul>
+        <li><strong>Level scales differ.</strong> AZ's scored <code>assessment_level</code> and <code>ASSIGNED_CUSTODY_LEVEL_DESC</code> use different scales: 4,254 classifications in 2025–26 have a HIGH scored level, an assigned level of CLOSE, and <code>IS_OVERRIDE</code> FALSE. Use <code>IS_OVERRIDE</code> to decide what is an override; don't infer it by comparing the two fields until the scales are reconciled.</li>
+        <li><strong>Overrides are common.</strong> Of 78,018 custody classifications since January 2025, 23,491 (30%) are flagged <code>IS_OVERRIDE</code>. The most common is a MAXIMUM score assigned to CLOSE (11,538).</li>
+        <li><strong>Question scores are already ingested.</strong> <code>assessment_metadata</code> carries every question's score (<code>AGE_SCORE</code>, <code>DSCPLN_VIO_SCORE</code>, <code>ESCAPE_HISTORY_SCORE</code>, <code>GANG_AFF_SCORE</code>, <code>MST_SERIOUS_SCORE</code>, <code>PR_MST_SERIOUS_SCORE</code>, <code>PROGRAM_SCORE</code>). Once is_violent lands, the playbook's "reweight the current questions" analysis needs no further ingest.</li>
+        <li><strong>Other AZ RISK instruments stay out.</strong> <code>AZ_INTERNAL_RISK_CLASS</code>, <code>AZ_GEN_RISK_LVL</code>, <code>AZ_VLNC_RISK_LVL</code> and <code>CCRRA</code> would also enter the views if marked approved. Mark only the instruments that should be diagnosed.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>Source: <code>recidiviz-staging.us_az_normalized_state</code> and <code>sessions</code>, queried 2026-11-03. Requirements follow <code>approved_assessment_events</code>, <code>classification_score_violence_by_assessment</code>, and the violence model views in #110752 and #110836.</footer>
+</main>
