@@ -78,6 +78,9 @@ export const LOOKER_EMBED_PERMISSIONS_LABELS = {
 export const PAROLE_PERMISSIONS_LABELS = {
   parole: "Parole Board",
   parole_publicCalendar: "Public Calendar",
+  // Only Pre-Hearing Investigators (PHIs) get this. It lets them edit Parole
+  // Board PHI reports; everyone else with the parole route sees them read-only.
+  paroleBoardReportEditing: "Parole Board Report Editing",
 };
 
 export const ROUTES_PERMISSIONS_LABELS = {
