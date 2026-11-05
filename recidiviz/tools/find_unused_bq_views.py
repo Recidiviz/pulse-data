@@ -353,6 +353,13 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
         "view is saved to a CSV which is shared with CDOC staff. "
         "Tracked in TODO(OBT-54521). (jkgerig, 2026-07-15)"
     ),
+    BigQueryAddress.from_str(
+        "document_extraction_validation_audit.all_validation_audit"
+    ): (
+        "Cross-state UNION ALL over per-state validation audit tables; Looker "
+        "views are the downstream consumer. Tracked in TODO(OBT-55606). "
+        "(Mayuka Sarukkai, 2026-10-27)"
+    ),
 }
 
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {

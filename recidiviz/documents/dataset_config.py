@@ -134,6 +134,16 @@ def state_agnostic_document_extraction_entity_mentions_dataset(
     return f"{prefix}document_extraction_results__entity_mentions"
 
 
+def document_extraction_validation_audit_monitoring_dataset(
+    sandbox_dataset_prefix: str | None = None,
+) -> str:
+    """Returns the dataset containing the cross-state UNION ALL view over every
+    state's LLM document-extraction validation audit tables.
+    """
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{prefix}document_extraction_validation_audit"
+
+
 def document_extraction_golden_eval_results_dataset(
     sandbox_dataset_prefix: str | None = None,
 ) -> str:

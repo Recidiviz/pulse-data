@@ -54,6 +54,7 @@ from recidiviz.source_tables.source_table_config import (
     ExtractionResultsSourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
+    SourceTableUpdateGroup,
     StateSpecificSourceTableLabel,
 )
 
@@ -108,7 +109,7 @@ def collect_extraction_results_source_table_collections(
             ),
         )
         audit_collection = SourceTableCollection(
-            update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
+            update_groups=LLM_EXTRACTION_UPDATE_GROUPS | {SourceTableUpdateGroup.CALC},
             dataset_id=document_extraction_validation_audit_dataset_for_region(
                 state_code
             ),

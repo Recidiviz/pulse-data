@@ -44,6 +44,7 @@ from recidiviz.documents.extraction.views.llm_extraction_view_graphs import (
     deployed_document_extraction_sessions_view_builders,
     deployed_llm_extraction_view_graphs,
     deployed_state_agnostic_llm_extraction_results_view_builders,
+    deployed_validation_audit_union_view_builder,
 )
 from recidiviz.ingest.direct.views.view_config import (
     get_view_builders_for_views_to_update as get_direct_ingest_view_builders,
@@ -132,6 +133,7 @@ def _calculation_view_graph(
             *project_agnostic_view_builder_candidates,
             *deployed_state_agnostic_llm_extraction_results_view_builders(project_id),
             *deployed_document_extraction_sessions_view_builders(project_id),
+            *deployed_validation_audit_union_view_builder(project_id),
         ],
     )
 
