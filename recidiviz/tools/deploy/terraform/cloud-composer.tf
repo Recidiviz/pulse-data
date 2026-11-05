@@ -115,7 +115,23 @@ resource "google_composer_environment" "default_v2" {
         "certifi"                               = "==2026.10.19"
         "opentelemetry-exporter-gcp-monitoring" = "==1.15.0a0"
         "opentelemetry-exporter-gcp-trace"      = "==1.15.0"
-        "pillow"                                = "==13.0.0"
+
+        # TODO(Recidiviz/security-operations-automation#17783): restore
+        # "pillow" = "==13.0.0" here once apache-beam 2.78.0 ships.
+        # Pinning it broke the Composer image build: pip backtracked
+        # apache-beam to 2.46.0 hunting for a release without the pillow<13
+        # pin, then could not build that from source, so the environment
+        # update failed and staging Composer rolled back.
+        #
+        # Composer is the only image held back. The app and Dataflow images
+        # already run Pillow 13 because recidiviz/airflow/pyproject.toml sets
+        # override-dependencies = ["pillow>=13.0.0"], which forces it past
+        # Beam's pin. pypi_packages is resolved by pip, which has no
+        # equivalent override -- hence the split.
+        #
+        # As of 2026-11-04 the newest stable beam is 2.77.0 (pillow<13), but
+        # 2.78.0rc1 already relaxes it to pillow<14. A stable 2.78.0 should
+        # unblock this; drop this comment and the override above together.
       }
       image_version = "composer-2.17.15-airflow-2.11.1"
     }
