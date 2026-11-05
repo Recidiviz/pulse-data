@@ -62,6 +62,14 @@ _ABSCONDED_COMS_MODIFIER = "Absconded"
 
 _ABSCONSION_OR_ESCAPE_REGEX = re.compile(r"ABSCONDED|ESCAPED")
 
+_OUT_OF_STATE_COMS_SUPERVISION_LEVEL_REGEX = re.compile(
+    r"SUPERVISED OUT OF STATE|ARRESTED OUT OF STATE"
+)
+
+_OUT_OF_STATE_COMS_MODIFIER_REGEX = re.compile(
+    r"SUPERVISED OUT OF STATE|PAROLED TO CUSTODY \(FED/OUTSTATE\)|ARRESTED OUT OF STATE"
+)
+
 nonbondable_offense_code = [
     "007",  # Assault and Battery (Prisoner victim)
     "008",  # Assault and Battery (Staff victim)
@@ -290,15 +298,10 @@ def supervision_type_info_from_COMS(supervision_level: str, modifier: str) -> bo
 def custodial_authority_info_from_COMS(supervision_level: str, modifier: str) -> bool:
     """Returns whether the COMS supervision level or modifier data contains information about supervision type"""
 
-    if search(
-        r"SUPERVISED OUT OF STATE|ARRESTED OUT OF STATE", supervision_level.upper()
-    ):
+    if _OUT_OF_STATE_COMS_SUPERVISION_LEVEL_REGEX.search(supervision_level.upper()):
         return True
 
-    if search(
-        r"SUPERVISED OUT OF STATE|PAROLED TO CUSTODY (FED/OUTSTATE)|ARRESTED OUT OF STATE",
-        modifier.upper(),
-    ):
+    if _OUT_OF_STATE_COMS_MODIFIER_REGEX.search(modifier.upper()):
         return True
 
     return False

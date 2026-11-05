@@ -71,7 +71,7 @@ PAD_OFFENDER_NUMBER_FROM_OMNI = "LPAD(offender_number, 7, '0') AS offender_numbe
 
 # For periods, we might not want to use the actual migration date and allow some buffer room
 # TODO(MI-8599): Evaluate if this is the right date or whether we can set to COMS_MIGRATION_DATE_2026
-MOVEMENTS_CUTOVER_DATE = "DATE(2025,10,22)"
+MOVEMENTS_CUTOVER_DATE = "DATE(2026,10,22)"
 
 # Magic end date for open periods
 OPEN_END_DATE = "DATE(9999,9,9)"
