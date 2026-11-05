@@ -146,12 +146,25 @@ class TestLoadStateConditions(unittest.TestCase):
             conditions,
         )
 
+    def test_load_arizona_conditions(self) -> None:
+        self.assertEqual(
+            {
+                "flat_time": FieldCondition(
+                    field="is_flat", operator=ConditionOperator.EQUALS, value=True
+                ),
+            },
+            load_state_conditions(StateCode.US_AZ),
+        )
+
 
 class TestListLawRegimeNames(unittest.TestCase):
     """Tests for list_law_regime_names."""
 
     def test_list_nevada_regimes(self) -> None:
         self.assertEqual(["PRE_413", "SB_413"], list_law_regime_names(StateCode.US_NV))
+
+    def test_list_arizona_regimes(self) -> None:
+        self.assertEqual(["TIS_C"], list_law_regime_names(StateCode.US_AZ))
 
     def test_list_regimes_for_state_without_rules(self) -> None:
         self.assertEqual([], list_law_regime_names(StateCode.US_XX))

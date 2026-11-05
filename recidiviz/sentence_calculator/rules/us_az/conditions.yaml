@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../schema/state_conditions_schema.json
+# Named conditions every US_AZ law regime can refer to.
+
+# A flat-time sentence is served day for day and earns no release credits.
+# ACIS records the court's flat-time determination; the regimes read it and
+# never derive it.
+flat_time:
+  is_flat: true
