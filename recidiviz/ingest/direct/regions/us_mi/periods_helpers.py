@@ -41,26 +41,26 @@ migration_date_2023 = f"DATE({COMS_MIGRATION_DATE_2023.year},{COMS_MIGRATION_DAT
 migration_date_2026 = f"DATE({COMS_MIGRATION_DATE_2026.year},{COMS_MIGRATION_DATE_2026.month},{COMS_MIGRATION_DATE_2026.day})"
 
 
-def identify_tiny_spans_dates(cte_name: str) -> str:
+def identify_tiny_spans_dates(cte_name: str, id_col: str) -> str:
     """Helper for identifying relevant dates for tiny spans"""
     return f"""
-        SELECT DISTINCT offender_number, 
+        SELECT DISTINCT {id_col}, 
                         cte_period_start AS dte
         FROM {cte_name}
 
         UNION ALL
 
-        SELECT DISTINCT offender_number, 
+        SELECT DISTINCT {id_col}, 
                         cte_period_end AS dte
         FROM {cte_name}
     """
 
 
-def join_ctes_onto_tiny_spans(cte_name: str) -> str:
+def join_ctes_onto_tiny_spans(cte_name: str, id_col: str) -> str:
     """Helper for joining on attribute CTEs onto tiny spans"""
     return f"""
     left join {cte_name} 
-        ON {cte_name}.offender_number = tiny_spans.offender_number
+        ON {cte_name}.{id_col} = tiny_spans.{id_col}
         AND {cte_name}.cte_period_start <= tiny_spans.period_start
         AND tiny_spans.period_end <= {cte_name}.cte_period_end
     """

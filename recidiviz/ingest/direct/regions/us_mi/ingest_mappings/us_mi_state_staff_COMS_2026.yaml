@@ -13,8 +13,9 @@ input_columns:
   Job_Title: STRING
   Work_Unit_Code: STRING
   Status: STRING
-  period_start: DATETIME
-  period_end: DATETIME
+  Supervisor_COMS_Case_Mgmt_Staff_Id: STRING
+  period_start: DATE
+  period_end: DATE
   period_id: INTEGER
 unused_columns:
   - Status
@@ -86,5 +87,22 @@ output:
                 location_external_id:
                   $concat:
                     $values:
-                      - $literal("COMS-")
+                      - $literal("COMS")
                       - Work_Unit_Code
+    # if this period has a non-NULL Supervisor_COMS_Case_Mgmt_Staff_Id value, create a supervisor period
+    supervisor_periods:
+      - $conditional:
+          - $if:
+              $not_null: Supervisor_COMS_Case_Mgmt_Staff_Id
+            $then:
+              StateStaffSupervisorPeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("COMS-2026-")
+                      - COMS_Case_Mgmt_Staff_Id
+                      - period_id
+                start_date: period_start
+                end_date: period_end
+                supervisor_staff_external_id: Supervisor_COMS_Case_Mgmt_Staff_Id
+                supervisor_staff_external_id_type: $literal("US_MI_COMS_USER")

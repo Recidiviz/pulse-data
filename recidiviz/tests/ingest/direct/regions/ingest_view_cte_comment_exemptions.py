@@ -250,10 +250,8 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
         "state_persons_v2": ["latest_booking_profiles"],
         "state_staff": [
             "compas",
-            "corrected_adh_employee_additional_info",
             "corrected_adh_shuser",
             "omni",
-            "omni_base",
         ],
         "state_staff_role_period_COMS": ["case_manager_dates"],
         "supervision_periods_v2": [
