@@ -16,9 +16,8 @@
 #  =============================================================================
 """Tests for the Workflows ETL delegates."""
 import io
-import json
 from datetime import datetime, timezone
-from typing import List
+from typing import Any, List
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import patch
 
@@ -208,9 +207,10 @@ class TestFirestoreETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["export_filename.json"]
 
-    def transform_row(self, row: str, filename: str) -> tuple[str | None, dict | None]:
-        record = json.loads(row)
-        return record["id"], record["document"]
+    def transform_row(
+        self, row: dict[str, Any], filename: str
+    ) -> tuple[str | None, dict | None]:
+        return row["id"], row["document"]
 
 
 class FakeAsyncBatch:

@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests for the Workflows ETL delegates."""
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 from unittest import TestCase
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -32,7 +32,7 @@ class TestSingleStateETLDelegate(WorkflowsSingleStateETLDelegate):
     _COLLECTION_NAME_BASE = "testCollection"
 
     def transform_row(
-        self, row: str, filename: str
+        self, row: dict[str, Any], filename: str
     ) -> Tuple[Optional[str], Optional[dict]]:
         return (None, None)
 

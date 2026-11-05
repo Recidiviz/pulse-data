@@ -16,7 +16,7 @@
 #  =============================================================================
 """Delegate class to ETL resident records for Workflows into Firestore."""
 import json
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
@@ -39,39 +39,37 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["resident_record.json"]
 
-    def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
-        data = json.loads(row)
-
+    def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
         metadata = convert_nested_dictionary_keys(
-            json.loads(data.get("metadata", "{}")), snake_to_camel
+            json.loads(row.get("metadata", "{}")), snake_to_camel
         )
 
         new_document = {
-            "pseudonymizedId": data["pseudonymized_id"],
-            "personExternalId": data["person_external_id"],
-            "displayId": data["display_id"],
-            "stateCode": data["state_code"],
-            "gender": data.get("gender"),
+            "pseudonymizedId": row["pseudonymized_id"],
+            "personExternalId": row["person_external_id"],
+            "displayId": row["display_id"],
+            "stateCode": row["state_code"],
+            "gender": row.get("gender"),
             "personName": {
                 snake_to_camel(k): person_name_case(v)
-                for k, v in json.loads(data["person_name"]).items()
+                for k, v in json.loads(row["person_name"]).items()
             },
-            "officerId": data.get("officer_id"),
-            "facilityId": data.get("facility_id"),
-            "unitId": data.get("unit_id"),
-            "facilityUnitId": data.get("facility_unit_id"),
-            "custodyLevel": data.get("custody_level"),
-            "admissionDate": data.get("admission_date"),
-            "releaseDate": data.get("release_date"),
-            "allEligibleOpportunities": data.get("all_eligible_opportunities"),
-            "allIneligibleOpportunities": data.get("all_ineligible_opportunities"),
+            "officerId": row.get("officer_id"),
+            "facilityId": row.get("facility_id"),
+            "unitId": row.get("unit_id"),
+            "facilityUnitId": row.get("facility_unit_id"),
+            "custodyLevel": row.get("custody_level"),
+            "admissionDate": row.get("admission_date"),
+            "releaseDate": row.get("release_date"),
+            "allEligibleOpportunities": row.get("all_eligible_opportunities"),
+            "allIneligibleOpportunities": row.get("all_ineligible_opportunities"),
             "metadata": metadata,
-            "portionServedNeeded": data.get("portion_served_needed"),
-            "usMePortionNeededEligibleDate": data.get(
+            "portionServedNeeded": row.get("portion_served_needed"),
+            "usMePortionNeededEligibleDate": row.get(
                 "us_me_portion_needed_eligible_date"
             ),
-            "sccpEligibilityDate": data.get("sccp_eligibility_date"),
-            "usTnFacilityAdmissionDate": data.get("us_tn_facility_admission_date"),
+            "sccpEligibilityDate": row.get("sccp_eligibility_date"),
+            "usTnFacilityAdmissionDate": row.get("us_tn_facility_admission_date"),
         }
 
-        return data["person_external_id"], new_document
+        return row["person_external_id"], new_document

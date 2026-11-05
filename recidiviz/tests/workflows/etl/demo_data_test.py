@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests for the Firestore Demo ETL Delegate."""
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import mock_open, patch
 
@@ -35,8 +35,8 @@ class TestETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["test_export.json"]
 
-    def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
-        return row, {"data": row}
+    def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
+        return str(row), {"data": row}
 
 
 class FakeFileStream:

@@ -18,7 +18,7 @@
 into Firestore, one document per resident, under the same document id as that
 resident's document in the residents collection."""
 
-import json
+from typing import Any
 
 from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
     PERSON_EXTERNAL_ID_COLUMN_NAME,
@@ -42,7 +42,6 @@ class WorkflowsPersonExternalIdKeyedETLDelegate(WorkflowsFirestoreETLDelegate):
          "moveToNiciIsEligible": true}
     """
 
-    def transform_row(self, row: str, filename: str) -> tuple[str, dict]:
-        data = json.loads(row)
-        person_external_id = data.pop(PERSON_EXTERNAL_ID_COLUMN_NAME)
-        return person_external_id, convert_nested_dictionary_keys(data, snake_to_camel)
+    def transform_row(self, row: dict[str, Any], filename: str) -> tuple[str, dict]:
+        person_external_id = row.pop(PERSON_EXTERNAL_ID_COLUMN_NAME)
+        return person_external_id, convert_nested_dictionary_keys(row, snake_to_camel)

@@ -15,8 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Delegate class to ETL incarceration staff records for Workflows into Firestore."""
-import json
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 from recidiviz.common.str_field_utils import person_name_case
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
@@ -30,22 +29,20 @@ class WorkflowsIncarcerationStaffETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["incarceration_staff_record.json"]
 
-    def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
-        data = json.loads(row)
-
-        if email := data.get("email"):
+    def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
+        if email := row.get("email"):
             email = email.lower()
 
         new_document = {
-            "id": data["id"],
-            "staffExternalId": data["staff_external_id"],
-            "stateCode": data["state_code"],
+            "id": row["id"],
+            "staffExternalId": row["staff_external_id"],
+            "stateCode": row["state_code"],
             "email": email,
-            "district": data.get("district"),
-            "givenNames": person_name_case(data.get("given_names", "")),
-            "surname": person_name_case(data.get("surname", "")),
-            "roleSubtype": data.get("role_subtype"),
-            "pseudonymizedId": data.get("pseudonymized_id"),
+            "district": row.get("district"),
+            "givenNames": person_name_case(row.get("given_names", "")),
+            "surname": person_name_case(row.get("surname", "")),
+            "roleSubtype": row.get("role_subtype"),
+            "pseudonymizedId": row.get("pseudonymized_id"),
         }
 
-        return data["id"], new_document
+        return row["id"], new_document

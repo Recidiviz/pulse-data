@@ -17,7 +17,7 @@
 """Delegate class to ETL supervision staff records for Workflows into Firestore."""
 
 import json
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
@@ -32,24 +32,22 @@ class WorkflowsSupervisionStaffETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["supervision_staff_record.json"]
 
-    def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
-        data = json.loads(row)
-
+    def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
         # Convert all keys to camelcase
-        new_document = convert_nested_dictionary_keys(data, snake_to_camel)
+        new_document = convert_nested_dictionary_keys(row, snake_to_camel)
 
         # This field is a nested JSON string that needs to be parsed as well
         state_specific_data = convert_nested_dictionary_keys(
-            json.loads(data.get("state_specific_data", "{}")), snake_to_camel
+            json.loads(row.get("state_specific_data", "{}")), snake_to_camel
         )
         if state_specific_data.get("stateCode") == "US_IX":
             state_specific_data["stateCode"] = "US_ID"
         if state_specific_data:
             new_document["stateSpecificData"] = state_specific_data
 
-        new_document["givenNames"] = person_name_case(data.get("given_names", ""))
-        new_document["surname"] = person_name_case(data.get("surname", ""))
+        new_document["givenNames"] = person_name_case(row.get("given_names", ""))
+        new_document["surname"] = person_name_case(row.get("surname", ""))
         if new_document.get("email"):
-            new_document["email"] = data.get("email").lower()
+            new_document["email"] = row["email"].lower()
 
-        return data["id"], new_document
+        return row["id"], new_document

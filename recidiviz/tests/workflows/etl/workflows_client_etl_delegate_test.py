@@ -162,7 +162,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
         Test that the transform_row method correctly parses the json
         """
         delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
-        doc_id, row = delegate.transform_row(json.dumps(TEST_DATA), CLIENT_FILENAME)
+        doc_id, row = delegate.transform_row(TEST_DATA, CLIENT_FILENAME)
         self.assertEqual("200", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
 
@@ -196,7 +196,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
         del expected["supervisionStartDate"]
         del expected["milestones"]
 
-        doc_id, row = delegate.transform_row(json.dumps(data), CLIENT_FILENAME)
+        doc_id, row = delegate.transform_row(data, CLIENT_FILENAME)
         self.assertEqual("200", doc_id)
         self.assertEqual(expected, row)
 
@@ -211,7 +211,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
         expected = deepcopy(EXPECTED_DOCUMENT)
         expected["allEligibleOpportunities"] = ["supervisionLevelDowngrade"]
 
-        doc_id, row = delegate.transform_row(json.dumps(data), CLIENT_FILENAME)
+        doc_id, row = delegate.transform_row(data, CLIENT_FILENAME)
         self.assertEqual("200", doc_id)
         self.assertEqual(expected, row)
 
@@ -229,7 +229,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
         expected["supervisionType"] = "DUAL"
         expected["address"] = "456 Fake st., Faketown, ND 12345"
 
-        doc_id, row = delegate.transform_row(json.dumps(data), CLIENT_FILENAME)
+        doc_id, row = delegate.transform_row(data, CLIENT_FILENAME)
         self.assertEqual("200", doc_id)
         self.assertEqual(expected, row)
 

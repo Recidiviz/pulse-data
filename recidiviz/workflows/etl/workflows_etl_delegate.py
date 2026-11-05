@@ -18,12 +18,13 @@
 workflows' frontend database(s)."""
 import abc
 import copy
+import json
 import logging
 import os
 import re
 from asyncio import TaskGroup
 from datetime import datetime, timezone
-from typing import IO, Dict, Iterator, List, Optional, Tuple
+from typing import IO, Any, Dict, Iterator, List, Optional, Tuple
 
 from faker import Faker
 from google.api_core.exceptions import AlreadyExists
@@ -151,7 +152,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
 
     @abc.abstractmethod
     def transform_row(
-        self, row: str, filename: str
+        self, row: dict[str, Any], filename: str
     ) -> Tuple[Optional[str], Optional[dict]]:
         """Prepares a row of the exported file for Firestore ingestion.
         Returns a tuple of the document ID and the document contents.
@@ -212,7 +213,10 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                     batch = firestore_client.async_batch()
                     for line in rows:
                         try:
-                            row_id, document_fields = self.transform_row(line, filename)
+                            line_data = json.loads(line)
+                            row_id, document_fields = self.transform_row(
+                                line_data, filename
+                            )
                         except Exception as e:
                             logging.error(
                                 "Transform row failed on [%s] due to: %s",

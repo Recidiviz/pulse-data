@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests the ability for IncarcerationStaffRecordEtlDelegate to parse json rows."""
-import json
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any
@@ -85,9 +84,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
         Test that the transform_row method correctly parses the json
         """
         delegate = WorkflowsIncarcerationStaffETLDelegate(StateCode.US_XX)
-        doc_id, row = delegate.transform_row(
-            json.dumps(TEST_DATA), INCARCERATION_STAFF_FILENAME
-        )
+        doc_id, row = delegate.transform_row(TEST_DATA, INCARCERATION_STAFF_FILENAME)
         self.assertEqual("100", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
 
@@ -108,10 +105,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
         expected["givenNames"] = ""
         expected["surname"] = ""
 
-        doc_id, row = delegate.transform_row(
-            json.dumps(data),
-            INCARCERATION_STAFF_FILENAME,
-        )
+        doc_id, row = delegate.transform_row(data, INCARCERATION_STAFF_FILENAME)
         self.assertEqual("100", doc_id)
         self.assertEqual(expected, row)
 

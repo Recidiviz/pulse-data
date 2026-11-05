@@ -40,15 +40,20 @@ class WorkflowsPersonExternalIdKeyedETLDelegateTest(unittest.TestCase):
         """The person_external_id keys the document id, matching the resident's own
         document, and is left out of the document body."""
         delegate = _FakeRecordETLDelegate(StateCode.US_XX)
-        row = (
-            '{"state_code": "US_XX", "person_external_id": "A100", '
-            '"pseudonymized_id": "p100", '
-            '"move_to_nici_is_eligible": false, '
-            '"move_to_nici_eligible_date": null, '
-            '"move_to_nici_reasons": [{"criteria_name": "US_XX_NOT_IN_NICI", '
-            '"reason": {"facility_start_date": "2026-05-01"}}], '
-            '"move_to_nici_ineligible_criteria": ["US_XX_NOT_IN_NICI"]}'
-        )
+        row = {
+            "state_code": "US_XX",
+            "person_external_id": "A100",
+            "pseudonymized_id": "p100",
+            "move_to_nici_is_eligible": False,
+            "move_to_nici_eligible_date": None,
+            "move_to_nici_reasons": [
+                {
+                    "criteria_name": "US_XX_NOT_IN_NICI",
+                    "reason": {"facility_start_date": "2026-05-01"},
+                }
+            ],
+            "move_to_nici_ineligible_criteria": ["US_XX_NOT_IN_NICI"],
+        }
 
         doc_id, document = delegate.transform_row(row, "fake_record.json")
 

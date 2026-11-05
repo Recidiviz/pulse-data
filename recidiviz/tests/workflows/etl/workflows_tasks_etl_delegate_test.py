@@ -47,13 +47,18 @@ class WorkflowsTasksETLDelegateTest(IsolatedAsyncioTestCase):
     def test_transform_row_with_us_ix_state_code(self) -> None:
         """Test that transform_row method remaps a US_IX state code to US_ID"""
         delegate = WorkflowsTasksETLDelegate(StateCode.US_ID)
-        data = (
-            '{"person_external_id": "100", '
-            '"officer_id": "200", '
-            '"state_code": "US_IX", '
-            '"tasks": [{"type": "homeVisit", '
-            '"due_date": "2023-02-01","details": {"supervision_level": "HIGH"}}]} '
-        )
+        data = {
+            "person_external_id": "100",
+            "officer_id": "200",
+            "state_code": "US_IX",
+            "tasks": [
+                {
+                    "type": "homeVisit",
+                    "due_date": "2023-02-01",
+                    "details": {"supervision_level": "HIGH"},
+                }
+            ],
+        }
 
         doc_id, row = delegate.transform_row(data, TASKS_FILENAME)
         self.assertEqual(doc_id, "100")

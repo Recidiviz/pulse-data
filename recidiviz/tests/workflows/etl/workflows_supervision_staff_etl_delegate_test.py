@@ -88,9 +88,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
         Test that the transform_row method correctly parses the json
         """
         delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_XX)
-        doc_id, row = delegate.transform_row(
-            json.dumps(TEST_DATA), SUPERVISION_STAFF_FILENAME
-        )
+        doc_id, row = delegate.transform_row(TEST_DATA, SUPERVISION_STAFF_FILENAME)
         self.assertEqual("100", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
 
@@ -109,9 +107,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
         del expected["roleSubtype"]
         del expected["supervisorExternalId"]
 
-        doc_id, row = delegate.transform_row(
-            json.dumps(data), SUPERVISION_STAFF_FILENAME
-        )
+        doc_id, row = delegate.transform_row(data, SUPERVISION_STAFF_FILENAME)
         self.assertEqual("100", doc_id)
         self.assertEqual(expected, row)
 
@@ -128,9 +124,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
         expected["givenNames"] = ""
         expected["surname"] = ""
 
-        doc_id, row = delegate.transform_row(
-            json.dumps(data), SUPERVISION_STAFF_FILENAME
-        )
+        doc_id, row = delegate.transform_row(data, SUPERVISION_STAFF_FILENAME)
         self.assertEqual("100", doc_id)
         self.assertEqual(expected, row)
 
@@ -150,9 +144,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
             "someField": "some_value",
         }
 
-        doc_id, row = delegate.transform_row(
-            json.dumps(data), SUPERVISION_STAFF_FILENAME
-        )
+        doc_id, row = delegate.transform_row(data, SUPERVISION_STAFF_FILENAME)
         self.assertEqual("100", doc_id)
         self.assertEqual(expected, row)
 

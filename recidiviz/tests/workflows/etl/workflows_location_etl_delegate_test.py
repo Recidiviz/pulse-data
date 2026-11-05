@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests the ability for LocationRecordETLDelegate to parse json rows."""
-import json
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any
@@ -79,7 +78,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
         Test that the transform_row method correctly parses the json
         """
         delegate = WorkflowsLocationETLDelegate(StateCode.US_XX)
-        doc_id, row = delegate.transform_row(json.dumps(TEST_DATA), LOCATION_FILENAME)
+        doc_id, row = delegate.transform_row(TEST_DATA, LOCATION_FILENAME)
         self.assertEqual("U2", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
 
@@ -94,7 +93,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
         expected = deepcopy(EXPECTED_DOCUMENT)
         expected["id"] = "WOMEN'S FACILITY 1/2"
 
-        doc_id, row = delegate.transform_row(json.dumps(data), LOCATION_FILENAME)
+        doc_id, row = delegate.transform_row(data, LOCATION_FILENAME)
         self.assertEqual("WOMEN'S FACILITY 1/2", doc_id)
         self.assertEqual(expected, row)
 

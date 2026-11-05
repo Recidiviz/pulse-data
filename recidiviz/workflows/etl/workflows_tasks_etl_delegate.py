@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Delegate class to ETL Supervision Tasks records for Workflows into Firestore."""
-import json
 from typing import Any, Dict, List, Optional, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
@@ -60,18 +59,16 @@ class WorkflowsTasksETLDelegate(WorkflowsFirestoreETLDelegate):
         return state_code
 
     def transform_row(
-        self, row: str, filename: str
+        self, row: dict[str, Any], filename: str
     ) -> Tuple[Optional[str], Optional[dict]]:
-        data = json.loads(row)
-
         new_document: dict[str, Any] = {
-            "externalId": data["person_external_id"],
-            "officerId": data.get("officer_id"),
-            "stateCode": self.format_state_code(data["state_code"]),
+            "externalId": row["person_external_id"],
+            "officerId": row.get("officer_id"),
+            "stateCode": self.format_state_code(row["state_code"]),
             "tasks": [
                 convert_nested_dictionary_keys(task, snake_to_camel)
-                for task in data.get("tasks")
+                for task in row["tasks"]
             ],
         }
 
-        return data["person_external_id"], new_document
+        return row["person_external_id"], new_document

@@ -16,7 +16,7 @@
 #  =============================================================================
 """Tests for the Workflows Firestore ETL Delegate."""
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import MagicMock, patch
 
@@ -39,8 +39,8 @@ class TestETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["test_export.json"]
 
-    def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
-        return row, {"data": row, "stateCode": StateCode.US_XX.value}
+    def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
+        return str(row), {"data": row, "stateCode": StateCode.US_XX.value}
 
 
 class FakeBatchWriter(IsolatedAsyncioTestCase):

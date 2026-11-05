@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests for the Workflows ETL delegate."""
-import json
 from copy import deepcopy
 from typing import Any
 from unittest import TestCase
@@ -175,9 +174,7 @@ class TestWorkflowsETLDelegate(TestCase):
     def test_transform_row(self) -> None:
         """Test that transform_row returns a tuple with id and document."""
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
-        result = delegate.transform_row(
-            json.dumps(TEST_DATA), TEST_OPPORTUNITY_FILENAME
-        )
+        result = delegate.transform_row(TEST_DATA, TEST_OPPORTUNITY_FILENAME)
         self.assertEqual(("123_id001", EXPECTED_DOCUMENT), result)
 
     def test_build_document(self) -> None:
@@ -206,7 +203,7 @@ class TestWorkflowsETLDelegate(TestCase):
         }
         expected["ineligibleCriteria"] = {}
 
-        result = delegate.transform_row(json.dumps(data), TEST_OPPORTUNITY_FILENAME)
+        result = delegate.transform_row(data, TEST_OPPORTUNITY_FILENAME)
         self.assertEqual(("123_id001", expected), result)
 
     def test_transform_row_with_ix_prefixed_state_keys(self) -> None:
@@ -230,7 +227,7 @@ class TestWorkflowsETLDelegate(TestCase):
         }
         expected["ineligibleCriteria"] = {}
 
-        result = delegate.transform_row(json.dumps(data), TEST_OPPORTUNITY_FILENAME)
+        result = delegate.transform_row(data, TEST_OPPORTUNITY_FILENAME)
         self.assertEqual(("123_id001", expected), result)
 
     def test_transform_row_with_ix_non_prefixed_state_keys(self) -> None:
@@ -258,7 +255,7 @@ class TestWorkflowsETLDelegate(TestCase):
             "usIdIncomeVerifiedWithin3Months": {"someValue": "some_data"}
         }
 
-        result = delegate.transform_row(json.dumps(data), TEST_OPPORTUNITY_FILENAME)
+        result = delegate.transform_row(data, TEST_OPPORTUNITY_FILENAME)
         self.assertEqual(("123_id001", expected), result)
 
     def test_transform_with_empty_ineligible_criteria_field(self) -> None:
@@ -341,7 +338,7 @@ class TestWorkflowsETLDelegate(TestCase):
         }
         expected["ineligibleCriteria"] = {}
 
-        result = delegate.transform_row(json.dumps(data), TEST_OPPORTUNITY_FILENAME)
+        result = delegate.transform_row(data, TEST_OPPORTUNITY_FILENAME)
         self.assertEqual(("123_id001", expected), result)
 
     def test_transform_with_missing_external_id(self) -> None:
@@ -349,7 +346,7 @@ class TestWorkflowsETLDelegate(TestCase):
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_TN)
         data = deepcopy(TEST_DATA)
         del data["external_id"]
-        result = delegate.transform_row(json.dumps(data), TEST_OPPORTUNITY_FILENAME)
+        result = delegate.transform_row(data, TEST_OPPORTUNITY_FILENAME)
         self.assertEqual((None, None), result)
 
     def test_transform_with_null_external_id(self) -> None:
@@ -357,7 +354,7 @@ class TestWorkflowsETLDelegate(TestCase):
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
         data = deepcopy(TEST_DATA)
         del data["external_id"]
-        result = delegate.transform_row(json.dumps(data), TEST_OPPORTUNITY_FILENAME)
+        result = delegate.transform_row(data, TEST_OPPORTUNITY_FILENAME)
         self.assertEqual((None, None), result)
 
     def test_transform_with_eligibility_flags_already_set(self) -> None:

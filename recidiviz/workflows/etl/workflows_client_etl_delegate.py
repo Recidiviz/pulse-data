@@ -53,13 +53,12 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
     def get_supported_files(self) -> List[str]:
         return ["client_record.json"]
 
-    def transform_row(self, row: str, filename: str) -> Tuple[str, dict]:
-        data = json.loads(row)
+    def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
         new_document: dict[str, Any] = {}
 
-        state_code = data.get("state_code")
+        state_code = row["state_code"]
 
-        for key, value in data.items():
+        for key, value in row.items():
             match key:
                 case "person_name":
                     new_document[key] = {
@@ -83,6 +82,6 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
         new_document = convert_nested_dictionary_keys(new_document, snake_to_camel)
 
         return (
-            data.get("person_external_id"),
+            row["person_external_id"],
             new_document,
         )
