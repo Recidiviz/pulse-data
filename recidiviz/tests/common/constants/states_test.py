@@ -191,3 +191,7 @@ class TestStates(unittest.TestCase):
         self.assertEqual("#us-idaho", StateCode.US_IX.slack_channel_name())
         self.assertEqual("#us-oz", StateCode.US_OZ.slack_channel_name())
         self.assertEqual("#us-test-state", StateCode.US_XX.slack_channel_name())
+
+    def test_is_playground_state(self) -> None:
+        self.assertTrue(StateCode.US_OZ.is_playground_state())
+        self.assertFalse(StateCode.US_XX.is_playground_state())

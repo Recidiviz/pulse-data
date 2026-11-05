@@ -350,8 +350,14 @@ def _handle_tickets_for_validations(
         ),
         lambda v: v.validation_job.region_code,
     ):
+        state_code = StateCode(region.upper())
+        if state_code.is_playground_state():
+            logging.info(
+                "[%s] Skipping GitHub tickets for playground state", state_code.value
+            )
+            continue
         ValidationGithubTicketRegionManager(
             client=github_client,
-            state_code=StateCode(region.upper()),
+            state_code=state_code,
             env=env,
         ).handle_results(results=validations)

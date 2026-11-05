@@ -61,6 +61,7 @@ from recidiviz.validation.validation_config import (
 )
 from recidiviz.validation.validation_manager import (
     _fetch_validation_jobs_to_perform,
+    _handle_tickets_for_validations,
     execute_validation,
     execute_validation_request,
 )
@@ -687,6 +688,45 @@ class TestExecuteValidationRequest(TestCase):
             file_tickets_on_failure=False,
         )
         mock_handle_tickets_for_validations.assert_not_called()
+
+
+class TestHandleTicketsForValidations(TestCase):
+    """Tests for _handle_tickets_for_validations."""
+
+    @patch(
+        "recidiviz.validation.validation_manager.ValidationGithubTicketRegionManager"
+    )
+    @patch("recidiviz.validation.validation_manager.github_helperbot_client")
+    @patch(
+        "recidiviz.validation.validation_manager.get_environment_for_project",
+        return_value=GCPEnvironment.STAGING,
+    )
+    @patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-456")
+    def test_skips_playground_state(
+        self,
+        _mock_project_id: MagicMock,
+        _mock_env: MagicMock,
+        _mock_github_client: MagicMock,
+        mock_region_manager: MagicMock,
+    ) -> None:
+        us_xx_job = get_test_validations()[0]
+        us_oz_job = attr.evolve(us_xx_job, region_code=StateCode.US_OZ.value)
+        failures = [
+            DataValidationJobResult(
+                validation_job=job,
+                result_details=FakeValidationResultDetails(
+                    validation_status=ValidationResultStatus.FAIL_HARD
+                ),
+            )
+            for job in [us_oz_job, us_xx_job]
+        ]
+
+        _handle_tickets_for_validations({ValidationResultStatus.FAIL_HARD: failures})
+
+        mock_region_manager.assert_called_once()
+        self.assertEqual(
+            StateCode.US_XX, mock_region_manager.call_args.kwargs["state_code"]
+        )
 
 
 class TestFetchValidations(TestCase):

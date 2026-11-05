@@ -117,6 +117,10 @@ class _SharedStateCode(enum.Enum):
 
         return channel_name
 
+    def is_playground_state(self) -> bool:
+        """Returns whether this is the playground/demo state, PLAYGROUND_STATE_CODE."""
+        return self.value == PLAYGROUND_STATE_CODE
+
     def lower_hyphened_code(self) -> str:
         # str() cast needed to satisfy mypy
         return str(self.value).lower().replace("_", "-")

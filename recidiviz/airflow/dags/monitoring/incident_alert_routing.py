@@ -119,6 +119,20 @@ def _job_is_task_branching_start_or_end(job_id: str) -> bool:
     )
 
 
+def _state_alerting_services(
+    *,
+    state_code: StateCode,
+    pagerduty_service: RecidivizPagerDutyService,
+    github_service: AirflowGitHubService,
+) -> list[RecidivizAlertingService]:
+    """Returns the services a state-specific failure should alert. Playground states
+    never get GitHub issues, so they only alert PagerDuty.
+    """
+    if state_code.is_playground_state():
+        return [pagerduty_service]
+    return [pagerduty_service, github_service]
+
+
 def get_alerting_services_for_incident(
     incident: AirflowAlertingIncident,
 ) -> list[RecidivizAlertingService]:
@@ -153,51 +167,55 @@ def get_alerting_services_for_incident(
         # jobs that start like US_XX\..* are file-tag level failures
         if _job_id_part_matches(job_id=job_id, regex=_STATE_CODE_BEGINNING_REGEX):
             state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
-            return [
-                RecidivizPagerDutyService.raw_data_service_for_state_code(
+            return _state_alerting_services(
+                state_code=state_code,
+                pagerduty_service=RecidivizPagerDutyService.raw_data_service_for_state_code(
                     project_id=project_id, state_code=state_code
                 ),
-                AirflowGitHubService.raw_data_service_for_state_code(
+                github_service=AirflowGitHubService.raw_data_service_for_state_code(
                     project_id=project_id, state_code=state_code
                 ),
-            ]
+            )
 
         if _job_id_part_matches(
             job_id=job_id, regex=RAISE_OPERATIONS_REGISTRATION_ERRORS
         ):
             state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
-            return [
-                RecidivizPagerDutyService.raw_data_service_for_state_code(
+            return _state_alerting_services(
+                state_code=state_code,
+                pagerduty_service=RecidivizPagerDutyService.raw_data_service_for_state_code(
                     project_id=project_id, state_code=state_code
                 ),
-                AirflowGitHubService.raw_data_service_for_state_code(
+                github_service=AirflowGitHubService.raw_data_service_for_state_code(
                     project_id=project_id, state_code=state_code
                 ),
-            ]
+            )
 
     if _job_id_part_matches(job_id=job_id, regex=DATAFLOW_OPERATOR_TASK_ID):
         state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
-        return [
-            RecidivizPagerDutyService.airflow_service_for_state_code(
+        return _state_alerting_services(
+            state_code=state_code,
+            pagerduty_service=RecidivizPagerDutyService.airflow_service_for_state_code(
                 project_id=project_id, state_code=state_code
             ),
-            AirflowGitHubService.dataflow_service_for_state_code(
+            github_service=AirflowGitHubService.dataflow_service_for_state_code(
                 project_id=project_id, state_code=state_code
             ),
-        ]
+        )
 
     # Failures in this job indicate that raw data has been removed or operations tables
     # haven't been properly managed, so route the failure to state-specific on-calls.
     if _job_id_part_matches(job_id=job_id, regex=CHECK_FOR_VALID_WATERMARKS_TASK_ID):
         state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
-        return [
-            RecidivizPagerDutyService.airflow_service_for_state_code(
+        return _state_alerting_services(
+            state_code=state_code,
+            pagerduty_service=RecidivizPagerDutyService.airflow_service_for_state_code(
                 project_id=project_id, state_code=state_code
             ),
-            AirflowGitHubService.dataflow_service_for_state_code(
+            github_service=AirflowGitHubService.dataflow_service_for_state_code(
                 project_id=project_id, state_code=state_code
             ),
-        ]
+        )
 
     if _job_is_in_group(
         job_id=job_id, group_id=STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID

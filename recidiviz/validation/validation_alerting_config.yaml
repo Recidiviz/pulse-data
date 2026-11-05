@@ -41,10 +41,6 @@ default_slack_channel: zbrenda-validation-test
 # Per-state configuration: slack_channel is a name from slack_channels above,
 # default_assignees are GitHub usernames from slack_people above.
 state_config:
-  US_OZ:
-    slack_channel: zbrenda-validation-test
-    default_assignees:
-      - brendali121
   US_AR:
     slack_channel: us-arkansas
     default_assignees:

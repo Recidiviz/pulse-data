@@ -25,6 +25,9 @@ from mock import Mock, PropertyMock, mock_open
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct import templates
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_direct_ingest_states,
+)
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
 
@@ -179,3 +182,17 @@ def with_manifest(func: Callable, *args: Any, **kwargs: Any) -> Any:
         "recidiviz.ingest.direct.direct_ingest_regions.open", new=mock_manifest_open
     ):
         return func(*args, **kwargs)
+
+
+class TestPlaygroundRegions(TestCase):
+    """Tests that the playground manifest flag agrees with StateCode."""
+
+    def test_playground_flag_matches_state_code(self) -> None:
+        for state_code in get_existing_direct_ingest_states():
+            with self.subTest(state_code=state_code):
+                region = direct_ingest_regions.get_direct_ingest_region(
+                    state_code.value
+                )
+                self.assertEqual(
+                    bool(region.playground), state_code.is_playground_state()
+                )

@@ -312,9 +312,6 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
                 RecidivizPagerDutyService.raw_data_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_OZ
                 ),
-                AirflowGitHubService.raw_data_service_for_state_code(
-                    project_id=_PROJECT_ID, state_code=StateCode.US_OZ
-                ),
             ],
             get_alerting_services_for_incident(
                 self._make_incident(
@@ -343,9 +340,6 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
         self.assertEqual(
             [
                 RecidivizPagerDutyService.raw_data_service_for_state_code(
-                    project_id=_PROJECT_ID, state_code=StateCode.US_OZ
-                ),
-                AirflowGitHubService.raw_data_service_for_state_code(
                     project_id=_PROJECT_ID, state_code=StateCode.US_OZ
                 ),
             ],
@@ -406,6 +400,42 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     job_id=(
                         "ingest.us_nyc_dataflow.initialize_ingest_pipeline."
+                        "check_for_valid_watermarks"
+                    ),
+                )
+            ),
+        )
+
+    def test_get_alerting_service_for_incident_playground_state_skips_github(
+        self,
+    ) -> None:
+        self.assertEqual(
+            [
+                RecidivizPagerDutyService.airflow_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_OZ
+                ),
+            ],
+            get_alerting_services_for_incident(
+                self._make_incident(
+                    dag_id=get_calculation_dag_id(_PROJECT_ID),
+                    job_id=(
+                        "post_ingest_pipelines.US_OZ_dataflow_pipelines."
+                        "full-us-oz-supervision-metrics.run_pipeline"
+                    ),
+                )
+            ),
+        )
+        self.assertEqual(
+            [
+                RecidivizPagerDutyService.airflow_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_OZ
+                ),
+            ],
+            get_alerting_services_for_incident(
+                self._make_incident(
+                    dag_id=get_calculation_dag_id(_PROJECT_ID),
+                    job_id=(
+                        "ingest.us_oz_dataflow.initialize_ingest_pipeline."
                         "check_for_valid_watermarks"
                     ),
                 )
