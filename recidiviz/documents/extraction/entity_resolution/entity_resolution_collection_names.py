@@ -27,6 +27,11 @@ both import the naming rule without importing each other.
 ENTITY_RESOLUTION_COLLECTION_NAME_SUFFIX = "ENTITY_RESOLUTION"
 
 
+def entity_resolution_collection_name_suffix(entity_group_name: str) -> str:
+    """Returns the (entity group, ER suffix) segment of an ER collection name."""
+    return f"{entity_group_name.upper()}_{ENTITY_RESOLUTION_COLLECTION_NAME_SUFFIX}"
+
+
 def entity_resolution_collection_name(
     *, first_order_extractor_collection_name: str, entity_group_name: str
 ) -> str:
@@ -39,6 +44,6 @@ def entity_resolution_collection_name(
     collection and the other as its extractor collection.
     """
     return (
-        f"{first_order_extractor_collection_name}_{entity_group_name.upper()}"
-        f"_{ENTITY_RESOLUTION_COLLECTION_NAME_SUFFIX}"
+        f"{first_order_extractor_collection_name}_"
+        f"{entity_resolution_collection_name_suffix(entity_group_name)}"
     )

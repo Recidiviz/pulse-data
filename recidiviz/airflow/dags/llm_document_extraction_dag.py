@@ -83,12 +83,18 @@ from recidiviz.airflow.dags.utils.source_table_tasks import (
     execute_validate_source_table_datasets,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_collection_names import (
+    entity_resolution_collection_name_suffix,
+)
 from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
     LLMExtractionViewGraphStage,
 )
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     collect_entity_resolution_extractor_configs,
     load_launched_first_order_llm_extractor_configs,
+)
+from recidiviz.documents.extraction.models.llm_extractor_collection_config import (
+    EntityGroupConfig,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
@@ -98,6 +104,7 @@ from recidiviz.documents.store.document_collection_config import (
     load_launched_document_collection_configs,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.utils.types import assert_type
 
 # pylint: disable=W0104 pointless-statement
 
@@ -107,7 +114,7 @@ UPLOAD_TASK_INSTANCE_COUNT = 10
 # operator (see MappedOperator.unmap / BaseOperator.__init__), so the
 # validated string is roughly double the nominal depth. The 250-char
 # validate_key cap is easy to hit with long, descriptive group names.
-LLM_DOCUMENT_EXTRACTION_BRANCHING = "extraction"
+UPDATE_SOURCE_TABLES_GROUP_ID = "update_source_tables"
 DOCUMENT_COLLECTIONS_BRANCHING = "document_collections"
 EXTRACTOR_COLLECTIONS_BRANCHING = "extractor_collections"
 RUN_ID_FORMAT_ARG = "{{ run_id }}"
@@ -298,7 +305,13 @@ def create_single_entity_resolution_branch(
     and upload the composite documents, then run the ER extraction over them.
     """
     er_collection_name = entity_resolution_config.extractor_collection.name
-    with TaskGroup(er_collection_name) as branch:
+    # The branch group nests under its parent first-order extractor's group, so it is
+    # named with only the (entity group, ER suffix) segment of the full ER collection
+    # name — dropping the redundant first-order prefix keeps the nested task ids short.
+    entity_group = assert_type(entity_resolution_config.entity_group, EntityGroupConfig)
+    with TaskGroup(
+        entity_resolution_collection_name_suffix(entity_group.name)
+    ) as branch:
         record_composites = _build_document_store_flow(
             state_code=state_code,
             collection_name=er_collection_name,
@@ -475,28 +488,22 @@ def create_llm_document_extraction_dag() -> None:
     """Creates the LLM document extraction DAG."""
     initialize_dag = initialize_llm_document_extraction_dag_group()
 
-    update_big_query_table_schemata = execute_update_big_query_table_schemata()
+    with TaskGroup(UPDATE_SOURCE_TABLES_GROUP_ID):
+        update_big_query_table_schemata = execute_update_big_query_table_schemata()
 
-    validate_source_tables = execute_validate_source_table_datasets()
+        validate_source_tables = execute_validate_source_table_datasets()
 
-    with TaskGroup(
-        LLM_DOCUMENT_EXTRACTION_BRANCHING
-    ) as llm_document_extraction_branching:
-        create_branching_by_key(
-            create_llm_document_extraction_branch_map(),
-            get_llm_document_extraction_branch_filter,
-        )
+        # Side branch off the schemata update so a validation failure surfaces the run as
+        # failed without blocking the pipelines. It runs after the schemata update so the
+        # group's tables exist.
+        update_big_query_table_schemata >> validate_source_tables
 
-    (
-        initialize_dag
-        >> update_big_query_table_schemata
-        >> llm_document_extraction_branching
+    branch_start, _ = create_branching_by_key(
+        create_llm_document_extraction_branch_map(),
+        get_llm_document_extraction_branch_filter,
     )
 
-    # Side branch off the schemata update so a validation failure surfaces the run as
-    # failed without blocking the pipelines. It runs after the schemata update so the
-    # group's tables exist.
-    update_big_query_table_schemata >> validate_source_tables
+    initialize_dag >> update_big_query_table_schemata >> branch_start
 
 
 llm_document_extraction_dag = create_llm_document_extraction_dag()

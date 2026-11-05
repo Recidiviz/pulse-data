@@ -59,6 +59,7 @@ from recidiviz.airflow.tests.utils.kubernetes_helper_functions import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_collection_names import (
     entity_resolution_collection_name,
+    entity_resolution_collection_name_suffix,
 )
 from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_source_map_table import (
     ENTRY_SOURCE_MAP_TABLE_ID_SUFFIX,
@@ -128,9 +129,17 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
 
         self.dag_id = get_llm_document_extraction_dag_id(self.project_id)
 
-        # State-level branches.
-        self.us_xx_branch = "extraction.us_xx"
-        self.us_yy_branch = "extraction.us_yy"
+        # The two source-table tasks are nested in a task group at the DAG top level.
+        self.update_schemata_task = (
+            f"update_source_tables.{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}"
+        )
+        self.validate_source_tables_task = (
+            f"update_source_tables.{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}"
+        )
+
+        # State-level branches live directly at the DAG top level (no wrapping group).
+        self.us_xx_branch = "us_xx"
+        self.us_yy_branch = "us_yy"
 
         # Per-document-collection branches under us_xx.
         self.us_xx_fake_case_notes_collection_branch = (
@@ -248,9 +257,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         # frame.
         self.us_xx_fake_case_notes_frame_success_regexes = [
             r"^initialize_dag\..*$",
-            rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
-            rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-            r"^extraction\.branch_(start|end)$",
+            rf"^{re.escape(self.update_schemata_task)}$",
+            rf"^{re.escape(self.validate_source_tables_task)}$",
+            r"^branch_(start|end)$",
             rf"^{self.us_xx_branch}\.document_collections\.branch_(start|end)$",
             self.us_xx_extraction_subtree_regex,
             # Each ER sub-branch's discovery/check_has_updates/after_upload_noop succeed in
@@ -264,9 +273,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         # failure rather than succeeding.
         self.us_xx_fake_case_notes_frame_success_regexes_excluding_branch_ends = [
             r"^initialize_dag\..*$",
-            rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
-            rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-            r"^extraction\.branch_start$",
+            rf"^{re.escape(self.update_schemata_task)}$",
+            rf"^{re.escape(self.validate_source_tables_task)}$",
+            r"^branch_start$",
             rf"^{self.us_xx_branch}\.document_collections\.branch_start$",
             *self.non_target_document_collection_always_succeeds_regexes,
         ]
@@ -473,10 +482,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
         a leaf: nothing downstream depends on it, so a validation failure surfaces the
         run as failed without blocking the extraction branches."""
         dag = self._create_dag()
-        self.assertIn(VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID, dag.task_ids)
-        validate_task = dag.get_task(VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID)
+        self.assertIn(self.validate_source_tables_task, dag.task_ids)
+        validate_task = dag.get_task(self.validate_source_tables_task)
         self.assertEqual(
-            {UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID},
+            {self.update_schemata_task},
             validate_task.upstream_task_ids,
         )
         self.assertEqual(set(), validate_task.downstream_task_ids)
@@ -595,7 +604,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_skipped_task_id_regexes=[
                     # check_has_updates short-circuits the rest of each branch
                     # because metadata_rows=0.
-                    rf"^extraction\.[^.]+\.document_collections\."
+                    rf"^[^.]+\.document_collections\."
                     rf"[^.]+\."
                     rf"(?:{BUILD_DOCUMENT_UPLOAD_POD_ARGUMENTS_TASK_ID}|"
                     rf"{DOCUMENT_UPLOAD_TASK_ID}|"
@@ -656,7 +665,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                         RECORD_DOCUMENT_UPLOAD_RESULTS_TASK_ID
                     ),
                     rf"^{self.us_xx_branch}\.document_collections\.branch_end$",
-                    r"^extraction\.branch_end$",
+                    r"^branch_end$",
                     # Extraction runs after the whole document-collections branching, so
                     # the failed branch_end upstream-fails the entire extraction subtree,
                     # including every task in each ER sub-branch (except its ALL_DONE
@@ -748,9 +757,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     expected_skipped_task_id_regexes=[
                         r"^initialize_dag\.(record_dag_run_metadata|"
                         r"wait_to_continue_or_cancel|handle_queueing_result)$",
-                        rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
-                        rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-                        r"^extraction\..*$",
+                        rf"^{re.escape(self.update_schemata_task)}$",
+                        rf"^{re.escape(self.validate_source_tables_task)}$",
+                        r"^branch_(start|end)$",
+                        r"^us_(xx|yy)\..*$",
                     ],
                     expected_success_task_id_regexes=[
                         # handle_params_check is ALL_DONE; it runs and re-raises.
@@ -779,19 +789,21 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     document_collection_name_filter="FAKE_CASE_NOTES",
                 ),
                 expected_failure_task_id_regexes=[
-                    rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
+                    rf"^{re.escape(self.update_schemata_task)}$",
                     # The validation side branch depends on the schema update, so it
                     # upstream-fails alongside the branches.
-                    rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-                    # Everything under extraction upstream-fails except the
-                    # ALL_DONE after_upload_noop tasks below. The branch_end scaffolding
-                    # tasks also upstream-fail (their inputs failed rather than skipped).
-                    r"^extraction\.(?!.*after_upload_noop$).*$",
+                    rf"^{re.escape(self.validate_source_tables_task)}$",
+                    # Every state-branching task upstream-fails except the ALL_DONE
+                    # after_upload_noop tasks below. The top-level branch_start/branch_end
+                    # scaffolding also upstream-fails (its inputs failed rather than
+                    # skipped).
+                    r"^branch_(start|end)$",
+                    r"^us_(xx|yy)\.(?!.*after_upload_noop$).*$",
                 ],
                 expected_skipped_task_id_regexes=[],
                 expected_success_task_id_regexes=[
                     r"^initialize_dag\..*$",
-                    r"^extraction\..*after_upload_noop$",
+                    r"^us_(xx|yy)\..*after_upload_noop$",
                 ],
             )
             self.mock_bq_client.create_table_from_query.assert_not_called()
@@ -909,7 +921,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[
                     rf"^{self.us_xx_branch}\.document_collections\.branch_start$",
                     rf"^{self.us_xx_branch}\.document_collections\.branch_end$",
-                    r"^extraction\.branch_end$",
+                    r"^branch_end$",
                     # Every task in every us_xx document collection branch becomes
                     # upstream_failed except after_upload_noop, which is an
                     # ALL_DONE EmptyOperator with no body and succeeds.
@@ -929,9 +941,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_skipped_task_id_regexes=[self.us_yy_all_skippable_tasks_regex],
                 expected_success_task_id_regexes=[
                     r"^initialize_dag\..*$",
-                    rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
-                    rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-                    r"^extraction\.branch_start$",
+                    rf"^{re.escape(self.update_schemata_task)}$",
+                    rf"^{re.escape(self.validate_source_tables_task)}$",
+                    r"^branch_start$",
                     # All us_xx document collection branches' after_upload_noop tasks
                     # succeed (ALL_DONE), as do each ER sub-branch's.
                     rf"^{self.us_xx_branch}\.document_collections\."
@@ -962,9 +974,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 expected_skipped_task_id_regexes=[
                     r"^initialize_dag\.(record_dag_run_metadata|"
                     r"wait_to_continue_or_cancel|handle_queueing_result)$",
-                    rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
-                    rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-                    r"^extraction\..*$",
+                    rf"^{re.escape(self.update_schemata_task)}$",
+                    rf"^{re.escape(self.validate_source_tables_task)}$",
+                    r"^branch_(start|end)$",
+                    r"^us_(xx|yy)\..*$",
                 ],
                 expected_success_task_id_regexes=[
                     # handle_params_check is ALL_DONE; it runs and re-raises.
@@ -1145,7 +1158,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     rf"{CHECK_EXTRACTION_FAILURES_TASK_ID}$",
                     # branch_end tasks are ALL_DONE but re-raise when an upstream failed,
                     # propagating the failure up the extraction branching scaffolding.
-                    r"^extraction\.branch_end$",
+                    r"^branch_end$",
                     rf"^{self.us_xx_branch}\.extractor_collections\.branch_end$",
                 ],
                 expected_skipped_task_id_regexes=[
@@ -1219,9 +1232,9 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                     # is short-circuited below), so they are listed explicitly here
                     # rather than via us_xx_fake_case_notes_frame_success_regexes.
                     r"^initialize_dag\..*$",
-                    rf"^{UPDATE_BIG_QUERY_TABLE_SCHEMATA_TASK_ID}$",
-                    rf"^{VALIDATE_SOURCE_TABLE_DATASETS_TASK_ID}$",
-                    r"^extraction\.branch_(start|end)$",
+                    rf"^{re.escape(self.update_schemata_task)}$",
+                    rf"^{re.escape(self.validate_source_tables_task)}$",
+                    r"^branch_(start|end)$",
                     rf"^{self.us_xx_branch}\.document_collections\.branch_(start|end)$",
                     rf"^{self.us_xx_branch}\.extractor_collections\.branch_(start|end)$",
                     *self.non_target_document_collection_always_succeeds_regexes,
@@ -1245,8 +1258,10 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-    def _us_xx_entity_resolution_branch(self, er_collection_name: str) -> str:
-        return f"{self.us_xx_fake_extractor_collection_branch}.{er_collection_name}"
+    def _us_xx_entity_resolution_branch(self, er_branch_suffix: str) -> str:
+        # The ER branch group is named with only the (entity group, ER suffix) segment of
+        # the ER collection name, not the full name (which repeats the first-order prefix).
+        return f"{self.us_xx_fake_extractor_collection_branch}.{er_branch_suffix}"
 
     def test_entity_resolution_pass_runs_per_entity_group(self) -> None:
         """Each entity group of an extractor that declares them gets its own ER branch —
@@ -1307,19 +1322,22 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             )
             self.assertEqual(
                 {
-                    f"{self._us_xx_entity_resolution_branch(entity_resolution_collection_name(first_order_extractor_collection_name=FAKE_EXTRACTOR_COLLECTION_NAME, entity_group_name=group))}.{RUN_EXTRACTION_TASK_ID}"
+                    f"{self._us_xx_entity_resolution_branch(entity_resolution_collection_name_suffix(group))}.{RUN_EXTRACTION_TASK_ID}"
                     for group in ("location", "assignment", "pay_rate")
                 },
                 er_deploy_task.upstream_task_ids,
             )
 
             # Assert one entity group's ER extraction pod: it extracts its own ER
-            # collection and pulls its own job id (not the first-order one).
+            # collection and pulls its own job id (not the first-order one). The pod arg
+            # carries the full ER collection name; the branch path carries only its suffix.
             location_er_name = entity_resolution_collection_name(
                 first_order_extractor_collection_name=FAKE_EXTRACTOR_COLLECTION_NAME,
                 entity_group_name="location",
             )
-            location_er_branch = self._us_xx_entity_resolution_branch(location_er_name)
+            location_er_branch = self._us_xx_entity_resolution_branch(
+                entity_resolution_collection_name_suffix("location")
+            )
 
             run_extraction_argv = self._constructed_pod_arguments(
                 RUN_EXTRACTION_TASK_ID,
