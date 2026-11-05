@@ -134,6 +134,7 @@ def test_pipeline_dependencies() -> None:
                     "recidiviz.metrics.metric_big_query_view",
                     "recidiviz.monitoring",
                     "recidiviz.persistence",
+                    "recidiviz.source_tables.identity_service_export_names",
                 }
             )
         if "identity" in pipeline.__name__:
@@ -196,6 +197,7 @@ VALID_CALCULATION_DAG_PREFIXES = {
     "recidiviz.pipelines.pipeline_parameters",
     "recidiviz.pipelines.supplemental.pipeline_parameters",
     "recidiviz.pipelines.supplemental.dataset_config",
+    "recidiviz.source_tables.identity_service_export_names",
     "recidiviz.utils",
 }
 

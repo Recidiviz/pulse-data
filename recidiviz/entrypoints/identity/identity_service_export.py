@@ -51,10 +51,12 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.entity.generate_primary_key import (
     generate_primary_key_from_external_id_keys,
 )
-from recidiviz.source_tables.identity_service_export_source_tables import (
+from recidiviz.source_tables.identity_service_export_names import (
     IDENTITY_SERVICE_EXPORT_DATASET_ID,
     LEGACY_PERSON_ID_COLUMN,
     LEGACY_STAFF_ID_COLUMN,
+)
+from recidiviz.source_tables.identity_service_export_source_tables import (
     MIRRORED_TABLES_TO_DESCRIPTIONS,
     build_identity_service_export_source_table_collection,
 )

@@ -35,6 +35,9 @@ from recidiviz.pipelines.ingest.activity.dataset_config import (
     state_dataset_for_state_code,
 )
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
+from recidiviz.source_tables.identity_service_export_names import (
+    IDENTITY_SERVICE_EXPORT_DATASET_ID,
+)
 from recidiviz.utils.types import assert_type
 
 
@@ -54,6 +57,16 @@ class IngestPipelineParameters(PipelineParameters):
                 instance=DirectIngestInstance(self.raw_data_source_instance.upper()),
             )
         )
+
+    @property
+    def identity_service_export_dataset(self) -> str:
+        """The dataset the pipeline reads Identity Service export tables from.
+
+        Registered as an input dataset for every run, whatever the tenant's
+        identity source, so sandbox runs can always redirect it; only runs whose
+        identity source is IDENTITY_SERVICE_EXPORT actually read from it.
+        """
+        return self.get_input_dataset(IDENTITY_SERVICE_EXPORT_DATASET_ID)
 
     @property
     def ingest_view_results_output(self) -> str:
@@ -172,7 +185,7 @@ class IngestPipelineParameters(PipelineParameters):
 
     @classmethod
     def get_input_dataset_property_names(cls) -> List[str]:
-        return ["raw_data_table_input"]
+        return ["raw_data_table_input", "identity_service_export_dataset"]
 
     @classmethod
     def get_output_dataset_property_names(cls) -> List[str]:

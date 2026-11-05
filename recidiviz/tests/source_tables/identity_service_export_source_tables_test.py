@@ -21,10 +21,12 @@ import unittest
 from more_itertools import one
 
 from recidiviz.persistence.database.schema.identity import schema
-from recidiviz.source_tables.identity_service_export_source_tables import (
+from recidiviz.source_tables.identity_service_export_names import (
     IDENTITY_SERVICE_EXPORT_DATASET_ID,
     LEGACY_PERSON_ID_COLUMN,
     LEGACY_STAFF_ID_COLUMN,
+)
+from recidiviz.source_tables.identity_service_export_source_tables import (
     build_identity_service_export_source_table_collection,
 )
 

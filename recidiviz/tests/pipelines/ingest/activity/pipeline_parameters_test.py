@@ -71,6 +71,10 @@ class TestIngestPipelineParameters(unittest.TestCase):
 
         self.assertEqual("us_oz_raw_data", pipeline_parameters.raw_data_table_input)
         self.assertEqual(
+            "identity_service_export",
+            pipeline_parameters.identity_service_export_dataset,
+        )
+        self.assertEqual(
             "us_oz_ingest_view_results",
             pipeline_parameters.ingest_view_results_output,
         )
@@ -255,6 +259,41 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "my_prefix_us_oz_state", pipeline_parameters.pre_normalization_output
         )
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
+
+    def test_identity_service_export_registered_as_input_dataset(self) -> None:
+        """Sandbox redirection covers exactly the datasets listed here; if the
+        export property drops out of this list, sandbox runs silently lose the
+        ability to redirect it."""
+        self.assertEqual(
+            ["raw_data_table_input", "identity_service_export_dataset"],
+            IngestPipelineParameters.get_input_dataset_property_names(),
+        )
+
+    def test_identity_service_export_dataset_override(self) -> None:
+        input_overrides_json = json.dumps(
+            {"identity_service_export": "my_prefix_identity_service_export"}
+        )
+        pipeline_parameters = IngestPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_XX",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            input_dataset_overrides_json=input_overrides_json,
+            output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+        )
+
+        self.assertEqual(
+            "my_prefix_identity_service_export",
+            pipeline_parameters.identity_service_export_dataset,
+        )
+        pipeline_parameters.check_for_valid_input_dataset_overrides(
+            get_all_reference_query_input_datasets_for_pipeline(
+                StateIngestPipeline,
+                StateCode(pipeline_parameters.state_code),
+            )
+        )
 
     def test_ingest_view_results_only(self) -> None:
         pipeline_parameters = IngestPipelineParameters(
@@ -570,7 +609,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             ValueError,
             r"Found original dataset \[us_yy_raw_data\] in overrides which is not a "
             r"dataset this pipeline reads from. Datasets you can override: "
-            r"\['us_xx_raw_data'\].",
+            r"\['identity_service_export', 'us_xx_raw_data'\].",
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(

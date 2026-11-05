@@ -28,7 +28,11 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.activity_pipeline_identity_source import (
+    ActivityPipelineIdentitySource,
+)
 from recidiviz.ingest.direct.ingest_mappings.activity_ingest_view_manifest_compiler_delegate import (
     ActivityIngestViewManifestCompilerDelegate,
 )
@@ -51,6 +55,9 @@ from recidiviz.pipelines.ingest.activity.associate_with_primary_keys import (
     MERGED_ROOT_ENTITIES_WITH_DATES,
     PRIMARY_KEYS,
     AssociateRootEntitiesWithPrimaryKeys,
+)
+from recidiviz.pipelines.ingest.activity.check_identity_service_export_has_usable_rows import (
+    check_identity_service_export_has_usable_rows,
 )
 from recidiviz.pipelines.ingest.activity.expected_output_helpers import (
     get_entity_table_ids_to_clear,
@@ -85,6 +92,7 @@ from recidiviz.pipelines.utils.beam_utils.clear_bq_table import ClearBQTable
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_normalization_delegate,
 )
+from recidiviz.utils.types import assert_type
 
 
 class _ClearNoOutputEntityTables(beam.PTransform):
@@ -177,6 +185,19 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
 
         if self.pipeline_parameters.ingest_view_results_only:
             return
+
+        # TODO(OBT-51949): Dispatch to the export key-lookup transform instead
+        # of the clustering block below when the identity source is
+        # IDENTITY_SERVICE_EXPORT.
+        if (
+            self.pipeline_parameters.identity_source
+            is ActivityPipelineIdentitySource.IDENTITY_SERVICE_EXPORT
+        ):
+            check_identity_service_export_has_usable_rows(
+                project_id=self.pipeline_parameters.project,
+                dataset_id=self.pipeline_parameters.identity_service_export_dataset,
+                tenant=Tenant(assert_type(self.pipeline_parameters.tenant, str)),
+            )
 
         # Silence `No value for argument 'pcoll' in function call (no-value-for-parameter)`
         # pylint: disable=E1120

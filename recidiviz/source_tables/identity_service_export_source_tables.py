@@ -29,17 +29,17 @@ from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.persistence.database.schema.identity import schema
+from recidiviz.source_tables.identity_service_export_names import (
+    IDENTITY_SERVICE_EXPORT_DATASET_ID,
+    LEGACY_PERSON_ID_COLUMN,
+    LEGACY_STAFF_ID_COLUMN,
+)
 from recidiviz.source_tables.source_table_config import (
     CALC_UPDATE_GROUPS,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
 )
 from recidiviz.utils.types import assert_type
-
-IDENTITY_SERVICE_EXPORT_DATASET_ID = "identity_service_export"
-
-LEGACY_PERSON_ID_COLUMN = "legacy_person_id"
-LEGACY_STAFF_ID_COLUMN = "legacy_staff_id"
 
 # Columns on the identities table that exist to support the import process and
 # carry no meaning for readers of the export.
