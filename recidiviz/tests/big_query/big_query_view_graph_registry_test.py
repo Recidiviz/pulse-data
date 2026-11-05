@@ -185,7 +185,6 @@ class TestViewDerivedSourceTableCollection(unittest.TestCase):
         )
 
 
-# TODO(OBT-44681) Add test for more complex graph scenarios
 class TestBigQueryViewGraphRegistry(unittest.TestCase):
     """Tests for BigQueryViewGraphRegistry."""
 
@@ -721,4 +720,110 @@ class TestBigQueryViewGraphRegistry(unittest.TestCase):
         self.assertEqual(
             [expected_boundary_collection],
             registry.graph_for_name("g_a").input_source_table_collections,
+        )
+
+    def test_build_boundary_written_by_two_graphs_unions_their_outputs(self) -> None:
+        # g_a and g_b both materialize into `boundary` in the same update group, and
+        # g_reader reads it, so `boundary` is a boundary dataset whose single derived
+        # collection holds the union of both writers' output tables.
+        g_a = _graph(
+            "g_a", [_view_builder("boundary", "out_a", should_materialize=True)]
+        )
+        g_b = _graph(
+            "g_b", [_view_builder("boundary", "out_b", should_materialize=True)]
+        )
+        g_reader = _single_view_graph(
+            "g_reader",
+            reads_from_address="boundary.out_a_materialized",
+            update_group=SourceTableUpdateGroup.LLM_DOCUMENT_EXTRACTION,
+        )
+
+        registry = BigQueryViewGraphRegistry.build(
+            project_id=_PROJECT_ID,
+            view_graphs=[g_a, g_b, g_reader],
+            candidate_source_table_collections=_EXTERNALLY_HYDRATED_SOURCE_TABLE_COLLECTIONS,
+        )
+
+        expected_boundary_collection = view_derived_source_table_collection(
+            dataset_id="boundary",
+            writer_update_group=SourceTableUpdateGroup.CALC,
+            reader_update_groups={SourceTableUpdateGroup.LLM_DOCUMENT_EXTRACTION},
+            source_tables_by_address={
+                config.address: config
+                for writer in (g_a, g_b)
+                for config in writer.output_source_table_configs_by_dataset["boundary"]
+            },
+        )
+        self.assertEqual(
+            [expected_boundary_collection],
+            registry.view_derived_source_table_collections,
+        )
+
+    def test_build_boundary_read_across_dags_carries_both_reader_groups(self) -> None:
+        # `boundary` is written by a CALC graph and read by both a CALC graph and an
+        # LLM graph, so its derived collection carries both reader groups and is
+        # protected() (its writer cannot guarantee it is repopulated before the
+        # cross-DAG reader runs).
+        writer = _graph(
+            "writer", [_view_builder("boundary", "out", should_materialize=True)]
+        )
+        calc_reader = _single_view_graph(
+            "calc_reader", reads_from_address="boundary.out_materialized"
+        )
+        llm_reader = _single_view_graph(
+            "llm_reader",
+            reads_from_address="boundary.out_materialized",
+            writes_to_dataset="llm_out",
+            update_group=SourceTableUpdateGroup.LLM_DOCUMENT_EXTRACTION,
+        )
+
+        registry = BigQueryViewGraphRegistry.build(
+            project_id=_PROJECT_ID,
+            view_graphs=[writer, calc_reader, llm_reader],
+            candidate_source_table_collections=_EXTERNALLY_HYDRATED_SOURCE_TABLE_COLLECTIONS,
+        )
+
+        expected_boundary_collection = view_derived_source_table_collection(
+            dataset_id="boundary",
+            writer_update_group=SourceTableUpdateGroup.CALC,
+            reader_update_groups={
+                SourceTableUpdateGroup.CALC,
+                SourceTableUpdateGroup.LLM_DOCUMENT_EXTRACTION,
+            },
+            source_tables_by_address={
+                config.address: config
+                for config in writer.output_source_table_configs_by_dataset["boundary"]
+            },
+        )
+        self.assertEqual(
+            [expected_boundary_collection],
+            registry.view_derived_source_table_collections,
+        )
+        self.assertEqual(
+            SourceTableCollectionUpdateConfig.protected(),
+            registry.view_derived_source_table_collections[0].update_config,
+        )
+
+    def test_build_materialized_but_unread_dataset_yields_no_derived_collection(
+        self,
+    ) -> None:
+        # The graph materializes into `leaf_out`, which no graph reads, so `leaf_out`
+        # is a plain leaf output, not a boundary dataset: it yields no derived
+        # collection, and the graph resolves to only its plain source input.
+        graph = _single_view_graph(
+            "my_graph",
+            reads_from_address="source_dataset.b",
+            writes_to_dataset="leaf_out",
+        )
+
+        registry = BigQueryViewGraphRegistry.build(
+            project_id=_PROJECT_ID,
+            view_graphs=[graph],
+            candidate_source_table_collections=_EXTERNALLY_HYDRATED_SOURCE_TABLE_COLLECTIONS,
+        )
+
+        self.assertEqual([], registry.view_derived_source_table_collections)
+        self.assertEqual(
+            _EXTERNALLY_HYDRATED_SOURCE_TABLE_COLLECTIONS,
+            registry.graph_for_name("my_graph").input_source_table_collections,
         )
