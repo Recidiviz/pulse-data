@@ -70,6 +70,41 @@ class TermMultiplier:
 
 
 @attr.define(frozen=True, kw_only=True)
+class ProjectedCreditRate:
+    """The credits a regime's credit_rates award a sentence."""
+
+    rate: TrackedValue[float] = attr.ib(
+        validator=attr.validators.instance_of(TrackedValue)
+    )
+    """Credit days earned per month served."""
+
+    reduced_terms: frozenset[TermType] = attr.ib(
+        validator=attr_validators.is_frozenset_of(TermType)
+    )
+    """The terms the credits come off. Empty when the regime has no credit_rates
+    rule for the sentence."""
+
+
+@attr.define(frozen=True, kw_only=True)
+class CreditCap:
+    """The ceiling a regime places on the credits a sentence can earn.
+
+    A cap names the terms it applies to.
+    """
+
+    max_credit_days: TrackedValue[int] = attr.ib(
+        validator=attr.validators.instance_of(TrackedValue)
+    )
+    """The most credit days the regime allows on the affected terms."""
+
+    binds: frozenset[TermType] = attr.ib(
+        validator=attr_validators.is_frozenset_of(TermType)
+    )
+    """The terms whose credits the ceiling limits. Credits against any other term
+    are uncapped."""
+
+
+@attr.define(frozen=True, kw_only=True)
 class TrackedSentenceAdjustment:
     """Sentence adjustment with full derivation trees."""
 

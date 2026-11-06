@@ -30,8 +30,14 @@ from recidiviz.sentence_calculator.models.conditions import (
     FieldCondition,
 )
 from recidiviz.sentence_calculator.models.inputs import Term
-from recidiviz.sentence_calculator.models.outputs import TermMultiplier
+from recidiviz.sentence_calculator.models.outputs import (
+    CreditCap,
+    ProjectedCreditRate,
+    TermMultiplier,
+)
 from recidiviz.sentence_calculator.models.rules import (
+    CreditCapRule,
+    CreditRateRule,
     LawRegime,
     ReductionTarget,
     TermMultiplierRule,
@@ -100,9 +106,28 @@ _STANDARD_TERM_REDUCTION = TermMultiplierRule(
     ],
     statute=None,
 )
+_STAT_TIME = CreditRateRule(
+    name="stat_time",
+    description=(
+        "Stat time off every offense's max term, and off its min term unless it "
+        "is violent"
+    ),
+    when=None,
+    rate=20.0,
+    applies_to=[
+        ReductionTarget(term=TermType.MAX_TERM, when=None),
+        ReductionTarget(term=TermType.MIN_TERM, when=_IS_NOT_VIOLENT),
+    ],
+    statute="Test Statute 1",
+)
 
 
-def _engine(*, term_multipliers: list[TermMultiplierRule]) -> RuleEngine:
+def _engine(
+    *,
+    term_multipliers: list[TermMultiplierRule],
+    credit_rates: list[CreditRateRule],
+    credit_caps: list[CreditCapRule],
+) -> RuleEngine:
     return RuleEngine(
         LawRegime(
             name="TEST_REGIME",
@@ -112,8 +137,8 @@ def _engine(*, term_multipliers: list[TermMultiplierRule]) -> RuleEngine:
             days_per_month=30.0,
             days_per_year=365.0,
             term_multipliers=term_multipliers,
-            credit_rates=[],
-            credit_caps=[],
+            credit_rates=credit_rates,
+            credit_caps=credit_caps,
             projected_dates={},
         )
     )
@@ -123,7 +148,9 @@ class TestGetTermMultiplier(unittest.TestCase):
     """Tests for RuleEngine.get_term_multiplier."""
 
     def test_unmet_min_term_condition_keeps_reduction_off_min_term(self) -> None:
-        engine = _engine(term_multipliers=[_STANDARD_TERM_REDUCTION])
+        engine = _engine(
+            term_multipliers=[_STANDARD_TERM_REDUCTION], credit_rates=[], credit_caps=[]
+        )
 
         self.assertEqual(
             TermMultiplier(
@@ -145,7 +172,9 @@ class TestGetTermMultiplier(unittest.TestCase):
         )
 
     def test_met_min_term_condition_reduces_both_terms(self) -> None:
-        engine = _engine(term_multipliers=[_STANDARD_TERM_REDUCTION])
+        engine = _engine(
+            term_multipliers=[_STANDARD_TERM_REDUCTION], credit_rates=[], credit_caps=[]
+        )
 
         self.assertEqual(
             TermMultiplier(
@@ -167,7 +196,9 @@ class TestGetTermMultiplier(unittest.TestCase):
 
     def test_first_matching_rule_applies(self) -> None:
         engine = _engine(
-            term_multipliers=[_VIOLENT_TERM_REDUCTION, _STANDARD_TERM_REDUCTION]
+            term_multipliers=[_VIOLENT_TERM_REDUCTION, _STANDARD_TERM_REDUCTION],
+            credit_rates=[],
+            credit_caps=[],
         )
 
         self.assertEqual(
@@ -217,7 +248,9 @@ class TestGetTermMultiplier(unittest.TestCase):
                     applies_to=[ReductionTarget(term=TermType.MIN_TERM, when=None)],
                     statute=None,
                 )
-            ]
+            ],
+            credit_rates=[],
+            credit_caps=[],
         )
 
         self.assertEqual(
@@ -251,7 +284,9 @@ class TestGetTermMultiplier(unittest.TestCase):
                     ],
                     statute=None,
                 )
-            ]
+            ],
+            credit_rates=[],
+            credit_caps=[],
         )
 
         self.assertEqual(
@@ -312,7 +347,9 @@ class TestGetTermMultiplier(unittest.TestCase):
                     statute=None,
                 ),
                 _STANDARD_TERM_REDUCTION,
-            ]
+            ],
+            credit_rates=[],
+            credit_caps=[],
         )
 
         self.assertEqual(
@@ -337,7 +374,7 @@ class TestGetTermMultiplier(unittest.TestCase):
         )
 
     def test_regime_without_term_multipliers_means_no_reduction(self) -> None:
-        engine = _engine(term_multipliers=[])
+        engine = _engine(term_multipliers=[], credit_rates=[], credit_caps=[])
 
         self.assertEqual(
             TermMultiplier(
@@ -366,7 +403,9 @@ class TestGetTermMultiplier(unittest.TestCase):
                     statute=None,
                 ),
                 _STANDARD_TERM_REDUCTION,
-            ]
+            ],
+            credit_rates=[],
+            credit_caps=[],
         )
 
         with self.assertRaisesRegex(
@@ -397,7 +436,9 @@ class TestGetTermMultiplier(unittest.TestCase):
                     ],
                     statute=None,
                 )
-            ]
+            ],
+            credit_rates=[],
+            credit_caps=[],
         )
 
         with self.assertRaisesRegex(
@@ -408,6 +449,184 @@ class TestGetTermMultiplier(unittest.TestCase):
             r"\[before\], but the field has no value\.$",
         ):
             engine.get_term_multiplier(_VIOLENT_SENTENCE)
+
+
+class TestGetCreditRate(unittest.TestCase):
+    """Tests for RuleEngine.get_credit_rate."""
+
+    def test_unmet_min_term_condition_keeps_credits_off_min_term(self) -> None:
+        engine = _engine(term_multipliers=[], credit_rates=[_STAT_TIME], credit_caps=[])
+
+        self.assertEqual(
+            ProjectedCreditRate(
+                rate=TrackedValue(
+                    value=20.0,
+                    label="S1.credit_rate",
+                    rule_name="stat_time",
+                    formula=(
+                        "rate=20.0 days/month because stat_time applies to every "
+                        "sentence; doesn't reduce min_term because applies_to min_term "
+                        "doesn't match offense_group=VIOLENCE; reduces max_term "
+                        "because applies_to lists max_term with no conditions"
+                    ),
+                ),
+                reduced_terms=frozenset({TermType.MAX_TERM}),
+            ),
+            engine.get_credit_rate(_VIOLENT_SENTENCE),
+        )
+
+    def test_met_min_term_condition_gives_credits_on_both_terms(self) -> None:
+        engine = _engine(term_multipliers=[], credit_rates=[_STAT_TIME], credit_caps=[])
+
+        self.assertEqual(
+            ProjectedCreditRate(
+                rate=TrackedValue(
+                    value=20.0,
+                    label="S2.credit_rate",
+                    rule_name="stat_time",
+                    formula=(
+                        "rate=20.0 days/month because stat_time applies to every "
+                        "sentence; reduces min_term because applies_to min_term "
+                        "matches offense_group=OTHER; reduces max_term because "
+                        "applies_to lists max_term with no conditions"
+                    ),
+                ),
+                reduced_terms=frozenset({TermType.MIN_TERM, TermType.MAX_TERM}),
+            ),
+            engine.get_credit_rate(_NONVIOLENT_SENTENCE),
+        )
+
+    def test_first_matching_rule_applies(self) -> None:
+        engine = _engine(
+            term_multipliers=[],
+            credit_rates=[
+                CreditRateRule(
+                    name="violent_credit_rate",
+                    description="Lower credits for violent offenses",
+                    when=_IS_VIOLENT,
+                    rate=10.0,
+                    applies_to=[
+                        ReductionTarget(term=TermType.MAX_TERM, when=None),
+                        ReductionTarget(term=TermType.MIN_TERM, when=None),
+                    ],
+                    statute=None,
+                ),
+                _STAT_TIME,
+            ],
+            credit_caps=[],
+        )
+
+        self.assertEqual(
+            "violent_credit_rate",
+            engine.get_credit_rate(_VIOLENT_SENTENCE).rate.rule_name,
+        )
+        self.assertEqual(
+            "stat_time", engine.get_credit_rate(_NONVIOLENT_SENTENCE).rate.rule_name
+        )
+
+    def test_regime_without_credit_rates_means_no_credits(self) -> None:
+        engine = _engine(term_multipliers=[], credit_rates=[], credit_caps=[])
+
+        self.assertEqual(
+            ProjectedCreditRate(
+                rate=TrackedValue(
+                    value=0.0,
+                    label="S2.credit_rate",
+                    formula="No credit_rates rule; default 0.0 days/month",
+                ),
+                reduced_terms=frozenset(),
+            ),
+            engine.get_credit_rate(_NONVIOLENT_SENTENCE),
+        )
+
+
+class TestGetCreditCap(unittest.TestCase):
+    """Tests for RuleEngine.get_credit_cap."""
+
+    def test_cap_limits_term_it_binds(self) -> None:
+        engine = _engine(
+            term_multipliers=[],
+            credit_rates=[_STAT_TIME],
+            credit_caps=[
+                CreditCapRule(
+                    name="min_term_credit_cap",
+                    description="Credits against the min term are capped",
+                    when=None,
+                    max_credit_days="sentence_length_days * 0.58",
+                    binds=frozenset({TermType.MIN_TERM}),
+                    statute=None,
+                )
+            ],
+        )
+        min_term_days = TrackedValue.input(1000, "S1.original_min_days")
+
+        cap = engine.get_credit_cap(
+            sentence=_VIOLENT_SENTENCE,
+            term=TermType.MIN_TERM,
+            sentence_length_days=min_term_days,
+        )
+
+        self.assertEqual(
+            CreditCap(
+                max_credit_days=TrackedValue(
+                    value=580,
+                    label="S1.credit_cap_min_term",
+                    sources=(min_term_days,),
+                    rule_name="min_term_credit_cap",
+                    formula="sentence_length_days * 0.58",
+                ),
+                binds=frozenset({TermType.MIN_TERM}),
+            ),
+            cap,
+        )
+
+    def test_cap_does_not_limit_term_it_does_not_bind(self) -> None:
+        engine = _engine(
+            term_multipliers=[],
+            credit_rates=[_STAT_TIME],
+            credit_caps=[
+                CreditCapRule(
+                    name="min_term_credit_cap",
+                    description="Credits against the min term are capped",
+                    when=None,
+                    max_credit_days="sentence_length_days * 0.58",
+                    binds=frozenset({TermType.MIN_TERM}),
+                    statute=None,
+                )
+            ],
+        )
+
+        self.assertIsNone(
+            engine.get_credit_cap(
+                sentence=_VIOLENT_SENTENCE,
+                term=TermType.MAX_TERM,
+                sentence_length_days=TrackedValue.input(2000, "S1.original_max_days"),
+            )
+        )
+
+    def test_sentence_that_meets_no_cap_is_uncapped(self) -> None:
+        engine = _engine(
+            term_multipliers=[],
+            credit_rates=[_STAT_TIME],
+            credit_caps=[
+                CreditCapRule(
+                    name="violent_credit_cap",
+                    description="Credits for violent offenses are capped",
+                    when=_IS_VIOLENT,
+                    max_credit_days="sentence_length_days * 0.58",
+                    binds=frozenset({TermType.MIN_TERM, TermType.MAX_TERM}),
+                    statute=None,
+                )
+            ],
+        )
+
+        self.assertIsNone(
+            engine.get_credit_cap(
+                sentence=_NONVIOLENT_SENTENCE,
+                term=TermType.MIN_TERM,
+                sentence_length_days=TrackedValue.input(1000, "S2.original_min_days"),
+            )
+        )
 
 
 class TestSentenceMeetsCondition(unittest.TestCase):
