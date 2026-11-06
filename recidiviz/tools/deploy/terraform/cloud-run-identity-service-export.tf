@@ -33,7 +33,9 @@ resource "google_project_iam_member" "identity_service_export_runtime_iam" {
   for_each = toset([
     "roles/bigquery.jobUser",
     "roles/cloudsql.client",
+    "roles/cloudtrace.agent",
     "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
   ])
   project = var.project_id
   role    = each.key
@@ -59,6 +61,7 @@ resource "google_secret_manager_secret_iam_member" "identity_service_export_secr
   for_each = toset([
     "identity_service_db_user",
     "identity_service_db_password",
+    "identity_service_db_host",
     "identity_service_cloudsql_instance_id",
   ])
   secret_id = each.key
