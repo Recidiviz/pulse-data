@@ -763,6 +763,9 @@ def test_application_data_import_server_dependencies() -> None:
                 "recidiviz.workflows",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
+                # Award calculation module that imports only the standard library and
+                # recidiviz.common.date; the Edovo view reads its policy constants.
+                "recidiviz.eomis.us_ar.edovo_award_engine",
                 # Pulled in transitively by yaml_managed.datasets.
                 "recidiviz.datasets.static_data.terraform_managed.config",
             }
@@ -870,6 +873,9 @@ def test_entrypoint_report_metric_export_timeliness_dependencies() -> None:
                 "recidiviz.documents",
                 # Thin eomis module; no imports, so safe to allow here.
                 "recidiviz.eomis.us_ar.constants",
+                # Award calculation module that imports only the standard library and
+                # recidiviz.common.date; the Edovo view reads its policy constants.
+                "recidiviz.eomis.us_ar.edovo_award_engine",
                 # Pulled in transitively by yaml_managed.datasets.
                 "recidiviz.datasets.static_data.terraform_managed.config",
                 # TODO(OBT-49997): this entrypoint should not reach

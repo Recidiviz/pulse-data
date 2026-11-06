@@ -22,6 +22,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_sentence_dates_preprocessed import (
+    US_AR_PAA_COHORT_CODE,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
@@ -43,7 +46,7 @@ _QUERY_TEMPLATE = """
     WHERE s.state_code = 'US_AR'
       AND s.compartment_level_0 = 'INCARCERATION'
       AND s.end_date IS NULL
-      AND sd.cohort_code = '4'
+      AND sd.cohort_code = '{paa_cohort_code}'
 """
 
 VIEW_BUILDER: StateSpecificTaskCandidatePopulationBigQueryViewBuilder = (
@@ -54,6 +57,7 @@ VIEW_BUILDER: StateSpecificTaskCandidatePopulationBigQueryViewBuilder = (
         description=__doc__,
         sessions_dataset=SESSIONS_DATASET,
         analyst_dataset=ANALYST_VIEWS_DATASET,
+        paa_cohort_code=US_AR_PAA_COHORT_CODE,
     )
 )
 

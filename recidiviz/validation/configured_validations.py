@@ -369,6 +369,39 @@ from recidiviz.validation.views.state.supervision_termination_reason_no_date imp
 from recidiviz.validation.views.state.tasks.configured_validations import (
     get_all_tasks_validations,
 )
+from recidiviz.validation.views.state.us_ar_edovo_monthly_accounting_hours_balance import (
+    US_AR_EDOVO_MONTHLY_ACCOUNTING_HOURS_BALANCE_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_monthly_accounting_hours_match_proposed_credit import (
+    US_AR_EDOVO_MONTHLY_ACCOUNTING_HOURS_MATCH_PROPOSED_CREDIT_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_monthly_accounting_no_duplicate_person_months import (
+    US_AR_EDOVO_MONTHLY_ACCOUNTING_NO_DUPLICATE_PERSON_MONTHS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_proposed_credit_no_duplicate_person_months import (
+    US_AR_EDOVO_PROPOSED_CREDIT_NO_DUPLICATE_PERSON_MONTHS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_proposed_credit_only_paa_residents import (
+    US_AR_EDOVO_PROPOSED_CREDIT_ONLY_PAA_RESIDENTS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_records_preprocessed_late_receipts import (
+    US_AR_EDOVO_RECORDS_PREPROCESSED_LATE_RECEIPTS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_records_preprocessed_no_future_passed_dates import (
+    US_AR_EDOVO_RECORDS_PREPROCESSED_NO_FUTURE_PASSED_DATES_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_records_preprocessed_no_multiple_person_ids_per_adcnumber import (
+    US_AR_EDOVO_RECORDS_PREPROCESSED_NO_MULTIPLE_PERSON_IDS_PER_ADCNUMBER_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_records_preprocessed_no_null_received_at import (
+    US_AR_EDOVO_RECORDS_PREPROCESSED_NO_NULL_RECEIVED_AT_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_records_preprocessed_no_unmatched_ar_doc_completions import (
+    US_AR_EDOVO_RECORDS_PREPROCESSED_NO_UNMATCHED_AR_DOC_COMPLETIONS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_records_preprocessed_stale_receipts import (
+    US_AR_EDOVO_RECORDS_PREPROCESSED_STALE_RECEIPTS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.us_ar_ged_completions_flag_date_consistency import (
     US_AR_GED_COMPLETIONS_FLAG_DATE_CONSISTENCY_VIEW_BUILDER,
 )
@@ -392,6 +425,12 @@ from recidiviz.validation.views.state.us_ar_ged_writeback_no_double_writes impor
 )
 from recidiviz.validation.views.state.us_ar_ged_writeback_no_failed_actions import (
     US_AR_GED_WRITEBACK_NO_FAILED_ACTIONS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_resident_data_edovo_stale_hours import (
+    US_AR_RESIDENT_DATA_EDOVO_STALE_HOURS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_resident_data_no_duplicate_persons import (
+    US_AR_RESIDENT_DATA_NO_DUPLICATE_PERSONS_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.us_co_certificate_awards_to_sentence_credits_high_unexplained_no_match_rate import (
     US_CO_CERTIFICATE_AWARDS_TO_SENTENCE_CREDITS_HIGH_UNEXPLAINED_NO_MATCH_RATE_VIEW_BUILDER,
@@ -1449,6 +1488,60 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_AR_GED_WRITEBACK_EXPECTED_VS_ACTUAL_ACTION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_RECORDS_PREPROCESSED_NO_FUTURE_PASSED_DATES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_RECORDS_PREPROCESSED_NO_MULTIPLE_PERSON_IDS_PER_ADCNUMBER_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_RECORDS_PREPROCESSED_NO_NULL_RECEIVED_AT_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_RECORDS_PREPROCESSED_NO_UNMATCHED_AR_DOC_COMPLETIONS_VIEW_BUILDER,
+            validation_category=ValidationCategory.CONSISTENCY,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_RECORDS_PREPROCESSED_STALE_RECEIPTS_VIEW_BUILDER,
+            validation_category=ValidationCategory.CONSISTENCY,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_RESIDENT_DATA_EDOVO_STALE_HOURS_VIEW_BUILDER,
+            validation_category=ValidationCategory.CONSISTENCY,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_RECORDS_PREPROCESSED_LATE_RECEIPTS_VIEW_BUILDER,
+            validation_category=ValidationCategory.CONSISTENCY,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_PROPOSED_CREDIT_NO_DUPLICATE_PERSON_MONTHS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_PROPOSED_CREDIT_ONLY_PAA_RESIDENTS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_MONTHLY_ACCOUNTING_NO_DUPLICATE_PERSON_MONTHS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_MONTHLY_ACCOUNTING_HOURS_BALANCE_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_MONTHLY_ACCOUNTING_HOURS_MATCH_PROPOSED_CREDIT_VIEW_BUILDER,
+            validation_category=ValidationCategory.CONSISTENCY,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_RESIDENT_DATA_NO_DUPLICATE_PERSONS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
