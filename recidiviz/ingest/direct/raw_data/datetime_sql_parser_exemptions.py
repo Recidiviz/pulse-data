@@ -174,9 +174,9 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_AND_DOWNSTREAM_VIEWS
     StateCode.US_MI: {
         "ADH_OFFENDER_DESIGNATION": ["last_update_node"],
         "ADH_OFFENDER_SENTENCE": ["last_update_date"],
-        "COMS_Case_Managers_LEGACY": ["End_Date", "Entered_Date", "Start_Date"],
-        "COMS_Modifiers": ["End_Date", "Entered_Date", "Start_Date"],
-        "COMS_Specialties": ["End_Date", "Entered_Date", "Start_Date"],
+        "COMS_Case_Managers_LEGACY": ["End_Date", "Start_Date"],
+        "COMS_Modifiers": ["End_Date", "Start_Date"],
+        "COMS_Specialties": ["End_Date", "Start_Date"],
     },
     StateCode.US_ND: {
         "docstars_offensestable": ["LAST_UPDATE"],
@@ -505,57 +505,42 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_INGEST_VIEWS_ONLY: dict[
         "COMS_Employment": [
             "Employment_End_Date",
             "Employment_Start_Date",
-            "Entered_Date",
         ],
         "COMS_Parole_Violation_Summary_Decisions": [
             "Case_Manager_Recommendation_Date",
             "Create_Date",
-            "Entered_Date",
             "PV_Specialist_Decision_Date",
-            "Submitted_Date",
         ],
-        "COMS_Parole_Violation_Violation_Incidents": ["Entered_Date"],
         "COMS_Parole_Violations": [
-            "Closed_Date",
-            "Entered_Date",
             "Investigation_Start_Date",
         ],
-        "COMS_Probation_Violation_Violation_Incidents": ["Entered_Date"],
         "COMS_Probation_Violations": [
             "Absconded_Date",
             "Apprehended_Date",
-            "Apprehension_Closed_Date",
-            "Closed_Date",
             "Due_Date",
-            "Entered_Date",
             "Investigation_Start_Date",
             "Probation_Violation_Sentence_Date",
             "Violation_Closed_Date",
         ],
         "COMS_Security_Standards_Toxin": [
             "Case_Manager_Response_Date",
-            "Conducted_Date",
-            "Entered_Date",
             "Result_Date",
             "Retest_Result_Date",
             "Retest_Sent_Date",
         ],
-        "COMS_Supervision_Levels": ["End_Date", "Entered_Date", "Start_Date"],
+        "COMS_Supervision_Levels": ["End_Date", "Start_Date"],
         "COMS_Supervision_Schedules": [
             "Create_Date",
             "End_Date",
-            "Entered_Date",
             "Schedule_End_Date",
             "Schedule_Start_Date",
         ],
-        "COMS_Violation_Incident_Charges": ["Entered_Date"],
         "COMS_Violation_Incidents": [
             "Absconded_Date",
             "Apprehended_Date",
-            "Entered_Date",
             "Incident_Date",
         ],
-        "COMS_dm_Staff_Supervisors_LEGACY": ["End_Date", "Entered_Date", "Start_Date"],
+        "COMS_dm_Staff_Supervisors_LEGACY": ["End_Date", "Start_Date"],
         "RECIDIVIZ_REFERENCE_mclxwalk": ["last_update_date"],
     },
     StateCode.US_NE: {
@@ -944,13 +929,9 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
         "INCARCERATION_POPULATION_RELEASES": ["ADMISSION_DATE", "RELEASE_DATE"],
     },
     StateCode.US_MI: {
-        "COMS_Case_Notes": ["Entered_Date", "Note_Date"],
-        "COMS_Intervention_Referral_Program_and_Service_Type_Combinations": [
-            "Entered_Date"
-        ],
+        "COMS_Case_Notes": ["Note_Date"],
         "COMS_Intervention_Referrals": [
             "End_Date",
-            "Entered_Date",
             "Referral_Date",
             "Start_Date",
         ],
@@ -958,12 +939,10 @@ DATETIME_PARSER_EXEMPTIONS_FILES_REFERENCED_IN_DOWNSTREAM_VIEWS_ONLY: dict[
         "COMS_Mental_Health_Problems": ["StatusDate"],
         "COMS_Personal_Protection_Orders": [
             "Effective_Date",
-            "Entered_Date",
             "Expiration_Date",
         ],
         "COMS_Supervision_Schedule_Activities": [
             "Completed_Date",
-            "Entered_Date",
             "Scheduled_Date",
         ],
     },

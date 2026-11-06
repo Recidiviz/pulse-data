@@ -772,7 +772,7 @@
       us_mi_COMS_Case_Managers_LEGACY.Entered_Date__raw,
       us_mi_COMS_Case_Managers_LEGACY.file_id,
       us_mi_COMS_Case_Managers_LEGACY.is_deleted]
-    sorts: [us_mi_COMS_Case_Managers_LEGACY.Start_Date__raw]
+    sorts: [us_mi_COMS_Case_Managers_LEGACY.Entered_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system about the assignment of supervision agents to JII on supervision.   This table is active starting 8/14/2023 and ending 2026-10-28 and should only hold supervision assignment information that was relevant within that tiem period. This version of the table identifies staff by OMNI employee id. Starting with the 2026-10-28 transfer, MI sends this table with COMS staff ids instead, under the COMS_Case_Managers file tag."
     listen: 
@@ -798,7 +798,7 @@
       us_mi_COMS_Case_Notes.Entered_Date__raw,
       us_mi_COMS_Case_Notes.file_id,
       us_mi_COMS_Case_Notes.is_deleted]
-    sorts: [us_mi_COMS_Case_Notes.Note_Date__raw]
+    sorts: [us_mi_COMS_Case_Notes.Entered_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system for case notes for the following activities:   - Court Hearing   - In Person Contact   - Probation Early Discharge Review   - Security Classification Committee activities Due to the size of this table, this file is provided to us as two week diffs"
     listen: 
@@ -931,7 +931,7 @@
       us_mi_COMS_Employment.Entered_Date__raw,
       us_mi_COMS_Employment.file_id,
       us_mi_COMS_Employment.is_deleted]
-    sorts: [us_mi_COMS_Employment.Employment_Start_Date__raw]
+    sorts: [us_mi_COMS_Employment.Entered_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system about JII employment information.  This table is active starting 8/14/2023 and should only hold employment information for JII employments that occur from 8/14/2023 onwards."
     listen: 
@@ -1079,7 +1079,7 @@
       us_mi_COMS_Modifiers.Entered_Date__raw,
       us_mi_COMS_Modifiers.file_id,
       us_mi_COMS_Modifiers.is_deleted]
-    sorts: [us_mi_COMS_Modifiers.Start_Date__raw]
+    sorts: [us_mi_COMS_Modifiers.Entered_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system about supervision sentence modifiers. Excludes entries associated with prison supervision status and inactive entries. This table is active starting 8/14/2023 and should only hold information that was  relevant from 8/14/2023 onwards."
     listen: 
@@ -1224,7 +1224,7 @@
       us_mi_COMS_Parole_Violations.Entered_Date__raw,
       us_mi_COMS_Parole_Violations.file_id,
       us_mi_COMS_Parole_Violations.is_deleted]
-    sorts: [us_mi_COMS_Parole_Violations.Investigation_Start_Date__raw]
+    sorts: [us_mi_COMS_Parole_Violations.Closed_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system about the parole violations.  This table is active starting 8/14/2023 and should only hold parole violation information that was relevant from 8/14/2023 onwards."
     listen: 
@@ -1288,7 +1288,7 @@
       us_mi_COMS_Probation_Violations.Entered_Date__raw,
       us_mi_COMS_Probation_Violations.file_id,
       us_mi_COMS_Probation_Violations.is_deleted]
-    sorts: [us_mi_COMS_Probation_Violations.Investigation_Start_Date__raw]
+    sorts: [us_mi_COMS_Probation_Violations.Closed_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system about the probation violations.  This table is active starting 8/14/2023 and should only hold probation violation information that was relevant from 8/14/2023 onwards."
     listen: 
@@ -1665,7 +1665,7 @@
       us_mi_COMS_Specialties.Entered_Date__raw,
       us_mi_COMS_Specialties.file_id,
       us_mi_COMS_Specialties.is_deleted]
-    sorts: [us_mi_COMS_Specialties.Start_Date__raw]
+    sorts: [us_mi_COMS_Specialties.Entered_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system about supervision specialties"
     listen: 
@@ -1693,7 +1693,7 @@
       us_mi_COMS_Supervision_Levels.Entered_Date__raw,
       us_mi_COMS_Supervision_Levels.file_id,
       us_mi_COMS_Supervision_Levels.is_deleted]
-    sorts: [us_mi_COMS_Supervision_Levels.Start_Date__raw]
+    sorts: [us_mi_COMS_Supervision_Levels.Entered_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system about the supervision levels of JII on supervision.  This table is active starting 8/14/2023 and should only hold supervision level information that was relevant from 8/14/2023 onwards."
     listen: 
@@ -1725,7 +1725,7 @@
       us_mi_COMS_Supervision_Schedule_Activities.Entered_Date__raw,
       us_mi_COMS_Supervision_Schedule_Activities.file_id,
       us_mi_COMS_Supervision_Schedule_Activities.is_deleted]
-    sorts: [us_mi_COMS_Supervision_Schedule_Activities.Scheduled_Date__raw]
+    sorts: [us_mi_COMS_Supervision_Schedule_Activities.Entered_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system about the supervision activities scheduled for each JII on supervision.  This table is active starting 8/14/2023 and should only hold supervision activity information that was relevant from 8/14/2023 onwards."
     listen: 
@@ -1754,7 +1754,7 @@
       us_mi_COMS_Supervision_Schedules.Entered_Date__raw,
       us_mi_COMS_Supervision_Schedules.file_id,
       us_mi_COMS_Supervision_Schedules.is_deleted]
-    sorts: [us_mi_COMS_Supervision_Schedules.Create_Date__raw]
+    sorts: [us_mi_COMS_Supervision_Schedules.Entered_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system about the supervision schedule for each JII on supervision.  This table is active starting 8/14/2023 and should only hold supervision schedule information that was relevant from 8/14/2023 onwards."
     listen: 
@@ -1840,7 +1840,7 @@
       us_mi_COMS_Violation_Incidents.Entered_Date__raw,
       us_mi_COMS_Violation_Incidents.file_id,
       us_mi_COMS_Violation_Incidents.is_deleted]
-    sorts: [us_mi_COMS_Violation_Incidents.Incident_Date__raw]
+    sorts: [us_mi_COMS_Violation_Incidents.Entered_Date__raw]
     note_display: hover
     note_text: "This table includes data from the COMS system about the supervision violation incidents (where supervision violation incidents ladder up into a supervision violation).  This table is active starting 8/14/2023 and should only hold supervision violation incident information that was relevant from 8/14/2023 onwards."
     listen: 
