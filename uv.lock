@@ -3,10 +3,10 @@ revision = 5
 requires-python = "==3.11.*"
 resolution-markers = [
     "python_full_version >= '3.11.5' and sys_platform == 'win32'",
-    "python_full_version < '3.11.5' and sys_platform == 'win32'",
     "python_full_version >= '3.11.5' and sys_platform == 'emscripten'",
-    "python_full_version < '3.11.5' and sys_platform == 'emscripten'",
     "python_full_version >= '3.11.5' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.11.5' and sys_platform == 'win32'",
+    "python_full_version < '3.11.5' and sys_platform == 'emscripten'",
     "python_full_version < '3.11.5' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 
@@ -3571,9 +3571,9 @@ version = "7.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.11.5' and sys_platform == 'win32'",
-    "python_full_version < '3.11.5' and sys_platform == 'win32'",
     "python_full_version >= '3.11.5' and sys_platform == 'emscripten'",
     "python_full_version >= '3.11.5' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.11.5' and sys_platform == 'win32'",
     "python_full_version < '3.11.5' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
@@ -4937,9 +4937,9 @@ version = "0.15.8"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.11.5' and sys_platform == 'win32'",
+    "python_full_version >= '3.11.5' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.11.5' and sys_platform == 'win32'",
     "python_full_version < '3.11.5' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.11.5' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.11.5' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
@@ -6216,7 +6216,7 @@ requires-dist = [
     { name = "deepdiff", marker = "extra == 'dev'" },
     { name = "docker", marker = "extra == 'dev'" },
     { name = "docker-stubs", marker = "extra == 'dev'" },
-    { name = "faker" },
+    { name = "faker", specifier = "==40.43.0" },
     { name = "fakeredis", marker = "extra == 'dev'" },
     { name = "flask", extras = ["async"], specifier = ">=2.0.0" },
     { name = "flask-limiter" },
@@ -7039,9 +7039,9 @@ version = "0.15.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.11.5' and sys_platform == 'win32'",
-    "python_full_version < '3.11.5' and sys_platform == 'win32'",
     "python_full_version >= '3.11.5' and sys_platform == 'emscripten'",
     "python_full_version >= '3.11.5' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.11.5' and sys_platform == 'win32'",
     "python_full_version < '3.11.5' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [

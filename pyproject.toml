@@ -38,7 +38,10 @@ dependencies = [
     # TODO(#18145): Remove the <2.0.0 pin
     "sqlalchemy>=1.4.25,<2.0.0",
     "flask[async]>=2.0.0",
-    "Faker",
+    # WorkflowsETLDelegate seeds Faker to produce stable fake PII, but Faker does not
+    # guarantee seeded output across versions. Upgrading this pin changes the fake
+    # values generated for every record.
+    "Faker==40.43.0",
     "Flask-Limiter",
     "Flask-SQLAlchemy-Session",
     "Flask-WTF",
