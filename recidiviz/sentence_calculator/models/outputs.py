@@ -27,6 +27,7 @@ from recidiviz.sentence_calculator.models.inputs import (
 )
 from recidiviz.sentence_calculator.models.rules import TermType
 from recidiviz.sentence_calculator.models.tracked import TrackedValue
+from recidiviz.utils.types import assert_type
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -134,14 +135,35 @@ class TrackedSentenceAdjustment:
         validator=attr.validators.instance_of(TrackedValue)
     )
     # The regime's flat reduction (e.g. a .65 multiplier for the 35% off in SB413) and
-    # the terms it comes off. Only jail credit comes off a term it doesn't reduce.
-    term_multiplier: "TermMultiplier" = attr.ib(
-        validator=attr.validators.instance_of(TermMultiplier)
+    # the terms it comes off, or None if the regime earns credits instead.
+    term_multiplier: "TermMultiplier | None" = attr.ib(
+        validator=attr_validators.is_opt(TermMultiplier)
+    )
+    # The good time credits the regime awards and the terms they come off, or None if
+    # the regime uses a flat term multiplier instead.
+    credit_rate: "ProjectedCreditRate | None" = attr.ib(
+        validator=attr_validators.is_opt(ProjectedCreditRate)
     )
     # Jail credit to apply to root sentences (those consecutive to no other sentences)
     jail_credit: "TrackedValue[int]" = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)
     )
+
+    def __attrs_post_init__(self) -> None:
+        if (self.term_multiplier is None) == (self.credit_rate is None):
+            raise ValueError(
+                f"Sentence adjustment [{self.sentence_id}] must have exactly one of "
+                f"a term multiplier or a credit rate. Found term_multiplier "
+                f"[{self.term_multiplier}] and credit_rate [{self.credit_rate}]."
+            )
+
+    @property
+    def reduced_terms(self) -> frozenset[TermType]:
+        """The terms the regime's reduction (its term multiplier or good time
+        credits) came off. Only jail credit comes off the others."""
+        if self.term_multiplier is not None:
+            return self.term_multiplier.reduced_terms
+        return assert_type(self.credit_rate, ProjectedCreditRate).reduced_terms
 
 
 @attr.define(frozen=True, kw_only=True)

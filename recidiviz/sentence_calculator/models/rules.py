@@ -632,15 +632,19 @@ class LawRegime:
     """Date the law this regime encodes took effect."""
 
     use_calendar_term_conversion: bool = attr.ib(validator=attr_validators.is_bool)
-    """Whether to convert a term to days by counting the real calendar days from
-    the sentence's start date, so a one year term starting 2024-01-01 is 366
-    days, rather than with the flat days_per_year and days_per_month below."""
+    """Whether to use the real calendar, counting from the sentence's start date,
+    rather than the flat days_per_year and days_per_month below. It decides how a
+    term converts to days, so a one year term starting 2024-01-01 is 366 days,
+    and how credits on time served accrue, by calendar month."""
 
     days_per_month: float = attr.ib(validator=attr_validators.is_positive_float)
-    """Days in a month for flat term conversion and for accruing monthly credits."""
+    """Days in a month. Credits on jail credit time always accrue once per this
+    many days. Flat term conversion and credits on time served also use it, but
+    only when use_calendar_term_conversion is off."""
 
     days_per_year: float = attr.ib(validator=attr_validators.is_positive_float)
-    """Days in a year for flat term conversion."""
+    """Days in a year for flat term conversion. Unused when
+    use_calendar_term_conversion is on."""
 
     term_multipliers: list[TermMultiplierRule] = attr.ib(
         validator=attr_validators.is_list_of(TermMultiplierRule)

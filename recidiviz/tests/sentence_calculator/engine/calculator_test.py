@@ -70,7 +70,7 @@ class TestCalculateSentences(unittest.TestCase):
         self.assertEqual(1300, adjustment.adjusted_max_days.value)
         self.assertEqual(
             frozenset({TermType.MIN_TERM, TermType.MAX_TERM}),
-            adjustment.term_multiplier.reduced_terms,
+            adjustment.reduced_terms,
         )
         assert result.projected_dates is not None
         self.assertEqual(
@@ -112,9 +112,7 @@ class TestCalculateSentences(unittest.TestCase):
 
         self.assertEqual(1000, adjustment.adjusted_min_days.value)
         self.assertEqual(1300, adjustment.adjusted_max_days.value)
-        self.assertEqual(
-            frozenset({TermType.MAX_TERM}), adjustment.term_multiplier.reduced_terms
-        )
+        self.assertEqual(frozenset({TermType.MAX_TERM}), adjustment.reduced_terms)
 
     def test_jail_credit_comes_off_both_terms(self) -> None:
         calculation_input = SentenceCalculationInput(

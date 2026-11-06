@@ -150,8 +150,9 @@ class SentenceGraph:
         sentence date, with that date moving forward as we choose each controlling
         sentence.
 
-        Each sentence's terms are adjusted by the regime's rules (a term multiplier,
-        plus jail credit) before its end date and PED are computed. Calendar-based term conversion counts from the date the
+        Each sentence's terms are adjusted by the regime's rules (a term multiplier
+        or projected good time credits, plus jail credit) before its end date and
+        PED are computed. Calendar-based term conversion counts from the date the
         sentence starts, which for a consecutive sentence depends on when its
         parent ends.
 
