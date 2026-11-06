@@ -51,6 +51,7 @@ NEXT = "next"
 UPDATED_AT = "updated_at"
 FIELD = "field"
 CONTACTS = "contacts"
+CONVERSATIONS = "conversations"
 DATA = "data"
 CREATED_AT = "created_at"
 
@@ -293,6 +294,59 @@ class IntercomAPIClient:
 
         return returned_data
 
+    def _search_by_time_window(
+        self,
+        *,
+        endpoint_type: IntercomSearchEndpointType,
+        filter_field: str,
+        response_data_key: str,
+        before_inclusive: datetime,
+        after_inclusive: datetime,
+    ) -> list[dict[str, Any]]:
+        """Fetches data from a search endpoint, filtered to a time window on filter_field.
+
+        Args:
+            endpoint_type: The search endpoint to be queried
+            filter_field: The datetime field to filter on (e.g. updated_at, created_at)
+            response_data_key: Key the endpoint nests its data under in the response
+            before_inclusive: UTC datetime for the end of the window, inclusive
+            after_inclusive: UTC datetime for the start of the window, inclusive
+
+        Returns:
+            List of JSON from the given endpoint
+        """
+        if (
+            before_inclusive.tzinfo is not timezone.utc
+            or after_inclusive.tzinfo is not timezone.utc
+        ):
+            raise ValueError(
+                "before_inclusive and after_inclusive must be timezone-aware UTC "
+                f"datetimes. Got [{after_inclusive}] and [{before_inclusive}]."
+            )
+
+        # For Intercom search queries, the > operator means greater (or equal) than
+        # and the < operator means lower (or equal) than, so both bounds are
+        # inclusive. See e.g.
+        # https://developers.intercom.com/docs/references/rest-api/api.intercom.io/tickets/searchtickets
+        query_filters = [
+            {
+                FIELD: filter_field,
+                OPERATOR: ">",
+                VALUE: str(after_inclusive.timestamp()),
+            },
+            {
+                FIELD: filter_field,
+                OPERATOR: "<",
+                VALUE: str(before_inclusive.timestamp()),
+            },
+        ]
+
+        return self.search_endpoint(
+            query_filters=query_filters,
+            endpoint_type=endpoint_type,
+            response_data_key=response_data_key,
+        )
+
     def get_tickets(
         self, updated_before_inclusive: datetime, updated_after_inclusive: datetime
     ) -> list[dict[str, Any]]:
@@ -305,34 +359,21 @@ class IntercomAPIClient:
         Returns:
             List of Intercom inbound support tickets JSON
         """
-
-        # For Intercom queries, the > operator means greater (or equal) than
-        # and the < operator means lower (or equal) than, according to
-        # https://developers.intercom.com/docs/references/rest-api/api.intercom.io/tickets/searchtickets
-        query_filters = [
-            {
-                FIELD: UPDATED_AT,
-                OPERATOR: ">",
-                VALUE: str(updated_after_inclusive.timestamp()),
-            },
-            {
-                FIELD: UPDATED_AT,
-                OPERATOR: "<",
-                VALUE: str(updated_before_inclusive.timestamp()),
-            },
-        ]
-
-        tickets = self.search_endpoint(
-            query_filters=query_filters,
+        return self._search_by_time_window(
             endpoint_type=IntercomSearchEndpointType.TICKETS,
+            filter_field=UPDATED_AT,
             response_data_key=TICKETS,
+            before_inclusive=updated_before_inclusive,
+            after_inclusive=updated_after_inclusive,
         )
-        return tickets
 
     def get_contacts(
         self, created_before_inclusive: datetime, created_after_inclusive: datetime
     ) -> list[dict[str, Any]]:
         """Fetches contacts from Intercom using the search contacts endpoint.
+
+        We filter on created_at (not updated_at) to export only newly created
+        contacts, since previously created contacts are backfilled separately.
 
         Args:
             created_before_inclusive: Datetime to filter contacts created before this time
@@ -341,23 +382,33 @@ class IntercomAPIClient:
         Returns:
             List of Intercom contacts JSON
         """
-
-        query_filters = [
-            {
-                FIELD: CREATED_AT,
-                OPERATOR: ">",
-                VALUE: str(created_after_inclusive.timestamp()),
-            },
-            {
-                FIELD: CREATED_AT,
-                OPERATOR: "<",
-                VALUE: str(created_before_inclusive.timestamp()),
-            },
-        ]
-
-        contacts = self.search_endpoint(
-            query_filters=query_filters,
+        return self._search_by_time_window(
             endpoint_type=IntercomSearchEndpointType.CONTACTS,
+            filter_field=CREATED_AT,
             response_data_key=DATA,
+            before_inclusive=created_before_inclusive,
+            after_inclusive=created_after_inclusive,
         )
-        return contacts
+
+    def get_conversations(
+        self, updated_before_inclusive: datetime, updated_after_inclusive: datetime
+    ) -> list[dict[str, Any]]:
+        """Fetches conversations from Intercom using the search conversations endpoint.
+
+        Filtering is on updated_at, so a conversation is re-exported in every
+        window its updated_at falls in.
+
+        Args:
+            updated_before_inclusive: Datetime to filter conversations updated before this time
+            updated_after_inclusive: Datetime to filter conversations updated after this time
+
+        Returns:
+            List of Intercom conversations JSON
+        """
+        return self._search_by_time_window(
+            endpoint_type=IntercomSearchEndpointType.CONVERSATIONS,
+            filter_field=UPDATED_AT,
+            response_data_key=CONVERSATIONS,
+            before_inclusive=updated_before_inclusive,
+            after_inclusive=updated_after_inclusive,
+        )

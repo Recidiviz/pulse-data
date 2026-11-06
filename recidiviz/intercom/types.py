@@ -127,6 +127,7 @@ class IntercomSearchEndpointType(Enum):
 
     TICKETS = "tickets"
     CONTACTS = "contacts"
+    CONVERSATIONS = "conversations"
 
 
 @attr.frozen
@@ -184,6 +185,40 @@ class IntercomSearchTicket:
     contact_id: str
     # The ticket's raw JSON from the Intercom API search tickets response
     raw_ticket_json: dict
+
+    def to_json(self) -> dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+class IntercomConversationState(Enum):
+    """Represents an Intercom conversation state."""
+
+    OPEN = "open"
+    CLOSED = "closed"
+    SNOOZED = "snoozed"
+
+
+@attr.define(frozen=True, kw_only=True)
+class IntercomConversation:
+    """Represents an Intercom conversation."""
+
+    # The conversation's ID
+    conversation_id: str
+    # The state of the conversation
+    conversation_state: IntercomConversationState
+    # The priority of the conversation
+    priority: str
+    # The timestamp of when the conversation was created
+    created_at: datetime
+    # The timestamp of when the conversation was last updated
+    updated_at: datetime
+    # The ID of the contact who started the conversation
+    contact_id: str
+    # Names of the conversation's topics, i.e. its issue types. A conversation
+    # can have zero, one, or several.
+    issue_topics: list[str]
+    # The conversation's raw JSON from the Intercom API search conversations response
+    raw_conversation_json: dict
 
     def to_json(self) -> dict[str, Any]:
         return cattrs.unstructure(self)

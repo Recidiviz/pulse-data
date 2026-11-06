@@ -17,6 +17,7 @@
 """Tests IntercomJsonToCsvConverter"""
 
 import csv
+import json
 import os
 import tempfile
 import unittest
@@ -27,6 +28,7 @@ from recidiviz.intercom.intercom_export_columns import UPDATE_DATETIME_COLUMN_NA
 from recidiviz.intercom.json_to_csv_converter import (
     CATEGORY,
     CONTACTS,
+    CONVERSATIONS,
     CREATED_AT,
     CUSTOM_ATTRIBUTES,
     DEFAULT_DESCRIPTION,
@@ -35,6 +37,8 @@ from recidiviz.intercom.json_to_csv_converter import (
     EXTERNAL_ID,
     ID,
     NAME,
+    PRIORITY,
+    STATE,
     STATE_CODE,
     TICKET_ATTRIBUTES,
     TICKET_ID,
@@ -45,12 +49,15 @@ from recidiviz.intercom.json_to_csv_converter import (
 )
 from recidiviz.intercom.types import (
     IntercomContact,
+    IntercomConversation,
+    IntercomConversationState,
     IntercomSearchTicket,
     IntercomTicketCategory,
     IntercomTicketState,
 )
 
 RAW_TICKET_JSON = "raw_ticket_json"
+RAW_CONVERSATION_JSON = "raw_conversation_json"
 
 
 class TestIntercomSchemaTranslator(unittest.TestCase):
@@ -112,6 +119,44 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
             state_code=StateCode(self.contact_json[CUSTOM_ATTRIBUTES][STATE_CODE]),
             name=self.contact_json[NAME],
             email=self.contact_json[EMAIL],
+        )
+
+        self.conversation_json: dict = {
+            "type": "conversation",
+            "id": "123456789",
+            "created_at": 1784775861,
+            "updated_at": 1785956960,
+            "state": "closed",
+            "priority": "high",
+            "contacts": {
+                "type": "contact.list",
+                "contacts": [
+                    {"type": "contact", "id": "5ba682d23d7cf92bef87bfd4"},
+                ],
+            },
+            "topics": {
+                "type": "topic.list",
+                "topics": [
+                    {"type": "topic", "id": 1, "name": "Data accuracy challenge"},
+                    {"type": "topic", "id": 2, "name": "Access requests"},
+                ],
+                "total_count": 2,
+            },
+        }
+        self.intercom_conversation = IntercomConversation(
+            conversation_id=self.conversation_json[ID],
+            conversation_state=IntercomConversationState(self.conversation_json[STATE]),
+            priority=self.conversation_json[PRIORITY],
+            created_at=datetime.fromtimestamp(
+                self.conversation_json[CREATED_AT], tz=timezone.utc
+            ),
+            updated_at=datetime.fromtimestamp(
+                self.conversation_json[UPDATED_AT], tz=timezone.utc
+            ),
+            contact_id="5ba682d23d7cf92bef87bfd4",
+            # Sorted and deduped, so independent of Intercom's response order.
+            issue_topics=["Access requests", "Data accuracy challenge"],
+            raw_conversation_json=self.conversation_json,
         )
 
     def test_flatten_ticket(self) -> None:
@@ -183,6 +228,153 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
             email=contact_json[EMAIL],
         )
 
+    def test_flatten_conversation(self) -> None:
+        """Tests that flatten_conversation() properly parses the conversation JSON."""
+
+        conversation = self.json_to_csv_converter.flatten_conversation(
+            conversation_json=self.conversation_json
+        )
+
+        assert conversation == self.intercom_conversation
+
+    def test_flatten_conversation_no_contacts(self) -> None:
+        """flatten_conversation() raises when a conversation has no contacts."""
+
+        conversation_json = {**self.conversation_json}
+        conversation_json["contacts"] = {"type": "contact.list", "contacts": []}
+        with self.assertRaisesRegex(
+            ValueError, r"Expected at least one contact for conversation"
+        ):
+            self.json_to_csv_converter.flatten_conversation(
+                conversation_json=conversation_json
+            )
+
+    def test_flatten_conversation_multiple_contacts_records_first(self) -> None:
+        """flatten_conversation() records the first contact and warns when a conversation has several."""
+
+        conversation_json = {**self.conversation_json}
+        conversation_json["contacts"] = {
+            "type": "contact.list",
+            "contacts": [
+                {"type": "contact", "id": "5ba682d23d7cf92bef87bfd4"},
+                {"type": "contact", "id": "6cb793e34e8da03cfa98cae5"},
+            ],
+        }
+
+        with self.assertLogs(level="WARNING") as logs:
+            conversation = self.json_to_csv_converter.flatten_conversation(
+                conversation_json=conversation_json
+            )
+
+        assert conversation.contact_id == "5ba682d23d7cf92bef87bfd4"
+        assert len(conversation.raw_conversation_json["contacts"]["contacts"]) == 2
+        assert "has [2] contacts" in "".join(logs.output)
+
+    def _write_single_conversation_row(self, conversation_json: dict) -> dict[str, str]:
+        """Writes one conversation to CSV via write_data_to_csv and returns its row."""
+        with tempfile.TemporaryDirectory() as output_dir:
+            file_path = self.json_to_csv_converter.write_data_to_csv(
+                data_list=[conversation_json],
+                flatten_method=self.json_to_csv_converter.flatten_conversation,
+                output_dir=output_dir,
+                base_name=CONVERSATIONS,
+                update_datetime=self.update_datetime,
+            )
+            with open(file_path, "r", encoding="utf-8") as f:
+                return list(csv.DictReader(f))[0]
+
+    def test_conversation_raw_json_serialized_as_valid_json(self) -> None:
+        """The raw conversation blob is written to the CSV as valid JSON (not a
+        Python dict repr), so downstream views can JSON_EXTRACT a conversation's
+        topics (issue type) and tags (state code) from it."""
+
+        conversation_json = {
+            **self.conversation_json,
+            "topics": {
+                "type": "topic.list",
+                "topics": [{"type": "topic", "id": 1, "name": "Eligibility inquiry"}],
+            },
+            "tags": {
+                "type": "tag.list",
+                "tags": [{"type": "tag", "id": "1", "name": "TN"}],
+            },
+            # Intercom sends Python-incompatible JSON literals (false/true/null)
+            # that a dict repr would mangle.
+            "custom_attributes": {"Auto-translated": False},
+        }
+
+        raw_json = self._write_single_conversation_row(conversation_json)[
+            RAW_CONVERSATION_JSON
+        ]
+
+        # Guard against the blob being written as a dict repr (invalid JSON with
+        # single quotes / True / False / None).
+        self.assertEqual(json.dumps(conversation_json), raw_json)
+        self.assertEqual(conversation_json, json.loads(raw_json))
+
+    def test_conversation_issue_topics_serialized_as_json_array(self) -> None:
+        """A conversation's issue topics are flattened to a sorted, deduped list and
+        written to the CSV as a JSON array string, so downstream views can
+        JSON_EXTRACT_ARRAY them from the single column."""
+
+        issue_topics_str = self._write_single_conversation_row(self.conversation_json)[
+            "issue_topics"
+        ]
+
+        self.assertEqual(
+            ["Access requests", "Data accuracy challenge"],
+            json.loads(issue_topics_str),
+        )
+
+    def test_flatten_conversation_no_topics(self) -> None:
+        """flatten_conversation() yields empty issue_topics when a conversation has
+        no topics, whether the topics key is absent, an empty object, an empty
+        inner list, or a null inner list."""
+
+        without_topics_key = {
+            k: v for k, v in self.conversation_json.items() if k != "topics"
+        }
+        empty_topics_object = {**self.conversation_json, "topics": {}}
+        empty_topics_list = {
+            **self.conversation_json,
+            "topics": {"type": "topic.list", "topics": [], "total_count": 0},
+        }
+        null_topics_list = {
+            **self.conversation_json,
+            "topics": {"type": "topic.list", "topics": None},
+        }
+
+        for conversation_json in [
+            without_topics_key,
+            empty_topics_object,
+            empty_topics_list,
+            null_topics_list,
+        ]:
+            conversation = self.json_to_csv_converter.flatten_conversation(
+                conversation_json=conversation_json
+            )
+            self.assertEqual([], conversation.issue_topics)
+
+    def test_flatten_conversation_skips_topic_without_name(self) -> None:
+        """A topic object missing a 'name' is skipped rather than crashing the row."""
+
+        conversation_json = {
+            **self.conversation_json,
+            "topics": {
+                "type": "topic.list",
+                "topics": [
+                    {"type": "topic", "id": 1, "name": "Access requests"},
+                    {"type": "topic", "id": 2},
+                ],
+            },
+        }
+
+        conversation = self.json_to_csv_converter.flatten_conversation(
+            conversation_json=conversation_json
+        )
+
+        self.assertEqual(["Access requests"], conversation.issue_topics)
+
     def test_write_data_to_csv(self) -> None:
         """Tests that write_data_to_csv properly writes JSON data to a CSV file"""
 
@@ -204,7 +396,8 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
             # csv.DictReader will convert all values to strings
             expected_data[CREATED_AT] = str(expected_data[CREATED_AT])
             expected_data[UPDATED_AT] = str(expected_data[UPDATED_AT])
-            expected_data[RAW_TICKET_JSON] = str(expected_data[RAW_TICKET_JSON])
+            # The raw blob is written as valid JSON, not a Python dict repr.
+            expected_data[RAW_TICKET_JSON] = json.dumps(self.ticket_json)
             expected_data[UPDATE_DATETIME_COLUMN_NAME] = str(self.update_datetime)
 
             with open(file_path, "r", encoding="utf-8") as f:
@@ -235,12 +428,13 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
                 self.assertEqual("\n", f.read())
 
     def test_create_inbound_data_csvs(self) -> None:
-        """Tests that create_inbound_data_csvs() properly creates CSV files for tickets and contacts data."""
+        """Tests that create_inbound_data_csvs() properly creates CSV files for tickets, contacts and conversations data."""
 
         with tempfile.TemporaryDirectory() as output_dir:
             file_paths = self.json_to_csv_converter.create_inbound_data_csvs(
                 tickets=[self.ticket_json],
                 contacts=[self.contact_json],
+                conversations=[self.conversation_json],
                 output_dir=output_dir,
                 update_datetime=self.update_datetime,
             )
@@ -249,6 +443,7 @@ class TestIntercomSchemaTranslator(unittest.TestCase):
                 {
                     TICKETS: os.path.join(output_dir, f"{TICKETS}.csv"),
                     CONTACTS: os.path.join(output_dir, f"{CONTACTS}.csv"),
+                    CONVERSATIONS: os.path.join(output_dir, f"{CONVERSATIONS}.csv"),
                 },
                 file_paths,
             )

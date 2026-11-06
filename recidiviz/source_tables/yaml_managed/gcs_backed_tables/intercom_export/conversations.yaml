@@ -1,0 +1,49 @@
+address:
+  dataset_id: intercom_export
+  table_id: conversations
+description: >-
+  Contains conversations started when users reach out to us via Intercom.
+  Conversations are exported on updated_at, so the same conversation_id appears
+  across multiple update_datetime partitions; take the row with the latest
+  update_datetime per conversation_id.
+schema:
+  - name: conversation_id
+    type: STRING
+    mode: NULLABLE
+  - name: conversation_state
+    type: STRING
+    mode: NULLABLE
+  - name: priority
+    type: STRING
+    mode: NULLABLE
+  - name: created_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: updated_at
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: contact_id
+    type: STRING
+    mode: NULLABLE
+  - name: issue_topics
+    type: STRING
+    mode: NULLABLE
+  - name: raw_conversation_json
+    type: STRING
+    mode: NULLABLE
+  - name: update_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://{project_id}-intercom-export/*/conversations.csv
+  sourceFormat: CSV
+  compression: NONE
+  ignoreUnknownValues: false
+  csvOptions:
+    fieldDelimiter: ","
+    skipLeadingRows: "1"
+    quote: '"'
+    encoding: UTF-8
+    allowQuotedNewlines: true

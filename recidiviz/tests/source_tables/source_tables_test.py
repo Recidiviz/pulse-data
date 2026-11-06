@@ -117,6 +117,7 @@ COMMON_VESTIGES = [
     "intercom_export.click",
     "intercom_export.completion",
     "intercom_export.contacts",
+    "intercom_export.conversations",
     "intercom_export.dismissal",
     "intercom_export.fin_step_reached",
     "intercom_export.goal_success",

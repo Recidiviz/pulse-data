@@ -123,6 +123,10 @@ def export_and_upload_intercom_data(
         created_before_inclusive=end_datetime_inclusive,
         created_after_inclusive=start_datetime_inclusive,
     )
+    intercom_conversations = intercom_api_client.get_conversations(
+        updated_before_inclusive=end_datetime_inclusive,
+        updated_after_inclusive=start_datetime_inclusive,
+    )
 
     with tempfile.TemporaryDirectory() as temp_output_dir:
         file_paths = intercom_api_manager.download_and_process_export(
@@ -130,15 +134,19 @@ def export_and_upload_intercom_data(
             output_dir=temp_output_dir,
             update_datetime=update_datetime,
         )
-        # Only the headers from the outbound data need to be verified, since the data is unaltered
         verify_headers(file_paths)
 
         inbound_data_file_paths = json_to_csv_converter.create_inbound_data_csvs(
             tickets=intercom_tickets,
             contacts=intercom_contacts,
+            conversations=intercom_conversations,
             output_dir=temp_output_dir,
             update_datetime=update_datetime,
         )
+        # The inbound CSVs are assembled from our own flattening, whose column
+        # order must match the source table YAML (external tables map CSV columns
+        # positionally), so verify their headers too.
+        verify_headers(inbound_data_file_paths)
         if any(
             inbound_data_name in file_paths
             for inbound_data_name in inbound_data_file_paths

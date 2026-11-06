@@ -279,3 +279,54 @@ def test_download_export_data(
 
     # Assert
     assert result_export_data == "Test content"
+
+
+def test_get_conversations_exhausts_pagination(
+    intercom_api_client: IntercomAPIClient,
+) -> None:
+    """get_conversations() queries the conversations search endpoint and
+    concatenates every page of results until the cursor is exhausted."""
+
+    pages = [
+        {
+            "conversations": [{"id": "1"}, {"id": "2"}],
+            "pages": {"next": {"starting_after": "cursor_1"}},
+        },
+        {
+            "conversations": [{"id": "3"}],
+            "pages": {},
+        },
+    ]
+
+    def fake_search_post(_url: str, **_kwargs: Any) -> MagicMock:
+        fake_response = MagicMock()
+        fake_response.status_code = 200
+        fake_response.json.return_value = pages.pop(0)
+        return fake_response
+
+    intercom_api_client._session.post.side_effect = fake_search_post  # type: ignore # pylint: disable=protected-access
+
+    conversations = intercom_api_client.get_conversations(
+        updated_before_inclusive=TIME_NOW,
+        updated_after_inclusive=TIME_HOUR_AGO,
+    )
+
+    assert conversations == [{"id": "1"}, {"id": "2"}, {"id": "3"}]
+    called_args, _ = intercom_api_client._session.post.call_args_list[0]  # type: ignore # pylint: disable=protected-access
+    assert "/conversations/search" in called_args[0]
+
+
+def test_search_getters_reject_naive_datetimes(
+    intercom_api_client: IntercomAPIClient,
+) -> None:
+    """The search getters require timezone-aware UTC datetimes so .timestamp()
+    does not silently use local time."""
+
+    naive = datetime(2024, 1, 1)
+    for getter in (
+        intercom_api_client.get_tickets,
+        intercom_api_client.get_contacts,
+        intercom_api_client.get_conversations,
+    ):
+        with pytest.raises(ValueError, match=r"must be timezone-aware UTC datetimes"):
+            getter(naive, TIME_NOW)

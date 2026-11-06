@@ -45,3 +45,4 @@ external_data_configuration:
     skipLeadingRows: "1"
     quote: '"'
     encoding: UTF-8
+    allowQuotedNewlines: true

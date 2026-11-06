@@ -16,6 +16,7 @@
 # =============================================================================
 """Translates JSON from inbound Intercom data into fields that match the corresponding BQ tables."""
 
+import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -28,6 +29,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.intercom.intercom_export_columns import UPDATE_DATETIME_COLUMN_NAME
 from recidiviz.intercom.types import (
     IntercomContact,
+    IntercomConversation,
+    IntercomConversationState,
     IntercomSearchTicket,
     IntercomTicketCategory,
     IntercomTicketState,
@@ -35,6 +38,10 @@ from recidiviz.intercom.types import (
 
 TICKETS = "tickets"
 CONTACTS = "contacts"
+CONVERSATIONS = "conversations"
+# Singular entity labels used in per-record error/log messages.
+TICKET = "ticket"
+CONVERSATION = "conversation"
 # ticket JSON fields
 TICKET_ID = "ticket_id"
 TICKET_STATE = "ticket_state"
@@ -52,6 +59,19 @@ EXTERNAL_ID = "external_id"
 CUSTOM_ATTRIBUTES = "custom_attributes"
 STATE_CODE = "state_code"
 ROLE = "role"
+# conversation JSON fields
+STATE = "state"
+PRIORITY = "priority"
+TOPICS = "topics"
+
+
+def _csv_safe(value: Any) -> Any:
+    """Serializes dict/list values to JSON strings so they survive the round trip
+    through a scalar CSV column as valid JSON, rather than as a Python repr (which
+    uses single quotes and True/False/None). Scalars pass through unchanged."""
+    if isinstance(value, (dict, list)):
+        return json.dumps(value)
+    return value
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -59,29 +79,38 @@ class IntercomJsonToCsvConverter:
     """Translates JSON from Intercom into fields that match the corresponding BQ tables."""
 
     @staticmethod
+    def _first_contact_id(
+        entity_json: dict[str, Any], *, entity_label: str, entity_id: str
+    ) -> str:
+        """Returns the id of the first contact on a ticket or conversation.
+
+        Both nest contacts as entity["contacts"]["contacts"], a list of contact
+        objects each with an "id". Intercom lists the contact who started the
+        ticket/conversation first; later entries are people added afterwards. We
+        pull from this array rather than the author blob because the author is
+        usually a bot.
+        """
+        contacts = entity_json[CONTACTS][CONTACTS]
+        if not contacts:
+            raise ValueError(
+                f"Expected at least one contact for {entity_label} "
+                f"[{entity_id}], found none."
+            )
+        if len(contacts) > 1:
+            logging.warning(
+                "%s [%s] has [%s] contacts; recording the first as contact_id.",
+                entity_label.capitalize(),
+                entity_id,
+                len(contacts),
+            )
+        return contacts[0][ID]
+
+    @staticmethod
     def flatten_ticket(ticket_json: dict[str, Any]) -> IntercomSearchTicket:
         """Flattens Intercom ticket JSON into flat fields to match the defined BQ table schema"""
 
         created_at_timestamp = ticket_json[CREATED_AT]
         updated_at_timestamp = ticket_json[UPDATED_AT]
-
-        # We pull contact info from this array instead of from the author info blob because that author
-        # is usually recorded as a bot
-        # A ticket's contacts are nested as ticket["contacts"]["contacts"], a list of
-        # contact objects each with an "id".
-        ticket_contacts = ticket_json[CONTACTS][CONTACTS]
-        if not ticket_contacts:
-            raise ValueError(
-                f"Expected at least one contact for ticket "
-                f"[{ticket_json[TICKET_ID]}], found none."
-            )
-        if len(ticket_contacts) > 1:
-            # Intercom lists the ticket author first; later entries are people tagged in afterwards.
-            logging.warning(
-                "Ticket [%s] has [%s] contacts; recording the first as contact_id.",
-                ticket_json[TICKET_ID],
-                len(ticket_contacts),
-            )
 
         # As of 8/14/26, all tickets for the past two years have all of these fields,
         # so we assume that each field is present and non-null for every ticket
@@ -93,7 +122,9 @@ class IntercomJsonToCsvConverter:
             created_at=datetime.fromtimestamp(created_at_timestamp, tz=timezone.utc),
             updated_at=datetime.fromtimestamp(updated_at_timestamp, tz=timezone.utc),
             ticket_state=IntercomTicketState(ticket_json[TICKET_STATE]),
-            contact_id=ticket_contacts[0][ID],
+            contact_id=IntercomJsonToCsvConverter._first_contact_id(
+                ticket_json, entity_label=TICKET, entity_id=ticket_json[TICKET_ID]
+            ),
             raw_ticket_json=ticket_json,
         )
 
@@ -126,6 +157,38 @@ class IntercomJsonToCsvConverter:
         )
 
     @staticmethod
+    def flatten_conversation(conversation_json: dict[str, Any]) -> IntercomConversation:
+        """Flattens Intercom conversation JSON into flat fields to match the defined BQ table schema"""
+
+        created_at_timestamp = conversation_json[CREATED_AT]
+        updated_at_timestamp = conversation_json[UPDATED_AT]
+
+        # A conversation's topics are its issue types, nested as
+        # conversation["topics"]["topics"]. Many conversations have none, in which
+        # case Intercom sends "topics" as an empty object or omits it; the inner
+        # list can also be absent or null. Dedupe and sort so the serialized value
+        # is stable across exports of the same conversation.
+        topics = conversation_json.get(TOPICS) or {}
+        issue_topics = sorted(
+            {topic[NAME] for topic in (topics.get(TOPICS) or []) if NAME in topic}
+        )
+
+        return IntercomConversation(
+            conversation_id=conversation_json[ID],
+            conversation_state=IntercomConversationState(conversation_json[STATE]),
+            priority=conversation_json[PRIORITY],
+            created_at=datetime.fromtimestamp(created_at_timestamp, tz=timezone.utc),
+            updated_at=datetime.fromtimestamp(updated_at_timestamp, tz=timezone.utc),
+            contact_id=IntercomJsonToCsvConverter._first_contact_id(
+                conversation_json,
+                entity_label=CONVERSATION,
+                entity_id=conversation_json[ID],
+            ),
+            issue_topics=issue_topics,
+            raw_conversation_json=conversation_json,
+        )
+
+    @staticmethod
     def write_data_to_csv(
         data_list: list[dict[str, Any]],
         flatten_method: Callable[[dict[str, Any]], Any],
@@ -148,7 +211,8 @@ class IntercomJsonToCsvConverter:
             the filepath to the CSV
         """
         flattened_json: list[dict[str, Any]] = [
-            flatten_method(data_record).to_json() for data_record in data_list
+            {k: _csv_safe(v) for k, v in flatten_method(data_record).to_json().items()}
+            for data_record in data_list
         ]
 
         df = pd.DataFrame(flattened_json)
@@ -169,38 +233,39 @@ class IntercomJsonToCsvConverter:
         cls,
         tickets: list[dict[str, Any]],
         contacts: list[dict[str, Any]],
+        conversations: list[dict[str, Any]],
         output_dir: str,
         update_datetime: datetime,
     ) -> dict[str, str]:
-        """Creates CSV files for Inbound Intercom tickets and contacts data
+        """Creates CSV files for inbound Intercom tickets, contacts and conversations data
 
         Args:
             tickets: List of raw ticket JSON
             contacts: List of raw contact JSON
+            conversations: List of raw conversation JSON
             output_dir: output directory for the CSVs
             update_datetime: the datetime of the export window, written to every row
 
         Returns:
-            dictionary of output filepaths for each data type (tickets and contacts)
+            dictionary of output filepaths for each data type (tickets, contacts and conversations)
 
         """
 
-        file_paths = {}
+        data_by_name: list[
+            tuple[str, list[dict[str, Any]], Callable[[dict[str, Any]], Any]]
+        ] = [
+            (TICKETS, tickets, cls.flatten_ticket),
+            (CONTACTS, contacts, cls.flatten_contact),
+            (CONVERSATIONS, conversations, cls.flatten_conversation),
+        ]
 
-        file_paths[TICKETS] = cls.write_data_to_csv(
-            data_list=tickets,
-            flatten_method=cls.flatten_ticket,
-            output_dir=output_dir,
-            base_name=TICKETS,
-            update_datetime=update_datetime,
-        )
-
-        file_paths[CONTACTS] = cls.write_data_to_csv(
-            data_list=contacts,
-            flatten_method=cls.flatten_contact,
-            output_dir=output_dir,
-            base_name=CONTACTS,
-            update_datetime=update_datetime,
-        )
-
-        return file_paths
+        return {
+            base_name: cls.write_data_to_csv(
+                data_list=data_list,
+                flatten_method=flatten_method,
+                output_dir=output_dir,
+                base_name=base_name,
+                update_datetime=update_datetime,
+            )
+            for base_name, data_list, flatten_method in data_by_name
+        }
