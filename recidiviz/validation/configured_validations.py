@@ -402,6 +402,18 @@ from recidiviz.validation.views.state.us_ar_edovo_records_preprocessed_no_unmatc
 from recidiviz.validation.views.state.us_ar_edovo_records_preprocessed_stale_receipts import (
     US_AR_EDOVO_RECORDS_PREPROCESSED_STALE_RECEIPTS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.us_ar_edovo_writeback_no_double_writes import (
+    US_AR_EDOVO_WRITEBACK_NO_DOUBLE_WRITES_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_writeback_no_unattempted_months import (
+    US_AR_EDOVO_WRITEBACK_NO_UNATTEMPTED_MONTHS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_writeback_no_unresolved_writes import (
+    US_AR_EDOVO_WRITEBACK_NO_UNRESOLVED_WRITES_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.us_ar_edovo_writeback_stale_runs import (
+    US_AR_EDOVO_WRITEBACK_STALE_RUNS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.us_ar_ged_completions_flag_date_consistency import (
     US_AR_GED_COMPLETIONS_FLAG_DATE_CONSISTENCY_VIEW_BUILDER,
 )
@@ -1539,6 +1551,24 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=US_AR_EDOVO_MONTHLY_ACCOUNTING_HOURS_MATCH_PROPOSED_CREDIT_VIEW_BUILDER,
             validation_category=ValidationCategory.CONSISTENCY,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_WRITEBACK_NO_DOUBLE_WRITES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_WRITEBACK_NO_UNRESOLVED_WRITES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_WRITEBACK_NO_UNATTEMPTED_MONTHS_VIEW_BUILDER,
+            validation_category=ValidationCategory.CONSISTENCY,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_WRITEBACK_STALE_RUNS_VIEW_BUILDER,
+            validation_category=ValidationCategory.CONSISTENCY,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         ExistenceDataValidationCheck(
             view_builder=US_AR_RESIDENT_DATA_NO_DUPLICATE_PERSONS_VIEW_BUILDER,
