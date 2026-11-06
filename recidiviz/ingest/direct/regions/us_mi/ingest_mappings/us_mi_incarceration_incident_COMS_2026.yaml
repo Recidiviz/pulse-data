@@ -31,7 +31,6 @@ output:
             $enum_mapping:
               $raw_text: charge_descriptions
               $custom_parser: us_mi_custom_enum_parsers.map_incident_type
-          # TODO(MI-8608): Confirm incident_severity is always hydrated (we shouldn't get class iii anymore)
           incident_severity:
             $conditional:
               - $if:
@@ -50,6 +49,14 @@ output:
                         $args:
                           offense_codes: charge_codes
                 $then: $literal_enum(StateIncarcerationIncidentSeverity.SECOND_HIGHEST)
+              - $else_if:
+                  $equal:
+                    - $literal("True")
+                    - $custom:
+                        $function: us_mi_custom_parsers.parse_class_iii
+                        $args:
+                          offense_codes: charge_codes
+                $then: $literal_enum(StateIncarcerationIncidentSeverity.THIRD_HIGHEST)
           is_violent:
             $custom:
               $function: us_mi_custom_parsers.parse_incarceration_incident_is_violent
