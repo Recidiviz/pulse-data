@@ -18,6 +18,7 @@ input_columns:
   Maximum_Term_Months: STRING
   Maximum_Term_Days: STRING
   update_datetime: DATETIME
+  Parole_Expiration_Date: DATE
   seq_num: INTEGER
 unused_columns: []
 output:
@@ -33,9 +34,16 @@ output:
             - StateSentenceLength:
                 sequence_num: seq_num
                 length_update_datetime: update_datetime
-                # TODO(MI-350): Validate Scheduled_End_Date is an appropriate max date
-                # Do we need to incorporate Maximum_Term_Life?
-                projected_completion_date_max_external: Scheduled_End_Date
+                # Parole_Expiration_Date is only set for prison sentences currently
+                # being served on parole, and it comes from OMNI until COMS sends
+                # parole sentences. TODO(MI-8530): Remove once COMS parole sentences
+                # are in the data transfer.
+                projected_completion_date_max_external:
+                  $conditional:
+                    - $if:
+                        $not_null: Parole_Expiration_Date
+                      $then: Parole_Expiration_Date
+                    - $else: Scheduled_End_Date
                 # TODO(MI-8527): Hydrate ERD properly once we get PBJ Date
                 projected_completion_date_min_external:
                   $conditional:

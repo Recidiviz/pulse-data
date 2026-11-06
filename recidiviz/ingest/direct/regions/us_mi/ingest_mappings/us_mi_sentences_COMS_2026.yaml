@@ -10,18 +10,15 @@ input_columns:
   Sentence_Type: STRING
   Jurisdiction_Type: STRING
   Jurisdiction: STRING
-  Minimum_Term_Life: STRING
+  Scheduled_End_Date_Life: STRING
   Sentence_Date: STRING
   Sentence_Effective_Date: STRING
-  Sentence_Begin_Date: STRING
-  Commitment_Date: STRING
   Charge_Id: STRING
-  Offense_Date: STRING
+  Offense_Date: DATE
   Charge_Count: STRING
   crime_code: STRING
   crime_code_description: STRING
-  Conviction_Date: STRING
-  End_Date: STRING
+  Conviction_Date: DATE
   End_reason: STRING
   NCIC_Code: STRING
   offense_type_ids: STRING
@@ -31,14 +28,7 @@ input_columns:
   charge_has_at_least_one_sentence_over_1_year: INTEGER
   Prison_Applicable: STRING
   Probation_Applicable: STRING
-unused_columns:
-  # TODO(MI-350): Check how `Sentence_Effective_Date and Sentence_Begin_Date and
-  # Commitment_Date relate and determine if we can just use effective date
-  - Sentence_Begin_Date
-  - Commitment_Date
-  - End_Date
-  # TODO(MI-350): Evaluate whether we can use this for charge classification when we have real data
-  - charge_has_at_least_one_sentence_over_1_year
+unused_columns: []
 output:
   StatePerson:
     external_ids:
@@ -72,22 +62,33 @@ output:
                   $enum_mapping:
                     $raw_text: Sentence_Type
                     $mappings:
+                      # Interstate Compact sentences are another state's sentences
+                      # supervised in MI. Their dockets have Jurisdiction_Type "State",
+                      # so sentencing_authority maps to OTHER_STATE.
                       StateSentenceType.STATE_PRISON:
                         - "Prison"
+                        - "Interstate Compact Prison"
                       StateSentenceType.PROBATION:
                         - "Probation"
                         - "Delayed Sentence"
+                        - "Interstate Compact Probation"
           sentencing_authority:
-            $enum_mapping:
-              $raw_text: Jurisdiction_Type
-              $mappings:
-                # MI has a unified court system so when Juridiction_Type = County,
-                # it means a state court in a judicial county
-                StateSentencingAuthority.STATE:
-                  - "County"
-                StateSentencingAuthority.OTHER_STATE:
-                  - "State"
-                  - "US Territory"
+            $conditional:
+              - $if:
+                  $not_null: Jurisdiction_Type
+                $then:
+                  $enum_mapping:
+                    $raw_text: Jurisdiction_Type
+                    $mappings:
+                      # MI has a unified court system so when Juridiction_Type = County,
+                      # it means a state court in a judicial county
+                      StateSentencingAuthority.STATE:
+                        - "County"
+                      StateSentencingAuthority.OTHER_STATE:
+                        - "State"
+                        - "US Territory"
+              # Some dockets migrated from OMNI have no jurisdiction or court recorded
+              - $else: $literal_enum(StateSentencingAuthority.INTERNAL_UNKNOWN)
           county_code:
             $conditional:
               - $if:
@@ -95,14 +96,13 @@ output:
                     - Jurisdiction_Type
                     - $literal("County")
                 $then: Jurisdiction
-          # TODO(MI-350): Validate with real data to see what to do with Maximum_Term_Life
+          # Scheduled_End_Date_Life is set (and Scheduled_End_Date is null) for life
+          # sentences of every type, including lifetime probation
           is_life:
             $equal:
-              - Minimum_Term_Life
+              - Scheduled_End_Date_Life
               - $literal("1")
           imposed_date: Sentence_Date
-          # TODO(MI-350): Check how `Sentence_Effective_Date and Sentence_Begin_Date and
-          # Commitment_Date relate and determine if we can just use effective date
           current_state_provided_start_date: Sentence_Effective_Date
           # TODO(MI-13): Re-visit mapping when we get real data
           charges:
@@ -110,7 +110,14 @@ output:
                 external_id: Charge_Id
                 status:
                   $conditional:
-                    # if the charge has ended, use end_status to denote final charge status
+                    # Every COMS charge attached to a sentence is a conviction, so every
+                    # charge maps to CONVICTED no matter how it later ended. Validation
+                    # requires each sentence to have a CONVICTED charge, and each COMS
+                    # sentence has exactly one charge. When a conviction is later undone
+                    # (vacated, dismissed, reversed on appeal, plea withdrawn), the
+                    # sentence status snapshots record it as VACATED, and End_reason stays
+                    # in status_raw_text here. Each reason is listed so that a new one
+                    # fails parsing instead of silently mapping to CONVICTED.
                     - $if:
                         $not_null: End_reason
                       $then:
@@ -118,7 +125,7 @@ output:
                           $raw_text: End_reason
                           $mappings:
                             StateChargeV2Status.CONVICTED:
-                              # Active
+                              # Sentence served, revoked, or modified (active)
                               - "7411 Probation Revoked"
                               - "Administrative Discharge from Prison"
                               - "Administrative Discharge from Parole"
@@ -161,91 +168,42 @@ output:
                               - "Termination for Classification"
                               - "Termination of Non-Controlling Sentence"
                               - "Veterans Court Probation Revoked"
-                              # Inactive (legacy migrated over from OMNI)
+                              # Sentence served, revoked, or modified (inactive, legacy
+                              # migrated over from OMNI)
                               - "Closed, serving other charge"
                               - "Combination Sentence Imposed"
                               - "Completed Satisfactorily"
                               - "Court Discharged with Time Served"
-                              - "Court Resentenced to Probation"
                               - "Death"
-                              - "Discharged While Escapee or Absconder"
                               - "Early Discharge"
-                              - "HYTA Probation Revoked"
-                              - "ischarged Without Improvement"
-                              - "New Commitment While Under Sentence"
-                              - "Offender Discharge"
-                              - "Order Terminated, Continued on Additional Order(s)"
-                              - "Out of State Parolee Receiving Sentence In Michigan"
-                              - "Out of State Parolee Receiving Sentence Out of State"
-                              - "Parole Term Extended"
                               - "Parole Violation New Sentence"
                               - "Parole Violation Technical Violation"
-                              - "Parole Violator New Sentence"
-                              - "Parole Violator Technical Violation"
-                              - "Probation Violator New Sentence"
-                              - "Probation Violator Technical Violation"
-                              - "Release from SAI - Complete"
-                              - "Release from SAI - Incomplete"
                               - "Resentenced on Appeal"
-                              - "Resentenced on Appeal to Jail Only"
-                              - "Sentence Discharge while on Parole"
-                              - "Sentence Reduced to Misdemeanor"
-                              - "Sentence Suspended"
                               - "Sentence Suspended by Court"
-                              - "Sentenced to Community Service Only"
-                              - "Sentenced to Prison While in Custody of Outside Jurisdiction"
-                              - "Status Revoked"
-                              - "Supervision Transferred to District Court"
-                              - "Suspended Sentence"
-                              - "Technical Violation Sustained"
-                            StateChargeV2Status.ADJUDICATED:
-                              # Active
+                              # Adjudicated without a further sentence (active)
                               - "Deferred Sentence Successfully Completed"
                               - "HYTA Prison Release, Continued on Probation"
                               - "Sentenced From Delay No Further Sentence Imposed"
                               - "Sentenced to Juvenile Supervision"
-                              # Inactive (legacy migrated over from OMNI)
-                              - "Sentenced to Family Independence Agency (DSS)"
-                              - "Sentenced to MDHHS - Juvenile"
-                              - "Sentenced to Prison under HYTA"
-                            StateChargeV2Status.ACQUITTED:
-                              # Active
+                              # Conviction undone after sentencing (active)
+                              - "Discharged by Court, Nollo Prosequi"
+                              - "Dismissed by Court"
+                              - "Plea Withdrawn"
                               - "Vacated"
-                              # Inactive (legacy migrated over from OMNI)
+                              - "Vacated with Remand"
+                              # Conviction undone after sentencing (inactive, legacy
+                              # migrated over from OMNI)
+                              - "Closed due to Accompanying 333.7413 Charge"
                               - "Conviction Reversed by Court"
                               - "Reversal on Appeal"
                               - "Vacated due to Habitual Offender Conviction"
-                            StateChargeV2Status.DROPPED:
-                              # Active
-                              - "Discharged by Court, Nollo Prosequi"
-                              - "Dismissed by Court"
-                              # Inactive (legacy migrated over from OMNI)
-                              - "Closed due to Accompanying 750.520F Charge CSC 2nd Notice"
-                              - "Closed due to Accompanying 333.7413 Charge"
-                            StateChargeV2Status.PENDING:
-                              # Active
-                              - "Plea Withdrawn"
-                              - "Vacated with Remand"
-                            StateChargeV2Status.TRANSFERRED_AWAY:
-                              # Active
+                              # Supervision transferred away (active)
                               - "Discharged by Transfer to Foreign Country"
                               - "Interstate Closed - Transfer"
-                              # Inactive (legacy migrated over from OMNI)
-                              - "Out of State Case Transferred out of Michigan"
-                            StateChargeV2Status.INTERNAL_UNKNOWN:
-                              # Inactive (legacy migrated over from OMNI)
-                              - "Client Number Reassignment"
-                              - "Close Reason Integration Test"
+                              # Unknown outcome (inactive, legacy migrated over from OMNI)
                               - "Closed Legal Order"
-                              - "Closed Offender Charge"
-                              - "Interest Closed for Interstate Order"
-                              - "Order Entered in Error"
                               - "Other"
                               - "Predates COMS as system of record"
-                              - "Sent Close Reason Integration Testing"
-                              - "Test-Docket Process End Reason"
-                    # if the charge has not ended, assume that it's convicted
-                    # since we we only get charges that start out convicted
                     - $else: $literal_enum(StateChargeV2Status.CONVICTED)
                 offense_date: Offense_Date
                 ncic_code: NCIC_Code
@@ -280,16 +238,6 @@ output:
                 classification_type:
                   $conditional:
                     - $if:
-                        $not_null: Adjusted_Crime_Code_Class
-                      $then:
-                        $enum_mapping:
-                          $raw_text: Adjusted_Crime_Code_Class
-                          $mappings:
-                            StateChargeV2ClassificationType.FELONY:
-                              - "Felony"
-                            StateChargeV2ClassificationType.MISDEMEANOR:
-                              - "Misdemeanor"
-                    - $else_if:
                         $not_null: StatRpt_term
                       $then:
                         $conditional:
@@ -307,10 +255,9 @@ output:
                                   - $literal("None")
                             $then: $literal_enum(StateChargeV2ClassificationType.INTERNAL_UNKNOWN)
                           - $else: $literal_enum(StateChargeV2ClassificationType.FELONY) # All other value options are for felonies
-                # We're going to pull classification subtype (degrees) from the description field; if it isn't contained in the description,
-                # then we'll return None but that doesn't necessarily mean there isn't a subclass
-                classification_subtype:
-                  $custom:
-                    $function: us_mi_custom_parsers.parse_charge_subclass
-                    $args:
-                      description: crime_code_description
+                    - $else_if:
+                        $equal:
+                          - charge_has_at_least_one_sentence_over_1_year
+                          - $literal("1")
+                      $then: $literal_enum(StateChargeV2ClassificationType.FELONY)
+                classification_subtype: Adjusted_Crime_Code_Class

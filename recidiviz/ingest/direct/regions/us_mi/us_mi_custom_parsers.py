@@ -29,6 +29,9 @@ import re
 from re import findall, search
 from typing import Optional
 
+from recidiviz.common.constants.reasonable_dates import (
+    STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND,
+)
 from recidiviz.common.str_field_utils import (
     parse_date,
     parse_datetime,
@@ -117,7 +120,11 @@ def date_from_start_and_duration(
     days_str: str,
 ) -> Optional[str]:
     """Returns the ISO date reached by adding years_str, months_str, and days_str
-    to start_date_str, or None if the start date or duration cannot be parsed."""
+    to start_date_str, or None if the start date or duration cannot be parsed or the
+    resulting date is not before STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND. Some
+    sentences use terms like 999 years as placeholders, which put the date past what
+    StateSentenceLength allows.
+    """
     start = parse_date(start_date_str)
     if not start:
         return None
@@ -129,7 +136,10 @@ def date_from_start_and_duration(
     )
     if not days:
         return None
-    return (start + datetime.timedelta(days=days)).isoformat()
+    end_date = start + datetime.timedelta(days=days)
+    if end_date >= STANDARD_DATE_FIELD_REASONABLE_UPPER_BOUND:
+        return None
+    return end_date.isoformat()
 
 
 def parole_possible(min_life: str, mcl: str, attempt: str) -> bool:
