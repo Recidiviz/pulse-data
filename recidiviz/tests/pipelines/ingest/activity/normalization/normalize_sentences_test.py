@@ -319,6 +319,161 @@ class TestSentenceV2Normalization(unittest.TestCase):
         for charge in last_sentence.charges:
             assert last_sentence in charge.sentences
 
+    def test_get_normalized_sentences_length_term_units_pass_through(self) -> None:
+        sentence = self._new_sentence(1)
+        sentence.sentence_lengths = [
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                sentence_length_id=111,
+                length_update_datetime=self.start_dt,
+                sentence_length_days_min=912,
+                min_term_years=2,
+                min_term_months=6,
+                min_term_days=0,
+                max_term_years=5,
+                max_term_months=0,
+                max_term_days=0,
+                sentence_length_metadata='{"key": "value"}',
+                sentence=sentence,
+            ),
+        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
+        length = normalized_sentence.sentence_lengths[0]
+        assert length.min_term_years == 2
+        assert length.min_term_months == 6
+        assert length.min_term_days == 0
+        assert length.max_term_years == 5
+        assert length.max_term_months == 0
+        assert length.max_term_days == 0
+        assert length.sentence_length_metadata == '{"key": "value"}'
+
+    def test_get_normalized_sentences_length_days_derived_from_term_units(self) -> None:
+        sentence = self._new_sentence(1)
+        sentence.sentence_lengths = [
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                sentence_length_id=111,
+                length_update_datetime=self.start_dt,
+                min_term_years=2,
+                min_term_months=6,
+                max_term_years=5,
+                sentence=sentence,
+            ),
+        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
+        length = normalized_sentence.sentence_lengths[0]
+        # 2y 6m -> int(2 * 365.25) + 6 * 30; 5y -> int(5 * 365.25)
+        assert length.sentence_length_days_min == 910
+        assert length.sentence_length_days_max == 1826
+        assert length.min_term_years == 2
+        assert length.min_term_months == 6
+        assert length.min_term_days is None
+
+    def test_get_normalized_sentences_length_state_day_count_kept_over_term_units(
+        self,
+    ) -> None:
+        sentence = self._new_sentence(1)
+        sentence.sentence_lengths = [
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                sentence_length_id=111,
+                length_update_datetime=self.start_dt,
+                sentence_length_days_min=900,
+                min_term_years=2,
+                min_term_months=6,
+                max_term_years=5,
+                sentence=sentence,
+            ),
+        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
+        length = normalized_sentence.sentence_lengths[0]
+        assert length.sentence_length_days_min == 900
+        assert length.sentence_length_days_max == 1826
+
+    def test_get_normalized_sentences_length_reversed_terms_swapped_as_wholes(
+        self,
+    ) -> None:
+        sentence = self._new_sentence(1)
+        sentence.sentence_lengths = [
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                sentence_length_id=111,
+                length_update_datetime=self.start_dt,
+                min_term_years=5,
+                max_term_years=2,
+                max_term_months=6,
+                sentence=sentence,
+            ),
+        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
+        length = normalized_sentence.sentence_lengths[0]
+        assert (
+            length.min_term_years,
+            length.min_term_months,
+            length.min_term_days,
+        ) == (2, 6, None)
+        assert (
+            length.max_term_years,
+            length.max_term_months,
+            length.max_term_days,
+        ) == (5, None, None)
+        assert length.sentence_length_days_min == 910
+        assert length.sentence_length_days_max == 1826
+
+    def test_get_normalized_sentences_length_reversed_day_columns_swapped_with_terms(
+        self,
+    ) -> None:
+        sentence = self._new_sentence(1)
+        sentence.sentence_lengths = [
+            StateSentenceLength(
+                state_code=self.state_code_value,
+                sentence_length_id=111,
+                length_update_datetime=self.start_dt,
+                sentence_length_days_min=1826,
+                sentence_length_days_max=910,
+                min_term_years=5,
+                max_term_years=2,
+                max_term_months=6,
+                sentence=sentence,
+            ),
+        ]
+        person = state_entities.StatePerson(
+            state_code=self.state_code_value,
+            sentences=[sentence],
+        )
+        normalized_sentence = self._get_normalized_sentences_for_person(
+            person, self.delegate
+        )[0]
+        length = normalized_sentence.sentence_lengths[0]
+        assert length.sentence_length_days_min == 910
+        assert length.sentence_length_days_max == 1826
+        assert (length.min_term_years, length.min_term_months) == (2, 6)
+        assert (length.max_term_years, length.max_term_months) == (5, None)
+
     def test_get_normalized_sentences_length_empty_projected_fields(self) -> None:
         sentence = self._new_sentence(1)
         sentence.sentence_status_snapshots = [

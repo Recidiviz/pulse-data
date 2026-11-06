@@ -38,6 +38,7 @@ from recidiviz.common.constants.state.state_sentence import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ncic import get_description
+from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.persistence.entity.activity import normalized_entities
 from recidiviz.persistence.entity.activity.entities import (
     StateChargeV2,
@@ -126,6 +127,23 @@ def normalize_charge_v2(charge: StateChargeV2) -> NormalizedStateChargeV2:
     )
 
 
+def _term_to_days(
+    years: int | None, months: int | None, days: int | None
+) -> int | None:
+    """Returns the approximate length in days of a term given as year, month, and
+    day components, or None when no component is set. Uses the same conversion
+    the ingest mappings use for state-supplied units (365.25 days per year, 30
+    days per month); a missing component counts as 0.
+    """
+    if years is None and months is None and days is None:
+        return None
+    return parse_days_from_duration_pieces(
+        years_str=str(years) if years is not None else None,
+        months_str=str(months) if months is not None else None,
+        days_str=str(days) if days is not None else None,
+    )
+
+
 def normalize_sentence_lengths(
     sentence: StateSentence,
     delegate: StateSpecificSentenceNormalizationDelegate,
@@ -138,6 +156,9 @@ def normalize_sentence_lengths(
           to actually be the min/max of the hydrated values, correcting it if external
           data is not consistent. Other date enforcement occurs at ingest in the
           __attrs_post_init__ of StateSentenceLength
+        - Fills a null sentence_length_days min/max from the corresponding term's
+          units (a state-supplied day count is kept as is), then swaps a reversed
+          min/max bound as a whole, day count and term together.
 
     If the delegate's `should_carry_forward_projected_dates(sentence)` returns
     True, NULL `projected_completion_date_min/max_external` and
@@ -167,9 +188,24 @@ def normalize_sentence_lengths(
         # they are consistent in "normalized_state"
         # See the __attrs_post_init__ of StateSentenceLength to see what
         # projected field consitency we enforce at ingest.
-        days_min, days_max = get_min_max_fields(
-            length.sentence_length_days_min, length.sentence_length_days_max
+        min_term = (length.min_term_years, length.min_term_months, length.min_term_days)
+        max_term = (length.max_term_years, length.max_term_months, length.max_term_days)
+        days_min = (
+            length.sentence_length_days_min
+            if length.sentence_length_days_min is not None
+            else _term_to_days(*min_term)
         )
+        days_max = (
+            length.sentence_length_days_max
+            if length.sentence_length_days_max is not None
+            else _term_to_days(*max_term)
+        )
+        # A reversed bound is swapped as a whole (day count and term together), so
+        # the min_* columns always describe the same bound. Comparing component by
+        # component would scramble terms like (1y, 6m) and (2y, 0m).
+        if days_min is not None and days_max is not None and days_min > days_max:
+            min_term, max_term = max_term, min_term
+            days_min, days_max = days_max, days_min
         # Projected completion dates are either provided through state provided data,
         # or calculated from sentence length days + serving start.
         # We do not allow a mixture. Note that if a sentence hasn't begun serving,
@@ -220,6 +256,13 @@ def normalize_sentence_lengths(
                 projected_parole_release_date_external=length.projected_parole_release_date_external,
                 sentence_length_days_min=days_min,
                 sentence_length_days_max=days_max,
+                min_term_years=min_term[0],
+                min_term_months=min_term[1],
+                min_term_days=min_term[2],
+                max_term_years=max_term[0],
+                max_term_months=max_term[1],
+                max_term_days=max_term[2],
+                sentence_length_metadata=length.sentence_length_metadata,
                 projected_completion_date_min_external=comp_date_min,
                 projected_completion_date_max_external=comp_date_max,
                 parole_eligibility_date_external=parole_elig,

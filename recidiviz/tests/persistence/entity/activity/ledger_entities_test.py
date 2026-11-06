@@ -492,6 +492,38 @@ class StateSentenceLengthTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
                 sequence_num=None,
             )
 
+    def test_term_unit_fields_can_be_partially_set(self) -> None:
+        years_only = entities.StateSentenceLength(
+            state_code=self.state_code,
+            length_update_datetime=self.the_past,
+            min_term_years=2,
+        )
+        self.assertEqual(years_only.min_term_years, 2)
+        self.assertIsNone(years_only.min_term_months)
+        self.assertIsNone(years_only.min_term_days)
+        all_set = entities.StateSentenceLength(
+            state_code=self.state_code,
+            length_update_datetime=self.the_past,
+            min_term_years=2,
+            min_term_months=6,
+            min_term_days=0,
+            max_term_years=5,
+            max_term_months=0,
+            max_term_days=0,
+        )
+        self.assertEqual(all_set.min_term_months, 6)
+        self.assertEqual(all_set.max_term_days, 0)
+
+    def test_term_unit_fields_reject_negative_values(self) -> None:
+        with self.assertRaisesRegex(ValueError, "non-negative integer"):
+            _ = entities.StateSentenceLength(
+                state_code=self.state_code,
+                length_update_datetime=self.the_past,
+                min_term_years=1,
+                min_term_months=-1,
+                min_term_days=0,
+            )
+
 
 class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
     """Ensures StateSentenceGroupLength is tested against the LedgerEntityTestCaseProtocol"""
@@ -744,6 +776,19 @@ class NormalizedStateSentenceLengthTest(
                 state_code=self.state_code,
                 sequence_num=None,
             )
+
+    def test_term_unit_fields_can_be_partially_set(self) -> None:
+        years_only = normalized_entities.NormalizedStateSentenceLength(
+            sentence_length_id=1,
+            sequence_num=1,
+            state_code=self.state_code,
+            length_update_datetime=self.the_past,
+            max_term_years=2,
+            sentence_length_metadata='{"key": "value"}',
+        )
+        self.assertEqual(years_only.max_term_years, 2)
+        self.assertIsNone(years_only.max_term_months)
+        self.assertEqual(years_only.sentence_length_metadata, '{"key": "value"}')
 
 
 class NormalizedStateSentenceGroupLengthTest(

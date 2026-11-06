@@ -692,6 +692,12 @@
     fields: [state_sentence_length.earned_time_days,
       state_sentence_length.good_time_days,
       state_sentence_length.length_update_datetime_date,
+      state_sentence_length.max_term_days,
+      state_sentence_length.max_term_months,
+      state_sentence_length.max_term_years,
+      state_sentence_length.min_term_days,
+      state_sentence_length.min_term_months,
+      state_sentence_length.min_term_years,
       state_sentence_length.parole_eligibility_date_external_date,
       state_sentence_length.projected_completion_date_max_external_date,
       state_sentence_length.projected_completion_date_min_external_date,
@@ -700,6 +706,7 @@
       state_sentence_length.sentence_length_days_max,
       state_sentence_length.sentence_length_days_min,
       state_sentence_length.sentence_length_id,
+      state_sentence_length.sentence_length_metadata,
       state_sentence_length.sequence_num,
       state_sentence_length.state_code]
     sorts: [state_sentence_length.length_update_datetime_date desc, state_sentence_length.parole_eligibility_date_external_date desc, state_sentence_length.projected_completion_date_max_external_date desc, state_sentence_length.projected_completion_date_min_external_date desc, state_sentence_length.projected_parole_release_date_external_date desc]

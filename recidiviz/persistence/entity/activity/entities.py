@@ -3135,6 +3135,36 @@ class StateSentenceLength(
     sentence_length_days_max: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
+    # The years component of the minimum term as supplied by the state. None when the
+    # state supplies no value for this component.
+    min_term_years: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_non_negative_int
+    )
+    # The months component of the minimum term as supplied by the state. None when the
+    # state supplies no value for this component.
+    min_term_months: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_non_negative_int
+    )
+    # The days component of the minimum term as supplied by the state. None when the
+    # state supplies no value for this component.
+    min_term_days: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_non_negative_int
+    )
+    # The years component of the maximum term as supplied by the state. None when the
+    # state supplies no value for this component.
+    max_term_years: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_non_negative_int
+    )
+    # The months component of the maximum term as supplied by the state. None when the
+    # state supplies no value for this component.
+    max_term_months: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_non_negative_int
+    )
+    # The days component of the maximum term as supplied by the state. None when the
+    # state supplies no value for this component.
+    max_term_days: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_non_negative_int
+    )
     # Any good time (in days) the person has credited against this sentence due to good conduct,
     # a.k.a. time off for good behavior, if applicable.
     good_time_days: Optional[int] = attr.ib(
@@ -3191,6 +3221,11 @@ class StateSentenceLength(
                 StateCode.US_MO,
             },
         ),
+    )
+
+    # Metadata field with additional sentence length attributes
+    sentence_length_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
     )
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have

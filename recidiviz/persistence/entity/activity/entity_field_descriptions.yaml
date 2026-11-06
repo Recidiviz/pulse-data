@@ -438,6 +438,24 @@ state_sentence_length:
     length_update_datetime: >-
       The start of the period of time over which the set of
       all sentence length attributes are true.
+    max_term_days: >-
+      The days component of the maximum term of this sentence as supplied by the
+      state. Null when the state supplies no value for this component.
+    max_term_months: >-
+      The months component of the maximum term of this sentence as supplied by the
+      state. Null when the state supplies no value for this component.
+    max_term_years: >-
+      The years component of the maximum term of this sentence as supplied by the
+      state. Null when the state supplies no value for this component.
+    min_term_days: >-
+      The days component of the minimum term of this sentence as supplied by the
+      state. Null when the state supplies no value for this component.
+    min_term_months: >-
+      The months component of the minimum term of this sentence as supplied by the
+      state. Null when the state supplies no value for this component.
+    min_term_years: >-
+      The years component of the minimum term of this sentence as supplied by the
+      state. Null when the state supplies no value for this component.
     parole_eligibility_date_external: >-
       The date on which a person is expected to become
       eligible for parole under the terms of this sentence
@@ -456,8 +474,21 @@ state_sentence_length:
     projected_parole_release_date_external: >-
       The date on which a person is projected
       to be released from incarceration to parole
-    sentence_length_days_max: The maximum duration of this sentence in days
-    sentence_length_days_min: The maximum duration of this sentence in days
+    sentence_length_days_max: >-
+      The maximum duration of this sentence in calendar days. When a state supplies
+      the max_term_* unit columns but no day count, normalization fills this in from
+      the units (365.25 days per year, 30 per month). A state-supplied value is kept
+      as is, so a mapping should leave this null and let normalization fill it in
+      unless the state itself records a day count.
+    sentence_length_days_min: >-
+      The minimum duration of this sentence in calendar days. When a state supplies
+      the min_term_* unit columns but no day count, normalization fills this in from
+      the units (365.25 days per year, 30 per month). A state-supplied value is kept
+      as is, so a mapping should leave this null and let normalization fill it in
+      unless the state itself records a day count.
+    sentence_length_metadata: >-
+      Arbitrary JSON-formatted metadata relevant to a fine understanding of
+      a particular sentence length.
     sequence_num: >-
       The ordinal position of this observation in the sequence of StateSentenceLength
       observations for this observation's StateSentence

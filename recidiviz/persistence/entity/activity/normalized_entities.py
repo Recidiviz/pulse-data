@@ -726,6 +726,36 @@ class NormalizedStateSentenceLength(NormalizedStateEntity, LedgerEntityMixin, En
     sentence_length_days_max: int | None = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
+    # The years component of the minimum term as supplied by the state. None when the
+    # state supplies no value for this component.
+    min_term_years: int | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_non_negative_int
+    )
+    # The months component of the minimum term as supplied by the state. None when the
+    # state supplies no value for this component.
+    min_term_months: int | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_non_negative_int
+    )
+    # The days component of the minimum term as supplied by the state. None when the
+    # state supplies no value for this component.
+    min_term_days: int | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_non_negative_int
+    )
+    # The years component of the maximum term as supplied by the state. None when the
+    # state supplies no value for this component.
+    max_term_years: int | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_non_negative_int
+    )
+    # The months component of the maximum term as supplied by the state. None when the
+    # state supplies no value for this component.
+    max_term_months: int | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_non_negative_int
+    )
+    # The days component of the maximum term as supplied by the state. None when the
+    # state supplies no value for this component.
+    max_term_days: int | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_non_negative_int
+    )
     # Any good time (in days) the person has credited against this sentence due to good conduct,
     # a.k.a. time off for good behavior, if applicable.
     good_time_days: int | None = attr.ib(
@@ -782,6 +812,11 @@ class NormalizedStateSentenceLength(NormalizedStateEntity, LedgerEntityMixin, En
                 StateCode.US_MO,
             },
         ),
+    )
+
+    # Metadata field with additional sentence length attributes
+    sentence_length_metadata: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
     )
 
     # Primary key
