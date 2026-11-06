@@ -61,6 +61,12 @@ from recidiviz.calculator.query.state.views.classification.all_classification_sc
 from recidiviz.calculator.query.state.views.classification.all_recommended_classification_spans import (
     ALL_RECOMMENDED_CLASSIFICATION_SPANS_VIEW_ID,
 )
+from recidiviz.calculator.query.state.views.classification.metrics.classification_score_violence_auc import (
+    CLASSIFICATION_SCORE_VIOLENCE_AUC_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.classification.metrics.classification_score_violence_by_score import (
+    CLASSIFICATION_SCORE_VIOLENCE_BY_SCORE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.earned_time.us_co_work_engagement import (
     US_CO_WORK_ENGAGEMENT_VIEW_BUILDER,
 )
@@ -209,6 +215,18 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             "document_extraction_results__entity_mentions.case_note_housing_info_housing_entity_mentions",
             "document_extraction_results__pre_resolution.case_note_employment_info_employers",
             "document_extraction_results__pre_resolution.case_note_housing_info",
+        ]
+    },
+    **{
+        builder.address: (
+            "Classification diagnosis dashboard view; its consumer is the score vs. "
+            "violence tiles that TODO(OBT-54127) and TODO(OBT-54128) add to Looker "
+            "dashboard 319 in Recidiviz/looker. Move it to LOOKER_REFERENCED_ADDRESSES "
+            "once those land. (Hugo Salas, 2026-11-03)"
+        )
+        for builder in [
+            CLASSIFICATION_SCORE_VIOLENCE_BY_SCORE_VIEW_BUILDER,
+            CLASSIFICATION_SCORE_VIOLENCE_AUC_VIEW_BUILDER,
         ]
     },
     CLIENT_SNOOZE_SPANS_VIEW_BUILDER.address: (
