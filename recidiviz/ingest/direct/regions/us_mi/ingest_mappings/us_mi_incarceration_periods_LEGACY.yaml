@@ -10,7 +10,6 @@ input_columns:
   end_date: DATETIME
   movement_reason_id: STRING
   next_movement_reason_id: STRING
-  cutover_date_Movement_Code_Description: STRING
   reporting_station_name: STRING
   location_code: STRING
   location_type_id: STRING
@@ -68,6 +67,8 @@ output:
                         - "131" # Sentenced to Prison
                         - "158" # New Commitment - HYTA Probationer"
                         - "16" # New Commitment, (SAI Only)
+                        - "Intake" # COMS movement entered before the cutover date
+                        - "New Commitment - While Under Sentence" # COMS movement entered before the cutover date
                       StateIncarcerationPeriodAdmissionReason.REVOCATION:
                         - "11" # New Commitment - Escaper w/ New Sentence (Rec. Ctr. Only)
                         - "12" # New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
@@ -75,6 +76,8 @@ output:
                         - "15" # New Commitment - Probation Technical Violator (Rec Ctr Only)
                         - "17" # Returned as Parole Technical Rule Violator
                         - "18" # Returned While on Parole Sentenced in Michigan
+                        - "New Commitment - Parole Viol. w/ New Sentence" # COMS movement entered before the cutover date
+                        - "New Commitment - Probation Technical Violator" # COMS movement entered before the cutover date
                       StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
                         - "80" # Escaper Returned to the Institution
                       StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
@@ -82,16 +85,20 @@ output:
                         - "84" # Returned from Limited Furlough
                         - "85" # Returned from Parole Furlough
                         - "26" # Returned from Court
+                        - "Returned - From Court" # COMS movement entered before the cutover date
+                        - "Returned - From Temporary Release" # COMS movement entered before the cutover date
                       # Movement reasons that are for releases are often followed by actual releases
                       # therefore, we indicate this as a status change
                       StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
                         - "106" # Held in Custody
                         - "105" # Held Under Custody - Parole Violation Processing
+                        - "Held Under Custody" # COMS movement entered before the cutover date
                       StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE:
                         - "21" # CRP Additional Felony Out to Court (REP Only)
                         - "93" # Court Released on Bond
                         - "37" # Released to Court on Writ
                         - "7" # Released for Additional Sentencing Processing
+                        - "Released - To Court on Writ" # COMS movement entered before the cutover date
                       StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
                         - "156" # Probationer Held Under Custody
                         - "102" # Held Under Custody - New Criminal Processing
@@ -146,12 +153,18 @@ output:
                         - "24" # Sentence Reduced to Misdemeanor
                         - "128" # Held Under Custody - Probation Violation Processing
                         - "141" # Disch. Prison MAX - Transfer for Probation
+                        - "Discharged - From Parole" # COMS movement entered before the cutover date
+                        - "Paroled" # COMS movement entered before the cutover date
+                        - "Paroled in Custody" # COMS movement entered before the cutover date
+                        - "Reinstated on Parole" # COMS movement entered before the cutover date
+                        - "Temporary Release - Outside Hospital" # COMS movement entered before the cutover date
                       StateIncarcerationPeriodAdmissionReason.TRANSFER:
                         - "117" # Transfer In ... Institutional or Caseload
                         - "6" # Visitor In
                         - "107" # Transferred Out ... Institutional or Caseload
                         - "20" # Visitor Out
                         - "5" # Transfer Between Offices in Michigan
+                        - "Transfer Between Facilities" # COMS movement entered before the cutover date
                       StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
                         - "82" # Returned from County Jail
                         - "109" # Returned From Mntl Hlth Hospital/ Othr Crimnl Justce Agncies
@@ -162,78 +175,6 @@ output:
           release_reason:
             $conditional:
               - $if:
-                  $not_null: cutover_date_Movement_Code_Description
-                $then:
-                  $enum_mapping:
-                    $raw_text: cutover_date_Movement_Code_Description
-                    $mappings:
-                      StateIncarcerationPeriodReleaseReason.ESCAPE:
-                        - "Escape from MDOC"
-                        - "Escape after Release to Outside Agency"
-                      StateIncarcerationPeriodReleaseReason.DEATH:
-                        - "Death on Temporary Release"
-                        - "Death in Institution"
-                        - "Death on Parole"
-                        - "Death on Escape"
-                        - "Death on Probation"
-                      StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
-                        - "Paroled"
-                        - "Discharged - From Prison on Max - Transfer for Probation"
-                        - "Discharged - From Prison Under HYTA & Continued on Probation"
-                      StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
-                        - "Reinstated on Parole"
-                        - "Reinstated on Parole - While at Large/No Parole Revocation"
-                        - "Court Resentenced to Probation"
-                        - "Reinstated on Probation"
-                      StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
-                        - "Discharged - On the Maximum"
-                        - "Discharged - While at DMH"
-                        - "Discharged - From Parole"
-                        - "Discharged - Early from Parole"
-                        - "Discharged - Administratively from Parole"
-                        - "Discharged - From Prison Under HYTA Without Probation"
-                        - "Discharged - Court Discharged with Time Served"
-                        - "Discharged - Due to Commitment to DHHS Only"
-                      StateIncarcerationPeriodReleaseReason.VACATED:
-                        - "Conviction Reversed by Court"
-                        - "Discharged - Court - Nolle Prosequi"
-                        - "Dismissed by Court"
-                      StateIncarcerationPeriodReleaseReason.PARDONED:
-                        - "Discharged - Pardoned"
-                      StateIncarcerationPeriodReleaseReason.COMMUTED:
-                        - "Charge Reduced to Misdemeanor"
-                      StateIncarcerationPeriodReleaseReason.TRANSFER:
-                        - "Transfer Between Facilities"
-                        - "Transfer Between Offices in Michigan"
-                        - "Overnight Transfer Hold"
-                      StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
-                        - "Transferred Out of State"
-                        - "Sentenced to Jail Only"
-                        - "Discharged - Transfer to Foreign Country"
-                      StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
-                        - "Temporary Release - Outside Hospital"
-                        - "Released - To Court on Writ"
-                        - "Released - Court Released on Bond"
-                        - "Released - Other Criminal Justice Agencies"
-                      StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE:
-                        - "Returned - From Temporary Release"
-                        - "Returned - From Court"
-                      StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE:
-                        - "Returned - Escaper Returned to the Institution"
-                      StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
-                        - "Absconder from Parole"
-                        - "Absconder from Probation"
-                        - "Paroled in Custody"
-                        - "Reparoled While on Same Term"
-                        - "Returned - As Parole Technical Rule Violator - Violation Sustained"
-                        - "Returned - While on Parole Pending Revocation Hearing"
-                        - "Returned - To Court from Bond"
-                        - "Interstate Parolee Sentenced in Michigan"
-                      StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
-                        - "Interstate Compact Case - Rejected for Supervision"
-                        - "Interstate Compact Transfer Request Rescinded"
-                        - "Interest Closed for Interstate Order"
-              - $else_if:
                   $or:
                     - $not_null: next_movement_reason_id
                     - $not_null: end_date
@@ -249,6 +190,7 @@ output:
                               - "86" # First Parole
                               - "141" # Disch. Prison MAX - Transfer for Probation
                               - "120" # Placed on Probation
+                              - "Paroled" # COMS movement entered before the cutover date
                             StateIncarcerationPeriodReleaseReason.DEATH:
                               - "40" # Death on Temporary Release
                               - "38" # Death in Institution
@@ -279,6 +221,8 @@ output:
                               - "127" # Reinstated on Probation
                               - "150" # Reinstated on Parole from TRV
                               - "110" # Out of State Case Activated in Michigan for Parole Suprvn
+                              - "Paroled in Custody" # COMS movement entered before the cutover date
+                              - "Reinstated on Parole" # COMS movement entered before the cutover date
                             StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
                               - "36" # Discharged on the Maximum without Parole
                               - "28" # Released from SAI - Complete
@@ -294,6 +238,7 @@ output:
                               - "115" # Discharged While on Escape or Absconder
                               - "122" # Administrative Discharge from Probation
                               - "125" # Early Discharge from Probation
+                              - "Discharged - From Parole" # COMS movement entered before the cutover date
                             StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                               - "102" # Held Under Custody - New Criminal Processing
                               - "19" # Out of State Parolee Sentenced in Michigan
@@ -329,6 +274,12 @@ output:
                               - "158" # New Commitment - HYTA Probationer
                               - "149" # Sentenced to Prison While in Custody of Outside Jurisdiction
                               - "139" # Sentence Suspended by the Court
+                              - "Held Under Custody" # COMS movement entered before the cutover date
+                              - "Intake" # COMS movement entered before the cutover date
+                              - "New Commitment - Parole Viol. w/ New Sentence" # COMS movement entered before the cutover date
+                              - "New Commitment - Probation Technical Violator" # COMS movement entered before the cutover date
+                              - "New Commitment - While Under Sentence" # COMS movement entered before the cutover date
+                              - "Returned - From Temporary Release" # COMS movement entered before the cutover date
                             StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
                               - "95" # Temporary Release - Outside Hospital/Funerals Only
                               - "108" # Released to Mntl Hlth Hospital/ Other Crimnl Justce Agencies
@@ -341,14 +292,18 @@ output:
                               - "1" # Report to Office
                               - "7" # Released for Additional Sentencing Processing
                               - "21" # CRP Additional Felony Out to Court (REP Only)
+                              - "Released - To Court on Writ" # COMS movement entered before the cutover date
+                              - "Temporary Release - Outside Hospital" # COMS movement entered before the cutover date
                             StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE:
                               - "26" # Returned from Court
+                              - "Returned - From Court" # COMS movement entered before the cutover date
                             StateIncarcerationPeriodReleaseReason.TRANSFER:
                               - "117" # Transfer In ... Institutional or Caseload
                               - "107" # Transferred Out ... Institutional or Caseload
                               - "20" # Visitor Out
                               - "5" # Transfer Between Offices in Michigan
                               - "6" # Visitor In
+                              - "Transfer Between Facilities" # COMS movement entered before the cutover date
                             StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
                               - "4" # Transfer Out State
                               - "94" # Temporarily Housed at County Jail

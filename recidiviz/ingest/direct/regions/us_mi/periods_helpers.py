@@ -31,10 +31,16 @@ ACTIVE_SUPERVISION_STATUSES = """
       'Probation'
 """
 
-# TODO(MI-8599): Determine what to do about Pending MDOC Custody status based on real data
+# Excludes PENDING_MDOC_CUSTODY_STATUS. incarceration_periods_COMS_2026 adds it on top of
+# this list, but the staff relationship views only count case managers for Prison.
 ACTIVE_INCARCERATION_STATUSES = """
       'Prison'
 """
+
+# Marks someone sentenced to prison who is in jail still awaiting transfer into MDOC custody. Those
+# people have no COMS housing record and no incarceration period from OMNI, and the status
+# ends with "MDOC Custody Confirmed" once a Prison status takes over.
+PENDING_MDOC_CUSTODY_STATUS = "Pending MDOC Custody"
 
 migration_date_2023 = f"DATE({COMS_MIGRATION_DATE_2023.year},{COMS_MIGRATION_DATE_2023.month},{COMS_MIGRATION_DATE_2023.day})"
 
@@ -69,8 +75,10 @@ def join_ctes_onto_tiny_spans(cte_name: str, id_col: str) -> str:
 # Offender numbers in COMS come with a leading zero but do not come with a leading zero in OMNI
 PAD_OFFENDER_NUMBER_FROM_OMNI = "LPAD(offender_number, 7, '0') AS offender_number"
 
-# For periods, we might not want to use the actual migration date and allow some buffer room
-# TODO(MI-8599): Evaluate if this is the right date or whether we can set to COMS_MIGRATION_DATE_2026
+# Date that splits OMNI movements from COMS movements for the LEGACY and COMS_2026 period
+# views. OMNI stopped recording movements a few days before COMS_MIGRATION_DATE_2026, so
+# this date sits ahead of the go-live. Movements entered natively in COMS before this date
+# are folded into the LEGACY views.
 MOVEMENTS_CUTOVER_DATE = "DATE(2026,10,22)"
 
 # Magic end date for open periods
