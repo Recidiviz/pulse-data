@@ -165,7 +165,7 @@ from recidiviz.view_registry.deployed_view_graphs import (
     build_dag_walker_for_all_deployed_view_graphs,
 )
 
-# List of views that are definitely referenced in Looker (as of 11/29/23). This list is
+# List of views that are definitely referenced in Looker (as of 2026-11-03). This list is
 # incomplete and you should add to this list / update the date in this comment as you
 # work with this script.
 LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
@@ -182,6 +182,8 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
     SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER.address,
+    # Read by the eng_metrics_delivery_flow dashboard in Looker
+    PR_FIRST_FEEDBACK_VIEW_BUILDER.address,
 }
 
 
@@ -209,12 +211,6 @@ TEMPORARY_UNREFERENCED_ADDRESSES_TO_KEEP: Dict[BigQueryAddress, str] = {
             "document_extraction_results__pre_resolution.case_note_housing_info",
         ]
     },
-    PR_FIRST_FEEDBACK_VIEW_BUILDER.address: (
-        "Steel-thread view for the engineering metrics dashboard; its consumer is "
-        "the LookML explore and dashboard tile that TODO(OBT-55689) adds in "
-        "Recidiviz/looker. Move it to LOOKER_REFERENCED_ADDRESSES once that "
-        "lands. (Matthew Root, 2026-10-29)"
-    ),
     CLIENT_SNOOZE_SPANS_VIEW_BUILDER.address: (
         "New Tasks snooze span view; no downstream consumer yet. "
         "TODO(MO-549): remove this exemption once the post-full-launch "
