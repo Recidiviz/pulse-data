@@ -85,6 +85,7 @@ def calculate_sentences(
     projected_dates = (
         _calculate_projected_dates(
             engine=engine,
+            sentences=calculation_input.sentences,
             longest_path=longest_path,
         )
         if longest_path is not None and indeterminate_sentence_type is None
@@ -113,11 +114,13 @@ def _most_severe_indeterminate_type(
 def _calculate_projected_dates(
     *,
     engine: RuleEngine,
+    sentences: Sequence[Sentence],
     longest_path: TrackedLongestSentencePath,
 ) -> TrackedProjectedDates:
     """Returns the regime's projected dates, evaluated against values summed over
     the controlling path's sentences and the latest PED across all sentences.
     Only called when no sentence is DEATH, LWO, or LIFE."""
+    sentences_by_id = {s.sentence_id: s for s in sentences}
     path_terms = [
         longest_path.sentence_terms[sentence_id]
         for sentence_id in longest_path.path_sentence_ids
@@ -171,6 +174,10 @@ def _calculate_projected_dates(
         jail_credit_days=jail_credit_days,
         good_time_days=good_time_days,
         max_ped=longest_path.max_ped,
+        sentences=[
+            sentences_by_id[sentence_id]
+            for sentence_id in longest_path.path_sentence_ids
+        ],
     )
     return TrackedProjectedDates(
         start_date=start_date,

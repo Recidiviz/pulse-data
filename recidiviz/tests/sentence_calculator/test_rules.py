@@ -33,8 +33,10 @@ from recidiviz.sentence_calculator.models.rules import (
     LAW_REGIME_SCHEMA_PATH,
     CreditCapRule,
     CreditRateRule,
+    DateFloor,
     DateFormulaRule,
     LawRegime,
+    ProjectedDateCondition,
     ReductionTarget,
     TermMultiplierRule,
     TermType,
@@ -64,7 +66,7 @@ def _law_regime(
     term_multipliers: list[TermMultiplierRule],
     credit_rates: list[CreditRateRule],
     credit_caps: list[CreditCapRule],
-    projected_dates: dict[str, DateFormulaRule],
+    projected_dates: dict[str, list[DateFormulaRule]],
 ) -> LawRegime:
     return LawRegime(
         name="TEST_REGIME",
@@ -80,12 +82,13 @@ def _law_regime(
     )
 
 
-def _date_rule(*, name: str, formula: str) -> DateFormulaRule:
+def _date_rule(*, name: str, formula: str, floor: DateFloor | None) -> DateFormulaRule:
     return DateFormulaRule(
         name=name,
         description=f"Computes {name}",
         when=None,
         formula=formula,
+        floor=floor,
         statute=None,
     )
 
@@ -180,27 +183,36 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                 credit_rates=[],
                 credit_caps=[],
                 projected_dates={
-                    "parole_eligibility_date": DateFormulaRule(
-                        name="parole_eligibility_date",
-                        description="Eligible once the adjusted min term is served",
-                        when=None,
-                        formula="start_date + adjusted_min_days",
-                        statute=None,
-                    ),
-                    "release_date": DateFormulaRule(
-                        name="release_date",
-                        description=(
-                            "Release once the adjusted max term is served, for max "
-                            "terms over three years"
-                        ),
-                        when=FieldCondition(
-                            field="unadjusted_max_days",
-                            operator=ConditionOperator.GREATER_THAN,
-                            value=1094,
-                        ),
-                        formula="start_date + adjusted_max_days",
-                        statute="Test Statute 3",
-                    ),
+                    "parole_eligibility_date": [
+                        DateFormulaRule(
+                            name="parole_eligibility_date",
+                            description="Eligible once the adjusted min term is served",
+                            when=None,
+                            formula="start_date + adjusted_min_days",
+                            floor=None,
+                            statute=None,
+                        )
+                    ],
+                    "release_date": [
+                        DateFormulaRule(
+                            name="release_date",
+                            description=(
+                                "Release once the adjusted max term is served, for max "
+                                "terms over three years"
+                            ),
+                            when=ProjectedDateCondition(
+                                values_condition=FieldCondition(
+                                    field="unadjusted_max_days",
+                                    operator=ConditionOperator.GREATER_THAN,
+                                    value=1094,
+                                ),
+                                sentence_condition=None,
+                            ),
+                            formula="start_date + adjusted_max_days",
+                            floor=None,
+                            statute="Test Statute 3",
+                        )
+                    ],
                 },
             ),
             regime,
@@ -300,27 +312,55 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                     )
                 ],
                 projected_dates={
-                    "parole_eligibility_date": DateFormulaRule(
-                        name="parole_eligibility_date",
-                        description="Eligible once the adjusted min term is served",
-                        when=None,
-                        formula="start_date + adjusted_min_days",
-                        statute=None,
-                    ),
-                    "release_date": DateFormulaRule(
-                        name="release_date",
-                        description=(
-                            "Release once the adjusted max term is served, for max "
-                            "terms over three years"
+                    "parole_eligibility_date": [
+                        DateFormulaRule(
+                            name="parole_eligibility_date",
+                            description="Eligible once the adjusted min term is served",
+                            when=None,
+                            formula="start_date + adjusted_min_days",
+                            floor=None,
+                            statute=None,
+                        )
+                    ],
+                    "release_date": [
+                        DateFormulaRule(
+                            name="early_release_date",
+                            description="Early release for long category B sentences",
+                            when=ProjectedDateCondition(
+                                values_condition=FieldCondition(
+                                    field="unadjusted_max_days",
+                                    operator=ConditionOperator.GREATER_THAN,
+                                    value=1094,
+                                ),
+                                sentence_condition=FieldCondition(
+                                    field="offense_category",
+                                    operator=ConditionOperator.EQUALS,
+                                    value=NevadaOffenseCategory.CATEGORY_B,
+                                ),
+                            ),
+                            formula="start_date + adjusted_max_days - 30",
+                            floor=DateFloor(
+                                date="parole_eligibility_date",
+                                when=ProjectedDateCondition(
+                                    values_condition=FieldCondition(
+                                        field="adjusted_min_days",
+                                        operator=ConditionOperator.LESS_THAN,
+                                        value=365,
+                                    ),
+                                    sentence_condition=None,
+                                ),
+                            ),
+                            statute=None,
                         ),
-                        when=FieldCondition(
-                            field="unadjusted_max_days",
-                            operator=ConditionOperator.GREATER_THAN,
-                            value=1094,
+                        DateFormulaRule(
+                            name="release_date",
+                            description="Release once the adjusted max term is served",
+                            when=None,
+                            formula="start_date + adjusted_max_days",
+                            floor=None,
+                            statute=None,
                         ),
-                        formula="start_date + adjusted_max_days",
-                        statute=None,
-                    ),
+                    ],
                 },
             ),
             regime,
@@ -371,6 +411,25 @@ class TestLawRegimeFromYaml(unittest.TestCase):
         with self.assertRaisesRegex(ValidationError, r"^'name' is a required property"):
             LawRegime.from_yaml(
                 fixtures.as_filepath("us_xx_law_regime_rule_missing_name.yaml"),
+                sentence_class=NevadaSentence,
+                shared_conditions={},
+            )
+
+    def test_parse_listed_projected_date_rule_missing_name_fails_schema(
+        self,
+    ) -> None:
+        # The schema allows either a single rule or a list of named rules, so
+        # jsonschema reports that release_date matches neither.
+        with self.assertRaisesRegex(
+            ValidationError,
+            r"^\[\{'name': 'long_release_date', .*\{'description': 'Release once "
+            r"the adjusted min term is served', 'formula': 'start_date \+ "
+            r"adjusted_min_days'\}\] is not valid under any of the given schemas",
+        ):
+            LawRegime.from_yaml(
+                fixtures.as_filepath(
+                    "us_xx_law_regime_projected_date_rule_missing_name.yaml"
+                ),
                 sentence_class=NevadaSentence,
                 shared_conditions={},
             )
@@ -441,7 +500,8 @@ class TestLawRegimeFromYaml(unittest.TestCase):
     def test_parse_projected_date_condition_on_sentence_field(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Invalid conditions in projected date \[parole_eligibility_date\]\. "
+            r"^Invalid conditions in projected date \[parole_eligibility_date\] "
+            r"entry \[parole_eligibility_date\]\. "
             r"They use the field \[offense_group\], which conditions here can't "
             r"compare\.",
         ):
@@ -456,7 +516,8 @@ class TestLawRegimeFromYaml(unittest.TestCase):
     def test_parse_projected_date_named_condition(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Invalid conditions in projected date \[parole_eligibility_date\]\. "
+            r"^Invalid conditions in projected date \[parole_eligibility_date\] "
+            r"entry \[parole_eligibility_date\]\. "
             r"They refer to the named condition \[violent_or_sex\], but named "
             r"conditions can only be used in conditions on sentence fields\.$",
         ):
@@ -872,10 +933,13 @@ class TestLawRegimeValidation(unittest.TestCase):
                 credit_rates=[],
                 credit_caps=[],
                 projected_dates={
-                    "parole_eligibility_date": _date_rule(
-                        name="parole_eligibility_date",
-                        formula="start_date + adjusted_min_days",
-                    )
+                    "parole_eligibility_date": [
+                        _date_rule(
+                            name="parole_eligibility_date",
+                            formula="start_date + adjusted_min_days",
+                            floor=None,
+                        )
+                    ]
                 },
             )
 
@@ -891,10 +955,13 @@ class TestLawRegimeValidation(unittest.TestCase):
                 credit_rates=[],
                 credit_caps=[],
                 projected_dates={
-                    "parole_eligibility_date": _date_rule(
-                        name="parole_eligibility_date",
-                        formula="start_date + adjusted_minimum_days",
-                    )
+                    "parole_eligibility_date": [
+                        _date_rule(
+                            name="parole_eligibility_date",
+                            formula="start_date + adjusted_minimum_days",
+                            floor=None,
+                        )
+                    ]
                 },
             )
 
@@ -904,14 +971,20 @@ class TestLawRegimeValidation(unittest.TestCase):
             credit_rates=[],
             credit_caps=[],
             projected_dates={
-                "mandatory_parole_release_date": _date_rule(
-                    name="mandatory_parole_release_date",
-                    formula="projected_expiration_date - months(12)",
-                ),
-                "projected_expiration_date": _date_rule(
-                    name="projected_expiration_date",
-                    formula="start_date + adjusted_max_days",
-                ),
+                "mandatory_parole_release_date": [
+                    _date_rule(
+                        name="mandatory_parole_release_date",
+                        formula="projected_expiration_date - months(12)",
+                        floor=None,
+                    )
+                ],
+                "projected_expiration_date": [
+                    _date_rule(
+                        name="projected_expiration_date",
+                        formula="start_date + adjusted_max_days",
+                        floor=None,
+                    )
+                ],
             },
         )
 
@@ -931,10 +1004,56 @@ class TestLawRegimeValidation(unittest.TestCase):
                 credit_rates=[],
                 credit_caps=[],
                 projected_dates={
-                    "parole_eligibility_date": _date_rule(
-                        name="parole_eligibility_date",
-                        formula="start_date +",
-                    )
+                    "parole_eligibility_date": [
+                        _date_rule(
+                            name="parole_eligibility_date",
+                            formula="start_date +",
+                            floor=None,
+                        )
+                    ]
+                },
+            )
+
+    def test_floor_on_own_date(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Rule \[release_date\] has a floor on its own date \[release_date\]\. "
+            r"A floor must be a different date\.$",
+        ):
+            _law_regime(
+                term_multipliers=[],
+                credit_rates=[],
+                credit_caps=[],
+                projected_dates={
+                    "release_date": [
+                        _date_rule(
+                            name="release_date",
+                            formula="start_date + adjusted_max_days",
+                            floor=DateFloor(date="release_date", when=None),
+                        )
+                    ]
+                },
+            )
+
+    def test_floor_on_value_that_is_not_a_date(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Rule \[release_date\] has a floor on \[adjusted_min_days\], which is "
+            r"not a date\. Available dates: \['max_ped', 'release_date', "
+            r"'start_date'\]\.$",
+        ):
+            _law_regime(
+                term_multipliers=[],
+                credit_rates=[],
+                credit_caps=[],
+                projected_dates={
+                    "release_date": [
+                        _date_rule(
+                            name="release_date",
+                            formula="start_date + adjusted_max_days",
+                            floor=DateFloor(date="adjusted_min_days", when=None),
+                        )
+                    ]
                 },
             )
 
@@ -942,19 +1061,22 @@ class TestLawRegimeValidation(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"^Law regime \[TEST_REGIME\] has projected dates that depend on each "
-            r"other in a cycle, where each date's formula uses the next: "
+            r"other in a cycle, where each date's formula or floor uses the next: "
             r"\[release_date -> release_date\]\. Change the "
-            r"formulas so no date depends on itself\.$",
+            r"formulas or floors so no date depends on itself\.$",
         ):
             _law_regime(
                 term_multipliers=[],
                 credit_rates=[],
                 credit_caps=[],
                 projected_dates={
-                    "release_date": _date_rule(
-                        name="release_date",
-                        formula="release_date + 1",
-                    )
+                    "release_date": [
+                        _date_rule(
+                            name="release_date",
+                            formula="release_date + 1",
+                            floor=None,
+                        )
+                    ]
                 },
             )
 
@@ -962,23 +1084,59 @@ class TestLawRegimeValidation(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"^Law regime \[TEST_REGIME\] has projected dates that depend on each "
-            r"other in a cycle, where each date's formula uses the next: "
+            r"other in a cycle, where each date's formula or floor uses the next: "
             r"\[release_date -> parole_eligibility_date -> release_date\]\. Change "
-            r"the formulas so no date depends on itself\.$",
+            r"the formulas or floors so no date depends on itself\.$",
         ):
             _law_regime(
                 term_multipliers=[],
                 credit_rates=[],
                 credit_caps=[],
                 projected_dates={
-                    "release_date": _date_rule(
-                        name="release_date",
-                        formula="parole_eligibility_date + 365",
-                    ),
-                    "parole_eligibility_date": _date_rule(
-                        name="parole_eligibility_date",
-                        formula="release_date - 365",
-                    ),
+                    "release_date": [
+                        _date_rule(
+                            name="release_date",
+                            formula="parole_eligibility_date + 365",
+                            floor=None,
+                        )
+                    ],
+                    "parole_eligibility_date": [
+                        _date_rule(
+                            name="parole_eligibility_date",
+                            formula="release_date - 365",
+                            floor=None,
+                        )
+                    ],
+                },
+            )
+
+    def test_floor_in_a_cycle(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Law regime \[TEST_REGIME\] has projected dates that depend on each "
+            r"other in a cycle, where each date's formula or floor uses the next: "
+            r"\[release_date -> parole_eligibility_date -> release_date\]\. Change "
+            r"the formulas or floors so no date depends on itself\.$",
+        ):
+            _law_regime(
+                term_multipliers=[],
+                credit_rates=[],
+                credit_caps=[],
+                projected_dates={
+                    "release_date": [
+                        _date_rule(
+                            name="release_date",
+                            formula="parole_eligibility_date + 365",
+                            floor=None,
+                        )
+                    ],
+                    "parole_eligibility_date": [
+                        _date_rule(
+                            name="parole_eligibility_date",
+                            formula="start_date + adjusted_min_days",
+                            floor=DateFloor(date="release_date", when=None),
+                        )
+                    ],
                 },
             )
 
@@ -994,10 +1152,13 @@ class TestLawRegimeValidation(unittest.TestCase):
                 credit_rates=[],
                 credit_caps=[],
                 projected_dates={
-                    "start_date": _date_rule(
-                        name="start_date",
-                        formula="start_date + 1",
-                    )
+                    "start_date": [
+                        _date_rule(
+                            name="start_date",
+                            formula="start_date + 1",
+                            floor=None,
+                        )
+                    ]
                 },
             )
 
@@ -1011,18 +1172,27 @@ class TestProjectedDateEvaluationOrder(unittest.TestCase):
             credit_rates=[],
             credit_caps=[],
             projected_dates={
-                "mandatory_release_date": _date_rule(
-                    name="mandatory_release_date",
-                    formula="release_date - 365",
-                ),
-                "release_date": _date_rule(
-                    name="release_date",
-                    formula="parole_eligibility_date + 365",
-                ),
-                "parole_eligibility_date": _date_rule(
-                    name="parole_eligibility_date",
-                    formula="start_date + adjusted_min_days",
-                ),
+                "mandatory_release_date": [
+                    _date_rule(
+                        name="mandatory_release_date",
+                        formula="release_date - 365",
+                        floor=None,
+                    )
+                ],
+                "release_date": [
+                    _date_rule(
+                        name="release_date",
+                        formula="start_date + adjusted_max_days",
+                        floor=DateFloor(date="parole_eligibility_date", when=None),
+                    )
+                ],
+                "parole_eligibility_date": [
+                    _date_rule(
+                        name="parole_eligibility_date",
+                        formula="start_date + adjusted_min_days",
+                        floor=None,
+                    )
+                ],
             },
         )
 

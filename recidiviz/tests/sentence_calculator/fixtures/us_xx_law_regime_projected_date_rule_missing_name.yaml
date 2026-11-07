@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
+description: Test regime with a projected date whose list of rules has a rule with no name.
+effective_date: "2020-01-01"
+projected_dates:
+  release_date:
+    - name: long_release_date
+      description: Release once the adjusted max term is served, for long max terms
+      when:
+        unadjusted_max_days: { greater_than: 1094 }
+      formula: start_date + adjusted_max_days
+    - description: Release once the adjusted min term is served
+      formula: start_date + adjusted_min_days

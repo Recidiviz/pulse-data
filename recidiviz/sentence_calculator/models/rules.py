@@ -46,8 +46,8 @@ categories A and B, and one DateFormulaRule named parole_eligibility_date.
 
 Each list of rules is checked in order, and the first rule whose 'when' conditions
 hold applies. A rule without 'when' conditions applies to every sentence, so it
-must come last. Each projected date has a single rule, which takes the date's
-name.
+must come last. A projected date with a single rule can give that rule directly
+instead of as a list, and the rule takes the date's name.
 """
 
 import ast
@@ -120,6 +120,10 @@ EXPRESSION_DURATION_FUNCTIONS = ("years", "months")
 # The applies_to value for a term that a reduction comes off for every sentence
 # the rule applies to.
 APPLIES_TO_ALWAYS = "always"
+
+# The key in a projected date's 'when' mapping that holds conditions on sentence
+# fields, which some sentence on the controlling path must meet.
+SENTENCE_CONDITION_KEY = "sentence_condition_key"
 
 
 class _UniqueKeySafeLoader(yaml.SafeLoader):
@@ -543,6 +547,96 @@ class CreditCapRule:
 
 
 @attr.define(frozen=True, kw_only=True)
+class ProjectedDateCondition:
+    """Conditions on a calculation that a projected date's rule or floor needs to
+    apply. If both a values and sentence condition are set, both must hold."""
+
+    values_condition: Condition | None = attr.ib(validator=is_opt_condition)
+    """Conditions on the values in PROJECTED_DATE_VALUE_TYPES, or None."""
+
+    sentence_condition: Condition | None = attr.ib(validator=is_opt_condition)
+    """Conditions on sentence fields that some single sentence on the controlling
+    path must meet, or None."""
+
+    def __attrs_post_init__(self) -> None:
+        if self.values_condition is None and self.sentence_condition is None:
+            raise ValueError("A ProjectedDateCondition must set at least one part.")
+
+    @classmethod
+    def from_yaml_dict(
+        cls,
+        when_dict: YAMLDict,
+        *,
+        values_parser: ConditionParser,
+        sentence_parser: ConditionParser,
+        location: str,
+    ) -> "ProjectedDateCondition":
+        """Returns the ProjectedDateCondition a projected date's when mapping
+        defines.
+
+        Args:
+            when_dict: The when mapping.
+            values_parser: Parses the conditions on calculation values.
+            sentence_parser: Parses the conditions under SENTENCE_CONDITION_KEY.
+            location: Where the when mapping appears, for error messages.
+        """
+        sentence_dict = when_dict.pop_dict_optional(SENTENCE_CONDITION_KEY)
+        return ProjectedDateCondition(
+            values_condition=(
+                values_parser.parse(when_dict, location=location) if when_dict else None
+            ),
+            sentence_condition=(
+                sentence_parser.parse(sentence_dict, location=location)
+                if sentence_dict is not None
+                else None
+            ),
+        )
+
+
+def _pop_projected_date_when(
+    yaml_dict: YAMLDict,
+    *,
+    values_parser: ConditionParser,
+    sentence_parser: ConditionParser,
+    location: str,
+) -> ProjectedDateCondition | None:
+    """Returns the ProjectedDateCondition in a projected date rule's or floor's
+    when mapping, or None if it has no when or it is empty, meaning it always
+    applies.
+
+    Args:
+        yaml_dict: The rule or floor.
+        values_parser: Parses the conditions on calculation values.
+        sentence_parser: Parses the conditions under SENTENCE_CONDITION_KEY.
+        location: Where the rule or floor appears, for error messages.
+    """
+    when_dict = yaml_dict.pop_dict_optional("when")
+    if not when_dict:
+        return None
+    return ProjectedDateCondition.from_yaml_dict(
+        when_dict,
+        values_parser=values_parser,
+        sentence_parser=sentence_parser,
+        location=location,
+    )
+
+
+@attr.define(frozen=True, kw_only=True)
+class DateFloor:
+    """A lower bound on a projected date: when the floor's conditions hold, the
+    computed date is moved up to the floor date if it falls earlier."""
+
+    date: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    """The date to use as the floor, e.g. parole_eligibility_date."""
+
+    when: ProjectedDateCondition | None = attr.ib(
+        validator=attr_validators.is_opt(ProjectedDateCondition)
+    )
+    """Conditions that must hold for the floor to apply, or None if it always
+    applies."""
+
+
+@attr.define(frozen=True, kw_only=True)
 class DateFormulaRule:
     """A formula that computes one projected date (e.g. a parole eligibility
     date) from the calculation's values and other projected dates."""
@@ -553,34 +647,67 @@ class DateFormulaRule:
     description: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """Plain-language explanation of what the rule does and why."""
 
-    when: Condition | None = attr.ib(validator=is_opt_condition)
-    """Conditions on the values in PROJECTED_DATE_VALUE_TYPES that must hold for
-    the date to be computed, or None if it is always computed."""
+    when: ProjectedDateCondition | None = attr.ib(
+        validator=attr_validators.is_opt(ProjectedDateCondition)
+    )
+    """Conditions that must hold for the rule to apply, or None if it always
+    applies."""
 
     formula: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """The expression that computes the date, e.g. "start_date + adjusted_min_days"."""
+
+    floor: DateFloor | None = attr.ib(validator=attr_validators.is_opt(DateFloor))
+    """A date the result may not fall before, or None."""
 
     statute: str | None = attr.ib(validator=attr_validators.is_opt_str)
     """Citation for the law the rule encodes, if any."""
 
     @classmethod
     def from_yaml_dict(
-        cls, yaml_dict: YAMLDict, *, date_name: str, parser: ConditionParser
+        cls,
+        yaml_dict: YAMLDict,
+        *,
+        date_name: str,
+        values_parser: ConditionParser,
+        sentence_parser: ConditionParser,
     ) -> "DateFormulaRule":
-        """Returns the DateFormulaRule defined for the projected date date_name.
-        The rule takes the date's name.
+        """Returns the DateFormulaRule for a projected date.
+        A rule without a name, which a date with a single rule may leave out,
+        takes the date's name.
 
         Args:
             yaml_dict: The rule.
             date_name: The projected date the rule computes.
-            parser: Parses conditions on calculation values.
+            values_parser: Parses conditions on calculation values.
+            sentence_parser: Parses conditions on sentence fields.
         """
-        location = f"projected date [{date_name}]"
+        name = yaml_dict.pop_optional("name", str) or date_name
+        location = f"projected date [{date_name}] entry [{name}]"
+        floor_dict = yaml_dict.pop_dict_optional("floor")
+        floor = None
+        if floor_dict is not None:
+            floor_location = f"the floor of {location}"
+            floor = DateFloor(
+                date=floor_dict.pop("date", str),
+                when=_pop_projected_date_when(
+                    floor_dict,
+                    values_parser=values_parser,
+                    sentence_parser=sentence_parser,
+                    location=floor_location,
+                ),
+            )
+            _check_no_unexpected_keys(floor_dict, location=floor_location)
         rule = DateFormulaRule(
-            name=date_name,
+            name=name,
             description=yaml_dict.pop("description", str),
-            when=_pop_when(yaml_dict, parser=parser, location=location),
+            when=_pop_projected_date_when(
+                yaml_dict,
+                values_parser=values_parser,
+                sentence_parser=sentence_parser,
+                location=location,
+            ),
             formula=yaml_dict.pop("formula", str),
+            floor=floor,
             statute=yaml_dict.pop_optional("statute", str),
         )
         _check_no_unexpected_keys(yaml_dict, location=location)
@@ -591,7 +718,12 @@ def _check_rule_order(
     *,
     regime_name: str,
     section: str,
-    rules: list[TermMultiplierRule] | list[CreditRateRule] | list[CreditCapRule],
+    rules: (
+        list[TermMultiplierRule]
+        | list[CreditRateRule]
+        | list[CreditCapRule]
+        | list[DateFormulaRule]
+    ),
     requires_unconditional_last_rule: bool,
 ) -> None:
     """Raises if a rule without conditions, which applies to everything, comes
@@ -667,12 +799,15 @@ class LawRegime:
     """Ceilings on the credits from credit_rates. The first rule whose conditions
     a sentence meets applies, and a sentence that meets none is uncapped."""
 
-    projected_dates: dict[str, DateFormulaRule] = attr.ib(
-        validator=attr_validators.is_dict_of(str, DateFormulaRule)
+    projected_dates: dict[str, list[DateFormulaRule]] = attr.ib(
+        validator=attr_validators.is_dict_where_each(
+            key_validator=attr_validators.is_str,
+            value_validator=attr_validators.is_non_empty_list_of(DateFormulaRule),
+        )
     )
-    """The rule for each projected date, keyed by the date's name, e.g.
-    parole_eligibility_date. A date whose rule's conditions don't hold is left
-    out of the calculation."""
+    """The rules for each projected date, keyed by the date's name, e.g.
+    parole_eligibility_date. The first rule whose conditions hold computes the
+    date, and a date with no matching rule is left out of the calculation."""
 
     @property
     def all_rule_names(self) -> list[str]:
@@ -681,21 +816,24 @@ class LawRegime:
             *(rule.name for rule in self.term_multipliers),
             *(rule.name for rule in self.credit_rates),
             *(rule.name for rule in self.credit_caps),
-            *(rule.name for rule in self.projected_dates.values()),
+            *(rule.name for rules in self.projected_dates.values() for rule in rules),
         ]
 
     @property
     def projected_date_evaluation_order(self) -> list[str]:
         """Returns the names of the projected dates ordered so that every date
-        comes after the dates its formula uses, raising if the dates depend on
-        each other in a cycle."""
-        dependencies = {
-            date_name: expression_variable_names(
-                expression=rule.formula, rule_name=rule.name
-            )
-            & set(self.projected_dates)
-            for date_name, rule in self.projected_dates.items()
-        }
+        comes after the dates its formulas and floors use, raising if the dates
+        depend on each other in a cycle."""
+        dependencies: dict[str, set[str]] = {}
+        for date_name, date_rules in self.projected_dates.items():
+            used_names: set[str] = set()
+            for rule in date_rules:
+                used_names |= expression_variable_names(
+                    expression=rule.formula, rule_name=rule.name
+                )
+                if rule.floor is not None:
+                    used_names.add(rule.floor.date)
+            dependencies[date_name] = used_names & set(self.projected_dates)
         try:
             return list(TopologicalSorter(dependencies).static_order())
         except CycleError as e:
@@ -703,9 +841,9 @@ class LawRegime:
             cycle = list(reversed(e.args[1]))
             raise ValueError(
                 f"Law regime [{self.name}] has projected dates that depend on each "
-                f"other in a cycle, where each date's formula uses the next: "
-                f"[{' -> '.join(cycle)}]. Change the formulas so no date depends on "
-                f"itself."
+                f"other in a cycle, where each date's formula or floor uses the "
+                f"next: [{' -> '.join(cycle)}]. Change the formulas or floors so no "
+                f"date depends on itself."
             ) from e
 
     def __attrs_post_init__(self) -> None:
@@ -738,8 +876,8 @@ class LawRegime:
             rules=self.credit_caps,
             requires_unconditional_last_rule=False,
         )
-        for date_name, rule in self.projected_dates.items():
-            self._check_projected_date(date_name=date_name, rule=rule)
+        for date_name, date_rules in self.projected_dates.items():
+            self._check_projected_date(date_name=date_name, date_rules=date_rules)
         # Raises if the projected dates depend on each other in a cycle.
         _ = self.projected_date_evaluation_order
         rule_names = self.all_rule_names
@@ -750,33 +888,62 @@ class LawRegime:
                 f"{duplicate_names}."
             )
 
-    def _check_projected_date(self, *, date_name: str, rule: DateFormulaRule) -> None:
-        """Raises if date_name is the name of a calculation value, or if its
-        rule's formula refers to something other than a calculation value or
-        projected date."""
+    def _check_projected_date(
+        self, *, date_name: str, date_rules: list[DateFormulaRule]
+    ) -> None:
+        """Raises if date_name's rules are out of order or use a formula or floor
+        that refers to something other than a calculation value or projected
+        date."""
         if date_name in PROJECTED_DATE_VALUE_TYPES:
             raise ValueError(
                 f"Law regime [{self.name}] has a projected date named "
                 f"[{date_name}], which is already the name of a calculation value. "
                 f"Rename the projected date."
             )
-        available_names = {*PROJECTED_DATE_VALUE_TYPES, *self.projected_dates}
-        # This only checks the names a formula uses. A formula with an
-        # unsupported operator or a malformed duration, e.g. start_date ** 2 or
-        # start_date + months(1.5), still loads and raises only when a
-        # calculation evaluates it. Tests for each regime should compute its
-        # projected dates so that errors like these fail there with a clear
-        # message instead of at calculation time.
-        unknown_names = (
-            expression_variable_names(expression=rule.formula, rule_name=rule.name)
-            - available_names
+        _check_rule_order(
+            regime_name=self.name,
+            section=f"projected date [{date_name}]",
+            rules=date_rules,
+            requires_unconditional_last_rule=False,
         )
-        if unknown_names:
-            raise ValueError(
-                f"Rule [{rule.name}] uses {sorted(unknown_names)} in its formula, "
-                f"which are neither calculation values nor projected dates. "
-                f"Available names: {sorted(available_names)}."
+        available_names = {*PROJECTED_DATE_VALUE_TYPES, *self.projected_dates}
+        available_dates = {
+            *self.projected_dates,
+            *(
+                name
+                for name, value_type in PROJECTED_DATE_VALUE_TYPES.items()
+                if value_type is datetime.date
+            ),
+        }
+        for rule in date_rules:
+            # This only checks the names a formula uses. A formula with an
+            # unsupported operator or a malformed duration, e.g. start_date ** 2
+            # or start_date + months(1.5), still loads and raises only when a
+            # calculation evaluates it. Tests for each regime should compute its
+            # projected dates so that errors like these fail there with a clear
+            # message instead of at calculation time.
+            unknown_names = (
+                expression_variable_names(expression=rule.formula, rule_name=rule.name)
+                - available_names
             )
+            if unknown_names:
+                raise ValueError(
+                    f"Rule [{rule.name}] uses {sorted(unknown_names)} in its formula, "
+                    f"which are neither calculation values nor projected dates. "
+                    f"Available names: {sorted(available_names)}."
+                )
+            if rule.floor is None:
+                continue
+            if rule.floor.date == date_name:
+                raise ValueError(
+                    f"Rule [{rule.name}] has a floor on its own date [{date_name}]. "
+                    f"A floor must be a different date."
+                )
+            if rule.floor.date not in available_dates:
+                raise ValueError(
+                    f"Rule [{rule.name}] has a floor on [{rule.floor.date}], which "
+                    f"is not a date. Available dates: {sorted(available_dates)}."
+                )
 
     @staticmethod
     def name_for_yaml_path(yaml_path: str | Path) -> str:
@@ -844,7 +1011,8 @@ class LawRegime:
             ],
             projected_dates=_parse_projected_dates(
                 yaml_dict.pop_dict_optional("projected_dates") or YAMLDict({}),
-                parser=values_parser,
+                values_parser=values_parser,
+                sentence_parser=sentence_parser,
             ),
         )
         _check_no_unexpected_keys(yaml_dict, location=f"law regime file [{yaml_path}]")
@@ -852,16 +1020,35 @@ class LawRegime:
 
 
 def _parse_projected_dates(
-    projected_dates_dict: YAMLDict, *, parser: ConditionParser
-) -> dict[str, DateFormulaRule]:
-    """Returns the rule for each projected date in a regime's projected_dates.
-    'parser' parses the rules' conditions on calculation values."""
-    return {
-        date_name: DateFormulaRule.from_yaml_dict(
-            projected_dates_dict.pop_dict(date_name), date_name=date_name, parser=parser
-        )
-        for date_name in projected_dates_dict.keys()
-    }
+    projected_dates_dict: YAMLDict,
+    *,
+    values_parser: ConditionParser,
+    sentence_parser: ConditionParser,
+) -> dict[str, list[DateFormulaRule]]:
+    """Returns the rules for each projected date in a regime's projected_dates,
+    each of which is a list of rules or a single rule."""
+    projected_dates: dict[str, list[DateFormulaRule]] = {}
+    for date_name in projected_dates_dict.keys():
+        if projected_dates_dict.peek_type(date_name) is dict:
+            projected_dates[date_name] = [
+                DateFormulaRule.from_yaml_dict(
+                    projected_dates_dict.pop_dict(date_name),
+                    date_name=date_name,
+                    values_parser=values_parser,
+                    sentence_parser=sentence_parser,
+                )
+            ]
+            continue
+        projected_dates[date_name] = [
+            DateFormulaRule.from_yaml_dict(
+                rule_dict,
+                date_name=date_name,
+                values_parser=values_parser,
+                sentence_parser=sentence_parser,
+            )
+            for rule_dict in projected_dates_dict.pop_dicts(date_name)
+        ]
+    return projected_dates
 
 
 def parse_state_conditions(
