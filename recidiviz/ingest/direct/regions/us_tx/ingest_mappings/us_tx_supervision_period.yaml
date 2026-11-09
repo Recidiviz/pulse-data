@@ -134,6 +134,14 @@ output:
                   $not_null: WTSK_USER_ID
                 $then: $literal("US_TX_STAFF_ID")
           supervision_type: $literal_enum(StateSupervisionPeriodSupervisionType.PAROLE)
+          custodial_authority:
+            $conditional:
+              - $if:
+                  $equal:
+                    - status
+                    - $literal("Supervised out of state")
+                $then: $literal_enum(StateCustodialAuthority.OTHER_STATE)
+              - $else: $literal_enum(StateCustodialAuthority.SUPERVISION_AUTHORITY)
           supervision_level:
             $enum_mapping:
               $raw_text:

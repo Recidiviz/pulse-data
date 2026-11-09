@@ -31,7 +31,6 @@ from recidiviz.common.constants.state.state_employment_period import (
 from recidiviz.common.constants.state.state_person_housing_status_period import (
     StatePersonHousingStatusType,
 )
-from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
     StateStaffRoleType,
@@ -69,25 +68,6 @@ WORK_SCHEDULE_UNKNOWN = "UNKNOWN"
 # Separator between the status, employer category, and work schedule in the employment
 # status raw text.
 EMPLOYMENT_STATUS_RAW_TEXT_SEPARATOR = "@@"
-
-
-def parse_custodial_auth(
-    raw_text: str,
-) -> StateCustodialAuthority:
-    """Determines which supervision custodial authroity to map to based on a few key words"""
-    # TODO(#35061) Figure out how to determine if someone is OOS
-    if "TEXAS COUNTY JAIL" in raw_text:
-        return StateCustodialAuthority.COUNTY
-    if "DPO" in raw_text:
-        return StateCustodialAuthority.SUPERVISION_AUTHORITY
-    if "STATE JAIL" in raw_text:
-        return StateCustodialAuthority.STATE_PRISON
-    if "IMMIGRATION & CUSTOMS ENFORCEMENT -" == raw_text:
-        return StateCustodialAuthority.FEDERAL
-    # TDCJ uses country character codes which are 2 characters
-    if len(raw_text) == 2:
-        return StateCustodialAuthority.FEDERAL
-    return StateCustodialAuthority.INTERNAL_UNKNOWN
 
 
 IN_CUSTODY_REGEX = re.compile(
