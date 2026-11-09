@@ -38,7 +38,7 @@ schema:
     mode: REQUIRED
     description: >-
       The result's status, as in eomis_writeback_candidates.status: "success" when the referral was written and read back,
-      "skipped" when an Edovo award's plan had no CPU room, or "error" when a write was sent but could not be confirmed.
+      or "error" when a write was sent but could not be confirmed.
   - name: case_plan_date
     type: DATE
     mode: REQUIRED
@@ -61,28 +61,41 @@ schema:
   - name: max_cpus_after
     type: INTEGER
     mode: NULLABLE
-    description: The plan's maximum CPUs just after the write. Null for a skip or an error, and if the plan's screen did not render it.
+    description: The plan's maximum CPUs just after the write. Null for an error, and if the plan's screen did not render it.
   - name: pending_cpus_after
     type: INTEGER
     mode: NULLABLE
-    description: The plan's pending CPUs just after the write. Null for a skip or an error, and if the plan's screen did not render it.
+    description: The plan's pending CPUs just after the write. Null for an error, and if the plan's screen did not render it.
   - name: awarded_cpus_after
     type: INTEGER
     mode: NULLABLE
-    description: The plan's awarded CPUs just after the write. Null for a skip or an error, and if the plan's screen did not render it.
+    description: The plan's awarded CPUs just after the write. Null for an error, and if the plan's screen did not render it.
   - name: erc_rows_before
     type: INTEGER
     mode: NULLABLE
     description: >-
       The number of rows on the person's sentence credit ledger screen that mention ERC (Earned Release Credit) just
-      before the write, or null if the run did not read the ledger. A skip does not read it.
+      before the write, or null if the run did not read the ledger.
   - name: erc_rows_after
     type: INTEGER
     mode: NULLABLE
     description: >-
-      The number of ledger rows that mention ERC just after the write. Null for a skip or an error, and if the run could
+      The number of ledger rows that mention ERC just after the write. Null for an error, and if the run could
       not read the ledger. The ledger may gain its row after this read, so a count equal to erc_rows_before does not mean
       the write failed.
+  - name: erc_days_before
+    type: INTEGER
+    mode: NULLABLE
+    description: >-
+      The GT Days of the ledger rows counted by erc_rows_before, summed, so the days of earned release credit the person
+      held on the ledger just before the write. Null if the run could not read the GT Days of an ERC row.
+  - name: erc_days_after
+    type: INTEGER
+    mode: NULLABLE
+    description: >-
+      The GT Days of the ledger rows counted by erc_rows_after, summed, just after the write. Null for an error,
+      and if the run could not read the GT Days of an ERC row. The ledger may gain its row after this read, so a
+      sum equal to erc_days_before does not mean the write failed.
   - name: recorded_at
     type: TIMESTAMP
     mode: REQUIRED
