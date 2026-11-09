@@ -97,6 +97,7 @@ llm_extraction_job_document_result_type = Enum(
     enum_canonical_strings.llm_extraction_job_document_result_type_document_level_failure_transient,
     enum_canonical_strings.llm_extraction_job_document_result_type_document_level_failure_permanent,
     enum_canonical_strings.llm_extraction_job_document_result_type_document_level_failure_retries_exhausted,
+    enum_canonical_strings.llm_extraction_job_document_result_type_document_level_failure_stale_document,
     name="llm_extraction_job_document_result_type",
 )
 
@@ -1080,18 +1081,19 @@ class LLMExtractionJobDocument(OperationsBase):
     # When the result was processed.
     result_datetime_utc = Column(UTCDateTime, nullable=True)
 
-    # SUCCESS, JOB_LEVEL_FAILURE, DOCUMENT_LEVEL_FAILURE_TRANSIENT,
-    # DOCUMENT_LEVEL_FAILURE_PERMANENT, or DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED.
+    # The result classification for this document
     result_type = Column(llm_extraction_job_document_result_type, nullable=True)
 
     # Model's is_relevant determination. Non-null iff result_type = SUCCESS.
     # Denormalized for the REPROCESS_ALL_RELEVANT reprocessing directive.
     is_relevant = Column(Boolean, nullable=True)
 
-    # Per-document error category. Nonnull only for FAILURE result types.
+    # Per-document error category. Nonnull only for failures that came from an LLM
+    # request error; validation-originated and stale failures leave it null.
     error_type = Column(llm_document_extraction_error_type, nullable=True)
 
-    # Error details. Nonnull only for FAILURE result types.
+    # Error details. Nonnull only for failures that came from an LLM request error;
+    # validation-originated and stale failures leave it null.
     error_message = Column(String, nullable=True)
 
     # Total input tokens for this API call. Nonnull iff result_datetime_utc is set.

@@ -42,6 +42,7 @@ class LLMExtractionJobDocumentResultTypeTest(unittest.TestCase):
             LLMExtractionJobDocumentResultType.SUCCESS,
             LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_PERMANENT,
             LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED,
+            LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_STALE_DOCUMENT,
         }
         # Every member must be classified — an unenumerated member raises.
         for result_type in LLMExtractionJobDocumentResultType:

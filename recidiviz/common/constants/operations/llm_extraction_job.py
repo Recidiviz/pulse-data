@@ -73,6 +73,9 @@ class LLMExtractionJobDocumentResultType(OperationsEnum):
     DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED = (
         operations_enum_strings.llm_extraction_job_document_result_type_document_level_failure_retries_exhausted
     )
+    DOCUMENT_LEVEL_FAILURE_STALE_DOCUMENT = (
+        operations_enum_strings.llm_extraction_job_document_result_type_document_level_failure_stale_document
+    )
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -101,6 +104,8 @@ class LLMExtractionJobDocumentResultType(OperationsEnum):
             return False
         if result_type is cls.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED:
             return False
+        if result_type is cls.DOCUMENT_LEVEL_FAILURE_STALE_DOCUMENT:
+            return False
         raise ValueError(f"Unexpected result_type: [{result_type}]")
 
     @classmethod
@@ -119,6 +124,12 @@ class LLMExtractionJobDocumentResultType(OperationsEnum):
         if result_type is cls.DOCUMENT_LEVEL_FAILURE_PERMANENT:
             return True
         if result_type is cls.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED:
+            return True
+        # TODO(OBT-56601): if we ever supported invalidating first order extraction results
+        # then it would be possible for a previously stale document to become relevant again,
+        # and we would need to reconsider whether a stale document should still
+        # be treated as terminal.
+        if result_type is cls.DOCUMENT_LEVEL_FAILURE_STALE_DOCUMENT:
             return True
         if result_type is cls.JOB_LEVEL_FAILURE:
             return False
@@ -150,6 +161,12 @@ _LLM_EXTRACTION_JOB_DOCUMENT_RESULT_TYPE_VALUE_DESCRIPTIONS: dict[
     LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED: (
         "Extraction failed for this document after the retry budget was exhausted "
         "and will not be retried."
+    ),
+    LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_STALE_DOCUMENT: (
+        "The document was selected for extraction but had left the entry→source map "
+        "by the time the job ran — an entity-resolution composite whose map was "
+        "rebuilt from a newer composite before extraction reached it. No extraction "
+        "was attempted; the result is terminal, so the document is not re-selected."
     ),
 }
 
