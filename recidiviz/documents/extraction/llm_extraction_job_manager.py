@@ -25,11 +25,13 @@ objects.
 """
 
 import datetime
+import logging
 import uuid
 from contextlib import AbstractContextManager
 from typing import Any
 
 import attr
+from google.cloud import bigquery
 from sqlalchemy import and_, func
 from sqlalchemy.dialects.postgresql import insert
 
@@ -45,6 +47,11 @@ from recidiviz.documents.extraction.llm_client.types import (
 )
 from recidiviz.documents.extraction.validation.llm_document_validation_result import (
     LLMDocumentValidationResult,
+)
+from recidiviz.documents.store.document_store_columns import (
+    DOCUMENT_CONTENTS_ID_COLUMN_NAME,
+    DOCUMENT_LENGTH_BYTES_COLUMN_NAME,
+    DOCUMENT_UPDATE_DATETIME_COLUMN_NAME,
 )
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
@@ -103,6 +110,15 @@ class LLMExtractionEligibleDocumentRecord:
     )
     """The document's date; used to order oldest-first. Write-once for the same
     reason as `document_length_bytes`."""
+
+    @classmethod
+    def from_row(cls, row: bigquery.table.Row) -> "LLMExtractionEligibleDocumentRecord":
+        """Returns the record for one eligible-document query result row."""
+        return cls(
+            document_contents_id=row[DOCUMENT_CONTENTS_ID_COLUMN_NAME],
+            document_length_bytes=row[DOCUMENT_LENGTH_BYTES_COLUMN_NAME],
+            document_update_datetime=row[DOCUMENT_UPDATE_DATETIME_COLUMN_NAME],
+        )
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -613,6 +629,70 @@ class LLMExtractionJobManager:
             return None
         return convert_schema_object_to_entity(
             job, LLMExtractionJob, populate_direct_back_edges=False
+        )
+
+    def generate_job_with_session(
+        self,
+        session: Session,
+        *,
+        state_code: StateCode,
+        extractor_version_id: str,
+        document_filter_id: str,
+        eligible_documents: list[LLMExtractionEligibleDocumentRecord],
+    ) -> LLMExtractionJob | None:
+        """Returns the open job for the active version if one exists (resume — a
+        crashed run's job must be finished before new work is selected, since the
+        one-open-job-per-version unique index forbids a second), otherwise the
+        newly created job, or None when there's no work. On resume, |eligible_documents|
+        is left unrecorded: the open job's already-selected documents stand. Runs
+        within |session|; does not commit.
+        """
+        open_job = self.get_open_job_with_session(
+            session, state_code=state_code, extractor_version_id=extractor_version_id
+        )
+        if open_job is not None:
+            logging.info(
+                "Resuming open job [%s] for state [%s], extractor version [%s].",
+                open_job.job_id,
+                state_code.value,
+                extractor_version_id,
+            )
+            return open_job
+
+        self.record_eligible_documents_with_session(
+            session,
+            state_code=state_code,
+            extractor_version_id=extractor_version_id,
+            document_filter_id=document_filter_id,
+            eligible_documents=eligible_documents,
+        )
+
+        document_contents_ids = (
+            self.get_document_contents_ids_needing_processing_with_session(
+                session,
+                state_code=state_code,
+                extractor_version_id=extractor_version_id,
+            )
+        )
+        if not document_contents_ids:
+            logging.info(
+                "No eligible documents for state [%s], extractor version [%s].",
+                state_code.value,
+                extractor_version_id,
+            )
+            return None
+
+        logging.info(
+            "Creating new job for state [%s], extractor version [%s] with [%d] eligible documents.",
+            state_code.value,
+            extractor_version_id,
+            len(document_contents_ids),
+        )
+        return self.create_job_with_session(
+            session,
+            state_code=state_code,
+            extractor_version_id=extractor_version_id,
+            document_contents_ids=document_contents_ids,
         )
 
     def create_job(

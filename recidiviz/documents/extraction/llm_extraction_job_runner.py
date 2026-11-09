@@ -60,7 +60,7 @@ def run_sync_extraction_job(
         pending_documents = job_manager.get_pending_job_documents(
             state_code=config.state_code, job_id=job_id
         )
-        # TODO(OBT-46617) this is intended to prevent us from accidentally running very large
+        # TODO(OBT-47993) this is intended to prevent us from accidentally running very large
         # sandbox runs, we should replace with the production SKIPPED_OVER_CAP check
         # once that is built
         if max_documents is not None and len(pending_documents) > max_documents:

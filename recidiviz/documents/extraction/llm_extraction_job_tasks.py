@@ -16,6 +16,10 @@
 # =============================================================================
 """Shared LLM extraction job-lifecycle tasks."""
 
+import logging
+from collections.abc import Callable
+from contextlib import AbstractContextManager
+
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.operations.llm_extraction_job import (
     LLMDocumentExtractionErrorType,
@@ -24,10 +28,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.llm_extraction_eligible_document_query_builder import (
     LLMExtractionEligibleDocumentQueryBuilder,
 )
-from recidiviz.documents.extraction.llm_extraction_job_generator import (
-    LLMExtractionJobGenerator,
-)
 from recidiviz.documents.extraction.llm_extraction_job_manager import (
+    LLMExtractionEligibleDocumentRecord,
     LLMExtractionJobManager,
 )
 from recidiviz.documents.extraction.llm_extractor_metadata_manager import (
@@ -55,20 +57,35 @@ def identify_job_documents(
     extractor_version_id: str,
     job_manager: LLMExtractionJobManager,
     bq_client: BigQueryClient,
-    session: Session,
+    session_cm: Callable[[], AbstractContextManager[Session]],
     source_sandbox_prefix: str | None = None,
 ) -> str | None:
-    job = LLMExtractionJobGenerator(
-        eligible_documents_query_builder=LLMExtractionEligibleDocumentQueryBuilder(
-            document_filter=config.document_filter,
-            input_document_collection=config.input_document_collection,
-            source_sandbox_prefix=source_sandbox_prefix,
-        ),
-        job_manager=job_manager,
-        bq_client=bq_client,
-    ).generate_job(
-        session=session, config=config, extractor_version_id=extractor_version_id
+    """Returns the id of the job holding this extractor's documents to process, or
+    None when there's no work.
+    """
+    logging.info("Querying eligible documents from BQ")
+    query_builder = LLMExtractionEligibleDocumentQueryBuilder(
+        document_filter=config.document_filter,
+        input_document_collection=config.input_document_collection,
+        source_sandbox_prefix=source_sandbox_prefix,
     )
+    query_job = bq_client.run_query_async(
+        query_str=query_builder.build_query(project_id=bq_client.project_id),
+        use_query_cache=False,
+    )
+    eligible_documents = [
+        LLMExtractionEligibleDocumentRecord.from_row(row) for row in query_job.result()
+    ]
+
+    logging.info("Generating job with %d eligible documents", len(eligible_documents))
+    with session_cm() as session:
+        job = job_manager.generate_job_with_session(
+            session,
+            state_code=config.state_code,
+            extractor_version_id=extractor_version_id,
+            document_filter_id=config.document_filter_id,
+            eligible_documents=eligible_documents,
+        )
 
     return job.job_id if job is not None else None
 

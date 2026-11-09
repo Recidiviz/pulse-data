@@ -68,16 +68,15 @@ def identify_job_documents_task(
     """Generates an LLMExtractionJob for the given extractor based on the currently
     eligible documents and returns its job_id.
     """
-    with airflow_cloud_sql_session_for_connection(
-        cloud_sql_conn_id_for_schema_type(SchemaType.OPERATIONS)
-    ) as session:
-        return identify_job_documents(
-            config=get_extractor_config(state_code, extractor_collection_name),
-            extractor_version_id=extractor_version_id,
-            job_manager=LLMExtractionJobManager(),
-            bq_client=BigQueryClientImpl(),
-            session=session,
-        )
+    return identify_job_documents(
+        config=get_extractor_config(state_code, extractor_collection_name),
+        extractor_version_id=extractor_version_id,
+        job_manager=LLMExtractionJobManager(),
+        bq_client=BigQueryClientImpl(),
+        session_cm=lambda: airflow_cloud_sql_session_for_connection(
+            cloud_sql_conn_id_for_schema_type(SchemaType.OPERATIONS)
+        ),
+    )
 
 
 @task.short_circuit(

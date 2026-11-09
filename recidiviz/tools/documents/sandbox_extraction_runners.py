@@ -225,15 +225,14 @@ class SandboxExtractionRunner:
             if self.document_store_sandbox is not None
             else None
         )
-        with SessionFactory.using_database(self.db_key) as session:
-            job_id = identify_job_documents(
-                config=self.config,
-                extractor_version_id=active_version_id,
-                job_manager=self.job_manager,
-                bq_client=self.bq_client,
-                source_sandbox_prefix=source_sandbox_prefix,
-                session=session,
-            )
+        job_id = identify_job_documents(
+            config=self.config,
+            extractor_version_id=active_version_id,
+            job_manager=self.job_manager,
+            bq_client=self.bq_client,
+            source_sandbox_prefix=source_sandbox_prefix,
+            session_cm=lambda: SessionFactory.using_database(self.db_key),
+        )
 
         if job_id is None:
             logging.info("No documents need processing; nothing to do.")

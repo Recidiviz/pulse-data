@@ -46,7 +46,7 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 
-# TODO(OBT-46617): Temporary workaround to guard against accidentally huge runs.
+# TODO(OBT-47993): Temporary workaround to guard against accidentally huge runs.
 # Remove once the production SKIPPED_OVER_CAP check is built.
 _MAX_DOCUMENTS = 200_000
 

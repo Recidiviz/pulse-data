@@ -471,6 +471,105 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
                 document_contents_ids=[],
             )
 
+    def _generate_job(
+        self, eligible_document_contents_ids: list[str]
+    ) -> LLMExtractionJob | None:
+        with SessionFactory.using_database(self.database_key) as session:
+            return self.manager.generate_job_with_session(
+                session,
+                state_code=_STATE,
+                extractor_version_id=_EXTRACTOR_VERSION,
+                document_filter_id=_FILTER,
+                eligible_documents=[
+                    _eligible_record(d) for d in eligible_document_contents_ids
+                ],
+            )
+
+    def test_generate_job_records_eligible_and_creates_job(self) -> None:
+        job = self._generate_job(["doc1", "doc2"])
+
+        assert job is not None
+        self.assertIsNone(job.start_datetime_utc)
+        self.assertIsNone(job.completion_datetime_utc)
+        self.assertEqual(
+            {"doc1", "doc2"},
+            {
+                d.document_contents_id
+                for d in self.manager.get_pending_job_documents(
+                    state_code=_STATE, job_id=job.job_id
+                )
+            },
+        )
+        # The eligible-document rows the query produced are recorded.
+        self.assertEqual(2, self._count_rows(schema.LLMExtractionEligibleDocument))
+
+    def test_generate_job_returns_none_when_no_eligible_documents(self) -> None:
+        self.assertIsNone(self._generate_job([]))
+
+    def test_generate_job_resumes_open_job_without_recording(self) -> None:
+        first_job = self._generate_job(["doc1", "doc2"])
+        assert first_job is not None
+
+        # The first job is left open (a crashed run). A second generate must return
+        # that same job rather than creating a new one, and must not record the
+        # passed eligible documents — the open job's already-selected set stands.
+        resumed_job = self._generate_job(["doc1", "doc2", "doc3"])
+        assert resumed_job is not None
+        self.assertEqual(first_job.job_id, resumed_job.job_id)
+        self.assertEqual(2, self._count_rows(schema.LLMExtractionEligibleDocument))
+
+    def test_generate_job_skips_terminal_and_reselects_non_terminal(self) -> None:
+        first_job = self._generate_job(["doc1", "doc2"])
+        assert first_job is not None
+
+        # doc1 permanently succeeds; doc2 fails transiently (non-terminal). Close
+        # the job so a second one can be created.
+        self.manager.mark_job_started(state_code=_STATE, job_id=first_job.job_id)
+        self.manager.set_job_document_results(
+            state_code=_STATE,
+            results=[
+                _success_result(job_id=first_job.job_id, document_contents_id="doc1"),
+                _failure_result(
+                    job_id=first_job.job_id,
+                    document_contents_id="doc2",
+                    result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_TRANSIENT,
+                    error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
+                ),
+            ],
+        )
+        self.manager.mark_job_completed(state_code=_STATE, job_id=first_job.job_id)
+
+        # Re-selection: doc1 is skipped (terminal), doc2 re-selected (transient),
+        # doc3 newly eligible.
+        second_job = self._generate_job(["doc1", "doc2", "doc3"])
+        assert second_job is not None
+        self.assertNotEqual(first_job.job_id, second_job.job_id)
+        self.assertEqual(
+            {"doc2", "doc3"},
+            {
+                d.document_contents_id
+                for d in self.manager.get_pending_job_documents(
+                    state_code=_STATE, job_id=second_job.job_id
+                )
+            },
+        )
+
+    def test_generate_job_returns_none_when_all_documents_terminal(self) -> None:
+        first_job = self._generate_job(["doc1"])
+        assert first_job is not None
+        self.manager.mark_job_started(state_code=_STATE, job_id=first_job.job_id)
+        self.manager.set_job_document_results(
+            state_code=_STATE,
+            results=[
+                _success_result(job_id=first_job.job_id, document_contents_id="doc1")
+            ],
+        )
+        self.manager.mark_job_completed(state_code=_STATE, job_id=first_job.job_id)
+
+        # doc1 is still eligible but now has a terminal result, so nothing needs
+        # processing and no new job is created.
+        self.assertIsNone(self._generate_job(["doc1"]))
+
     def test_get_open_job(self) -> None:
         self.assertIsNone(
             self.manager.get_open_job(
