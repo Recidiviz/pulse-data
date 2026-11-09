@@ -305,6 +305,37 @@ class LLMJobDocumentExtractionResult:
             validation_results=None,
         )
 
+    @classmethod
+    def for_stale_document(
+        cls,
+        *,
+        job_id: str,
+        document_contents_id: str,
+        result_datetime_utc: datetime.datetime,
+    ) -> "LLMJobDocumentExtractionResult":
+        """Returns the result for an entity-resolution composite that was selected
+        for extraction but had left the entry→source map by the time the job ran —
+        the map was rebuilt from a newer composite first.
+
+        Args:
+            job_id: The job this result belongs to.
+            document_contents_id: The stale composite document.
+            result_datetime_utc: When this result was produced.
+        """
+        return cls(
+            job_id=job_id,
+            document_contents_id=document_contents_id,
+            result_datetime_utc=result_datetime_utc,
+            raw_result=LLMClientDocumentExtractionResult.from_not_attempted(
+                document_contents_id=document_contents_id,
+            ),
+            result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_STALE_DOCUMENT,
+            is_relevant=None,
+            error_type=None,
+            error_message=None,
+            validation_results=None,
+        )
+
 
 @attr.define(frozen=True, kw_only=True)
 class LLMExtractionJobDocumentTerminalFailure:

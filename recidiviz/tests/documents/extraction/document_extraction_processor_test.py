@@ -19,7 +19,12 @@
 import datetime
 from unittest import TestCase, mock
 
+from recidiviz.common.constants.operations.llm_extraction_job import (
+    LLMExtractionJobDocumentResultType,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.document_extraction_processor import (
+    DocumentExtractionProcessor,
     ExtractionRunSummary,
     read_expected_entry_nums_by_document,
 )
@@ -31,6 +36,9 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_so
 )
 from recidiviz.documents.extraction.llm_client.types import (
     LLMDocumentExtractionTokenCounts,
+)
+from recidiviz.documents.extraction.llm_extraction_job_manager import (
+    LLMExtractionJobManager,
 )
 from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
@@ -46,6 +54,7 @@ from recidiviz.documents.store.document_store_sandbox_context import (
     DocumentCollectionSandboxLocation,
     DocumentStoreSandboxContext,
 )
+from recidiviz.persistence.entity.operations.entities import LLMExtractionJobDocument
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -204,6 +213,7 @@ class ExtractionRunSummaryTest(TestCase):
                 ),
             ),
             llm_phase_seconds=61.0,
+            stale_document_count=2,
         )
 
         with self.assertLogs(level="INFO") as logs:
@@ -215,6 +225,7 @@ class ExtractionRunSummaryTest(TestCase):
             "LLM requests phase took 1m 1s.",
             "❌ Empty text in GCS (skipped): 1",
             "❌ Failed to build LLM request: 1",
+            "⏭️  Stale composite (skipped): 2",
             "Documents processed via LLM: 3",
             "✅ Succeeded: 1",
             "❌ Failed (LLM request): 1",
@@ -225,3 +236,121 @@ class ExtractionRunSummaryTest(TestCase):
             "Thinking: 2",
         ]:
             self.assertIn(fragment, output)
+
+
+def _pending_document(document_contents_id: str) -> LLMExtractionJobDocument:
+    return LLMExtractionJobDocument.new_with_defaults(
+        state_code=StateCode.US_XX.value,
+        job_id="job1",
+        document_contents_id=document_contents_id,
+        job_index=0,
+    )
+
+
+class TerminateStaleDocumentsTest(TestCase):
+    """Tests the pre-pass that terminates entity-resolution composites missing from
+    the entry→source map before anything is sent to the LLM."""
+
+    # pylint: disable=protected-access
+
+    def setUp(self) -> None:
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+        self.job_manager = mock.create_autospec(LLMExtractionJobManager)
+
+    def _processor(self, config: LLMExtractorConfig) -> DocumentExtractionProcessor:
+        processor = DocumentExtractionProcessor(
+            config=config,
+            results_sandbox_prefix=None,
+            document_store_sandbox=None,
+            labels=[],
+            bq_client=mock.MagicMock(),
+            fs=mock.MagicMock(),
+            sync_client=mock.MagicMock(),
+            job_manager=self.job_manager,
+        )
+        processor.persister = mock.MagicMock()
+        return processor
+
+    def test_splits_live_from_stale_and_persists_stale(self) -> None:
+        # DOC_LIVE is in the map; DOC_STALE is not, so it is terminated without an
+        # LLM call and DOC_LIVE is returned for extraction.
+        processor = self._processor(
+            fake_entity_resolution_extractor_config(_ASSIGNMENT_GROUP_NAME)
+        )
+        live_documents, stale_count = processor._terminate_stale_documents(
+            job_id="job1",
+            pending_documents=[
+                _pending_document("DOC_LIVE"),
+                _pending_document("DOC_STALE"),
+            ],
+            expected_entry_nums_by_document={"DOC_LIVE": {1, 2}},
+        )
+
+        self.assertEqual(["DOC_LIVE"], [d.document_contents_id for d in live_documents])
+        self.assertEqual(1, stale_count)
+        self.job_manager.set_job_document_results.assert_called_once()
+        persisted = self.job_manager.set_job_document_results.call_args.kwargs[
+            "results"
+        ]
+        self.assertEqual(
+            [
+                (
+                    "DOC_STALE",
+                    LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_STALE_DOCUMENT,
+                )
+            ],
+            [(r.document_contents_id, r.result_type) for r in persisted],
+        )
+
+    def test_no_stale_documents_persists_nothing(self) -> None:
+        processor = self._processor(
+            fake_entity_resolution_extractor_config(_ASSIGNMENT_GROUP_NAME)
+        )
+        live_documents, stale_count = processor._terminate_stale_documents(
+            job_id="job1",
+            pending_documents=[_pending_document("DOC_A"), _pending_document("DOC_B")],
+            expected_entry_nums_by_document={"DOC_A": {1}, "DOC_B": {1}},
+        )
+
+        self.assertEqual(
+            ["DOC_A", "DOC_B"], [d.document_contents_id for d in live_documents]
+        )
+        self.assertEqual(0, stale_count)
+        self.job_manager.set_job_document_results.assert_not_called()
+
+    def test_first_order_extractor_never_marks_stale(self) -> None:
+        # A first-order extractor has no entry→source map (None), so no document is
+        # ever stale even though it would be absent from an empty map.
+        processor = self._processor(fake_first_order_extractor_config())
+        live_documents, stale_count = processor._terminate_stale_documents(
+            job_id="job1",
+            pending_documents=[_pending_document("DOC_A")],
+            expected_entry_nums_by_document=None,
+        )
+
+        self.assertEqual(["DOC_A"], [d.document_contents_id for d in live_documents])
+        self.assertEqual(0, stale_count)
+        self.job_manager.set_job_document_results.assert_not_called()
+
+    @mock.patch(
+        "recidiviz.documents.extraction.document_extraction_processor."
+        "read_expected_entry_nums_by_document"
+    )
+    def test_process_raises_when_every_document_is_stale(
+        self, mock_read_entry_nums: mock.MagicMock
+    ) -> None:
+        # The single pending document is absent from the map, so it is stale and no
+        # live document remains — an unexpected state that should fail loudly.
+        mock_read_entry_nums.return_value = {"DOC_OTHER": {1}}
+        processor = self._processor(
+            fake_entity_resolution_extractor_config(_ASSIGNMENT_GROUP_NAME)
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Every pending document for job \[job1\] .* was stale: \[1\] stale, "
+            r"\[0\] live\. .*$",
+        ):
+            processor.process(
+                job_id="job1", pending_documents=[_pending_document("DOC_STALE")]
+            )

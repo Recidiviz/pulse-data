@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the provider-agnostic LLM extraction client types."""
+
 from unittest import TestCase
 
 from google.genai import types
@@ -120,21 +121,22 @@ class LLMClientDocumentExtractionResultTest(TestCase):
         # A failure that never billed reports zero counts, not None.
         self.assertEqual(0, error.token_counts.input_token_count)
 
+    def test_from_not_attempted_factory(self) -> None:
+        not_attempted = LLMClientDocumentExtractionResult.from_not_attempted(
+            document_contents_id="doc_1"
+        )
+        self.assertIsNone(not_attempted.result_json)
+        self.assertIsNone(not_attempted.error_type)
+        self.assertIsNone(not_attempted.error_message)
+        self.assertFalse(not_attempted.is_error_result)
+        self.assertEqual(
+            LLMDocumentExtractionTokenCounts.empty(), not_attempted.token_counts
+        )
+
     def test_result_and_error_are_mutually_exclusive(self) -> None:
-        # Neither set, both set, and a half-set error pair each violate the
-        # invariant.
+        # Both set is contradictory; a half-set error pair is invalid.
         with self.assertRaisesRegex(
-            ValueError, r"Exactly one of result_json and error_type"
-        ):
-            LLMClientDocumentExtractionResult(
-                document_contents_id="doc_1",
-                result_json=None,
-                token_counts=self._token_counts(),
-                error_type=None,
-                error_message=None,
-            )
-        with self.assertRaisesRegex(
-            ValueError, r"Exactly one of result_json and error_type"
+            ValueError, r"result_json and error_type must not both be set"
         ):
             LLMClientDocumentExtractionResult(
                 document_contents_id="doc_1",

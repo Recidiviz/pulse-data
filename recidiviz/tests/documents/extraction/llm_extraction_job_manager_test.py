@@ -672,13 +672,14 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
 
     def test_get_document_contents_ids_needing_processing(self) -> None:
         # doc_new: never processed. doc_transient: transient failure (retryable).
-        # doc_success / doc_permanent / doc_exhausted: terminal, excluded.
+        # doc_success / doc_permanent / doc_exhausted / doc_stale: terminal, excluded.
         eligible = [
             "doc_new",
             "doc_transient",
             "doc_success",
             "doc_permanent",
             "doc_exhausted",
+            "doc_stale",
         ]
         self._record_eligible(eligible)
         job = self.manager.create_job(
@@ -723,6 +724,16 @@ class LLMExtractionJobManagerTest(unittest.TestCase):
                     document_contents_id="doc_exhausted",
                     result_type=LLMExtractionJobDocumentResultType.DOCUMENT_LEVEL_FAILURE_RETRIES_EXHAUSTED,
                     error_type=LLMDocumentExtractionErrorType.LLM_REQUEST_RATE_LIMITED,
+                )
+            ],
+        )
+        self.manager.set_job_document_results(
+            state_code=_STATE,
+            results=[
+                LLMJobDocumentExtractionResult.for_stale_document(
+                    job_id=job.job_id,
+                    document_contents_id="doc_stale",
+                    result_datetime_utc=_NOW,
                 )
             ],
         )

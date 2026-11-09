@@ -178,9 +178,9 @@ class LLMDocumentExtractionTokenCounts:
 @attr.define(frozen=True, kw_only=True)
 class LLMClientDocumentExtractionResult:
     """The provider-agnostic result of a single document extraction request. A
-    failed call still produces one of these (with `result_json=None` and
-    `error_type`/`error_message` set) rather than raising — classifying the
-    failure into a transient vs. permanent job outcome is the next layer's job.
+    failed call still produces one of these (with result_json=None and
+    error_type/error_message set) rather than raising — classifying the failure
+    into a transient vs. permanent job outcome is the next layer's job.
     """
 
     document_contents_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
@@ -203,10 +203,11 @@ class LLMClientDocumentExtractionResult:
     """A human-readable description of the failure, or None on success."""
 
     def __attrs_post_init__(self) -> None:
-        if (self.result_json is None) == (self.error_type is None):
+        # Both None is the not-attempted result; both set is contradictory.
+        if self.result_json is not None and self.error_type is not None:
             raise ValueError(
-                f"Exactly one of result_json and error_type must be set for "
-                f"document [{self.document_contents_id}]: got "
+                f"result_json and error_type must not both be set for document "
+                f"[{self.document_contents_id}]: got "
                 f"result_json=[{self.result_json!r}], error_type=[{self.error_type!r}]."
             )
         if (self.error_type is None) != (self.error_message is None):
@@ -253,6 +254,21 @@ class LLMClientDocumentExtractionResult:
             document_contents_id=document_contents_id,
             result_json=result_json,
             token_counts=token_counts,
+            error_type=None,
+            error_message=None,
+        )
+
+    @classmethod
+    def from_not_attempted(
+        cls, *, document_contents_id: str
+    ) -> "LLMClientDocumentExtractionResult":
+        """Constructs the result for a document that was never sent to the provider,
+        so it carries neither JSON nor an error. Reports is_error_result as False,
+        since no request failed."""
+        return cls(
+            document_contents_id=document_contents_id,
+            result_json=None,
+            token_counts=LLMDocumentExtractionTokenCounts.empty(),
             error_type=None,
             error_message=None,
         )

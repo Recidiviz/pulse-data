@@ -19,6 +19,7 @@ request per document, runs them, classifies each result, and flushes the results
 to BigQuery and Postgres in chunks, tallying the outcome into a run summary as it
 goes."""
 
+import datetime
 import logging
 import time
 
@@ -256,6 +257,13 @@ class ExtractionRunSummary:
     """Wall-clock seconds spent building requests and running them through the
     LLM — the run's dominant phase."""
 
+    stale_document_count: int = attr.ib(
+        default=0, validator=attr_validators.is_non_negative_int
+    )
+    """Entity-resolution composites that were marked STALE_DOCUMENT and skipped
+    because they had left the entry→source map before the job ran. Not counted in
+    the session summary, since they never reached the extraction session."""
+
     def log(self) -> None:
         """Logs the run's summary under a header naming the extractor collection
         it covers."""
@@ -263,11 +271,13 @@ class ExtractionRunSummary:
         minutes, seconds = divmod(round(self.llm_phase_seconds), 60)
         logging.info("LLM requests phase took %dm %ds.", minutes, seconds)
 
-        # Documents that never reached the LLM because a request could not be
-        # built for them. Only surfaced when non-empty, so a clean run stays quiet.
+        # Documents that never reached the LLM — a request could not be built for
+        # them, or they were stale. Only surfaced when non-empty, so a clean run
+        # stays quiet.
         job_creation_error_rows = [
             ("❌ Empty text in GCS (skipped)", self.session_summary.skipped_empty),
             ("❌ Failed to build LLM request", self.session_summary.failed_to_build),
+            ("⏭️  Stale composite (skipped)", self.stale_document_count),
         ]
         if any(count for _, count in job_creation_error_rows):
             logging.info("Documents with job creation errors:")
@@ -418,6 +428,13 @@ class DocumentExtractionProcessor:
             document_store_sandbox=self.document_store_sandbox,
             bq_client=self.bq_client,
         )
+
+        live_documents, stale_result_count = self._terminate_stale_documents(
+            job_id=job_id,
+            pending_documents=pending_documents,
+            expected_entry_nums_by_document=expected_entry_nums_by_document,
+        )
+
         documents = [
             GCSDocumentTextSource(
                 document_contents_id=job_document.document_contents_id,
@@ -427,10 +444,22 @@ class DocumentExtractionProcessor:
                 collection_name=self.config.input_document_collection.name,
                 source_sandbox_prefix=source_document_sandbox_prefix,
             )
-            for job_document in pending_documents
+            for job_document in live_documents
         ]
-        total_documents = len(pending_documents)
+        total_documents = len(live_documents)
         logging.info("Processing [%d] documents through the LLM.", total_documents)
+
+        # A document only goes stale when a newer composite supersedes it, so a stale
+        # document should always be accompanied by the live document that replaced it.
+        # Every pending document being stale is therefore an unexpected state.
+        if not live_documents:
+            raise ValueError(
+                f"Every pending document for job [{job_id}] "
+                f"(extractor [{self.config.extractor_collection.name}]) was stale: "
+                f"[{stale_result_count}] stale, [0] live. A stale document should be "
+                f"superseded by a newer composite, so at least one live document is "
+                f"expected whenever any document is stale."
+            )
 
         prior_transient_failure_counts_by_document = (
             self.job_manager.get_prior_transient_failure_counts_by_document(
@@ -478,7 +507,60 @@ class DocumentExtractionProcessor:
             extractor_config_name=self.config.extractor_collection.name,
             session_summary=session.finish_session(),
             llm_phase_seconds=progress.elapsed_seconds,
+            stale_document_count=stale_result_count,
         )
+
+    def _terminate_stale_documents(
+        self,
+        *,
+        job_id: str,
+        pending_documents: list[LLMExtractionJobDocument],
+        expected_entry_nums_by_document: dict[str, set[int]] | None,
+    ) -> tuple[list[LLMExtractionJobDocument], int]:
+        """Splits the pending documents into the live ones to extract and the stale
+        ones to skip, persists a STALE_DOCUMENT result for each stale one, and
+        returns (live documents, stale count).
+
+        A pending entity-resolution composite absent from the entry→source map is
+        stale: it was selected while its entry existed, but the map was rebuilt from
+        a newer composite before this job ran. Skipping it here avoids a wasted LLM
+        call on a document we can already tell is stale — its result-validation
+        lookup against the map would fail. First-order extractors have no
+        map (expected_entry_nums_by_document is None); nothing is stale for them.
+
+        Args:
+            job_id: The job whose pending documents are being split.
+            pending_documents: Every document the job still needs to process.
+            expected_entry_nums_by_document: The entry set of each composite in the
+                current map, or None for a first-order extractor.
+        """
+        if expected_entry_nums_by_document is None:
+            return pending_documents, 0
+
+        live_documents: list[LLMExtractionJobDocument] = []
+        stale_results: list[LLMJobDocumentExtractionResult] = []
+        now = datetime.datetime.now(tz=datetime.UTC)
+        for job_document in pending_documents:
+            if job_document.document_contents_id in expected_entry_nums_by_document:
+                live_documents.append(job_document)
+                continue
+            stale_results.append(
+                LLMJobDocumentExtractionResult.for_stale_document(
+                    job_id=job_id,
+                    document_contents_id=job_document.document_contents_id,
+                    result_datetime_utc=now,
+                )
+            )
+
+        if stale_results:
+            logging.warning(
+                "Marking [%d] stale composite document(s) as STALE_DOCUMENT without "
+                "extraction: no entry in the entry→source map at extraction time.",
+                len(stale_results),
+            )
+            self._write_results_to_bq_and_postgres(results=stale_results)
+
+        return live_documents, len(stale_results)
 
     def _write_results_to_bq_and_postgres(
         self, *, results: list[LLMJobDocumentExtractionResult]
