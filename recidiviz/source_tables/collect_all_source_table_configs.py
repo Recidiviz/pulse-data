@@ -22,7 +22,10 @@ from types import ModuleType
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
-    collect_all_extractor_configs_by_state,
+    collect_launched_extractor_configs_by_state,
+)
+from recidiviz.documents.store.document_collection_config_collectors import (
+    load_all_launched_document_collection_configs,
 )
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
@@ -47,7 +50,7 @@ from recidiviz.source_tables.dataflow_output_table_collector import (
     get_dataflow_output_source_table_collections,
 )
 from recidiviz.source_tables.document_store_source_table_collection import (
-    collect_document_store_source_tables,
+    collect_document_store_source_tables_for_configs,
 )
 from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
     collect_externally_managed_source_table_collections,
@@ -235,7 +238,12 @@ def collect_source_table_collections_hydrated_outside_view_graphs(
             f"[{metadata.project_id()}]"
         )
 
-    extractor_configs_by_state = collect_all_extractor_configs_by_state()
+    launched_extractor_configs_by_state = collect_launched_extractor_configs_by_state(
+        project_id=project_id
+    )
+    launched_document_collection_configs = (
+        load_all_launched_document_collection_configs(project_id=project_id)
+    )
 
     return [
         *collect_externally_managed_source_table_collections(project_id=project_id),
@@ -247,9 +255,11 @@ def collect_source_table_collections_hydrated_outside_view_graphs(
         *build_identity_pipeline_input_source_table_collections(),
         build_identity_service_export_source_table_collection(),
         *collect_sentencing_source_tables(),
-        *collect_document_store_source_tables(),
+        *collect_document_store_source_tables_for_configs(
+            launched_document_collection_configs
+        ),
         *collect_extraction_results_source_table_collections(
-            configs=extractor_configs_by_state
+            configs=launched_extractor_configs_by_state
         ),
         collect_golden_eval_results_source_table_collection(),
         build_intercom_export_metadata_source_tables(),

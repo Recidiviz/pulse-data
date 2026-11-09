@@ -38,12 +38,14 @@ from recidiviz.documents.store.document_collection_config import (
 from recidiviz.documents.store.document_collection_config_collectors import (
     collect_all_document_collection_configs,
     collect_entity_resolution_document_collection_configs,
+    load_all_launched_document_collection_configs,
 )
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
     FAKE_ER_COLLECTION_NAMES,
     fake_first_order_extractor_config,
 )
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
 class CollectEntityResolutionDocumentCollectionConfigsTest(TestCase):
@@ -130,3 +132,36 @@ class CollectAllDocumentCollectionConfigsTest(TestCase):
         # collections fail to build. Does not assert on any state's specifics.
         for state_code in StateCode:
             collect_all_document_collection_configs(state_code)
+
+
+class LoadAllLaunchedDocumentCollectionConfigsTest(TestCase):
+    """Tests for load_all_launched_document_collection_configs."""
+
+    def test_drops_unlaunched_collections(self) -> None:
+        # Fake US_XX staging-launched: FAKE_CASE_NOTES, FAKE_INPUT_NOTES, and the 3
+        # ER collections (which inherit the STAGING extractor's launch_env).
+        # FAKE_STAFF_ID_REPORTS, FAKE_STAFF_REPORTS, FAKE_PERSON_ID_NOTES are
+        # LOCAL_ONLY and drop out. Fake US_YY staging-launched: FAKE_US_YY_NOTES.
+        self.assertEqual(
+            {
+                "FAKE_CASE_NOTES",
+                "FAKE_INPUT_NOTES",
+                *FAKE_ER_COLLECTION_NAMES,
+                "FAKE_US_YY_NOTES",
+            },
+            {
+                config.name
+                for config in load_all_launched_document_collection_configs(
+                    project_id=GCP_PROJECT_STAGING, config_module=fake_config
+                )
+            },
+        )
+
+    def test_production_launches_nothing(self) -> None:
+        # No fake collection is PRODUCTION-tier.
+        self.assertEqual(
+            [],
+            load_all_launched_document_collection_configs(
+                project_id=GCP_PROJECT_PRODUCTION, config_module=fake_config
+            ),
+        )

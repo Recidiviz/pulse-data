@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for collect_document_store_source_tables."""
+"""Tests for the document store source table collectors."""
 import unittest
 
 from more_itertools import one
@@ -37,11 +37,13 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
 )
+from recidiviz.documents.store.document_collection_config_collectors import (
+    load_all_launched_document_collection_configs,
+)
 from recidiviz.documents.store.document_upload_status_table import (
     DocumentUploadStatusTable,
 )
 from recidiviz.source_tables.document_store_source_table_collection import (
-    collect_document_store_source_tables,
     collect_document_store_source_tables_for_configs,
 )
 from recidiviz.source_tables.source_table_config import (
@@ -51,18 +53,17 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.tests.documents import fake_config
 from recidiviz.tests.documents.store.document_store_test_utils import (
-    patch_fake_config_states_exist_in_env,
+    collect_fake_module_document_store_source_tables,
 )
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
 
-class CollectDocumentStoreSourceTablesTest(unittest.TestCase):
-    """Tests for collect_document_store_source_tables."""
-
-    def setUp(self) -> None:
-        self.enterContext(patch_fake_config_states_exist_in_env())
+class CollectFakeModuleDocumentStoreSourceTablesTest(unittest.TestCase):
+    """Tests the document store source tables produced for every collection in the
+    fake config module."""
 
     def test_produces_expected_tables_for_fake_config(self) -> None:
-        collections = collect_document_store_source_tables(config_module=fake_config)
+        collections = collect_fake_module_document_store_source_tables()
 
         produced_addresses: set[BigQueryAddress] = set()
         for collection in collections:
@@ -115,9 +116,7 @@ class CollectDocumentStoreSourceTablesTest(unittest.TestCase):
         """
         return {
             table.address.table_id: table
-            for collection in collect_document_store_source_tables(
-                config_module=fake_config
-            )
+            for collection in collect_fake_module_document_store_source_tables()
             if collection.dataset_id
             == document_store_metadata_dataset_for_region(state_code)
             for table in collection.source_tables
@@ -212,6 +211,31 @@ class CollectDocumentStoreSourceTablesForConfigsTest(unittest.TestCase):
             {er_config.entry_source_map_table_address(sandbox_dataset_prefix=None)},
             map_addresses,
         )
+
+    def test_production_path_drops_unlaunched_collections(self) -> None:
+        # The production source-table registration feeds the launched configs
+        # through this function. Staging launches FAKE_CASE_NOTES/FAKE_INPUT_NOTES
+        # (+ ER collections); the LOCAL_ONLY collections must not get tables.
+        launched_configs = load_all_launched_document_collection_configs(
+            project_id=GCP_PROJECT_STAGING, config_module=fake_config
+        )
+        produced = self._produced_addresses(launched_configs)
+
+        self.assertIn(
+            BigQueryAddress.from_str("us_xx_document_store_metadata.fake_case_notes"),
+            produced,
+        )
+        for unlaunched_table_id in [
+            "fake_staff_id_reports",
+            "fake_staff_reports",
+            "fake_person_id_notes",
+        ]:
+            self.assertNotIn(
+                BigQueryAddress.from_str(
+                    f"us_xx_document_store_metadata.{unlaunched_table_id}"
+                ),
+                produced,
+            )
 
     def test_empty_configs_produce_no_collections(self) -> None:
         self.assertEqual([], collect_document_store_source_tables_for_configs([]))

@@ -158,6 +158,21 @@ def load_launched_first_order_llm_extractor_configs(
     }
 
 
+def load_all_launched_first_order_llm_extractor_configs(
+    *,
+    project_id: str,
+    config_module: ModuleType | None = None,
+) -> list[LLMExtractorConfig]:
+    """Returns every first-order extractor config whose launch_env includes
+    |project_id|, across all states.
+    """
+    return [
+        config
+        for config in load_all_first_order_llm_extractor_configs(config_module)
+        if config.launch_env.is_launched_in_project(project_id)
+    ]
+
+
 def _lookup_extractor_config(
     *,
     configs_by_state: dict[StateCode, dict[str, LLMExtractorConfig]],
@@ -278,3 +293,26 @@ def collect_all_extractor_configs_by_state(
             )
         state_configs[collection_name] = entity_resolution_config
     return configs_by_state
+
+
+def collect_launched_extractor_configs_by_state(
+    *,
+    project_id: str,
+    config_module: ModuleType | None = None,
+) -> dict[StateCode, dict[str, LLMExtractorConfig]]:
+    """Returns every extractor config — first-order (YAML-defined) plus generated
+    entity-resolution — launched in |project_id|, keyed by state code and then by
+    collection name.
+    """
+    launched_configs_by_state: dict[StateCode, dict[str, LLMExtractorConfig]] = {}
+    for state_code, configs_by_name in collect_all_extractor_configs_by_state(
+        config_module=config_module
+    ).items():
+        launched = {
+            name: config
+            for name, config in configs_by_name.items()
+            if config.launch_env.is_launched_in_project(project_id)
+        }
+        if launched:
+            launched_configs_by_state[state_code] = launched
+    return launched_configs_by_state

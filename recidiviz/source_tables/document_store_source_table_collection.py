@@ -17,7 +17,6 @@
 """Contains source table definitions for document store metadata and contents tables."""
 
 from collections import defaultdict
-from types import ModuleType
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.dataset_config import (
@@ -33,10 +32,6 @@ from recidiviz.documents.extraction.entity_resolution.entity_resolution_entry_so
 )
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
-    get_states_with_document_collections_existing_in_env,
-)
-from recidiviz.documents.store.document_collection_config_collectors import (
-    collect_all_document_collection_configs,
 )
 from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_CONTENTS_ID_COLUMN_NAME,
@@ -53,26 +48,6 @@ from recidiviz.source_tables.source_table_config import (
 )
 
 TWO_WEEK_MS = 14 * 24 * 60 * 60 * 1000
-
-
-def collect_document_store_source_tables(
-    config_module: ModuleType | None = None,
-) -> list[SourceTableCollection]:
-    """Collects source table definitions for the document store metadata and
-    contents tables of every document collection — first-order and generated
-    entity-resolution — in |config_module| (the production config package by
-    default). Each entity-resolution collection additionally gets its
-    entry→source map table.
-    """
-    configs_by_state = {
-        state_code: list(
-            collect_all_document_collection_configs(state_code, config_module).values()
-        )
-        for state_code in get_states_with_document_collections_existing_in_env(
-            config_module
-        )
-    }
-    return _collect_document_store_source_tables(configs_by_state)
 
 
 def collect_document_store_source_tables_for_configs(

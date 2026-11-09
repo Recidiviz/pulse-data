@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Collectors that enumerate DocumentCollectionConfigs."""
+
 from types import ModuleType
 
 from recidiviz.common.constants.states import StateCode
@@ -82,6 +83,24 @@ def collect_all_document_collection_configs(
             )
         document_configs[er_collection.name] = er_collection
     return document_configs
+
+
+def load_all_launched_document_collection_configs(
+    *,
+    project_id: str,
+    config_module: ModuleType | None = None,
+) -> list[DocumentCollectionConfig]:
+    """Returns every document collection — first-order (YAML-authored) plus
+    generated entity-resolution — launched in |project_id|, across all states.
+    """
+    return [
+        config
+        for state_code in StateCode
+        for config in collect_all_document_collection_configs(
+            state_code, config_module
+        ).values()
+        if config.launch_env.is_launched_in_project(project_id)
+    ]
 
 
 def get_document_collection_config(

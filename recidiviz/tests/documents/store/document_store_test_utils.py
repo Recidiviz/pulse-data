@@ -16,17 +16,19 @@
 # =============================================================================
 """Shared helpers for document-store tests: loaders for the fake US_XX document
 collection."""
-from contextlib import AbstractContextManager
-from unittest.mock import MagicMock, patch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.store.document_collection_config import (
     DocumentCollectionConfig,
-    collect_document_collection_config_yaml_paths,
 )
 from recidiviz.documents.store.document_collection_config_collectors import (
+    collect_all_document_collection_configs,
     get_document_collection_config,
 )
+from recidiviz.source_tables.document_store_source_table_collection import (
+    collect_document_store_source_tables_for_configs,
+)
+from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.documents import fake_config
 
 FAKE_INPUT_DOCUMENT_COLLECTION_NAME = "FAKE_INPUT_NOTES"
@@ -41,18 +43,15 @@ def get_fake_first_order_document_collection_config() -> DocumentCollectionConfi
     )
 
 
-def patch_fake_config_states_exist_in_env() -> AbstractContextManager[MagicMock]:
-    """Returns a patch that treats the fake config module's document-collection
-    states as existing in the environment. Enter it around any code that collects
-    document-store source tables from the fake config module.
+def collect_fake_module_document_store_source_tables() -> list[SourceTableCollection]:
+    """Returns the document-store source tables for every document collection —
+    first-order plus generated entity-resolution — in the fake config module.
     """
-    fake_config_states = [
-        sc
-        for sc in StateCode
-        if collect_document_collection_config_yaml_paths(sc, config_module=fake_config)
+    configs = [
+        config
+        for state_code in StateCode
+        for config in collect_all_document_collection_configs(
+            state_code, fake_config
+        ).values()
     ]
-    return patch(
-        "recidiviz.documents.store.document_collection_config."
-        "get_direct_ingest_states_existing_in_env",
-        MagicMock(return_value=fake_config_states),
-    )
+    return collect_document_store_source_tables_for_configs(configs)

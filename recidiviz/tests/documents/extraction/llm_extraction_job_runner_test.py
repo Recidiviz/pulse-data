@@ -110,9 +110,6 @@ from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
 from recidiviz.tests.documents.extraction.llm_client.fake_sync_llm_client import (
     FakeSyncLLMClient,
 )
-from recidiviz.tests.documents.store.document_store_test_utils import (
-    patch_fake_config_states_exist_in_env,
-)
 from recidiviz.tests.tools.documents import fixtures
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
@@ -478,19 +475,18 @@ class RunSyncExtractionJobEndToEndTest(BigQueryEmulatorTestCase):
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
         # The real persister writes to sandbox-prefixed result tables; seed them.
-        with patch_fake_config_states_exist_in_env():
-            return [
-                collection.as_sandbox_collection(_SANDBOX_PREFIX)
-                for collection in collect_extraction_results_source_table_collections(
-                    configs={
-                        _STATE: {
-                            _COLLECTION_NAME: get_first_order_llm_extractor_config(
-                                _STATE, _COLLECTION_NAME, config_module=fake_config
-                            )
-                        }
+        return [
+            collection.as_sandbox_collection(_SANDBOX_PREFIX)
+            for collection in collect_extraction_results_source_table_collections(
+                configs={
+                    _STATE: {
+                        _COLLECTION_NAME: get_first_order_llm_extractor_config(
+                            _STATE, _COLLECTION_NAME, config_module=fake_config
+                        )
                     }
-                )
-            ]
+                }
+            )
+        ]
 
     @classmethod
     def setUpClass(cls) -> None:

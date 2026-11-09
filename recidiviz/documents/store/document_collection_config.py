@@ -57,9 +57,6 @@ from recidiviz.documents.store.document_store_columns import (
     STAFF_ID_COLUMN_NAME,
     get_document_store_column_schema,
 )
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_existing_in_env,
-)
 from recidiviz.persistence.entity.activity.normalized_entities import (
     NormalizedStateEntity,
     NormalizedStatePersonExternalId,
@@ -592,28 +589,6 @@ def collect_document_collection_config_yaml_paths(
         return []
 
     return list(state_dir.glob("*.yaml"))
-
-
-# TODO(OBT-46612): Gate on LLM-specific launch_env config rather than
-# on whether the state has direct-ingest infrastructure in this env.
-def get_states_with_document_collections_existing_in_env(
-    config_module: ModuleType | None = None,
-) -> list[StateCode]:
-    """Returns the states that both have document collection configs and exist in
-    the current environment, ordered by state code.
-    """
-    states_existing_in_env = set(get_direct_ingest_states_existing_in_env())
-    states_with_document_collections = {
-        sc
-        for sc in StateCode
-        if collect_document_collection_config_yaml_paths(
-            sc, config_module=config_module or default_config_module
-        )
-    }
-    return sorted(
-        states_with_document_collections & states_existing_in_env,
-        key=lambda state_code: state_code.value,
-    )
 
 
 def load_first_order_document_collection_configs(

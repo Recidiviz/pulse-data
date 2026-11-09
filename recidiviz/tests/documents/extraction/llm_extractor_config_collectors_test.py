@@ -40,9 +40,11 @@ from recidiviz.documents.extraction.llm_extraction_view_graph_stage import (
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
     collect_all_extractor_configs_by_state,
     collect_entity_resolution_extractor_configs,
+    collect_launched_extractor_configs_by_state,
     get_extractor_config,
     get_first_order_llm_extractor_config,
     get_states_with_extractor_configs,
+    load_all_launched_first_order_llm_extractor_configs,
     load_first_order_llm_extractor_configs,
     load_launched_first_order_llm_extractor_configs,
 )
@@ -101,6 +103,25 @@ class ParseAllExtractorConfigsTest(TestCase):
                 project_id=GCP_PROJECT_PRODUCTION,
                 config_module=fake_config,
             ).keys(),
+        )
+
+    def test_load_all_launched_first_order_llm_extractor_configs(self) -> None:
+        # The single US_XX extractor is STAGING. The result is first-order only:
+        # the generated ER configs are excluded even though they inherit STAGING.
+        self.assertEqual(
+            [_FAKE_COLLECTION_NAME],
+            [
+                config.extractor_collection.name
+                for config in load_all_launched_first_order_llm_extractor_configs(
+                    project_id=GCP_PROJECT_STAGING, config_module=fake_config
+                )
+            ],
+        )
+        self.assertEqual(
+            [],
+            load_all_launched_first_order_llm_extractor_configs(
+                project_id=GCP_PROJECT_PRODUCTION, config_module=fake_config
+            ),
         )
 
     def test_load_all_real_configs(self) -> None:
@@ -391,6 +412,26 @@ class CollectAllExtractorConfigsByStateTest(TestCase):
         # The first-order config carries no entity_group; the ER configs do.
         self.assertIsNone(configs[_FAKE_COLLECTION_NAME].entity_group)
         self.assertIsNotNone(configs[FAKE_LOCATION_ER_COLLECTION_NAME].entity_group)
+
+    def test_collect_launched_extractor_configs_by_state(self) -> None:
+        # The fake US_XX extractor (and its generated ER configs, which inherit its
+        # launch_env) is STAGING, so all four are launched in staging but none in
+        # production.
+        self.assertEqual(
+            {StateCode.US_XX: {_FAKE_COLLECTION_NAME, *FAKE_ER_COLLECTION_NAMES}},
+            {
+                state_code: set(configs)
+                for state_code, configs in collect_launched_extractor_configs_by_state(
+                    project_id=GCP_PROJECT_STAGING, config_module=fake_config
+                ).items()
+            },
+        )
+        self.assertEqual(
+            {},
+            collect_launched_extractor_configs_by_state(
+                project_id=GCP_PROJECT_PRODUCTION, config_module=fake_config
+            ),
+        )
 
     def test_does_not_mutate_cached_first_order_configs(self) -> None:
         # load_first_order_llm_extractor_configs is @cache'd, so aliasing its result

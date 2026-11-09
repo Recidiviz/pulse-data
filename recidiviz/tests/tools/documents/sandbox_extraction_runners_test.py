@@ -64,9 +64,6 @@ from recidiviz.documents.store.document_store_sandbox_context import (
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.source_tables.document_store_source_table_collection import (
-    collect_document_store_source_tables,
-)
 from recidiviz.source_tables.extraction_results_source_table_collection import (
     collect_extraction_results_source_table_collections,
 )
@@ -95,7 +92,7 @@ from recidiviz.tests.documents.extraction.llm_client.fake_sync_llm_client import
     FakeSyncLLMClient,
 )
 from recidiviz.tests.documents.store.document_store_test_utils import (
-    patch_fake_config_states_exist_in_env,
+    collect_fake_module_document_store_source_tables,
 )
 from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
 from recidiviz.tests.tools.documents import fixtures
@@ -170,8 +167,7 @@ class RunSandboxExtractionTest(BigQueryEmulatorTestCase):
                 }
             )
         ]
-        with patch_fake_config_states_exist_in_env():
-            return result_tables + collect_document_store_source_tables(fake_config)
+        return result_tables + collect_fake_module_document_store_source_tables()
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -337,12 +333,9 @@ class SandboxDocumentStoreRunnerTest(BigQueryEmulatorWithGCSTestCase):
     def get_source_tables(cls) -> list[SourceTableCollection]:
         # The ER model config patch is needed so the ER composite collections'
         # document-store tables can be collected.
-        with (
-            patch_fake_entity_resolution_model_config_name(),
-            patch_fake_config_states_exist_in_env(),
-        ):
-            document_store_collections = collect_document_store_source_tables(
-                fake_config
+        with patch_fake_entity_resolution_model_config_name():
+            document_store_collections = (
+                collect_fake_module_document_store_source_tables()
             )
         # The runner writes every collection's document-store tables under the sandbox
         # prefix; a first-order collection additionally diffs discovery against the
