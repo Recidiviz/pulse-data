@@ -831,6 +831,7 @@ class TestFetchValidations(TestCase):
                 "US_MO",
                 "US_ND",
                 "US_NE",
+                "US_NV",
                 "US_OR",
                 "US_PA",
                 "US_TN",
