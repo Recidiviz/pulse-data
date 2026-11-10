@@ -52,6 +52,7 @@ from recidiviz.sentence_calculator.models.tracked import TrackedValue
 
 _VIOLENT_SENTENCE = NevadaSentence(  # pylint: disable=abstract-class-instantiated
     sentence_id="S1",
+    offense_id=9999,
     min_term=Term(years=1),
     max_term=Term(years=3),
     offense_category=NevadaOffenseCategory.CATEGORY_C,
@@ -59,6 +60,7 @@ _VIOLENT_SENTENCE = NevadaSentence(  # pylint: disable=abstract-class-instantiat
 )
 _NONVIOLENT_SENTENCE = NevadaSentence(  # pylint: disable=abstract-class-instantiated
     sentence_id="S2",
+    offense_id=9999,
     min_term=Term(years=1),
     max_term=Term(years=3),
     offense_category=NevadaOffenseCategory.CATEGORY_C,

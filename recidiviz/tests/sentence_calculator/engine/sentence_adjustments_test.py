@@ -51,6 +51,7 @@ _START_DATE = date(2025, 1, 1)
 # reduction condition checks.
 _VIOLENT_SENTENCE = NevadaSentence(  # pylint: disable=abstract-class-instantiated
     sentence_id="S1",
+    offense_id=9999,
     min_term=Term(years=2),
     max_term=Term(years=5),
     initial_time_served=Term(days=30),
@@ -59,6 +60,7 @@ _VIOLENT_SENTENCE = NevadaSentence(  # pylint: disable=abstract-class-instantiat
 )
 _NONVIOLENT_SENTENCE = NevadaSentence(  # pylint: disable=abstract-class-instantiated
     sentence_id="S2",
+    offense_id=9999,
     min_term=Term(years=2),
     max_term=Term(years=5),
     initial_time_served=Term(days=30),
@@ -251,6 +253,7 @@ class TestCalendarTermConversion(unittest.TestCase):
             initial_time_served=Term(days=30),
             offense_category=NevadaOffenseCategory.CATEGORY_C,
             offense_group=NevadaOffenseGroup.OTHER,
+            offense_id=9999,
         )
 
         adjustment = calculate_sentence_adjustment(
@@ -469,6 +472,7 @@ class TestTermMultiplierAdjustment(unittest.TestCase):
             initial_time_served=Term(),
             offense_category=NevadaOffenseCategory.CATEGORY_C,
             offense_group=NevadaOffenseGroup.OTHER,
+            offense_id=9999,
         )
 
         adjustment = calculate_sentence_adjustment(
@@ -484,6 +488,7 @@ class TestTermMultiplierAdjustment(unittest.TestCase):
     def test_jail_credit_cannot_make_term_negative(self) -> None:
         sentence = NevadaSentence(  # pylint: disable=abstract-class-instantiated
             sentence_id="S3",
+            offense_id=9999,
             min_term=Term(days=10),
             max_term=Term(days=20),
             initial_time_served=Term(days=30),
@@ -746,6 +751,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
     def test_credits_accrue_by_calendar_month(self) -> None:
         sentence = NevadaSentence(  # pylint: disable=abstract-class-instantiated
             sentence_id="S3",
+            offense_id=9999,
             min_term=Term(days=99),
             max_term=Term(days=99),
             initial_time_served=Term(),
@@ -789,6 +795,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
         negative ones."""
         sentence = NevadaSentence(  # pylint: disable=abstract-class-instantiated
             sentence_id="S4",
+            offense_id=9999,
             min_term=Term(days=10),
             max_term=Term(days=20),
             initial_time_served=Term(days=30),

@@ -111,7 +111,7 @@ class NevadaSentence(Sentence):
 
     # A code that uniquely identifies the offense this sentence is tied to.
     # For Nevada, this is the NOC (Nevada Offense Code).
-    offense_id: int | None = attr.ib(default=None, validator=attr_validators.is_opt_int)
+    offense_id: int = attr.ib(validator=attr_validators.is_int)
 
     # Whether this person earns work/education time on top of statutory good
     # time, which the PRE_413 credit_rate rules key on (NRS 209.4465(2)).

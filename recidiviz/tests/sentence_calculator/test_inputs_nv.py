@@ -38,6 +38,7 @@ def _sentence(
     return NvSentenceWithSortableEndDate(
         sentence=NevadaSentence(  # pylint: disable=abstract-class-instantiated
             sentence_id=sentence_id,
+            offense_id=9999,
             min_term=Term(),
             max_term=Term(),
             offense_category=offense_category,

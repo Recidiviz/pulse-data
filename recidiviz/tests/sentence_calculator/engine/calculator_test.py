@@ -49,6 +49,7 @@ class TestCalculateSentences(unittest.TestCase):
             sentences=[
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S1",
+                    offense_id=9999,
                     start_date=date(2025, 1, 1),
                     min_term=Term(days=1000),
                     max_term=Term(days=2000),
@@ -98,6 +99,7 @@ class TestCalculateSentences(unittest.TestCase):
             sentences=[
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S1",
+                    offense_id=9999,
                     start_date=date(2025, 1, 1),
                     min_term=Term(days=1000),
                     max_term=Term(days=2000),
@@ -121,6 +123,7 @@ class TestCalculateSentences(unittest.TestCase):
             sentences=[
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S1",
+                    offense_id=9999,
                     start_date=date(2025, 1, 1),
                     min_term=Term(days=1000),
                     max_term=Term(days=2000),
@@ -144,6 +147,7 @@ class TestCalculateSentences(unittest.TestCase):
             sentences=[
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S1",
+                    offense_id=9999,
                     start_date=date(2025, 1, 1),
                     min_term=Term(days=400),
                     max_term=Term(days=1000),
@@ -153,6 +157,7 @@ class TestCalculateSentences(unittest.TestCase):
                 ),
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S2",
+                    offense_id=9999,
                     parent_sentence_id="S1",
                     min_term=Term(days=200),
                     max_term=Term(days=500),
@@ -186,6 +191,7 @@ class TestCalculateSentences(unittest.TestCase):
             sentences=[
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S1",
+                    offense_id=9999,
                     start_date=date(2025, 1, 1),
                     min_term=Term(days=100),
                     max_term=Term(days=365),
@@ -217,6 +223,7 @@ class TestCalculateSentences(unittest.TestCase):
             sentences=[
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S1",
+                    offense_id=9999,
                     start_date=date(2025, 1, 1),
                     min_term=Term(days=400),
                     max_term=Term(days=1000),
@@ -226,6 +233,7 @@ class TestCalculateSentences(unittest.TestCase):
                 ),
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S2",
+                    offense_id=9999,
                     start_date=date(2025, 1, 1),
                     min_term=Term(days=400),
                     max_term=Term(days=2000),
@@ -253,6 +261,7 @@ class TestCalculateSentences(unittest.TestCase):
             sentences=[
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S1",
+                    offense_id=9999,
                     start_date=date(2025, 1, 1),
                     min_term=Term(days=1000),
                     max_term=Term(days=2000),
@@ -262,6 +271,7 @@ class TestCalculateSentences(unittest.TestCase):
                 ),
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S2",
+                    offense_id=9999,
                     start_date=date(2025, 1, 1),
                     min_term=Term(days=400),
                     max_term=Term(days=2200),
@@ -305,6 +315,7 @@ class TestCalculateSentences(unittest.TestCase):
             sentences=[
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S1",
+                    offense_id=9999,
                     start_date=date(2025, 1, 1),
                     min_term=Term(days=400),
                     # A day short of the 3 years the mandatory parole release
@@ -339,6 +350,7 @@ class TestCalculateSentences(unittest.TestCase):
             sentences=[
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S1",
+                    offense_id=9999,
                     start_date=date(2024, 1, 1),
                     min_term=Term(days=400),
                     max_term=Term(years=2, days=364),
@@ -372,6 +384,7 @@ class TestCalculateSentences(unittest.TestCase):
             sentences=[
                 NevadaSentence(  # pylint: disable=abstract-class-instantiated
                     sentence_id="S1",
+                    offense_id=9999,
                     start_date=date(2024, 4, 10),
                     min_term=Term(days=400),
                     max_term=Term(years=2, days=364),
@@ -429,6 +442,7 @@ class TestCalculateIndeterminateSentences(unittest.TestCase):
                 sentences=[
                     NevadaSentence(  # pylint: disable=abstract-class-instantiated
                         sentence_id="S1",
+                        offense_id=9999,
                         start_date=date(2025, 1, 1),
                         min_term=Term(),
                         max_term=Term(),
@@ -453,6 +467,7 @@ class TestCalculateIndeterminateSentences(unittest.TestCase):
                 sentences=[
                     NevadaSentence(  # pylint: disable=abstract-class-instantiated
                         sentence_id="S1",
+                        offense_id=9999,
                         start_date=date(2025, 1, 1),
                         min_term=Term(years=20),
                         max_term=Term(years=50),
@@ -462,6 +477,7 @@ class TestCalculateIndeterminateSentences(unittest.TestCase):
                     ),
                     NevadaSentence(  # pylint: disable=abstract-class-instantiated
                         sentence_id="S2",
+                        offense_id=9999,
                         start_date=date(2025, 1, 1),
                         min_term=Term(),
                         max_term=Term(),
@@ -485,6 +501,7 @@ class TestCalculateIndeterminateSentences(unittest.TestCase):
                 sentences=[
                     NevadaSentence(  # pylint: disable=abstract-class-instantiated
                         sentence_id="S1",
+                        offense_id=9999,
                         start_date=date(2025, 1, 1),
                         min_term=Term(years=20),
                         max_term=Term(years=50),

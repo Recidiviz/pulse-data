@@ -48,14 +48,36 @@ _START_DATE = date(2020, 1, 1)
 
 # A felony DUI offense id from the NRS 484C carve-out list.
 _DUI_OFFENSE_ID = 1577
+# An offense id outside the NRS 484C carve-out list.
+_NON_DUI_OFFENSE_ID = 9999
 
 # Each ground on which NRS 209.4465(8) withholds credits from the minimum term, as
 # (name, offense_category, offense_group, offense_id).
 _CARVE_OUT_CASES = [
-    ("category_a", NevadaOffenseCategory.CATEGORY_A, NevadaOffenseGroup.OTHER, None),
-    ("category_b", NevadaOffenseCategory.CATEGORY_B, NevadaOffenseGroup.OTHER, None),
-    ("violence", NevadaOffenseCategory.CATEGORY_C, NevadaOffenseGroup.VIOLENCE, None),
-    ("sex_offense", NevadaOffenseCategory.CATEGORY_C, NevadaOffenseGroup.SEX, None),
+    (
+        "category_a",
+        NevadaOffenseCategory.CATEGORY_A,
+        NevadaOffenseGroup.OTHER,
+        _NON_DUI_OFFENSE_ID,
+    ),
+    (
+        "category_b",
+        NevadaOffenseCategory.CATEGORY_B,
+        NevadaOffenseGroup.OTHER,
+        _NON_DUI_OFFENSE_ID,
+    ),
+    (
+        "violence",
+        NevadaOffenseCategory.CATEGORY_C,
+        NevadaOffenseGroup.VIOLENCE,
+        _NON_DUI_OFFENSE_ID,
+    ),
+    (
+        "sex_offense",
+        NevadaOffenseCategory.CATEGORY_C,
+        NevadaOffenseGroup.SEX,
+        _NON_DUI_OFFENSE_ID,
+    ),
     (
         "felony_dui",
         NevadaOffenseCategory.CATEGORY_C,
@@ -69,7 +91,7 @@ def _two_to_five_year_sentence(
     *,
     offense_category: NevadaOffenseCategory,
     offense_group: NevadaOffenseGroup,
-    offense_id: int | None,
+    offense_id: int,
     qualified_for_enhanced_good_time: bool,
     initial_time_served: Term,
 ) -> NevadaSentence:
@@ -123,7 +145,7 @@ class TestNevadaPre413Rules(unittest.TestCase):
             _two_to_five_year_sentence(
                 offense_category=NevadaOffenseCategory.CATEGORY_C,
                 offense_group=NevadaOffenseGroup.OTHER,
-                offense_id=None,
+                offense_id=_NON_DUI_OFFENSE_ID,
                 qualified_for_enhanced_good_time=False,
                 initial_time_served=Term(),
             )
@@ -177,7 +199,7 @@ class TestNevadaPre413Rules(unittest.TestCase):
             _two_to_five_year_sentence(
                 offense_category=NevadaOffenseCategory.CATEGORY_C,
                 offense_group=NevadaOffenseGroup.OTHER,
-                offense_id=9999,
+                offense_id=_NON_DUI_OFFENSE_ID,
                 qualified_for_enhanced_good_time=False,
                 initial_time_served=Term(),
             )
@@ -201,7 +223,7 @@ class TestNevadaPre413Calculator(unittest.TestCase):
             _two_to_five_year_sentence(
                 offense_category=NevadaOffenseCategory.CATEGORY_C,
                 offense_group=NevadaOffenseGroup.OTHER,
-                offense_id=None,
+                offense_id=_NON_DUI_OFFENSE_ID,
                 qualified_for_enhanced_good_time=False,
                 initial_time_served=Term(),
             )
@@ -245,7 +267,7 @@ class TestNevadaPre413Calculator(unittest.TestCase):
                     _two_to_five_year_sentence(
                         offense_category=NevadaOffenseCategory.CATEGORY_C,
                         offense_group=NevadaOffenseGroup.OTHER,
-                        offense_id=None,
+                        offense_id=_NON_DUI_OFFENSE_ID,
                         qualified_for_enhanced_good_time=False,
                         initial_time_served=Term(),
                     )
@@ -260,7 +282,7 @@ class TestNevadaPre413Calculator(unittest.TestCase):
                     _two_to_five_year_sentence(
                         offense_category=NevadaOffenseCategory.CATEGORY_A,
                         offense_group=NevadaOffenseGroup.OTHER,
-                        offense_id=None,
+                        offense_id=_NON_DUI_OFFENSE_ID,
                         qualified_for_enhanced_good_time=False,
                         initial_time_served=Term(),
                     )
@@ -292,7 +314,7 @@ class TestNevadaPre413Calculator(unittest.TestCase):
             _two_to_five_year_sentence(
                 offense_category=NevadaOffenseCategory.CATEGORY_A,
                 offense_group=NevadaOffenseGroup.OTHER,
-                offense_id=None,
+                offense_id=_NON_DUI_OFFENSE_ID,
                 qualified_for_enhanced_good_time=False,
                 initial_time_served=Term(days=100),
             )
@@ -309,7 +331,7 @@ class TestNevadaPre413Calculator(unittest.TestCase):
             _two_to_five_year_sentence(
                 offense_category=NevadaOffenseCategory.CATEGORY_C,
                 offense_group=NevadaOffenseGroup.OTHER,
-                offense_id=None,
+                offense_id=_NON_DUI_OFFENSE_ID,
                 qualified_for_enhanced_good_time=True,
                 initial_time_served=Term(),
             )

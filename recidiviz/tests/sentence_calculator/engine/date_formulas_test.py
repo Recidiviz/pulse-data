@@ -45,6 +45,7 @@ from recidiviz.sentence_calculator.models.tracked import TrackedValue
 
 _VIOLENT_SENTENCE = NevadaSentence(  # pylint: disable=abstract-class-instantiated
     sentence_id="S1",
+    offense_id=9999,
     min_term=Term(years=1),
     max_term=Term(years=2),
     offense_category=NevadaOffenseCategory.CATEGORY_C,
@@ -681,6 +682,7 @@ class TestEvaluateDateFormulas(unittest.TestCase):
         so no single sentence satisfies both conditions."""
         category_a = NevadaSentence(  # pylint: disable=abstract-class-instantiated
             sentence_id="S2",
+            offense_id=9999,
             min_term=Term(years=1),
             max_term=Term(years=2),
             offense_category=NevadaOffenseCategory.CATEGORY_A,

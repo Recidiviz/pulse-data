@@ -74,6 +74,7 @@ def _sentence(
     # Pylint known false positive
     return NevadaSentence(  # pylint: disable=abstract-class-instantiated
         sentence_id=sentence_id,
+        offense_id=9999,
         min_term=min_term,
         max_term=max_term,
         initial_time_served=initial_time_served,

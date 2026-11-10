@@ -47,7 +47,7 @@ class _StateSentenceTypes:
 
     sentence_class: type[Sentence]
     """The Sentence subclass, which declares offense_category and offense_group
-    with the enums below."""
+    with the enums below, and offense_id."""
 
     offense_category_type: type[OffenseCategory]
     """The enum for the sentence's offense_category."""
@@ -88,6 +88,7 @@ def create_sentence(
     max_term: Term,
     raw_offense_category: str,
     raw_offense_group: str,
+    offense_id: int,
     sentence_type: SentenceType | None = None,
     start_date: date | None = None,
     parent_sentence_id: str | None = None,
@@ -95,9 +96,9 @@ def create_sentence(
 ) -> Sentence:
     """Builds the state-specific Sentence subclass for state_code.
 
-    Fields common to every state are filled in directly here. Raw values for
-    fields whose concrete type varies by state (offense_category,
-    offense_group) are parsed into that state's enums.
+    Fields common to every state's Sentence subclass are filled in directly
+    here. Raw values for fields whose concrete type varies by state
+    (offense_category, offense_group) are parsed into that state's enums.
     """
     sentence_types = _state_sentence_types(state_code)
     # Sentence declares offense_category and offense_group as abstract
@@ -112,6 +113,9 @@ def create_sentence(
         initial_time_served=initial_time_served or Term(),
         offense_category=sentence_types.offense_category_type(raw_offense_category),
         offense_group=sentence_types.offense_group_type(raw_offense_group),
+        # TODO(NV-72): Declare offense_id on Sentence. Only NevadaSentence declares
+        # it today, so another state's subclass would fail here.
+        offense_id=offense_id,
     )
 
 
