@@ -26,6 +26,7 @@ TODO(TN-1947): Delete this module once all references to legacy TOMIS 1.0 raw da
 have been migrated and the legacy raw data configs have been deleted.
 """
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import MATERIALIZED_SUFFIX
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_views_dataset_for_region,
@@ -366,6 +367,10 @@ def legacy_tomis_deprecated_addresses_by_file_tag() -> dict[
     """Returns, for each legacy TOMIS 1.0 file tag, the addresses of the
     BigQuery tables and views generated from it: the raw data table, the
     *_latest view, and the *_all view.
+
+    The materialized tables of the *_latest and *_all views are intentionally
+    not listed here; a reference to one is normalized back to the view address
+    by canonical_deprecated_address_for_parent before membership is checked.
     """
     raw_data_dataset = raw_tables_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
@@ -400,3 +405,18 @@ def legacy_tomis_deprecated_addresses() -> frozenset[BigQueryAddress]:
     table, the *_latest view, and the *_all view.
     """
     return frozenset().union(*legacy_tomis_deprecated_addresses_by_file_tag().values())
+
+
+def canonical_deprecated_address_for_parent(
+    parent_address: BigQueryAddress,
+) -> BigQueryAddress:
+    """Returns the deprecated view address a parent reference should be counted
+    against, mapping a reference to a *_latest/*_all view's materialized table
+    back to the view address itself so both forms burn down the same entry.
+    """
+    if parent_address.table_id.endswith(MATERIALIZED_SUFFIX):
+        return BigQueryAddress(
+            dataset_id=parent_address.dataset_id,
+            table_id=parent_address.table_id.removesuffix(MATERIALIZED_SUFFIX),
+        )
+    return parent_address

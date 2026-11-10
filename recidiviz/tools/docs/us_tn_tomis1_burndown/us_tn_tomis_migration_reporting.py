@@ -34,6 +34,7 @@ from recidiviz.calculator.query.state.views.us_tn_tomis_1_0_analog_views.view_co
     US_TN_TOMIS_1_0_ANALOG_VIEW_BUILDERS,
 )
 from recidiviz.ingest.direct.regions.us_tn.us_tn_tomis_migration_file_tags import (
+    canonical_deprecated_address_for_parent,
     legacy_tomis_deprecated_addresses,
 )
 from recidiviz.utils.metadata import local_project_id_override
@@ -86,8 +87,9 @@ def legacy_tomis_references_for_project(
         if view.address in deprecated_addresses:
             continue
         for parent_address in view.parent_tables:
-            if parent_address in deprecated_addresses:
-                references[parent_address].add(view.address)
+            canonical_address = canonical_deprecated_address_for_parent(parent_address)
+            if canonical_address in deprecated_addresses:
+                references[canonical_address].add(view.address)
     return {
         deprecated_address: frozenset(referencing_addresses)
         for deprecated_address, referencing_addresses in references.items()

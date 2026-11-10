@@ -35,7 +35,7 @@ WITH early_discharge_movements AS (
         person_id,
         DATE(movement_date) AS discharge_date,
     FROM
-        `{project_id}.{us_mi_raw_data_up_to_date_dataset}.ADH_OFFENDER_EXTERNAL_MOVEMENT_latest` movements
+        `{project_id}.{us_mi_raw_data_up_to_date_dataset}.ADH_OFFENDER_EXTERNAL_MOVEMENT_latest_materialized` movements
     LEFT JOIN
         `{project_id}.normalized_state.state_person_external_id` pei
     ON

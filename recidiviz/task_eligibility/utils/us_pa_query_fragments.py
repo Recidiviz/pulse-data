@@ -837,7 +837,7 @@ def us_pa_pending_charges_cte() -> str:
           DATE(Disposition_Date) AS event_date,
           CAST(NULL AS STRING) AS classification_type,
           Grade AS classification_subtype,
-        FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_views_dataset}}.Criminal_History_latest` cr
+        FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_views_dataset}}.Criminal_History_latest_materialized` cr
         INNER JOIN `{{project_id}}.us_pa_normalized_state.state_person_external_id` pei
             ON cr.Parole_No = pei.external_id
             AND id_type = 'US_PA_PBPP'

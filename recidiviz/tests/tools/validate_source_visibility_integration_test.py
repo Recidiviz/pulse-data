@@ -716,6 +716,7 @@ def test_admin_panel_server_dependencies() -> None:
                 # table addresses and column names, which
                 # notion_linear_roadmap_latest reads.
                 "recidiviz.issue_tracking.roadmap_snapshot_tables",
+                "recidiviz.tools.raw_data_reference_reasons_yaml_loader",
             }
         ),
     )
@@ -798,6 +799,10 @@ def test_entrypoint_executor_dependencies() -> None:
                 "recidiviz.case_triage.edovo.external_id_matching",
                 "recidiviz.view_registry",
                 "recidiviz.tools.deploy.logging",
+                # Consulted by the raw data latest/all view collectors to decide
+                # which raw data views to materialize. Only imports big_query,
+                # common, and utils.
+                "recidiviz.tools.raw_data_reference_reasons_yaml_loader",
                 "recidiviz.cloud_resources",
                 "recidiviz.cloud_storage",
                 "recidiviz.common",
@@ -1000,6 +1005,7 @@ def test_view_registry_deployed_view_graphs_dependencies() -> None:
                 # table addresses and column names, which
                 # notion_linear_roadmap_latest reads.
                 "recidiviz.issue_tracking.roadmap_snapshot_tables",
+                "recidiviz.tools.raw_data_reference_reasons_yaml_loader",
             },
         ),
         explicitly_invalid_package_dependencies=["apache_beam"],

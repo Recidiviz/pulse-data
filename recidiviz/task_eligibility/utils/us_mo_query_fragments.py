@@ -246,12 +246,12 @@ def classes_cte() -> str:
             ACTUAL_EXIT_DT,
             classes.CLASS_TITLE,
             exit.CLASS_EXIT_REASON_DESC
-        FROM `{project_id}.us_mo_raw_data_up_to_date_views.OFNDR_PDB_CLASS_SCHEDULE_ENROLLMENTS_latest` se
-        LEFT JOIN `{project_id}.us_mo_raw_data_up_to_date_views.OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF_latest` xref
+        FROM `{project_id}.us_mo_raw_data_up_to_date_views.OFNDR_PDB_CLASS_SCHEDULE_ENROLLMENTS_latest_materialized` se
+        LEFT JOIN `{project_id}.us_mo_raw_data_up_to_date_views.OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF_latest_materialized` xref
         USING (OFNDR_CYCLE_REF_ID)
-        LEFT JOIN `{project_id}.us_mo_raw_data_up_to_date_views.MASTER_PDB_CLASSES_latest` classes
+        LEFT JOIN `{project_id}.us_mo_raw_data_up_to_date_views.MASTER_PDB_CLASSES_latest_materialized` classes
         USING (CLASS_REF_ID)
-        LEFT JOIN `{project_id}.us_mo_raw_data_up_to_date_views.CODE_PDB_CLASS_EXIT_REASON_CODES_latest` exit
+        LEFT JOIN `{project_id}.us_mo_raw_data_up_to_date_views.CODE_PDB_CLASS_EXIT_REASON_CODES_latest_materialized` exit
         USING (CLASS_EXIT_REASON_CD)
         LEFT JOIN `{project_id}.us_mo_normalized_state.state_person_external_id` pei
         ON

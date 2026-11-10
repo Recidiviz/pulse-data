@@ -58,7 +58,7 @@ def case_notes_helper() -> str:
         UPPER(ReleaseNotificationType) AS note_title,
         COALESCE(ContactAgency, JurisdictionType) AS note_body,
         CAST(CAST(IssuingDt AS DATETIME) AS DATE) AS event_date,
-    FROM `{project_id}.{us_ia_raw_data_up_to_date_dataset}.IA_DOC_ReleaseNotifications_latest` d
+    FROM `{project_id}.{us_ia_raw_data_up_to_date_dataset}.IA_DOC_ReleaseNotifications_latest_materialized` d
     INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
       ON d.OffenderCd = pei.external_id
       AND pei.id_type = 'US_IA_OFFENDERCD'

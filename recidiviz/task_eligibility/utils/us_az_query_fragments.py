@@ -806,11 +806,11 @@ def meets_mandatory_literacy(opp_name: str) -> str:
           PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)]) AS latest_functional_literacy_date,
           'Program Evaluation - Exemption' AS data_location
         FROM
-          `{{project_id}}.us_az_raw_data_up_to_date_views.{_TABLE}_latest` eval
+          `{{project_id}}.us_az_raw_data_up_to_date_views.{_TABLE}_latest_materialized` eval
         INNER JOIN
-        `{{project_id}}.us_az_raw_data_up_to_date_views.{_ELIG_TABLE}_latest` map_to_docid
+        `{{project_id}}.us_az_raw_data_up_to_date_views.{_ELIG_TABLE}_latest_materialized` map_to_docid
         USING ({_ID_MAP})
-        LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest` doc_ep
+        LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest_materialized` doc_ep
         USING(DOC_ID)
         INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
             ON doc_ep.PERSON_ID = pei.external_id
@@ -844,7 +844,7 @@ def meets_mandatory_literacy(opp_name: str) -> str:
             -- first time a status appeared and the most recent time it appeared.
             MIN(DATE(DATE_CREATED)) as DATE_CREATED, 
             MAX(DATE(DATE_CREATED)) AS DATE_SEEN
-        FROM `{{project_id}}.us_az_raw_data_views.DOC_PRIORITY_REPORT_all` priority_report 
+        FROM `{{project_id}}.us_az_raw_data_views.DOC_PRIORITY_REPORT_all_materialized` priority_report 
         WHERE PROGRAM_TYPE_ID = '1' -- 'Academic Education'  
         GROUP BY 1,2,3
         -- Only keep the most recent set of values per DOC_ID (incarceration stint)
@@ -862,7 +862,7 @@ def meets_mandatory_literacy(opp_name: str) -> str:
             'PRIORITY_REPORT - Exemption' AS data_location,
         FROM
             priority_report_cleaned
-        LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest` doc_ep
+        LEFT JOIN `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest_materialized` doc_ep
             USING(DOC_ID)
         LEFT JOIN `{{project_id}}.us_az_normalized_state.state_person_external_id` pei
             ON doc_ep.PERSON_ID = pei.external_id
@@ -984,12 +984,12 @@ def no_denial_in_current_incarceration(opp_name: str) -> str:
                 'BYPASS' as task_metadata,
                 CAST('9999-12-31' AS DATE) as update_datetime,
                 CAST('9999-12-31' AS DATE) as eligible_date,
-            FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.{_TABLE}_latest` dtp
-            LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.{_ELIG_TABLE}_latest` tpe
+            FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.{_TABLE}_latest_materialized` dtp
+            LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.{_ELIG_TABLE}_latest_materialized` tpe
                 USING({_ID_MAP})
-            LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest` doc_ep
+            LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest_materialized` doc_ep
                 USING(DOC_ID)
-            LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LOOKUPS_latest` denial
+            LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LOOKUPS_latest_materialized` denial
                 ON(DENIED_REASON_ID = denial.LOOKUP_ID)
             INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
                 ON doc_ep.PERSON_ID = peid.external_id

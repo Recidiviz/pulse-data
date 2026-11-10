@@ -33,9 +33,9 @@ _QUERY_TEMPLATE = """
         person_id,
         SAFE_CAST(LEFT(EFFCT_DATE, 10) AS DATE) AS completion_event_date,
       FROM
-        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_102_ALERT_HISTORY_latest` alert_h
+        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_102_ALERT_HISTORY_latest_materialized` alert_h
       LEFT JOIN
-        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_1020_ALERT_latest` alert
+        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_1020_ALERT_latest_materialized` alert
       ON
         alert_h.CIS_1020_ALERT_CD = alert.ALERT_CD
       INNER JOIN

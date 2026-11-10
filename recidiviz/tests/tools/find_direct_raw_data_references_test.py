@@ -20,6 +20,7 @@ from typing import Optional
 from unittest.mock import patch
 
 from recidiviz.big_query.big_query_view import (
+    MATERIALIZED_SUFFIX,
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
 )
@@ -180,6 +181,22 @@ class TestFindDirectRawDataReferences(unittest.TestCase):
         }
 
         self.assertEqual(references, expected_references)
+
+    def test_materialized_reference_maps_to_file_tag(self) -> None:
+        view = self._create_view_builder(
+            "dataset_1",
+            "table_1",
+            self._build_view_address_string(
+                RAW_DATASET_XX_LATEST,
+                f"{SOURCE_TABLE_1}{RAW_DATA_LATEST_VIEW_ID_SUFFIX}{MATERIALIZED_SUFFIX}",
+            ),
+        )
+
+        references = find_direct_raw_data_references([view])
+
+        self.assertEqual(
+            references, {StateCode.US_XX: {SOURCE_TABLE_1: {view.address}}}
+        )
 
     def _build_view_address_string(self, dataset_id: str, table_id: str) -> str:
         return f"{dataset_id}.{table_id}"

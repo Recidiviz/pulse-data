@@ -33,7 +33,7 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
 from recidiviz.big_query.constants import BQ_VIEW_QUERY_MAX_LENGTH
 from recidiviz.utils import metadata
 
-_DEFAULT_MATERIALIZED_SUFFIX = "_materialized"
+MATERIALIZED_SUFFIX = "_materialized"
 BQ_TABLE_DESCRIPTION_MAX_LENGTH = 2**14
 
 
@@ -408,7 +408,7 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
         """
         return BigQueryAddress(
             dataset_id=dataset_id,
-            table_id=view_id + _DEFAULT_MATERIALIZED_SUFFIX,
+            table_id=view_id + MATERIALIZED_SUFFIX,
         )
 
 

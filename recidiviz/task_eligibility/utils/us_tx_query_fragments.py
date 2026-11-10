@@ -963,7 +963,7 @@ def us_tx_fines_fees_recent_payments_case_notes(
                 FTRN_SEQ_NO,
                 FTRN_TRANS_TYPE,
                 FTRN_TRANS_AMT
-            FROM `{{project_id}}.us_tx_raw_data_up_to_date_views.TARCDZ_TPFEES_TRANS_latest`
+            FROM `{{project_id}}.us_tx_raw_data_up_to_date_views.TARCDZ_TPFEES_TRANS_latest_materialized`
             WHERE {us_tx_fee_type_case_sql(column="FTRN_TRANS_TYPE")} IS NOT NULL
         ) trans
         INNER JOIN (

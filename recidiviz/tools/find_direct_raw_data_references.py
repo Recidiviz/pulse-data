@@ -20,7 +20,7 @@ from collections import defaultdict
 from typing import Dict, List, Set
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import MATERIALIZED_SUFFIX, BigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_helpers import get_raw_data_table_and_view_datasets
 from recidiviz.ingest.direct.views.direct_ingest_all_view_collector import (
@@ -71,9 +71,11 @@ def find_direct_raw_data_references(
                 continue
 
             if parent_table.dataset_id in raw_datasets:
-                file_tag = parent_table.table_id.removesuffix(
-                    RAW_DATA_LATEST_VIEW_ID_SUFFIX
-                ).removesuffix(RAW_DATA_ALL_VIEW_ID_SUFFIX)
+                file_tag = (
+                    parent_table.table_id.removesuffix(MATERIALIZED_SUFFIX)
+                    .removesuffix(RAW_DATA_LATEST_VIEW_ID_SUFFIX)
+                    .removesuffix(RAW_DATA_ALL_VIEW_ID_SUFFIX)
+                )
                 state_code = raw_datasets[parent_table.dataset_id]
                 raw_data_references[state_code][file_tag].add(view.address)
     return raw_data_references

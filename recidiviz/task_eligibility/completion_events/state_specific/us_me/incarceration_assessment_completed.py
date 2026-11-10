@@ -33,7 +33,7 @@ _QUERY_TEMPLATE = """
       pei.person_id,
       SAFE_CAST(LEFT(MEETING_DATE, 10) AS DATE) AS completion_event_date,
     FROM
-      `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_140_CLASSIFICATION_REVIEW_latest` 
+      `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_140_CLASSIFICATION_REVIEW_latest_materialized` 
     INNER JOIN
       `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
     ON

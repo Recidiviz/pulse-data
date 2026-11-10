@@ -144,10 +144,10 @@ def termination_reports_query(
             peid.state_code,
             peid.person_id,
             SAFE_CAST(LEFT(r.rpt_dt, 10) AS DATE) AS report_date,
-    FROM `{{project_id}}.us_ut_raw_data_up_to_date_views.wf_rpt_latest` r
-    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.wf_sbjct_cd_latest`
+    FROM `{{project_id}}.us_ut_raw_data_up_to_date_views.wf_rpt_latest_materialized` r
+    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.wf_sbjct_cd_latest_materialized`
         USING(rpt_sbjct_id)
-    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.wf_typ_cd_latest`
+    LEFT JOIN `{{project_id}}.us_ut_raw_data_up_to_date_views.wf_typ_cd_latest_materialized`
         USING(rpt_typ_id)
     INNER JOIN `{{project_id}}.us_ut_normalized_state.state_person_external_id` peid
     ON peid.external_id = r.ofndr_num

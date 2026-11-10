@@ -566,7 +566,7 @@ def good_time_restoration_requests_fragment() -> str:
             CAST(CAST(req.dispositionCompletedDate AS DATETIME) AS DATE),
             NULL
         ) AS disposition_completed_date,
-    FROM `{project_id}.us_ne_raw_data_up_to_date_views.GoodTimeRestoration_latest` req
+    FROM `{project_id}.us_ne_raw_data_up_to_date_views.GoodTimeRestoration_latest_materialized` req
     INNER JOIN `{project_id}.us_ne_normalized_state.state_person_external_id` pei
     ON
         pei.external_id = req.inmateNumber
@@ -587,8 +587,8 @@ def good_time_restoration_denial_fragment() -> str:
         app.pkApprovalId,
         app.approvalLevel AS reviewer,
         DATE(app.dateReviewed) AS dateReviewed,
-    FROM `{project_id}.us_ne_raw_data_up_to_date_views.GTR_Approval_latest` app
-    LEFT JOIN `{project_id}.us_ne_raw_data_up_to_date_views.CodeValue_latest` cv
+    FROM `{project_id}.us_ne_raw_data_up_to_date_views.GTR_Approval_latest_materialized` app
+    LEFT JOIN `{project_id}.us_ne_raw_data_up_to_date_views.CodeValue_latest_materialized` cv
     ON cv.codeType = 'goodTimeRestoration_recommendForRestoration' AND app.recommendForRestorationCode = cv.codeId
     WHERE cv.codeValue = 'Denied'
     ),
@@ -605,7 +605,7 @@ def good_time_restoration_denial_fragment() -> str:
         WHERE denials.pkApprovalId IS NOT NULL
         ORDER BY denials.dateReviewed DESC
         ) AS denials,
-    FROM `{project_id}.us_ne_raw_data_up_to_date_views.GoodTimeRestoration_latest` req
+    FROM `{project_id}.us_ne_raw_data_up_to_date_views.GoodTimeRestoration_latest_materialized` req
     LEFT JOIN denials AS d1 ON d1.pkApprovalId = req.fkUCCApprovalId
     LEFT JOIN denials AS d2 ON d2.pkApprovalId = req.fkICCApprovalId
     LEFT JOIN denials AS d3 ON d3.pkApprovalId = req.fkWardenApprovalId

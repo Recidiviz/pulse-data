@@ -31,8 +31,8 @@ SELECT
         peid.state_code,
         peid.person_id,
         SAFE_CAST(LEFT(ois.EffectiveDate, 10) AS DATE) AS completion_event_date,
-FROM `{project_id}.us_ix_raw_data_up_to_date_views.ind_OffenderInternalStatus_latest` ois
-INNER JOIN `{project_id}.us_ix_raw_data_up_to_date_views.ind_InternalStatus_latest` ist
+FROM `{project_id}.us_ix_raw_data_up_to_date_views.ind_OffenderInternalStatus_latest_materialized` ois
+INNER JOIN `{project_id}.us_ix_raw_data_up_to_date_views.ind_InternalStatus_latest_materialized` ist
     ON ois.InternalStatusId = ist.InternalStatusId
 INNER JOIN `{project_id}.us_ix_normalized_state.state_person_external_id` peid
     ON peid.external_id = ois.OffenderId

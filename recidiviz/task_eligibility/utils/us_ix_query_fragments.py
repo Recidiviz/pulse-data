@@ -111,7 +111,7 @@ US_IX_PSI_LSIR_ASSESSMENTS_QUERY = f"""
         ON peid.person_id = lsir.person_id
         AND peid.state_code = 'US_IX'
         AND peid.id_type = 'US_IX_DOC'
-    INNER JOIN `{{project_id}}.us_ix_raw_data_up_to_date_views.com_PSIReport_latest` psi
+    INNER JOIN `{{project_id}}.us_ix_raw_data_up_to_date_views.com_PSIReport_latest_materialized` psi
         ON psi.OffenderId = peid.external_id
         AND lsir.assessment_date BETWEEN DATE(psi.OrderDate)
             AND DATE_ADD(DATE(psi.CompletedDate), INTERVAL {_US_IX_PSI_COMPLETED_DATE_GRACE_DAYS} DAY)
@@ -628,8 +628,8 @@ def ix_offender_alerts_case_notes(
                 *,
                 CAST(LEFT(StartDate, 10) AS DATE) AS start_date,
                 {nonnull_end_date_clause('CAST(LEFT(EndDate, 10) AS DATE)')} AS end_date,
-            FROM `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_Offender_Alert_latest` oa
-            INNER JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_Alert_latest` ia
+            FROM `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_Offender_Alert_latest_materialized` oa
+            INNER JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_Alert_latest_materialized` ia
                 USING (AlertId)
             {where_clause})
         WHERE end_date > DATE_SUB(CURRENT_DATE, INTERVAL {date_interval} {date_part})"""
@@ -708,14 +708,14 @@ def ix_general_case_notes(
                 note_type_cm.ContactModeDesc AS note_title,
                 REGEXP_REPLACE(note.Details, r'{ESCAPE_CURLY_AND_ANGLE_BRACKETS_REGEX}', '') AS note_body,
                 SAFE_CAST(LEFT(info.NoteDate, 10) AS DATE) AS event_date,{note_type_column}
-            FROM `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_OffenderNote_latest` note
-            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_OffenderNoteInfo_latest` info
+            FROM `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_OffenderNote_latest_materialized` note
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_OffenderNoteInfo_latest_materialized` info
                 USING (OffenderNoteInfoId)
-            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ref_NoteType_latest` note_type
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ref_NoteType_latest_materialized` note_type
                 USING (NoteTypeId)
-            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_OffenderNoteInfo_ContactMode_latest` info_cm
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_OffenderNoteInfo_ContactMode_latest_materialized` info_cm
                 USING (OffenderNoteInfoId)
-            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_ContactMode_latest` note_type_cm
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_ContactMode_latest_materialized` note_type_cm
                 USING (ContactModeId)
             WHERE OffenderNoteStatusId = '2' -- Posted
                 {where_clause_addition}
@@ -1036,26 +1036,26 @@ def program_enrollment_query(indent_level: int = 8) -> str:
             COALESCE( CAST(LEFT(ce.EndDate, 10) AS DATE),
                 CAST(LEFT(ce.StartDate, 10) AS DATE),
                 CAST(LEFT(ce.PendingEnrollmentDate, 10) AS DATE)) AS event_date
-        FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_OfdCourseEnrollment_latest` ce  
+        FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_OfdCourseEnrollment_latest_materialized` ce  
     ) ce
     LEFT JOIN 
-        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_OfdEnrollmentStatus_latest` ces
+        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_OfdEnrollmentStatus_latest_materialized` ces
     ON 
         ce.OfdEnrollmentStatusId = ces.OfdEnrollmentStatusId
     LEFT JOIN 
-        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_Course_latest` co
+        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_Course_latest_materialized` co
     ON 
         ce.CourseId = co.CourseId
     LEFT JOIN 
-        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_CourseName_latest` con
+        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_CourseName_latest_materialized` con
     ON 
         co.CourseNameId = con.CourseNameId
     LEFT JOIN 
-        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_CourseSection_latest` cs
+        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_CourseSection_latest_materialized` cs
     ON 
         cs.CourseSectionId = ce.CourseSectionId
     LEFT JOIN 
-        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_CourseSectionName_latest` csn
+        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_CourseSectionName_latest_materialized` csn
     ON 
         cs.CourseSectionNameId = csn.CourseSectionNameId
     INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
@@ -1093,7 +1093,7 @@ def victim_alert_notes(indent_level: int = 8) -> str:
         'Attention' AS note_title,
         Notes AS note_body,
         SAFE_CAST(LEFT(StartDate, 10) AS DATE) AS event_date
-    FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ind_Offender_Alert_latest`
+    FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ind_Offender_Alert_latest_materialized`
     -- Victim alerts
     WHERE AlertId = '133'"""
 

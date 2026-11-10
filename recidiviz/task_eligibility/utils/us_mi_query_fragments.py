@@ -418,7 +418,7 @@ reasons_for_eligibility AS (
 ),
 SMI AS (
   SELECT person_id, MMD
-  FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Mental_Health_Problems_latest`
+  FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Mental_Health_Problems_latest_materialized`
   INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
       ON OffenderCode = pei.external_id
           AND id_type = 'US_MI_DOC'
@@ -426,7 +426,7 @@ SMI AS (
 ),
 OPT AS (
   SELECT person_id, OPTLevelOfCare
-  FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Level_Of_Care_latest`
+  FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Level_Of_Care_latest_materialized`
   INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
       ON OffenderCode = pei.external_id
           AND id_type = 'US_MI_DOC'
@@ -437,7 +437,7 @@ stg_information AS (
     SELECT
         pei.person_id,
         REPLACE(STG_Level, "STG ", "") AS STG_Level
-    FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Threat_Group_Involvement_latest`
+    FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Security_Threat_Group_Involvement_latest_materialized`
     INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
         ON Offender_Number = pei.external_id
             AND id_type = 'US_MI_DOC'
@@ -460,8 +460,8 @@ case_notes_cte AS (
         DATE(cn.Note_Date) AS event_date
     FROM (
         SELECT pei.person_id, Note, Note_Date, Activity
-        FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Case_Notes_latest`
-        INNER JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Supervision_Schedule_Activities_latest`
+        FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Case_Notes_latest_materialized`
+        INNER JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Supervision_Schedule_Activities_latest_materialized`
             USING(Offender_Number, Case_Note_Id)
         INNER JOIN `{{project_id}}.us_mi_normalized_state.state_person_external_id` pei
             ON Offender_Number = pei.external_id
@@ -806,9 +806,9 @@ def secondary_officer_dockets_cte() -> str:
                            JSON_EXTRACT_SCALAR(s.full_name, "$.surname")))
                     ORDER BY Case_Manager_Omnni_Employee_Id
                 ) AS metadata_officers
-            FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Case_Managers_LEGACY_latest` cm
+            FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Case_Managers_LEGACY_latest_materialized` cm
             LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` ON Offender_Number = external_id AND id_type = 'US_MI_DOC'
-            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Supervision_Statuses_latest` ss USING(Supervision_Status_Id, Offender_Number)
+            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Supervision_Statuses_latest_materialized` ss USING(Supervision_Status_Id, Offender_Number)
             LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` sei ON Case_Manager_Omnni_Employee_Id = sei.external_id AND sei.id_type = 'US_MI_OMNI_USER'
             LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff` s ON sei.staff_id = s.staff_id
             LEFT JOIN agent_in_client_rec USING(person_id, Case_Manager_Omnni_Employee_Id)
@@ -834,10 +834,10 @@ def secondary_officer_dockets_cte() -> str:
                 )
                 ORDER BY docket_number_description
                 ) AS metadata_dockets
-            FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_LEGAL_ORDER_latest`
-            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_REFERENCE_CODE_latest` ref1 ON order_type_id = ref1.reference_code_id
-            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_REFERENCE_CODE_latest` ref2 ON order_status_id = ref2.reference_code_id
-            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_LOCATION_latest` loc ON issue_location_id = loc.location_id
+            FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_LEGAL_ORDER_latest_materialized`
+            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_REFERENCE_CODE_latest_materialized` ref1 ON order_type_id = ref1.reference_code_id
+            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_REFERENCE_CODE_latest_materialized` ref2 ON order_status_id = ref2.reference_code_id
+            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_LOCATION_latest_materialized` loc ON issue_location_id = loc.location_id
             LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei ON external_id = offender_booking_id AND id_type = 'US_MI_DOC_BOOK'
             WHERE
                 -- only grab open legal orders 

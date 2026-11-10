@@ -132,8 +132,8 @@ def parole_review_dates_query() -> str:
             WHEN ms.SCREEN_REASON_CODE = 'VIOLATOR' THEN CAST(NULL AS DATE)
             ELSE SAFE_CAST(LEFT(ms.MEDICAL_DATE, 10) AS DATE)
         END AS parole_review_date,
-    FROM `{project_id}.{raw_data_up_to_date_views_dataset}.elite_offender_medical_screenings_6i_latest` ms
-    INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.elite_offenderbookingstable_latest` ctbk
+    FROM `{project_id}.{raw_data_up_to_date_views_dataset}.elite_offender_medical_screenings_6i_latest_materialized` ms
+    INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.elite_offenderbookingstable_latest_materialized` ctbk
         ON REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '') = ctbk.OFFENDER_BOOK_ID
     INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
         ON ctbk.OFFENDER_BOOK_ID = peid.external_id
@@ -409,7 +409,7 @@ def get_infractions_as_case_notes() -> str:
         CONCAT(e.OIC_HEARING_TYPE_DESC, ' - ', e.INCIDENT_TYPE_DESC) AS note_title,
         CONCAT(e.FINDING_DESCRIPTION, ' - ', e.INCIDENT_DETAILS) AS note_body,
         SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS event_date,
-    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offense_in_custody_and_pos_report_data_latest` e
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offense_in_custody_and_pos_report_data_latest_materialized` e
     INNER JOIN `{{project_id}}.us_nd_normalized_state.state_person_external_id` peid
         ON peid.external_id = e.ROOT_OFFENDER_ID
         AND peid.id_type = 'US_ND_ELITE'
@@ -450,24 +450,24 @@ def get_latest_min_referrals_ctes() -> str:
             SAFE_CAST(LEFT(COALESCE(reoa.EVALUATION_DATE, reoa.ASSESSMENT_DATE), 10) AS DATE) AS evaluation_date,
             SAFE_CAST(LEFT(reoa.NEXT_REVIEW_DATE, 10) AS DATE) AS next_review_date,
             COALESCE(reoa.REVIEW_PLACE_AGY_LOC_ID, assess1.ASSESSMENT_CODE) AS referral_facility,
-        FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_OffenderAssessmentItems_latest` items
+        FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_OffenderAssessmentItems_latest_materialized` items
         JOIN (
-            SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest`
+            SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest_materialized`
             WHERE ASSESSMENT_CODE IN ('MTP', 'MRCC', 'JRMU')) assess1
             ON(items.assessment_id = assess1.assessment_id)
         JOIN (
-            SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest`
+            SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest_materialized`
             WHERE description = 'Facility Referral') assess2
             ON(assess1.parent_assessment_id = assess2.assessment_id )
         JOIN (
-            SELECT * FROM  `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest`
+            SELECT * FROM  `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest_materialized`
             WHERE description = 'MINIMUM HOUSING REQUEST') assess3
             ON(assess2.parent_assessment_id = assess3.assessment_id)
         JOIN (
-            SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest`
+            SELECT * FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest_materialized`
             WHERE description = 'MINIMUM HOUSING REQUEST') assess4
             ON(assess3.parent_assessment_id = assess4.assessment_id)
-        JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_OffenderAssessments_latest` reoa
+        JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_OffenderAssessments_latest_materialized` reoa
             ON(reoa.ASSESSMENT_TYPE_ID = assess4.ASSESSMENT_ID AND items.OFFENDER_BOOK_ID = reoa.OFFENDER_BOOK_ID)
         JOIN `{{project_id}}.us_nd_normalized_state.state_person_external_id` peid
             ON {reformat_ids('reoa.OFFENDER_BOOK_ID')} = peid.external_id
@@ -637,7 +637,7 @@ def get_offender_case_notes(
         EXTRACT(DATE FROM CAST(CONTACT_TIME AS DATETIME)) AS event_date,
     FROM (
         SELECT person_id, CASE_NOTE_TYPE, CASE_NOTE_TEXT, CONTACT_TIME
-        FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_OffenderCaseNotes_latest` ocn
+        FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_OffenderCaseNotes_latest_materialized` ocn
         INNER JOIN `{{project_id}}.us_nd_normalized_state.state_person_external_id` peid
             ON SAFE_CAST(REGEXP_REPLACE(ocn.OFFENDER_BOOK_ID, r',|.00', '') AS STRING) = peid.external_id
                 AND peid.state_code = 'US_ND'
@@ -695,7 +695,7 @@ SELECT
     SAFE_CAST(LEFT(MODIFY_DATETIME, 10) AS DATE) AS event_date,
 FROM (
     SELECT person_id, CHECK_LIST_CODE, CHECK_LIST_CATEGORY, CONFIRMED_FLAG, MODIFY_DATETIME
-    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_chk_list_details_latest` chk
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_chk_list_details_latest_materialized` chk
     INNER JOIN `{{project_id}}.us_nd_normalized_state.state_person_external_id` peid
     ON peid.external_id = chk.OFFENDER_BOOK_ID
         AND peid.id_type ='US_ND_ELITE_BOOKING'
@@ -783,7 +783,7 @@ def get_warrants_and_detainers_query(
         e.ORDER_TYPE,
         e.OFFENSE_STATUS,
         e.OFFENSE_DESC,
-    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_offences_latest` e
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_offences_latest_materialized` e
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
     ON peid.external_id = {reformat_ids('e.OFFENDER_BOOK_ID')}
         AND peid.state_code = 'US_ND'

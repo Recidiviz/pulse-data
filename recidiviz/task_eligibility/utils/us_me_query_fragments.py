@@ -87,21 +87,21 @@ def disciplinary_reports_helper() -> str:
     Compiles the various datasets necessary to pull disciplinary report information in ME
     """
     return """
-        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_181_VIOLATION_DISPOSITION_latest` vd
+        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_181_VIOLATION_DISPOSITION_latest_materialized` vd
       LEFT JOIN
-        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_180_DISCIPLINARY_CASE_latest` dc
+        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_180_DISCIPLINARY_CASE_latest_materialized` dc
       ON
         vd.Cis_180_Disciplinary_Case_Id = dc.DISCIPLINARY_CASE_ID
       LEFT JOIN
-        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_1811_VIOLATION_DISPOSITION_TYPE_latest` vdt
+        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_1811_VIOLATION_DISPOSITION_TYPE_latest_materialized` vdt
       ON
         vd.Cis_1811_Violation_Type_Cd = vdt.Violation_Disposition_Type_Cd
       LEFT JOIN
-        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_1810_VIOLATION_DISPOSITION_CLASS_latest` vdc
+        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_1810_VIOLATION_DISPOSITION_CLASS_latest_materialized` vdc
       ON
         IFNULL(vd.Cis_1810_Disposition_Class_Cd, vd.Cis_1810_Violation_Class_Cd) = vdc.Violation_Disposition_Class_Cd
       LEFT JOIN
-        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_462_CLIENTS_INVOLVED_latest` ci
+        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_462_CLIENTS_INVOLVED_latest_materialized` ci
       ON
         ci.Clients_Involved_Id = dc.CIS_462_CLIENTS_INVOLVED_ID
       INNER JOIN
@@ -117,18 +117,18 @@ def program_enrollment_helper() -> str:
     Compiles the various datasets necessary to pull program enrollment notes in ME
     """
     return """
-      `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_425_MAIN_PROG_latest` mp
+      `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_425_MAIN_PROG_latest_materialized` mp
     INNER JOIN
-      `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_420_PROGRAMS_latest` pr
+      `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_420_PROGRAMS_latest_materialized` pr
     ON
       mp.CIS_420_PROGRAM_ID = pr.PROGRAM_ID
       -- Comments_Tx/Note_body could be NULL, which happens when the record does not contain free text
     LEFT JOIN
-      `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_426_PROG_STATUS_latest` ps
+      `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_426_PROG_STATUS_latest_materialized` ps
     ON
       mp.ENROLL_ID = ps.Cis_425_Enroll_Id
     INNER JOIN
-      `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_9900_STATUS_TYPE_latest` st
+      `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_9900_STATUS_TYPE_latest_materialized` st
     ON
       ps.Cis_9900_Stat_Type_Cd = st.STAT_TYPE_CD
 
@@ -140,12 +140,12 @@ def case_plan_goals_helper() -> str:
     Compiles the various datasets necessary to pull program enrollment notes in ME
     """
     return """
-            `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_201_GOALS_latest` gl
-        INNER JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_2012_GOAL_STATUS_TYPE_latest` gs
+            `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_201_GOALS_latest_materialized` gl
+        INNER JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_2012_GOAL_STATUS_TYPE_latest_materialized` gs
             ON gl.Cis_2012_Goal_Status_Cd = gs.Goal_Status_Cd
-        INNER JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_2010_GOAL_TYPE_latest` gt
+        INNER JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_2010_GOAL_TYPE_latest_materialized` gt
             ON gl.Cis_2010_Goal_Type_Cd = gt.Goal_Type_Cd
-        INNER JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_2011_DOMAIN_GOAL_TYPE_latest` dg
+        INNER JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_2011_DOMAIN_GOAL_TYPE_latest_materialized` dg
             ON gl.Cis_2011_Dmn_Goal_Cd = dg.Domain_Goal_Cd
         WHERE gs.Goal_Status_Cd IN ('1','2') 
         """
@@ -195,10 +195,10 @@ def cis_204_notes_cte(criteria_name: str) -> str:
         n.Short_Note_Tx AS note_title,
         n.Note_Tx AS note_body,
         DATE(SAFE_CAST(n.Note_Date AS DATETIME)) AS event_date,
-    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_204_GEN_NOTE_latest` n
-    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2041_NOTE_TYPE_latest` ncd
+    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_204_GEN_NOTE_latest_materialized` n
+    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2041_NOTE_TYPE_latest_materialized` ncd
         ON ncd.Note_Type_Cd = n.Cis_2041_Note_Type_Cd
-    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2040_CONTACT_MODE_latest` cncd
+    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2040_CONTACT_MODE_latest_materialized` cncd
         ON n.Cis_2040_Contact_Mode_Cd = cncd.Contact_Mode_Cd"""
 
 
@@ -261,10 +261,10 @@ def cis_408_violations_notes_cte(
             {note_title} AS note_title,
             Violation_Descr_Tx AS note_body,
             SAFE_CAST(LEFT(v.Toll_Start_Date, 10) AS DATE) AS event_date,
-        FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_480_VIOLATION_latest` v
-        LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_4800_VIOLATION_FINDING_latest` vf
+        FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_480_VIOLATION_latest_materialized` v
+        LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_4800_VIOLATION_FINDING_latest_materialized` vf
             ON v.Cis_4800_Violation_Finding_Cd = vf.Violation_Finding_Cd
-        LEFT JOIN `{{project_id}}.us_me_raw_data_up_to_date_views.CIS_4009_SENT_CALC_SYS_latest` scs
+        LEFT JOIN `{{project_id}}.us_me_raw_data_up_to_date_views.CIS_4009_SENT_CALC_SYS_latest_materialized` scs
             ON scs.Sent_Calc_Sys_Cd = v.Cis_4009_Violation_Type_Cd
         WHERE Cis_4009_Violation_Type_Cd IN ({vtype})
             AND Cis_4800_Violation_Finding_Cd = '{violation_finding_cd}'
@@ -346,11 +346,11 @@ def cis_112_custody_level_criteria(
             SAFE_CAST(LEFT(CUSTODY_DATE, 10) AS DATE) AS start_date,
             SAFE_CAST(CUSTODY_DATE AS DATETIME) AS start_datetime,
         #TODO(#16722): pull custody level from ingested data once it is hydrated in our schema
-        FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_112_CUSTODY_LEVEL_latest`
+        FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_112_CUSTODY_LEVEL_latest_materialized`
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id`
             ON CIS_100_CLIENT_ID = external_id
             AND id_type = 'US_ME_DOC'
-        INNER JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_1017_CLIENT_SYS_latest` cl_sys
+        INNER JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_1017_CLIENT_SYS_latest_materialized` cl_sys
             ON CIS_1017_CLIENT_SYS_CD = CLIENT_SYS_CD
     ),
     custody_level_spans AS (
@@ -492,8 +492,8 @@ def cis_300_relevant_property_case_notes(
         ppit.E_PP_ITEM_TYPE_DESC AS note_title,
         pp.DESCRIPTION_TX AS note_body,
         SAFE_CAST(LEFT(pp.ENTRY_DATE, 10) AS DATE) AS event_date,
-    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_300_Personal_Property_latest` pp
-    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_3030_PP_Item_Type_latest` ppit
+    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_300_Personal_Property_latest_materialized` pp
+    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_3030_PP_Item_Type_latest_materialized` ppit
         ON CIS_3030_PP_ITEM_TYPE_CD = PP_ITEM_TYPE_CD
     -- Only keep the latest admission ID
     INNER JOIN (
@@ -501,7 +501,7 @@ def cis_300_relevant_property_case_notes(
             CIS_100_CLIENT_ID,
             CIS_301_ADMISSION_ID,
             MIN(ENTRY_DATE) AS entry_date
-        FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_300_Personal_Property_latest`
+        FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_300_Personal_Property_latest_materialized`
         -- Legal docs, Ids and Legal Materials
         WHERE CIS_3030_PP_ITEM_TYPE_CD IN ('18', '172', '50')
         GROUP BY 1,2
