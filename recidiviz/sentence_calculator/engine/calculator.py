@@ -68,6 +68,7 @@ def calculate_sentences(
             regime_name=calculation_input.law_regime_id,
         )
     )
+    engine.check_sentence_fields(calculation_input.sentences)
     graph = SentenceGraph(calculation_input.sentences)
     indeterminate_sentence_type = _most_severe_indeterminate_type(
         calculation_input.sentences

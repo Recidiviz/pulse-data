@@ -58,13 +58,13 @@ can't take fails when the file loads. So does a condition on a start date, which
 for a consecutive sentence is computed and changes as the earlier sentences'
 terms do.
 
-A sentence with no value for a field never meets equals or in, and always meets
-not_equals and not_in, so offense_id: { not_in: [1576] } matches a sentence with
-an unknown offense ID. This supports fields where None is an expected value, e.g.
-parent_sentence_id. The operators that order values, every operator besides
-equals, not_equals, in, and not_in, raise on a missing value. Conditions don't
-check that a sentence has every field a rule needs; that check happens where
-sentences are validated.
+A condition raises on a sentence with no value for its field, whatever the
+operator, so offense_id: { not_in: [1576] } can't silently match a sentence with
+an unknown offense ID. The calculator checks that every sentence has a value for
+every field its regime's conditions read before it checks any condition. So a
+condition on a field that is empty on some valid sentences, e.g.
+parent_sentence_id on a root sentence, fails when the file loads. sentence_type is
+the exception, since it is only empty when a request leaves it out.
 
 PyYAML's SafeLoader keeps only the last value of a repeated key, so the YAML
 must be loaded with a loader that rejects repeated keys, or a condition can be
@@ -100,6 +100,11 @@ EARLIEST_START_DATE_VALUE = "earliest_start_date"
 # condition can compare. A consecutive sentence's start date is computed from the
 # terms of the sentences before it.
 _START_DATE_FIELDS = frozenset({"start_date", EARLIEST_START_DATE_VALUE})
+# The nullable sentence fields conditions can compare. Each is empty only when a
+# request leaves it out, so the calculator can reject a sentence that has no value
+# for one its regime reads. Any other nullable field, e.g. parent_sentence_id, is
+# empty on some valid sentences, so conditions can't compare it.
+_NULLABLE_FIELDS_CONDITIONS_CAN_COMPARE = frozenset({"sentence_type"})
 
 # The types a field must have for conditions to compare against it.
 _COMPARABLE_FIELD_TYPES: tuple[type, ...] = (bool, int, float, str, datetime.date)
@@ -148,8 +153,7 @@ _DATE_OPERATORS = {
     ConditionOperator.AFTER,
     ConditionOperator.ON_OR_AFTER,
 }
-# Operators that order values, which raise when the field has no value because a
-# missing value can't be ordered.
+# Operators that order values.
 _ORDERED_OPERATORS = (
     _NUMERIC_OPERATORS | _DATE_OPERATORS | {ConditionOperator.BETWEEN_INCLUSIVE}
 )
@@ -210,13 +214,9 @@ class FieldCondition:
 
     def is_met(self, get_value: Callable[[str], Any]) -> bool:
         """Returns whether the value get_value returns for this condition's field
-        satisfies the condition. A missing value never satisfies EQUALS or IN,
-        always satisfies NOT_EQUALS and NOT_IN, and raises for the operators that
-        order values."""
-        # TODO(NV-39): Validate sentence fields before checking any conditions.
-        # NOT_IN shouldn't match a sentence just because its offense_id is missing.
+        satisfies the condition, raising if the field has no value."""
         field_value = get_value(self.field)
-        if field_value is None and self.operator in _ORDERED_OPERATORS:
+        if field_value is None:
             raise ValueError(
                 f"Condition compares field [{self.field}] with operator "
                 f"[{self.operator.value}], but the field has no value."
@@ -291,6 +291,22 @@ class AnyOf:
 
 
 Condition = FieldCondition | AllOf | AnyOf
+
+
+def condition_field_names(condition: Condition) -> list[str]:
+    """Returns the names of the fields condition reads, in the order they first
+    appear in it."""
+    if isinstance(condition, FieldCondition):
+        return [condition.field]
+    return list(
+        dict.fromkeys(
+            field
+            for sub_condition in condition.conditions
+            for field in condition_field_names(sub_condition)
+        )
+    )
+
+
 # Validators for an attrs field holding a Condition, and one holding a Condition
 # or None.
 is_condition = attr.validators.instance_of(Condition)
@@ -300,7 +316,7 @@ is_opt_condition = attr.validators.optional(is_condition)
 def sentence_condition_field_types(sentence_class: type[Sentence]) -> dict[str, type]:
     """Returns the type of each field of sentence_class whose type conditions can
     compare against, keyed by field name. ConditionParser still rejects start
-    dates. A field that may be None maps to its
+    dates and most nullable fields. A field that may be None maps to its
     non-None type (since the YAML won't be declaring a None field value).
     Fields of other types (including generic types like list[str], type unions
     like int | str, and datetime) are left out."""
@@ -319,6 +335,16 @@ def sentence_condition_field_types(sentence_class: type[Sentence]) -> dict[str, 
         ):
             field_types[field.name] = field_type
     return field_types
+
+
+def sentence_nullable_field_names(sentence_class: type[Sentence]) -> frozenset[str]:
+    """Returns the names of the fields of sentence_class whose type allows None."""
+    type_hints = typing.get_type_hints(sentence_class)
+    return frozenset(
+        field.name
+        for field in attr.fields(sentence_class)
+        if types.NoneType in typing.get_args(type_hints[field.name])
+    )
 
 
 def _non_none_type(type_hint: Any) -> Any:
@@ -341,20 +367,28 @@ class ConditionParser:
         self,
         *,
         field_types: Mapping[str, type],
+        nullable_field_names: frozenset[str],
         named_conditions: Mapping[str, Condition] | None,
     ) -> None:
         """
         Args:
             field_types: The type of each field the conditions can compare, keyed
                 by field name. Start dates are left out even if listed.
+            nullable_field_names: The fields in field_types that may be None.
+                Those besides sentence_type are left out, since they are empty on
+                some valid sentences.
             named_conditions: The conditions a 'when' mapping can refer to with
                 condition: <name>, or None if these conditions can't refer to
                 named conditions.
         """
+        self._uncomparable_nullable_field_names = (
+            nullable_field_names - _NULLABLE_FIELDS_CONDITIONS_CAN_COMPARE
+        )
         self._field_types = {
             field: field_type
             for field, field_type in field_types.items()
             if field not in _START_DATE_FIELDS
+            and field not in self._uncomparable_nullable_field_names
         }
         self._named_conditions = named_conditions
 
@@ -438,6 +472,12 @@ class ConditionParser:
                 f"They use the field [{field}]. Start dates are sentence-specific "
                 f"and change over time. They shouldn't be used in rules. Instead, "
                 f"compare against the offense date or the court sentencing date."
+            )
+        if field in self._uncomparable_nullable_field_names:
+            raise ValueError(
+                f"They use the field [{field}], which can be empty on a valid "
+                f"sentence. Every sentence must have a value for each field its "
+                f"regime's conditions read, so conditions can't compare this one."
             )
         if field not in self._field_types:
             raise ValueError(
@@ -612,6 +652,7 @@ def parse_named_conditions(
     conditions_dict: YAMLDict,
     *,
     field_types: Mapping[str, type],
+    nullable_field_names: frozenset[str],
     inherited_conditions: Mapping[str, Condition],
 ) -> dict[str, Condition]:
     """Returns inherited_conditions plus each condition conditions_dict defines,
@@ -622,6 +663,7 @@ def parse_named_conditions(
         conditions_dict: The named conditions to parse, keyed by name.
         field_types: The type of each sentence field the conditions can compare,
             keyed by field name.
+        nullable_field_names: The fields in field_types that may be None.
         inherited_conditions: Already parsed conditions new conditions can refer to,
             e.g. a state's shared conditions when parsing a regime's.
     """
@@ -638,6 +680,7 @@ def parse_named_conditions(
         raw_condition_dicts=raw_condition_dicts,
         inherited_conditions=inherited_conditions,
         field_types=field_types,
+        nullable_field_names=nullable_field_names,
     )
     return {name: named_conditions[name] for name in named_conditions}
 
@@ -652,11 +695,16 @@ class _NamedConditions(Mapping[str, Condition]):
         raw_condition_dicts: dict[str, YAMLDict],
         inherited_conditions: Mapping[str, Condition],
         field_types: Mapping[str, type],
+        nullable_field_names: frozenset[str],
     ) -> None:
         self._raw_condition_dicts = raw_condition_dicts
         self._parsed_conditions = dict(inherited_conditions)
         self._names_being_parsed: list[str] = []
-        self._parser = ConditionParser(field_types=field_types, named_conditions=self)
+        self._parser = ConditionParser(
+            field_types=field_types,
+            nullable_field_names=nullable_field_names,
+            named_conditions=self,
+        )
 
     def __getitem__(self, name: str) -> Condition:
         if name in self._parsed_conditions:

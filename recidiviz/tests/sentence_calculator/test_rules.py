@@ -19,14 +19,18 @@
 import json
 import os
 import tempfile
+import types
+import typing
 import unittest
 from datetime import date
+from typing import Any
 
 import attr
 from jsonschema.exceptions import ValidationError
 
 from recidiviz.sentence_calculator.models.conditions import (
     AllOf,
+    AnyOf,
     ConditionOperator,
     FieldCondition,
 )
@@ -62,7 +66,7 @@ _CATEGORY_E = FieldCondition(
 class _SentenceWithOffenseDate(NevadaSentence):
     """A sentence with an offense date, for conditions that compare dates."""
 
-    offense_date: date | None = attr.ib(default=None)
+    offense_date: date = attr.ib(validator=attr.validators.instance_of(date))
 
 
 _MAX_AND_MIN_TERMS = [
@@ -1212,6 +1216,225 @@ class TestLawRegimeValidation(unittest.TestCase):
                     ]
                 },
             )
+
+
+def _condition_slot_paths(attrs_class: type, *, path: str) -> set[str]:
+    """Returns the path to every attribute reachable from attrs_class that can
+    hold a Condition, e.g. "term_multipliers[].applies_to[].when". [] marks a
+    step into a list's elements or a dict's values."""
+    field_types = typing.get_type_hints(attrs_class)
+    return {
+        slot_path
+        for field in attr.fields(attrs_class)
+        for slot_path in _condition_slot_paths_in_type(
+            field_types[field.name],
+            path=f"{path}.{field.name}" if path else field.name,
+        )
+    }
+
+
+def _condition_slot_paths_in_type(field_type: Any, *, path: str) -> set[str]:
+    """Returns the paths to the Condition slots in a value of field_type found at
+    path."""
+    origin = typing.get_origin(field_type)
+    if origin in (types.UnionType, typing.Union):
+        return {
+            slot_path
+            for member_type in typing.get_args(field_type)
+            for slot_path in _condition_slot_paths_in_type(member_type, path=path)
+        }
+    if origin in (list, dict, frozenset):
+        return _condition_slot_paths_in_type(
+            typing.get_args(field_type)[-1], path=f"{path}[]"
+        )
+    if field_type in (FieldCondition, AllOf, AnyOf):
+        return {path}
+    if attr.has(field_type):
+        return _condition_slot_paths(field_type, path=path)
+    return set()
+
+
+class TestSentenceConditionFieldNames(unittest.TestCase):
+    """Tests for LawRegime.sentence_condition_field_names."""
+
+    def test_term_multiplier_and_projected_date_conditions(self) -> None:
+        regime = _law_regime(
+            term_multipliers=[
+                TermMultiplierRule(
+                    name="violent_term_reduction",
+                    description="15% reduction of violent offenses' terms",
+                    when=FieldCondition(
+                        field="offense_group",
+                        operator=ConditionOperator.EQUALS,
+                        value=NevadaOffenseGroup.VIOLENCE,
+                    ),
+                    multiplier=0.85,
+                    applies_to=[
+                        ReductionTarget(term=TermType.MAX_TERM, when=None),
+                        ReductionTarget(
+                            term=TermType.MIN_TERM,
+                            when=FieldCondition(
+                                field="offense_category",
+                                operator=ConditionOperator.NOT_IN,
+                                value=[NevadaOffenseCategory.CATEGORY_A],
+                            ),
+                        ),
+                    ],
+                    statute=None,
+                ),
+                TermMultiplierRule(
+                    name="standard_term_reduction",
+                    description="35% reduction of every other offense's terms",
+                    when=None,
+                    multiplier=0.65,
+                    applies_to=_MAX_AND_MIN_TERMS,
+                    statute=None,
+                ),
+            ],
+            credit_rates=[],
+            credit_caps=[],
+            projected_dates={
+                "parole_eligibility_date": [
+                    DateFormulaRule(
+                        name="parole_eligibility_date",
+                        description="Eligible once the min term is served",
+                        when=ProjectedDateCondition(
+                            values_condition=None,
+                            sentence_condition=FieldCondition(
+                                field="offense_id",
+                                operator=ConditionOperator.NOT_IN,
+                                value=[1576],
+                            ),
+                        ),
+                        formula="earliest_start_date + adjusted_min_days",
+                        floor=DateFloor(
+                            date="earliest_start_date",
+                            when=ProjectedDateCondition(
+                                values_condition=None,
+                                sentence_condition=FieldCondition(
+                                    field="qualified_for_enhanced_good_time",
+                                    operator=ConditionOperator.EQUALS,
+                                    value=True,
+                                ),
+                            ),
+                        ),
+                        statute=None,
+                    )
+                ]
+            },
+        )
+
+        self.assertEqual(
+            [
+                "offense_category",
+                "offense_group",
+                "offense_id",
+                "qualified_for_enhanced_good_time",
+            ],
+            regime.sentence_condition_field_names,
+        )
+
+    def test_credit_rate_and_cap_conditions(self) -> None:
+        regime = _law_regime(
+            term_multipliers=[],
+            credit_rates=[
+                CreditRateRule(
+                    name="work_time",
+                    description="Work time off both terms of a nonviolent offense",
+                    when=FieldCondition(
+                        field="qualified_for_enhanced_good_time",
+                        operator=ConditionOperator.EQUALS,
+                        value=True,
+                    ),
+                    rate=30.0,
+                    applies_to=[
+                        ReductionTarget(term=TermType.MAX_TERM, when=None),
+                        ReductionTarget(
+                            term=TermType.MIN_TERM,
+                            when=FieldCondition(
+                                field="offense_group",
+                                operator=ConditionOperator.NOT_EQUALS,
+                                value=NevadaOffenseGroup.VIOLENCE,
+                            ),
+                        ),
+                    ],
+                    statute=None,
+                ),
+                CreditRateRule(
+                    name="stat_time",
+                    description="Stat time off both terms of every other offense",
+                    when=None,
+                    rate=20.0,
+                    applies_to=_MAX_AND_MIN_TERMS,
+                    statute=None,
+                ),
+            ],
+            credit_caps=[
+                CreditCapRule(
+                    name="category_e_credit_cap",
+                    description="Credits on a Category E min term are capped",
+                    when=_CATEGORY_E,
+                    max_credit_days="sentence_length_days * 0.5",
+                    binds=frozenset({TermType.MIN_TERM}),
+                    statute=None,
+                )
+            ],
+            projected_dates={},
+        )
+
+        self.assertEqual(
+            [
+                "offense_category",
+                "offense_group",
+                "qualified_for_enhanced_good_time",
+            ],
+            regime.sentence_condition_field_names,
+        )
+
+    def test_every_condition_slot_is_known(self) -> None:
+        """Exists to fail when someone adds a rule type or a condition slot to
+        LawRegime, so that they also make sentence_condition_field_names read it.
+        A slot that property misses lets a sentence with no value for the field
+        get past check_sentence_fields and fail with a 500 instead of a 400.
+
+        To fix a failure, add the new slot to sentence_condition_field_names, cover
+        it in one of the tests above, then add its path here."""
+        self.assertEqual(
+            {
+                "term_multipliers[].when",
+                "term_multipliers[].applies_to[].when",
+                "credit_rates[].when",
+                "credit_rates[].applies_to[].when",
+                "credit_caps[].when",
+                # A projected date condition's values_condition reads calculation
+                # values, not sentence fields, so sentence_condition_field_names
+                # leaves the two values_condition paths out.
+                "projected_dates[][].when.values_condition",
+                "projected_dates[][].when.sentence_condition",
+                "projected_dates[][].floor.when.values_condition",
+                "projected_dates[][].floor.when.sentence_condition",
+            },
+            _condition_slot_paths(LawRegime, path=""),
+        )
+
+    def test_regime_without_conditions(self) -> None:
+        regime = _law_regime(
+            term_multipliers=[
+                TermMultiplierRule(
+                    name="standard_term_reduction",
+                    description="35% reduction of every offense's terms",
+                    when=None,
+                    multiplier=0.65,
+                    applies_to=_MAX_AND_MIN_TERMS,
+                    statute=None,
+                )
+            ],
+            credit_rates=[],
+            credit_caps=[],
+            projected_dates={},
+        )
+
+        self.assertEqual([], regime.sentence_condition_field_names)
 
 
 class TestProjectedDateEvaluationOrder(unittest.TestCase):

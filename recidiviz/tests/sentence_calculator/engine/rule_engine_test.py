@@ -20,6 +20,7 @@ import unittest
 from datetime import date
 
 from recidiviz.sentence_calculator.engine.rule_engine import (
+    MissingSentenceFieldError,
     RuleEngine,
     sentence_meets_condition,
 )
@@ -29,7 +30,7 @@ from recidiviz.sentence_calculator.models.conditions import (
     ConditionOperator,
     FieldCondition,
 )
-from recidiviz.sentence_calculator.models.inputs import Term
+from recidiviz.sentence_calculator.models.inputs import SentenceType, Term
 from recidiviz.sentence_calculator.models.outputs import (
     CreditCap,
     ProjectedCreditRate,
@@ -650,22 +651,91 @@ class TestSentenceMeetsCondition(unittest.TestCase):
             )
         )
 
-    def test_ordered_comparison_on_missing_value(self) -> None:
+    def test_condition_on_missing_value(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
             r"^Could not check the conditions in term_multipliers entry "
             r"\[early_sentence_reduction\] against sentence \[S1\]: Condition "
-            r"compares field \[start_date\] with operator \[before\], but the field "
-            r"has no value\.$",
+            r"compares field \[parent_sentence_id\] with operator \[not_equals\], "
+            r"but the field has no value\.$",
         ):
             sentence_meets_condition(
                 FieldCondition(
-                    field="start_date",
-                    operator=ConditionOperator.BEFORE,
-                    value=date(2014, 7, 1),
+                    field="parent_sentence_id",
+                    operator=ConditionOperator.NOT_EQUALS,
+                    value="S0",
                 ),
                 _VIOLENT_SENTENCE,
                 location="term_multipliers entry [early_sentence_reduction]",
+            )
+
+
+class TestCheckSentenceFields(unittest.TestCase):
+    """Tests for RuleEngine.check_sentence_fields."""
+
+    def setUp(self) -> None:
+        self.engine = _engine(
+            term_multipliers=[
+                TermMultiplierRule(
+                    name="life_term_reduction",
+                    description="No reduction of life sentences",
+                    when=FieldCondition(
+                        field="sentence_type",
+                        operator=ConditionOperator.EQUALS,
+                        value=SentenceType.LIFE,
+                    ),
+                    multiplier=1.0,
+                    applies_to=[ReductionTarget(term=TermType.MAX_TERM, when=None)],
+                    statute=None,
+                ),
+                _STANDARD_TERM_REDUCTION,
+            ],
+            credit_rates=[],
+            credit_caps=[],
+        )
+
+    def test_sentences_with_every_condition_field(self) -> None:
+        self.engine.check_sentence_fields(
+            [
+                NevadaSentence(  # pylint: disable=abstract-class-instantiated
+                    sentence_id="S1",
+                    offense_id=9999,
+                    sentence_type=SentenceType.OTHER,
+                    min_term=Term(years=1),
+                    max_term=Term(years=3),
+                    offense_category=NevadaOffenseCategory.CATEGORY_C,
+                    offense_group=NevadaOffenseGroup.OTHER,
+                )
+            ]
+        )
+
+    def test_sentence_missing_a_condition_field(self) -> None:
+        with self.assertRaisesRegex(
+            MissingSentenceFieldError,
+            r"^Sentence \[S2\] has no value for \['sentence_type'\], which law "
+            r"regime \[TEST_REGIME\] has conditions on\. Provide a value for each\.$",
+        ):
+            self.engine.check_sentence_fields(
+                [
+                    NevadaSentence(  # pylint: disable=abstract-class-instantiated
+                        sentence_id="S1",
+                        offense_id=9999,
+                        sentence_type=SentenceType.OTHER,
+                        min_term=Term(years=1),
+                        max_term=Term(years=3),
+                        offense_category=NevadaOffenseCategory.CATEGORY_C,
+                        offense_group=NevadaOffenseGroup.OTHER,
+                    ),
+                    NevadaSentence(  # pylint: disable=abstract-class-instantiated
+                        sentence_id="S2",
+                        offense_id=9999,
+                        sentence_type=None,
+                        min_term=Term(years=1),
+                        max_term=Term(years=3),
+                        offense_category=NevadaOffenseCategory.CATEGORY_C,
+                        offense_group=NevadaOffenseGroup.OTHER,
+                    ),
+                ]
             )
 
 

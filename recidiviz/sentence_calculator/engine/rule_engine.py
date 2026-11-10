@@ -16,11 +16,15 @@
 # =============================================================================
 """Rule engine that evaluates a law regime's rules against sentences."""
 
+from collections.abc import Sequence
 from enum import Enum
 from typing import TypeVar
 
 from recidiviz.sentence_calculator.engine.expression import evaluate_days_expression
-from recidiviz.sentence_calculator.models.conditions import Condition, FieldCondition
+from recidiviz.sentence_calculator.models.conditions import (
+    Condition,
+    condition_field_names,
+)
 from recidiviz.sentence_calculator.models.inputs import Sentence
 from recidiviz.sentence_calculator.models.outputs import (
     CreditCap,
@@ -69,26 +73,12 @@ def _rule_location(rule: TermMultiplierRule | CreditRateRule | CreditCapRule) ->
     raise ValueError(f"Unexpected rule type: [{type(rule)}]")
 
 
-def _condition_field_names(condition: Condition) -> list[str]:
-    """Returns the names of the fields condition reads, in the order they first
-    appear in it."""
-    if isinstance(condition, FieldCondition):
-        return [condition.field]
-    return list(
-        dict.fromkeys(
-            field
-            for sub_condition in condition.conditions
-            for field in _condition_field_names(sub_condition)
-        )
-    )
-
-
 def _condition_field_values(condition: Condition, sentence: Sentence) -> str:
     """Returns the values sentence has for the fields condition reads, e.g.
     "offense_group=VIOLENCE, offense_category=C". Enums show their value, the
     form law regime files write them in."""
     field_values = []
-    for field in _condition_field_names(condition):
+    for field in condition_field_names(condition):
         value = getattr(sentence, field)
         field_values.append(
             f"{field}={value.value if isinstance(value, Enum) else value}"
@@ -150,6 +140,12 @@ def _reduced_terms(
     return frozenset(reduced_terms), term_reasons
 
 
+class MissingSentenceFieldError(ValueError):
+    """Raised when a sentence has no value for a field its law regime's
+    conditions read. These errors come from the input, not the calculation, so
+    callers can report them back to whoever supplied the sentences."""
+
+
 class RuleEngine:
     """Evaluates a law regime's rules against sentences.
 
@@ -159,6 +155,21 @@ class RuleEngine:
 
     def __init__(self, regime: LawRegime) -> None:
         self.regime = regime
+
+    def check_sentence_fields(self, sentences: Sequence[Sentence]) -> None:
+        """Raises MissingSentenceFieldError if any of sentences has no value for a
+        field the regime's conditions read."""
+        field_names = self.regime.sentence_condition_field_names
+        for sentence in sentences:
+            missing_field_names = [
+                field for field in field_names if getattr(sentence, field) is None
+            ]
+            if missing_field_names:
+                raise MissingSentenceFieldError(
+                    f"Sentence [{sentence.sentence_id}] has no value for "
+                    f"{missing_field_names}, which law regime [{self.regime.name}] "
+                    f"has conditions on. Provide a value for each."
+                )
 
     @staticmethod
     def _first_matching_rule(

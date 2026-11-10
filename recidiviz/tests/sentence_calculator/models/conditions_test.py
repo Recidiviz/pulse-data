@@ -30,6 +30,7 @@ from recidiviz.sentence_calculator.models.conditions import (
     FieldCondition,
     parse_named_conditions,
     sentence_condition_field_types,
+    sentence_nullable_field_names,
 )
 from recidiviz.sentence_calculator.models.inputs import SentenceType
 from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import (
@@ -40,6 +41,7 @@ from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import (
 from recidiviz.utils.yaml_dict import YAMLDict
 
 _NEVADA_FIELD_TYPES = sentence_condition_field_types(NevadaSentence)
+_NEVADA_NULLABLE_FIELD_NAMES = sentence_nullable_field_names(NevadaSentence)
 _LOCATION = "term_multipliers entry [standard]"
 
 
@@ -47,11 +49,12 @@ _LOCATION = "term_multipliers entry [standard]"
 class _SentenceWithOffenseDate(NevadaSentence):
     """A sentence with an offense date, for conditions that compare dates."""
 
-    offense_date: date | None = attr.ib(default=None)
+    offense_date: date = attr.ib(validator=attr.validators.instance_of(date))
 
 
 _PARSER = ConditionParser(
     field_types=sentence_condition_field_types(_SentenceWithOffenseDate),
+    nullable_field_names=sentence_nullable_field_names(_SentenceWithOffenseDate),
     named_conditions={},
 )
 
@@ -111,6 +114,16 @@ class TestSentenceConditionFieldTypes(unittest.TestCase):
         self.assertEqual(
             _NEVADA_FIELD_TYPES,
             sentence_condition_field_types(_SentenceWithDatetimeField),
+        )
+
+
+class TestSentenceNullableFieldNames(unittest.TestCase):
+    """Tests for sentence_nullable_field_names."""
+
+    def test_nevada_sentence_fields(self) -> None:
+        self.assertEqual(
+            frozenset({"sentence_type", "start_date", "parent_sentence_id"}),
+            sentence_nullable_field_names(NevadaSentence),
         )
 
 
@@ -221,6 +234,7 @@ class TestConditionParser(unittest.TestCase):
         )
         parser = ConditionParser(
             field_types=_NEVADA_FIELD_TYPES,
+            nullable_field_names=_NEVADA_NULLABLE_FIELD_NAMES,
             named_conditions={"sex_offense": sex_offense, "category_a": category_a},
         )
 
@@ -247,6 +261,7 @@ class TestConditionParser(unittest.TestCase):
         )
         parser = ConditionParser(
             field_types=_NEVADA_FIELD_TYPES,
+            nullable_field_names=_NEVADA_NULLABLE_FIELD_NAMES,
             named_conditions={"sex_offense": sex_offense},
         )
 
@@ -266,7 +281,9 @@ class TestConditionParser(unittest.TestCase):
 
     def test_parse_named_condition_where_not_allowed(self) -> None:
         parser = ConditionParser(
-            field_types={"unadjusted_max_days": int}, named_conditions=None
+            field_types={"unadjusted_max_days": int},
+            nullable_field_names=frozenset(),
+            named_conditions=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -282,8 +299,8 @@ class TestConditionParser(unittest.TestCase):
             r"^Invalid conditions in term_multipliers entry \[standard\]\. They use "
             r"the field \[offense_type\], which conditions here can't compare\. "
             r"Fields they can compare: \['offense_category', 'offense_date', "
-            r"'offense_group', 'offense_id', 'parent_sentence_id', "
-            r"'qualified_for_enhanced_good_time', 'sentence_id', 'sentence_type'\]\.$",
+            r"'offense_group', 'offense_id', 'qualified_for_enhanced_good_time', "
+            r"'sentence_id', 'sentence_type'\]\.$",
         ):
             _PARSER.parse(YAMLDict({"offense_type": "SEX"}), location=_LOCATION)
 
@@ -299,9 +316,35 @@ class TestConditionParser(unittest.TestCase):
                 YAMLDict({"start_date": {"before": "2014-07-01"}}), location=_LOCATION
             )
 
+    def test_parse_nullable_field(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Invalid conditions in term_multipliers entry \[standard\]\. They use "
+            r"the field \[parent_sentence_id\], which can be empty on a valid "
+            r"sentence\. Every sentence must have a value for each field its "
+            r"regime's conditions read, so conditions can't compare this one\.$",
+        ):
+            _PARSER.parse(
+                YAMLDict({"parent_sentence_id": {"not_equals": "S1"}}),
+                location=_LOCATION,
+            )
+
+    def test_parse_sentence_type(self) -> None:
+        """sentence_type may be None, but only when a request leaves it out, so
+        conditions can compare it."""
+        self.assertEqual(
+            FieldCondition(
+                field="sentence_type",
+                operator=ConditionOperator.EQUALS,
+                value=SentenceType.LIFE,
+            ),
+            _PARSER.parse(YAMLDict({"sentence_type": "LIFE"}), location=_LOCATION),
+        )
+
     def test_parse_earliest_start_date(self) -> None:
         parser = ConditionParser(
             field_types={"earliest_start_date": date, "adjusted_max_days": int},
+            nullable_field_names=frozenset(),
             named_conditions=None,
         )
         with self.assertRaisesRegex(
@@ -510,6 +553,7 @@ class TestParseNamedConditions(unittest.TestCase):
                 }
             ),
             field_types=_NEVADA_FIELD_TYPES,
+            nullable_field_names=_NEVADA_NULLABLE_FIELD_NAMES,
             inherited_conditions={},
         )
 
@@ -541,6 +585,7 @@ class TestParseNamedConditions(unittest.TestCase):
                     }
                 ),
                 field_types=_NEVADA_FIELD_TYPES,
+                nullable_field_names=_NEVADA_NULLABLE_FIELD_NAMES,
                 inherited_conditions={},
             )
 
@@ -563,6 +608,7 @@ class TestParseNamedConditions(unittest.TestCase):
                 }
             ),
             field_types=_NEVADA_FIELD_TYPES,
+            nullable_field_names=_NEVADA_NULLABLE_FIELD_NAMES,
             inherited_conditions={"sex_offense": sex_offense},
         )
 
@@ -592,6 +638,7 @@ class TestParseNamedConditions(unittest.TestCase):
             parse_named_conditions(
                 YAMLDict({"sex_offense": {"offense_group": "VIOLENCE"}}),
                 field_types=_NEVADA_FIELD_TYPES,
+                nullable_field_names=_NEVADA_NULLABLE_FIELD_NAMES,
                 inherited_conditions={
                     "sex_offense": FieldCondition(
                         field="offense_group",
@@ -677,29 +724,28 @@ class TestConditionIsMet(unittest.TestCase):
                 field="offense_id", operator=ConditionOperator.GREATER_THAN, value=1000
             ).is_met({"offense_id": None}.__getitem__)
 
-    def test_equals_and_in_on_missing_value(self) -> None:
-        self.assertFalse(
+    def test_equals_on_missing_value(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Condition compares field \[offense_id\] with operator \[equals\], "
+            r"but the field has no value\.$",
+        ):
             FieldCondition(
                 field="offense_id", operator=ConditionOperator.EQUALS, value=1000
             ).is_met({"offense_id": None}.__getitem__)
-        )
-        self.assertFalse(
-            FieldCondition(
-                field="offense_id", operator=ConditionOperator.IN, value=[1000]
-            ).is_met({"offense_id": None}.__getitem__)
-        )
 
-    def test_not_equals_and_not_in_on_missing_value(self) -> None:
-        self.assertTrue(
+    def test_not_in_on_missing_value(self) -> None:
+        """A missing offense ID raises rather than counting as outside the list,
+        so a sentence with no offense ID can't pass a carve-out like
+        not_felony_dui."""
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Condition compares field \[offense_id\] with operator \[not_in\], "
+            r"but the field has no value\.$",
+        ):
             FieldCondition(
-                field="offense_id", operator=ConditionOperator.NOT_EQUALS, value=1000
+                field="offense_id", operator=ConditionOperator.NOT_IN, value=[1576]
             ).is_met({"offense_id": None}.__getitem__)
-        )
-        self.assertTrue(
-            FieldCondition(
-                field="offense_id", operator=ConditionOperator.NOT_IN, value=[1000]
-            ).is_met({"offense_id": None}.__getitem__)
-        )
 
     def test_any_of_checks_conditions_after_one_holds(self) -> None:
         values = {"offense_group": NevadaOffenseGroup.SEX, "offense_id": None}

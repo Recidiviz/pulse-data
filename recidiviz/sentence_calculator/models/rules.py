@@ -70,9 +70,11 @@ from recidiviz.sentence_calculator.models.conditions import (
     EARLIEST_START_DATE_VALUE,
     Condition,
     ConditionParser,
+    condition_field_names,
     is_opt_condition,
     parse_named_conditions,
     sentence_condition_field_types,
+    sentence_nullable_field_names,
 )
 from recidiviz.sentence_calculator.models.inputs import Sentence
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -904,6 +906,40 @@ class LawRegime:
         ]
 
     @property
+    def sentence_condition_field_names(self) -> list[str]:
+        """Returns the names of the sentence fields the regime's conditions read,
+        sorted, e.g. ["offense_category", "offense_group", "offense_id"]."""
+        date_rules = [rule for rules in self.projected_dates.values() for rule in rules]
+        date_conditions = [
+            *(rule.when for rule in date_rules),
+            *(rule.floor.when for rule in date_rules if rule.floor is not None),
+        ]
+        conditions: list[Condition | None] = [
+            *(rule.when for rule in self.term_multipliers),
+            *(rule.when for rule in self.credit_rates),
+            *(rule.when for rule in self.credit_caps),
+            *(
+                target.when
+                for rule in self.term_multipliers
+                for target in rule.applies_to
+            ),
+            *(target.when for rule in self.credit_rates for target in rule.applies_to),
+            *(
+                date_condition.sentence_condition
+                for date_condition in date_conditions
+                if date_condition is not None
+            ),
+        ]
+        return sorted(
+            {
+                field
+                for condition in conditions
+                if condition is not None
+                for field in condition_field_names(condition)
+            }
+        )
+
+    @property
     def projected_date_evaluation_order(self) -> list[str]:
         """Returns the names of the projected dates ordered so that every date
         comes after the dates its formulas and floors use, raising if the dates
@@ -1052,16 +1088,21 @@ class LawRegime:
         _validate_against_schema(yaml_dict, LAW_REGIME_SCHEMA_PATH)
 
         sentence_field_types = sentence_condition_field_types(sentence_class)
+        sentence_nullable_fields = sentence_nullable_field_names(sentence_class)
         sentence_parser = ConditionParser(
             field_types=sentence_field_types,
+            nullable_field_names=sentence_nullable_fields,
             named_conditions=parse_named_conditions(
                 yaml_dict.pop_dict_optional("conditions") or YAMLDict({}),
                 field_types=sentence_field_types,
+                nullable_field_names=sentence_nullable_fields,
                 inherited_conditions=shared_conditions,
             ),
         )
         values_parser = ConditionParser(
-            field_types=PROJECTED_DATE_VALUE_TYPES, named_conditions=None
+            field_types=PROJECTED_DATE_VALUE_TYPES,
+            nullable_field_names=frozenset(),
+            named_conditions=None,
         )
         days_per_month = _pop_optional_number(yaml_dict, "days_per_month")
         days_per_year = _pop_optional_number(yaml_dict, "days_per_year")
@@ -1149,5 +1190,6 @@ def parse_state_conditions(
     return parse_named_conditions(
         yaml_dict,
         field_types=sentence_condition_field_types(sentence_class),
+        nullable_field_names=sentence_nullable_field_names(sentence_class),
         inherited_conditions={},
     )
