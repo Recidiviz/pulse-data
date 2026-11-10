@@ -295,8 +295,8 @@ class TestInteractiveLoopUntilTasksSucceed:
     interactive_loop_until_tasks_succeed
     """
 
-    @staticmethod
     @pytest.fixture(name="tasks")
+    @staticmethod
     def tasks_fixture() -> Tuple[
         Dict[str, int],
         Dict[str, int],
@@ -305,8 +305,8 @@ class TestInteractiveLoopUntilTasksSucceed:
     ]:
         return ({"one": 1}, {"two": 2}, {"three": 3}, {"four": 4})
 
-    @staticmethod
     @pytest.fixture(name="caplog_info")
+    @staticmethod
     def caplog_info_fixture(caplog: Any) -> Any:
         caplog.set_level(logging.INFO)
         return caplog
