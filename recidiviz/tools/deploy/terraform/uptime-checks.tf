@@ -144,6 +144,9 @@ resource "google_monitoring_uptime_check_config" "marketing-website" {
 # path without credentials: IAP-protected hosts redirect to Google sign-in (302), and
 # the sftpgo admin consoles sit behind a Cloud Armor allowlist that rejects the
 # uptime checkers (403) only after the TLS handshake completes.
+
+# TODO(OBT-56659): Add identity service to this list.
+
 locals {
   external_uptime_checks = var.project_id == "recidiviz-123" ? {
     "sftpgo-admin-us-nc"  = { host = "sftpgo-admin-us-nc.recidiviz.org", path = "/", status = 403 }
@@ -153,7 +156,6 @@ locals {
     "resource-api"        = { host = "resource.recidiviz.org", path = "/api/docs", status = 200 }
     "auth0-login"         = { host = "login.recidiviz.org", path = "/.well-known/openid-configuration", status = 200 }
     "app-prod"            = { host = "app-prod.recidiviz.org", path = "/health", status = 200 }
-    "identity-service"    = { host = "identity-service.recidiviz.org", path = "/", status = 302 }
     "admin-panel"         = { host = "admin-panel-prod.recidiviz.org", path = "/", status = 302 }
     "dashboard-cdn"       = { host = "dashboard-cdn.recidiviz.org", path = "/", status = 200 }
     "housing"             = { host = "housing.recidiviz.org", path = "/", status = 200 }
