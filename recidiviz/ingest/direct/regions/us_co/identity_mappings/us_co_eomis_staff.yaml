@@ -1,0 +1,88 @@
+# Identity mapping for the US_CO eomis staff roster data source. Each row
+# produces one STAFF IdentityFragment carrying a PARTYID id and
+# name/birthdate/sex/email attributes. The birthdate matters beyond display: a
+# matching birthdate is what lets the conflict checker excuse a surname change
+# (marriage/rename) across a staff member's party records instead of rejecting
+# the cluster. The badge<->party association that merges a staff member's party
+# records lives in us_co_eomis_staff_badges.yaml; keeping each party's
+# attributes on its own fragment lets cluster resolution reconcile name
+# differences between a staff member's party records instead of the strict
+# per-view merge crashing on them.
+manifest_language: 1.0.0
+launch_env:
+  $env: is_staging
+input_columns:
+  PARTYID: STRING
+  FIRST_NAME: STRING
+  MIDDLE_NAME: STRING
+  LAST_NAME: STRING
+  NAME_SUFFIX: STRING
+  BIRTH_DATE: DATE
+  SEX_CODE: STRING
+  EMAIL: STRING
+unused_columns: []
+output:
+  IdentityFragment:
+    external_ids:
+      - IdentityExternalId:
+          external_id: PARTYID
+          id_type: $literal("US_CO_PARTYID")
+    person_type: $literal_enum(PersonType.STAFF)
+    attributes:
+      IdentityAttributes:
+        name:
+          IdentityName:
+            given_name:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: FIRST_NAME
+            middle_name:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: MIDDLE_NAME
+            surname:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: LAST_NAME
+            name_suffix:
+              $custom:
+                $function: name_custom_parsers.clean_name_suffix_or_null
+                $args:
+                  suffix: NAME_SUFFIX
+        # reasonable_birthdate_or_null omits a birthdate outside the entity
+        # validator's bounds (a source year typo like 0198-06-01) so the rest
+        # of the fragment survives.
+        birthdate:
+          $custom:
+            $function: date_custom_parsers.reasonable_birthdate_or_null
+            $args:
+              birthdate: BIRTH_DATE
+        sex:
+          IdentitySex:
+            sex:
+              $enum_mapping:
+                $raw_text: SEX_CODE
+                $mappings:
+                  Sex.MALE: M
+                  Sex.FEMALE: F
+                  Sex.OTHER: O
+                $ignore:
+                  # U means the source did not record a sex. Mapping it to
+                  # EXTERNAL_UNKNOWN would make it a present value that
+                  # conflict-checks against a recorded M/F on another fragment;
+                  # leaving the sex absent lets resolution keep the recorded
+                  # value instead.
+                  - U
+        # The compiler drops a contact entity whose key field is null, so a
+        # junk email is omitted rather than crashing the strict IdentityEmail
+        # validator.
+        emails:
+          - IdentityEmail:
+              address:
+                $custom:
+                  $function: contact_info_custom_parsers.validate_email_or_null
+                  $args:
+                    email: EMAIL

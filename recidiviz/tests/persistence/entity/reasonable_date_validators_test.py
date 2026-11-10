@@ -29,6 +29,7 @@ from recidiviz.common.attr_validators import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.reasonable_date_validators import (
+    reasonable_birthdate_or_null,
     reasonable_projected_sentence_date_validator,
 )
 
@@ -245,3 +246,33 @@ class TestReasonableProjectedSentenceDateValidator(unittest.TestCase):
             r"Class \[.*_TestEntityWithoutStateCode.*\] does not have state_code",
         ):
             _ = _TestEntityWithoutStateCode(projected_date=datetime.date(2000, 1, 1))
+
+
+class ReasonableBirthdateOrNullTest(unittest.TestCase):
+    """Tests reasonable_birthdate_or_null against the validator's bounds."""
+
+    def test_reasonable_birthdate_passes_through(self) -> None:
+        self.assertEqual("1980-05-15", reasonable_birthdate_or_null("1980-05-15"))
+
+    def test_lower_bound_is_inclusive(self) -> None:
+        self.assertEqual("1700-01-01", reasonable_birthdate_or_null("1700-01-01"))
+
+    def test_year_typo_below_lower_bound_nulls_out(self) -> None:
+        self.assertIsNone(reasonable_birthdate_or_null("0198-06-01"))
+
+    def test_future_date_nulls_out(self) -> None:
+        tomorrow = datetime.datetime.now(
+            datetime.timezone.utc
+        ).date() + datetime.timedelta(days=1)
+        self.assertIsNone(reasonable_birthdate_or_null(tomorrow.isoformat()))
+
+    def test_today_passes_through(self) -> None:
+        today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+        self.assertEqual(today, reasonable_birthdate_or_null(today))
+
+    def test_null_birthdate_stays_null(self) -> None:
+        self.assertIsNone(reasonable_birthdate_or_null(""))
+
+    def test_unparseable_birthdate_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            reasonable_birthdate_or_null("not-a-date")

@@ -17,12 +17,14 @@
 """Defines a set of validators that can be reused to validate that there are reasonable
 dates in a variety of date / datetime fields.
 """
+import datetime
 from functools import cache
 from typing import Any, Callable
 
 import attr
 
 from recidiviz.common import attr_validators
+from recidiviz.common.attr_validator_checks import passes_validator
 from recidiviz.common.attr_validators import DateAboveUpperBoundError
 from recidiviz.common.constants.reasonable_dates import (
     BIRTHDATE_REASONABLE_LOWER_BOUND,
@@ -74,6 +76,24 @@ STANDARD_REASONABLE_OPT_PAST_DATE_VALIDATOR = (
 REASONABLE_OPT_BIRTHDATE_VALIDATOR = attr_validators.is_opt_reasonable_past_date(
     min_allowed_date_inclusive=BIRTHDATE_REASONABLE_LOWER_BOUND
 )
+
+
+def reasonable_birthdate_or_null(birthdate: str) -> str | None:
+    """Returns birthdate when it passes REASONABLE_OPT_BIRTHDATE_VALIDATOR, or None
+    when it falls outside the validator's bounds.
+
+    Ingest mapping custom parsers route raw birthdate strings through this so that an
+    out-of-bounds source value (a year typo like 0198-06-01) is omitted at mapping time
+    instead of crashing entity construction. Because this runs the same validator the
+    entities use, the check can never drift from what an entity will accept.
+    """
+    if not birthdate:
+        return None
+    parsed = datetime.date.fromisoformat(birthdate)
+    if not passes_validator(REASONABLE_OPT_BIRTHDATE_VALIDATOR, parsed):
+        return None
+    return birthdate
+
 
 ###### Non-optional DATETIME field validators
 

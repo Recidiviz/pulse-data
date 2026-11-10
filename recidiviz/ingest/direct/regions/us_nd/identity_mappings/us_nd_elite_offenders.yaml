@@ -41,15 +41,22 @@ output:
                 $function: name_custom_parsers.clean_name_suffix_or_null
                 $args:
                   suffix: NAME_SUFFIX
-        birthdate: BIRTH_DATE
+        # reasonable_birthdate_or_null omits a birthdate outside the entity
+        # validator's bounds (a source year typo like 0198-06-01) so the rest
+        # of the fragment survives.
+        birthdate:
+          $custom:
+            $function: date_custom_parsers.reasonable_birthdate_or_null
+            $args:
+              birthdate: BIRTH_DATE
         sex:
           IdentitySex:
             sex:
               $enum_mapping:
                 $raw_text: SEX_CODE
                 $mappings:
-                  Sex.MALE: "M"
-                  Sex.FEMALE: "F"
+                  Sex.MALE: M
+                  Sex.FEMALE: F
         races:
           - $foreach:
               $iterable: RACE_CODE_LIST

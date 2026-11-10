@@ -33,6 +33,10 @@ class IdentifierType(enum.Enum):
     US_OZ_IDENTITY_PERSON_ID = external_id_types.US_OZ_IDENTITY_PERSON_ID
     US_OZ_IDENTITY_STAFF_ID = external_id_types.US_OZ_IDENTITY_STAFF_ID
     US_OZ_IDENTITY_BADGE_ID = external_id_types.US_OZ_IDENTITY_BADGE_ID
+    US_CO_OFFENDERID = external_id_types.US_CO_OFFENDERID
+    US_CO_ADCNUMBER = external_id_types.US_CO_ADCNUMBER
+    US_CO_DOC_BADGE_NUMBER = external_id_types.US_CO_DOC_BADGE_NUMBER
+    US_CO_PARTYID = external_id_types.US_CO_PARTYID
     US_ND_SID = external_id_types.US_ND_SID
     US_ND_ELITE = external_id_types.US_ND_ELITE
     US_ND_ELITE_BOOKING = external_id_types.US_ND_ELITE_BOOKING

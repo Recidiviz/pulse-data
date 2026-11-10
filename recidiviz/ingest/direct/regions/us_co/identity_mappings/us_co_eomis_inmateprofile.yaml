@@ -1,0 +1,109 @@
+# Identity mapping for the US_CO eomis_inmateprofile (incarceration) data
+# source. Each row produces one JII IdentityFragment carrying the OFFENDERID
+# and ADCNUMBER ids plus name, birthdate, sex, race, and ethnicity attributes.
+# Ethnicity is asserted only when the race code affirmatively indicates
+# Hispanic; otherwise it is left null. Race codes M and C are legacy values
+# with no current rows; they are ignored alongside H so a historical row
+# cannot crash the enum parse.
+manifest_language: 1.0.0
+launch_env:
+  $env: is_staging
+input_columns:
+  OFFENDERID: STRING
+  ADCNUMBER: STRING
+  FIRST_NAME: STRING
+  MIDDLE_NAME: STRING
+  LAST_NAME: STRING
+  NAME_SUFFIX: STRING
+  BIRTH_DATE: DATE
+  SEX_CODE: STRING
+  RACE_CODE: STRING
+unused_columns: []
+output:
+  IdentityFragment:
+    external_ids:
+      - IdentityExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_CO_OFFENDERID")
+      - IdentityExternalId:
+          external_id: ADCNUMBER
+          id_type: $literal("US_CO_ADCNUMBER")
+    person_type: $literal_enum(PersonType.JII)
+    attributes:
+      IdentityAttributes:
+        name:
+          IdentityName:
+            given_name:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: FIRST_NAME
+            middle_name:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: MIDDLE_NAME
+            surname:
+              $custom:
+                $function: name_custom_parsers.clean_name_part_or_null
+                $args:
+                  name: LAST_NAME
+            name_suffix:
+              $custom:
+                $function: name_custom_parsers.clean_name_suffix_or_null
+                $args:
+                  suffix: NAME_SUFFIX
+        # reasonable_birthdate_or_null omits a birthdate outside the entity
+        # validator's bounds (a source year typo like 0198-06-01) so the rest
+        # of the fragment survives.
+        birthdate:
+          $custom:
+            $function: date_custom_parsers.reasonable_birthdate_or_null
+            $args:
+              birthdate: BIRTH_DATE
+        sex:
+          IdentitySex:
+            sex:
+              $enum_mapping:
+                $raw_text: SEX_CODE
+                $mappings:
+                  Sex.MALE: M
+                  Sex.FEMALE: F
+                  Sex.OTHER: O
+                $ignore:
+                  # U means the source did not record a sex. Mapping it to
+                  # EXTERNAL_UNKNOWN would make it a present value that
+                  # conflict-checks against a recorded M/F on another fragment;
+                  # leaving the sex absent lets resolution keep the recorded
+                  # value instead.
+                  - U
+        races:
+          - IdentityRace:
+              race:
+                $enum_mapping:
+                  $raw_text: RACE_CODE
+                  $mappings:
+                    Race.ASIAN: A
+                    Race.BLACK: B
+                    Race.AMERICAN_INDIAN_ALASKAN_NATIVE: I
+                    Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: N
+                    Race.WHITE: W
+                    Race.OTHER: O
+                    Race.EXTERNAL_UNKNOWN: U
+                  $ignore:
+                    - H # Hispanic - captured as ethnicity below, not race.
+                    - M
+                    - C
+        ethnicity:
+          $conditional:
+            - $if:
+                $equal:
+                  - RACE_CODE
+                  - $literal("H")
+              $then:
+                IdentityEthnicity:
+                  ethnicity:
+                    $enum_mapping:
+                      $raw_text: RACE_CODE
+                      $mappings:
+                        Ethnicity.HISPANIC: H

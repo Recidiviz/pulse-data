@@ -5,4 +5,7 @@
 jii:
   max_ids_per_type_overrides: {}
 staff:
+  # No overrides: eomis_staff is one row per party record and
+  # eomis_staff_badges aggregates each badge's party records onto the badge's
+  # single row, so every id value lands on exactly one fragment per view.
   max_ids_per_type_overrides: {}

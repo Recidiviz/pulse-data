@@ -25,7 +25,14 @@ output:
           IdentityName:
             given_name: FirstName
             surname: LastName
-        birthdate: DOB
+        # reasonable_birthdate_or_null omits a birthdate outside the entity
+        # validator's bounds (a source year typo like 0198-06-01) so the rest
+        # of the fragment survives.
+        birthdate:
+          $custom:
+            $function: date_custom_parsers.reasonable_birthdate_or_null
+            $args:
+              birthdate: DOB
         sex:
           IdentitySex:
             sex:

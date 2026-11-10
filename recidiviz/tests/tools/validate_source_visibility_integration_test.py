@@ -372,6 +372,7 @@ VALID_MONITORING_DAG_PREFIXES = {
     "recidiviz.cloud_storage.gcsfs_path",
     "recidiviz.common.alias_type_strings",
     "recidiviz.common.attr_converters",
+    "recidiviz.common.attr_validator_checks",
     "recidiviz.common.attr_validators",
     "recidiviz.common.attr_utils",
     "recidiviz.common.constants",

@@ -1,0 +1,23 @@
+# Identity mapping for the US_CO DOC badge<->party association. Each row
+# produces one external-id-only STAFF IdentityFragment (no attributes) that
+# links a DOC badge number to every party record currently holding it.
+manifest_language: 1.0.0
+launch_env:
+  $env: is_staging
+input_columns:
+  DOC_BADGE_NUMBER: STRING
+  PARTYID_LIST: STRING
+unused_columns: []
+output:
+  IdentityFragment:
+    external_ids:
+      - IdentityExternalId:
+          external_id: DOC_BADGE_NUMBER
+          id_type: $literal("US_CO_DOC_BADGE_NUMBER")
+      - $foreach:
+          $iterable: PARTYID_LIST
+          $result:
+            IdentityExternalId:
+              external_id: $iter_item
+              id_type: $literal("US_CO_PARTYID")
+    person_type: $literal_enum(PersonType.STAFF)
