@@ -68,11 +68,11 @@ locals {
     production = {
       jobs = {
         "us-ar-ged" = {
-          args      = ["--flow=ar_ged", "--commit", "--allow-prod-write"]
-          schedule  = "0 0 * * *"
-          time_zone = "Etc/UTC"
+          args      = ["--flow=ar_ged", "--flow=ar_edovo", "--commit", "--allow-prod-write"]
+          schedule  = "0 19 * * *"
+          time_zone = "America/Chicago"
           env       = {}
-          paused    = true
+          paused    = false
         }
         "us-co-continuous" = merge(local.eomis_writeback_us_co_job, {
           args   = concat(local.eomis_writeback_us_co_args, ["--commit", "--allow-prod-write"])
