@@ -38,6 +38,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_class_a_or_b_dor_for_6_months,
     no_sex_offender_alert,
     not_detainers_for_xcrc_and_crc,
+    not_in_county_jail,
 )
 from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
@@ -73,6 +74,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_detainers_for_xcrc_and_crc.VIEW_BUILDER,
         no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
         no_sex_offender_alert.VIEW_BUILDER,
+        not_in_county_jail.VIEW_BUILDER,
     ],
     completion_event_builder=release_to_community_confinement_supervision.VIEW_BUILDER,
     almost_eligible_condition=NotEligibleCriteriaCondition(

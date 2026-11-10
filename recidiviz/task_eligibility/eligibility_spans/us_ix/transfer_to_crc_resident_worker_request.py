@@ -43,6 +43,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_sex_offender_alert,
     not_denied_for_crc,
     not_detainers_for_xcrc_and_crc,
+    not_in_county_jail,
     not_in_reception_or_mental_health_unit,
     not_serving_a_rider_sentence,
 )
@@ -106,6 +107,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             sub_criteria=crc_work_release_time_based_criteria.VIEW_BUILDER,
         ),
         not_denied_for_crc.VIEW_BUILDER,
+        not_in_county_jail.VIEW_BUILDER,
         # Exclude reception/diagnostic and mental-health unit residents, unless
         # they have a CRC release note
         US_IX_NOT_IN_RECEPTION_OR_MENTAL_HEALTH_UNIT_UNLESS_RELEASE_NOTE_VIEW_BUILDER,
