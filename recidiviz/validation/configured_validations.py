@@ -253,6 +253,9 @@ from recidiviz.validation.views.state.product_roster_upcoming_blocks import (
 from recidiviz.validation.views.state.public_pathways.public_pathways_mismatch_with_raw_data import (
     PUBLIC_PATHWAYS_MISMATCH_WITH_RAW_DATA_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.raw_data.us_ma_egt_earning_group_proportions_stable_counts import (
+    US_MA_EGT_EARNING_GROUP_PROPORTIONS_STABLE_COUNTS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import (
     RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
 )
@@ -997,6 +1000,18 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=US_MA_RESIDENT_MONTHLY_CREDIT_ACTIVITY_DISCREPANCY_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=US_MA_EGT_EARNING_GROUP_PROPORTIONS_STABLE_COUNTS_VIEW_BUILDER,
+            comparison_columns=[
+                "previous_group_proportion",
+                "group_proportion",
+            ],
+            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
+            soft_max_allowed_error=0.05,
+            hard_max_allowed_error=0.10,
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
         ExistenceDataValidationCheck(
             view_builder=US_PA_NO_NULL_SPAN_EXTERNAL_ID_VIEW_BUILDER,
