@@ -35,8 +35,7 @@ evaluate_days_expression returns, for the credit cap expression,
 
 import ast
 import math
-import operator
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from datetime import date, timedelta
 from fractions import Fraction
 from typing import Any
@@ -44,16 +43,11 @@ from typing import Any
 import attr
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.sentence_calculator.models.rules import EXPRESSION_DURATION_FUNCTIONS
+from recidiviz.sentence_calculator.models.rules import (
+    EXPRESSION_BINARY_OPERATORS,
+    duration_call_parts,
+)
 from recidiviz.sentence_calculator.models.tracked import TrackedValue
-
-_NUMERIC_BINARY_OPERATORS: dict[type[ast.operator], Callable[[Any, Any], Any]] = {
-    ast.Add: operator.add,
-    ast.Sub: operator.sub,
-    ast.Mult: operator.mul,
-    ast.Div: operator.truediv,
-    ast.FloorDiv: operator.floordiv,
-}
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -216,25 +210,9 @@ def _evaluate_expression(
 
     def evaluate_duration(node: ast.Call) -> relativedelta:
         """Returns the duration a years(n) or months(n) call evaluates to."""
-        if not (
-            isinstance(node.func, ast.Name)
-            and node.func.id in EXPRESSION_DURATION_FUNCTIONS
-        ):
-            raise expression_error(
-                f"calls [{ast.unparse(node.func)}], but the only functions are "
-                f"{list(EXPRESSION_DURATION_FUNCTIONS)}."
-            )
-        unit = node.func.id
-        count = (
-            node.args[0].value
-            if len(node.args) == 1 and isinstance(node.args[0], ast.Constant)
-            else None
+        unit, count = duration_call_parts(
+            node, expression=expression, rule_name=rule_name
         )
-        if node.keywords or isinstance(count, bool) or not isinstance(count, int):
-            raise expression_error(
-                f"calls [{ast.unparse(node)}], but {unit}() takes one whole number, "
-                f"e.g. {unit}(12)."
-            )
         if unit == "years":
             return relativedelta(years=count)
         if unit == "months":
@@ -352,12 +330,12 @@ def _evaluate_expression(
                 f"applies [{type(op).__name__}] to [{left}] and [{right}]. Dates "
                 f"only support adding or subtracting a number of days."
             )
-        if type(op) not in _NUMERIC_BINARY_OPERATORS:
+        if type(op) not in EXPRESSION_BINARY_OPERATORS:
             raise expression_error(f"uses unsupported operator [{type(op).__name__}].")
         # Floor division of two fractions returns an int, so converting the
         # result back to a fraction keeps the rest of the expression exact.
         try:
-            return Fraction(_NUMERIC_BINARY_OPERATORS[type(op)](left, right))
+            return Fraction(EXPRESSION_BINARY_OPERATORS[type(op)](left, right))
         except ZeroDivisionError as e:
             raise expression_error("divides by zero.") from e
 

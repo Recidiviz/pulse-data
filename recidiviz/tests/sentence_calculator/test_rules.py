@@ -40,6 +40,7 @@ from recidiviz.sentence_calculator.models.rules import (
     ReductionTarget,
     TermMultiplierRule,
     TermType,
+    expression_variable_names,
     parse_state_conditions,
 )
 from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import (
@@ -1014,6 +1015,31 @@ class TestLawRegimeValidation(unittest.TestCase):
                 },
             )
 
+    def test_formula_with_unsupported_syntax(self) -> None:
+        # start_date.year is the unsupported syntax that raises
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Expression \[start_date\.year \+ adjusted_min_days\] in rule "
+            r"\[parole_eligibility_date\] uses unsupported syntax \[Attribute\]\. "
+            r"Expressions can use numbers, variable names, parentheses, unary minus, "
+            r"the operators \+, -, \*, /, and //, and the duration functions "
+            r"years\(n\) and months\(n\)\.$",
+        ):
+            _law_regime(
+                term_multipliers=[],
+                credit_rates=[],
+                credit_caps=[],
+                projected_dates={
+                    "parole_eligibility_date": [
+                        _date_rule(
+                            name="parole_eligibility_date",
+                            formula="start_date.year + adjusted_min_days",
+                            floor=None,
+                        )
+                    ]
+                },
+            )
+
     def test_floor_on_own_date(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -1234,6 +1260,134 @@ class TestRuleValidation(unittest.TestCase):
                 binds=frozenset({TermType.MIN_TERM}),
                 statute=None,
             )
+
+    def test_cap_with_unsupported_syntax(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Expression \[min\(sentence_length_days, 365\)\] in rule "
+            r"\[credit_cap\] calls \[min\], but the only functions are "
+            r"\['years', 'months'\]\.$",
+        ):
+            CreditCapRule(
+                name="credit_cap",
+                description="Credits against the min term are capped at a year",
+                when=None,
+                max_credit_days="min(sentence_length_days, 365)",
+                binds=frozenset({TermType.MIN_TERM}),
+                statute=None,
+            )
+
+
+class TestExpressionVariableNames(unittest.TestCase):
+    """Tests for expression_variable_names."""
+
+    def test_supported_syntax(self) -> None:
+        self.assertEqual(
+            {"adjusted_max_days", "jail_credit_days"},
+            expression_variable_names(
+                expression="-(adjusted_max_days - jail_credit_days) * 0.58 / 2 // 1",
+                rule_name="test_rule",
+            ),
+        )
+
+    def test_duration_function(self) -> None:
+        self.assertEqual(
+            {"projected_expiration_date"},
+            expression_variable_names(
+                expression="projected_expiration_date - months(12)",
+                rule_name="test_rule",
+            ),
+        )
+
+    def test_duration_function_with_variable_argument(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Expression \[start_date \+ years\(unadjusted_max_years\)\] in rule "
+            r"\[test_rule\] calls \[years\(unadjusted_max_years\)\], but years\(\) "
+            r"takes one whole number, e\.g\. years\(12\)\.$",
+        ):
+            expression_variable_names(
+                expression="start_date + years(unadjusted_max_years)",
+                rule_name="test_rule",
+            )
+
+    def test_attribute(self) -> None:
+        # start_date.year is the unsupported syntax that raises
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Expression \[start_date\.year \+ 1\] in rule \[test_rule\] uses "
+            r"unsupported syntax \[Attribute\]\. "
+            r"Expressions can use numbers, variable names, parentheses, unary minus, "
+            r"the operators \+, -, \*, /, and //, and the duration functions "
+            r"years\(n\) and months\(n\)\.$",
+        ):
+            expression_variable_names(
+                expression="start_date.year + 1", rule_name="test_rule"
+            )
+
+    def test_unsupported_operator(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Expression \[adjusted_max_days \*\* 2\] in rule \[test_rule\] uses "
+            r"unsupported syntax \[Pow\]\. "
+            r"Expressions can use numbers, variable names, parentheses, unary minus, "
+            r"the operators \+, -, \*, /, and //, and the duration functions "
+            r"years\(n\) and months\(n\)\.$",
+        ):
+            expression_variable_names(
+                expression="adjusted_max_days ** 2", rule_name="test_rule"
+            )
+
+    def test_comparison(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Expression \[adjusted_max_days > 1094\] in rule \[test_rule\] uses "
+            r"unsupported syntax \[Compare\]\. "
+            r"Expressions can use numbers, variable names, parentheses, unary minus, "
+            r"the operators \+, -, \*, /, and //, and the duration functions "
+            r"years\(n\) and months\(n\)\.$",
+        ):
+            expression_variable_names(
+                expression="adjusted_max_days > 1094", rule_name="test_rule"
+            )
+
+    def test_string_constant(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Expression \['2020-01-01'\] in rule \[test_rule\] has constant "
+            r"\['2020-01-01'\]; only numeric constants are supported\.$",
+        ):
+            expression_variable_names(expression="'2020-01-01'", rule_name="test_rule")
+
+    def test_boolean_constant(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Expression \[adjusted_max_days \* True\] in rule \[test_rule\] has "
+            r"constant \[True\]; only numeric constants are supported\.$",
+        ):
+            expression_variable_names(
+                expression="adjusted_max_days * True", rule_name="test_rule"
+            )
+
+    def test_infinite_constant(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Expression \[adjusted_max_days \* 1e999\] in rule \[test_rule\] has "
+            r"constant \[inf\], but expressions only support finite numbers\.$",
+        ):
+            expression_variable_names(
+                expression="adjusted_max_days * 1e999", rule_name="test_rule"
+            )
+
+    def test_huge_integer_constant(self) -> None:
+        # An integer too large to convert to a float is a valid constant and must
+        # not raise OverflowError at load.
+        self.assertEqual(
+            {"adjusted_max_days"},
+            expression_variable_names(
+                expression=f"adjusted_max_days * {'9' * 400}", rule_name="test_rule"
+            ),
+        )
 
 
 if __name__ == "__main__":

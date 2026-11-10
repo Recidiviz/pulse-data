@@ -52,8 +52,10 @@ instead of as a list, and the rule takes the date's name.
 
 import ast
 import datetime
+import math
+import operator
 import os
-from collections.abc import Hashable, Mapping
+from collections.abc import Callable, Hashable, Mapping
 from enum import Enum
 from graphlib import CycleError, TopologicalSorter
 from pathlib import Path
@@ -264,23 +266,102 @@ def _check_no_unexpected_keys(yaml_dict: YAMLDict, *, location: str) -> None:
         )
 
 
+# The binary operators rule expressions can use, keyed by their syntax node type,
+# with the function the engine applies to two numbers for each.
+EXPRESSION_BINARY_OPERATORS: dict[type[ast.operator], Callable[[Any, Any], Any]] = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.FloorDiv: operator.floordiv,
+}
+
+# Every syntax node type a rule expression can contain besides duration calls,
+# which duration_call_parts checks: numeric constants, variable names, unary
+# minus, and the operators above. Parentheses only group, so they add no nodes.
+_EXPRESSION_NODE_TYPES: tuple[type[ast.AST], ...] = (
+    ast.Expression,
+    ast.Constant,
+    ast.Name,
+    ast.Load,
+    ast.UnaryOp,
+    ast.USub,
+    ast.BinOp,
+    *EXPRESSION_BINARY_OPERATORS,
+)
+
+
+def duration_call_parts(
+    call: ast.Call, *, expression: str, rule_name: str
+) -> tuple[str, int]:
+    """Takes a parsed function call. If `call` wasn't a duration function, it raises,
+    otherwise it returns the function name and the whole number given to the duration
+    call, e.g. ("months", 12) for months(12)."""
+    if not (
+        isinstance(call.func, ast.Name)
+        and call.func.id in EXPRESSION_DURATION_FUNCTIONS
+    ):
+        # TODO(NV-9): _expression_error in engine/expression.py builds this same
+        # "Expression [...] in rule [...]" prefix for the engine's errors. We might
+        # want to extract it somewhere this module can import and generalize it.
+        raise ValueError(
+            f"Expression [{expression}] in rule [{rule_name}] calls "
+            f"[{ast.unparse(call.func)}], but the only functions are "
+            f"{list(EXPRESSION_DURATION_FUNCTIONS)}."
+        )
+    unit = call.func.id
+    count = (
+        call.args[0].value
+        if len(call.args) == 1 and isinstance(call.args[0], ast.Constant)
+        else None
+    )
+    if call.keywords or isinstance(count, bool) or not isinstance(count, int):
+        raise ValueError(
+            f"Expression [{expression}] in rule [{rule_name}] calls "
+            f"[{ast.unparse(call)}], but {unit}() takes one whole number, e.g. "
+            f"{unit}(12)."
+        )
+    return unit, count
+
+
 def expression_variable_names(*, expression: str, rule_name: str) -> set[str]:
     """Returns the names of the variables expression uses, raising if it is not
-    a valid expression. A duration function such as months in months(12) isn't
-    a variable."""
+    valid syntax or uses syntax the engine can't evaluate. A duration function
+    such as months in months(12) isn't a variable."""
     try:
         tree = ast.parse(expression, mode="eval")
     except SyntaxError as e:
         raise ValueError(
             f"Expression [{expression}] in rule [{rule_name}] is not valid syntax."
         ) from e
-    duration_function_nodes = {
-        node.func
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id in EXPRESSION_DURATION_FUNCTIONS
-    }
+    duration_function_nodes = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            duration_call_parts(node, expression=expression, rule_name=rule_name)
+            duration_function_nodes.add(node.func)
+            continue
+        if not isinstance(node, _EXPRESSION_NODE_TYPES):
+            raise ValueError(
+                f"Expression [{expression}] in rule [{rule_name}] uses unsupported "
+                f"syntax [{type(node).__name__}]. Expressions can use numbers, "
+                f"variable names, parentheses, unary minus, the operators +, -, *, "
+                f"/, and //, and the duration functions years(n) and months(n)."
+            )
+        if not isinstance(node, ast.Constant):
+            continue
+        constant = node.value
+        if isinstance(constant, bool) or not isinstance(constant, (int, float)):
+            raise ValueError(
+                f"Expression [{expression}] in rule [{rule_name}] has constant "
+                f"[{constant!r}]; only numeric constants are supported."
+            )
+        # Only floats can be infinite or NaN. math.isfinite converts an int to a
+        # float, which raises OverflowError for an integer too large to convert.
+        if isinstance(constant, float) and not math.isfinite(constant):
+            raise ValueError(
+                f"Expression [{expression}] in rule [{rule_name}] has constant "
+                f"[{constant!r}], but expressions only support finite numbers."
+            )
     return {
         node.id
         for node in ast.walk(tree)
@@ -916,12 +997,6 @@ class LawRegime:
             ),
         }
         for rule in date_rules:
-            # This only checks the names a formula uses. A formula with an
-            # unsupported operator or a malformed duration, e.g. start_date ** 2
-            # or start_date + months(1.5), still loads and raises only when a
-            # calculation evaluates it. Tests for each regime should compute its
-            # projected dates so that errors like these fail there with a clear
-            # message instead of at calculation time.
             unknown_names = (
                 expression_variable_names(expression=rule.formula, rule_name=rule.name)
                 - available_names
