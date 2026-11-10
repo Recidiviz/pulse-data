@@ -302,9 +302,11 @@ def parse_employment_status(
     "ACTIVE@@SOCIAL_SECURITY@@UNKNOWN" gives ALTERNATE_INCOME_SOURCE. The work
     schedule only affects jobs.
     """
-    status, employer_category, work_schedule = raw_text.split(
+    raw_status, employer_category, work_schedule = raw_text.split(
         EMPLOYMENT_STATUS_RAW_TEXT_SEPARATOR
     )
+    # The view passes the code table's mixed-case value, such as "Currently not employed".
+    status = raw_status.upper()
 
     if status in ("FAILED", "CANCELLED"):
         return StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN
