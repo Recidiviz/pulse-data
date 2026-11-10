@@ -690,18 +690,6 @@ module "case-notes-vertex-search-data" {
   use_cmek    = true
 }
 
-# Drops the generated-assets bucket and its CMEK key from Terraform state without
-# destroying them, because the key has prevent_destroy set.
-# TODO(OBT-55011): Manually delete the generated-assets bucket and destroy the
-# versions of its CMEK key in each project, then remove this block.
-removed {
-  from = module.generated-assets
-
-  lifecycle {
-    destroy = false
-  }
-}
-
 resource "google_storage_bucket_object" "po_report_static_files" {
   for_each = local.po_report_static_files
   bucket   = module.report-images.name
