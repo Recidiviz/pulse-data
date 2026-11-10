@@ -110,7 +110,7 @@ projected_dates:
     description: >-
       Projected Expiration Date (PEXD), the last day of the maximum term after
       the credits NRS 209.4465(7)(a) deducts from it.
-    formula: start_date + adjusted_max_days - 1
+    formula: earliest_start_date + adjusted_max_days - 1
     statute: NRS 209.4465(7)(a)
 
   # TODO(NV-43): NRS 213.1215 only applies to offenders not previously released on

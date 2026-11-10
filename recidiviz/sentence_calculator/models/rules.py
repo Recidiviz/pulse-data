@@ -38,7 +38,7 @@ rules/us_nv/sb_413.yaml might hold:
     projected_dates:
       parole_eligibility_date:
         description: Eligible once the reduced minimum term is served
-        formula: start_date + adjusted_min_days
+        formula: earliest_start_date + adjusted_min_days
 
 ...which parses into a LawRegime named SB_413 with one TermMultiplierRule, which
 reduces every sentence's max term and reduces the min term of sentences outside
@@ -67,6 +67,7 @@ import yaml
 from recidiviz.common import attr_validators
 from recidiviz.sentence_calculator import rules as rules_package
 from recidiviz.sentence_calculator.models.conditions import (
+    EARLIEST_START_DATE_VALUE,
     Condition,
     ConditionParser,
     is_opt_condition,
@@ -89,11 +90,12 @@ DEFAULT_DAYS_PER_YEAR = 365.0
 # length of the term being capped.
 SENTENCE_LENGTH_DAYS_VARIABLE = "sentence_length_days"
 
-# The values a projected date's formula and conditions can use.
-# A formula can also use any other projected date.
+# The values a projected date's formula can use, which its conditions can also
+# compare, except for EARLIEST_START_DATE_VALUE. A formula can also use any other
+# projected date.
 PROJECTED_DATE_VALUE_TYPES: dict[str, type] = {
     # Date the first sentence on the controlling path starts.
-    "start_date": datetime.date,
+    EARLIEST_START_DATE_VALUE: datetime.date,
     # Sums over the controlling path of each sentence's original and adjusted terms.
     "unadjusted_min_days": int,
     "unadjusted_max_days": int,
@@ -101,9 +103,9 @@ PROJECTED_DATE_VALUE_TYPES: dict[str, type] = {
     "adjusted_max_days": int,
     # Whole years in unadjusted_max_days, for statutes that set thresholds in
     # years. With calendar term conversion these are calendar years counted from
-    # the RETRO date (start_date minus the first path sentence's jail credit),
-    # where the terms themselves start counting, so a term that spans a leap day
-    # isn't a year short.
+    # the RETRO date (earliest_start_date minus the first path sentence's jail
+    # credit), where the terms themselves start counting, so a term that spans a
+    # leap day isn't a year short.
     "unadjusted_max_years": int,
     # Sum of the jail credit on the controlling path.
     "jail_credit_days": int,
@@ -735,7 +737,8 @@ class DateFormulaRule:
     applies."""
 
     formula: str = attr.ib(validator=attr_validators.is_non_empty_str)
-    """The expression that computes the date, e.g. "start_date + adjusted_min_days"."""
+    """The expression that computes the date, e.g.
+    "earliest_start_date + adjusted_min_days"."""
 
     floor: DateFloor | None = attr.ib(validator=attr_validators.is_opt(DateFloor))
     """A date the result may not fall before, or None."""

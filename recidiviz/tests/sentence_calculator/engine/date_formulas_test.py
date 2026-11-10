@@ -51,7 +51,7 @@ _VIOLENT_SENTENCE = NevadaSentence(  # pylint: disable=abstract-class-instantiat
     offense_group=NevadaOffenseGroup.VIOLENCE,
 )
 
-_START_DATE = TrackedValue.input(date(2025, 1, 1), "start_date")
+_EARLIEST_START_DATE = TrackedValue.input(date(2025, 1, 1), "earliest_start_date")
 _ADJUSTED_MIN_DAYS = TrackedValue.input(474, "adjusted_min_days")
 _ADJUSTED_MAX_DAYS = TrackedValue.input(1186, "adjusted_max_days")
 
@@ -63,7 +63,7 @@ def _context(
     sentences: list[Sentence],
 ) -> DateCalculationContext:
     return DateCalculationContext(
-        start_date=_START_DATE,
+        earliest_start_date=_EARLIEST_START_DATE,
         unadjusted_min_days=TrackedValue.input(730, "unadjusted_min_days"),
         unadjusted_max_days=TrackedValue.input(
             unadjusted_max_days, "unadjusted_max_days"
@@ -116,7 +116,7 @@ _PROJECTED_EXPIRATION_DATE_RULES = [
     _date_rule(
         name="projected_expiration_date",
         when=None,
-        formula="start_date + adjusted_max_days",
+        formula="earliest_start_date + adjusted_max_days",
         floor=None,
     )
 ]
@@ -162,9 +162,9 @@ class TestEvaluateDateFormulas(unittest.TestCase):
         projected_expiration_date = TrackedValue(
             value=date(2028, 4, 1),
             label="projected_expiration_date",
-            sources=(_START_DATE, _ADJUSTED_MAX_DAYS),
+            sources=(_EARLIEST_START_DATE, _ADJUSTED_MAX_DAYS),
             rule_name="projected_expiration_date",
-            formula="start_date + adjusted_max_days",
+            formula="earliest_start_date + adjusted_max_days",
         )
         self.assertEqual(
             {
@@ -316,13 +316,13 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                                 value=NevadaOffenseGroup.OTHER,
                             ),
                         ),
-                        formula="start_date + adjusted_min_days",
+                        formula="earliest_start_date + adjusted_min_days",
                         floor=None,
                     ),
                     _date_rule(
                         name="default_release_date",
                         when=None,
-                        formula="start_date + adjusted_max_days",
+                        formula="earliest_start_date + adjusted_max_days",
                         floor=None,
                     ),
                 ]
@@ -349,7 +349,7 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                     _date_rule(
                         name="probable_release_date",
                         when=None,
-                        formula="start_date + 100",
+                        formula="earliest_start_date + 100",
                         floor=DateFloor(date="parole_eligibility_date", when=None),
                     )
                 ],
@@ -357,7 +357,7 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                     _date_rule(
                         name="parole_eligibility_date",
                         when=None,
-                        formula="start_date + adjusted_min_days",
+                        formula="earliest_start_date + adjusted_min_days",
                         floor=None,
                     )
                 ],
@@ -376,14 +376,15 @@ class TestEvaluateDateFormulas(unittest.TestCase):
         parole_eligibility_date = TrackedValue(
             value=date(2026, 4, 20),
             label="parole_eligibility_date",
-            sources=(_START_DATE, _ADJUSTED_MIN_DAYS),
+            sources=(_EARLIEST_START_DATE, _ADJUSTED_MIN_DAYS),
             rule_name="parole_eligibility_date",
-            formula="start_date + adjusted_min_days",
+            formula="earliest_start_date + adjusted_min_days",
         )
         self.assertEqual(
             {
                 "parole_eligibility_date": parole_eligibility_date,
-                # start_date + 474 days, rather than start_date + 100 days.
+                # earliest_start_date + 474 days, rather than
+                # earliest_start_date + 100 days.
                 "probable_release_date": TrackedValue(
                     value=date(2026, 4, 20),
                     label="probable_release_date",
@@ -391,14 +392,14 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                         TrackedValue(
                             value=date(2025, 4, 11),
                             label="probable_release_date.before_floor",
-                            sources=(_START_DATE,),
+                            sources=(_EARLIEST_START_DATE,),
                             rule_name="probable_release_date",
-                            formula="start_date + 100",
+                            formula="earliest_start_date + 100",
                         ),
                         parole_eligibility_date,
                     ),
                     rule_name="probable_release_date",
-                    formula="max(start_date + 100, parole_eligibility_date)",
+                    formula="max(earliest_start_date + 100, parole_eligibility_date)",
                 ),
             },
             dates,
@@ -411,7 +412,7 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                     _date_rule(
                         name="probable_release_date",
                         when=None,
-                        formula="start_date + 100",
+                        formula="earliest_start_date + 100",
                         floor=DateFloor(
                             date="parole_eligibility_date",
                             when=ProjectedDateCondition(
@@ -429,7 +430,7 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                     _date_rule(
                         name="parole_eligibility_date",
                         when=None,
-                        formula="start_date + adjusted_min_days",
+                        formula="earliest_start_date + adjusted_min_days",
                         floor=None,
                     )
                 ],
@@ -464,7 +465,7 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                     _date_rule(
                         name="base_parole_eligibility_date",
                         when=None,
-                        formula="start_date + adjusted_min_days",
+                        formula="earliest_start_date + adjusted_min_days",
                         floor=None,
                     )
                 ],
@@ -490,7 +491,7 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                     _date_rule(
                         name="probable_release_date",
                         when=None,
-                        formula="start_date + adjusted_min_days",
+                        formula="earliest_start_date + adjusted_min_days",
                         floor=DateFloor(date="parole_eligibility_date", when=None),
                     )
                 ],
@@ -498,7 +499,7 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                     _date_rule(
                         name="parole_eligibility_date",
                         when=None,
-                        formula="start_date + 100",
+                        formula="earliest_start_date + 100",
                         floor=None,
                     )
                 ],
@@ -514,8 +515,9 @@ class TestEvaluateDateFormulas(unittest.TestCase):
             ),
         )["probable_release_date"]
 
-        # start_date + 474 days is already after start_date + 100 days, so the
-        # date doesn't move, but the floor stays a source of it.
+        # earliest_start_date + 474 days is already after
+        # earliest_start_date + 100 days, so the date doesn't move, but the floor
+        # stays a source of it.
         self.assertEqual(
             TrackedValue(
                 value=date(2026, 4, 20),
@@ -524,20 +526,23 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                     TrackedValue(
                         value=date(2026, 4, 20),
                         label="probable_release_date.before_floor",
-                        sources=(_START_DATE, _ADJUSTED_MIN_DAYS),
+                        sources=(_EARLIEST_START_DATE, _ADJUSTED_MIN_DAYS),
                         rule_name="probable_release_date",
-                        formula="start_date + adjusted_min_days",
+                        formula="earliest_start_date + adjusted_min_days",
                     ),
                     TrackedValue(
                         value=date(2025, 4, 11),
                         label="parole_eligibility_date",
-                        sources=(_START_DATE,),
+                        sources=(_EARLIEST_START_DATE,),
                         rule_name="parole_eligibility_date",
-                        formula="start_date + 100",
+                        formula="earliest_start_date + 100",
                     ),
                 ),
                 rule_name="probable_release_date",
-                formula="max(start_date + adjusted_min_days, parole_eligibility_date)",
+                formula=(
+                    "max(earliest_start_date + adjusted_min_days, "
+                    "parole_eligibility_date)"
+                ),
             ),
             probable_release_date,
         )
@@ -551,7 +556,7 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                     _date_rule(
                         name="probable_release_date",
                         when=None,
-                        formula="start_date + 100",
+                        formula="earliest_start_date + 100",
                         floor=DateFloor(
                             date="mandatory_parole_release_date", when=None
                         ),
@@ -588,7 +593,7 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                     _date_rule(
                         name="probable_release_date",
                         when=None,
-                        formula="start_date + 100",
+                        formula="earliest_start_date + 100",
                         floor=DateFloor(
                             date="parole_eligibility_date",
                             when=ProjectedDateCondition(
@@ -606,7 +611,7 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                     _date_rule(
                         name="parole_eligibility_date",
                         when=None,
-                        formula="start_date + adjusted_min_days",
+                        formula="earliest_start_date + adjusted_min_days",
                         floor=None,
                     )
                 ],
@@ -623,7 +628,8 @@ class TestEvaluateDateFormulas(unittest.TestCase):
         )["probable_release_date"]
 
         # The path's violent sentence meets the floor's condition, so the date
-        # moves up from start_date + 100 days to start_date + 474 days.
+        # moves up from earliest_start_date + 100 days to
+        # earliest_start_date + 474 days.
         self.assertEqual(date(2026, 4, 20), probable_release_date.value)
 
     def test_rule_needs_both_value_and_sentence_conditions(self) -> None:
@@ -644,13 +650,13 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                                 value=NevadaOffenseGroup.VIOLENCE,
                             ),
                         ),
-                        formula="start_date + adjusted_min_days",
+                        formula="earliest_start_date + adjusted_min_days",
                         floor=None,
                     ),
                     _date_rule(
                         name="default_release_date",
                         when=None,
-                        formula="start_date + adjusted_max_days",
+                        formula="earliest_start_date + adjusted_max_days",
                         floor=None,
                     ),
                 ]
@@ -702,13 +708,13 @@ class TestEvaluateDateFormulas(unittest.TestCase):
                                 ]
                             ),
                         ),
-                        formula="start_date + adjusted_min_days",
+                        formula="earliest_start_date + adjusted_min_days",
                         floor=None,
                     ),
                     _date_rule(
                         name="default_release_date",
                         when=None,
-                        formula="start_date + adjusted_max_days",
+                        formula="earliest_start_date + adjusted_max_days",
                         floor=None,
                     ),
                 ]

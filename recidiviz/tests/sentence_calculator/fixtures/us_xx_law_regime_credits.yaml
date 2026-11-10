@@ -44,7 +44,7 @@ credit_caps:
 projected_dates:
   parole_eligibility_date:
     description: Eligible once the adjusted min term is served
-    formula: start_date + adjusted_min_days
+    formula: earliest_start_date + adjusted_min_days
   release_date:
     - name: early_release_date
       description: Early release for long category B sentences
@@ -52,11 +52,11 @@ projected_dates:
         unadjusted_max_days: { greater_than: 1094 }
         sentence_condition_key:
           offense_category: B
-      formula: start_date + adjusted_max_days - 30
+      formula: earliest_start_date + adjusted_max_days - 30
       floor:
         date: parole_eligibility_date
         when:
           adjusted_min_days: { less_than: 365 }
     - name: release_date
       description: Release once the adjusted max term is served
-      formula: start_date + adjusted_max_days
+      formula: earliest_start_date + adjusted_max_days

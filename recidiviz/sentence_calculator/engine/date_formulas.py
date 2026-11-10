@@ -33,7 +33,10 @@ import attr
 from recidiviz.common import attr_validators
 from recidiviz.sentence_calculator.engine.expression import evaluate_date_expression
 from recidiviz.sentence_calculator.engine.rule_engine import sentence_meets_condition
-from recidiviz.sentence_calculator.models.conditions import Condition
+from recidiviz.sentence_calculator.models.conditions import (
+    EARLIEST_START_DATE_VALUE,
+    Condition,
+)
 from recidiviz.sentence_calculator.models.inputs import Sentence
 from recidiviz.sentence_calculator.models.rules import (
     DateFormulaRule,
@@ -54,7 +57,7 @@ class DateCalculationContext:
     gives it, which regimes are checked against when they load. sentences is
     what each rule's sentence_condition is checked against."""
 
-    start_date: TrackedValue[date] = attr.ib(
+    earliest_start_date: TrackedValue[date] = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)
     )
     """Date the first sentence on the controlling path starts."""
@@ -112,7 +115,7 @@ class DateCalculationContext:
     def formula_variables(self) -> dict[str, TrackedValue[int | float | date]]:
         """Returns the aggregated values keyed by the names formulas use."""
         return {
-            "start_date": self.start_date,
+            EARLIEST_START_DATE_VALUE: self.earliest_start_date,
             "unadjusted_min_days": self.unadjusted_min_days,
             "unadjusted_max_days": self.unadjusted_max_days,
             "unadjusted_max_years": self.unadjusted_max_years,

@@ -38,10 +38,10 @@ term_multipliers:
 projected_dates:
   parole_eligibility_date:
     description: Eligible once the adjusted min term is served
-    formula: start_date + adjusted_min_days
+    formula: earliest_start_date + adjusted_min_days
   release_date:
     description: Release once the adjusted max term is served, for max terms over three years
     when:
       unadjusted_max_days: { greater_than: 1094 }
-    formula: start_date + adjusted_max_days
+    formula: earliest_start_date + adjusted_max_days
     statute: Test Statute 3

@@ -22,6 +22,7 @@ import tempfile
 import unittest
 from datetime import date
 
+import attr
 from jsonschema.exceptions import ValidationError
 
 from recidiviz.sentence_calculator.models.conditions import (
@@ -55,6 +56,14 @@ _CATEGORY_E = FieldCondition(
     operator=ConditionOperator.EQUALS,
     value=NevadaOffenseCategory.CATEGORY_E,
 )
+
+
+@attr.define(frozen=True, kw_only=True)
+class _SentenceWithOffenseDate(NevadaSentence):
+    """A sentence with an offense date, for conditions that compare dates."""
+
+    offense_date: date | None = attr.ib(default=None)
+
 
 _MAX_AND_MIN_TERMS = [
     ReductionTarget(term=TermType.MAX_TERM, when=None),
@@ -189,7 +198,7 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                             name="parole_eligibility_date",
                             description="Eligible once the adjusted min term is served",
                             when=None,
-                            formula="start_date + adjusted_min_days",
+                            formula="earliest_start_date + adjusted_min_days",
                             floor=None,
                             statute=None,
                         )
@@ -209,7 +218,7 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                                 ),
                                 sentence_condition=None,
                             ),
-                            formula="start_date + adjusted_max_days",
+                            formula="earliest_start_date + adjusted_max_days",
                             floor=None,
                             statute="Test Statute 3",
                         )
@@ -318,7 +327,7 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                             name="parole_eligibility_date",
                             description="Eligible once the adjusted min term is served",
                             when=None,
-                            formula="start_date + adjusted_min_days",
+                            formula="earliest_start_date + adjusted_min_days",
                             floor=None,
                             statute=None,
                         )
@@ -339,7 +348,7 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                                     value=NevadaOffenseCategory.CATEGORY_B,
                                 ),
                             ),
-                            formula="start_date + adjusted_max_days - 30",
+                            formula="earliest_start_date + adjusted_max_days - 30",
                             floor=DateFloor(
                                 date="parole_eligibility_date",
                                 when=ProjectedDateCondition(
@@ -357,7 +366,7 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                             name="release_date",
                             description="Release once the adjusted max term is served",
                             when=None,
-                            formula="start_date + adjusted_max_days",
+                            formula="earliest_start_date + adjusted_max_days",
                             floor=None,
                             statute=None,
                         ),
@@ -623,7 +632,7 @@ term_multipliers:
     def test_parse_unquoted_dates(self) -> None:
         regime = LawRegime.from_yaml(
             fixtures.as_filepath("us_xx_law_regime_unquoted_dates.yaml"),
-            sentence_class=NevadaSentence,
+            sentence_class=_SentenceWithOffenseDate,
             shared_conditions={},
         )
 
@@ -631,12 +640,12 @@ term_multipliers:
         self.assertEqual(
             [
                 FieldCondition(
-                    field="start_date",
+                    field="offense_date",
                     operator=ConditionOperator.BEFORE,
                     value=date(2019, 1, 1),
                 ),
                 FieldCondition(
-                    field="start_date",
+                    field="offense_date",
                     operator=ConditionOperator.BETWEEN_INCLUSIVE,
                     value=[date(2019, 1, 1), date(2019, 12, 31)],
                 ),
@@ -659,17 +668,32 @@ term_multipliers:
     def test_parse_state_conditions_with_unquoted_date(self) -> None:
         self.assertEqual(
             {
-                "started_after_2018": FieldCondition(
-                    field="start_date",
+                "offense_after_2018": FieldCondition(
+                    field="offense_date",
                     operator=ConditionOperator.AFTER,
                     value=date(2018, 12, 31),
                 )
             },
             parse_state_conditions(
                 fixtures.as_filepath("us_xx_conditions_unquoted_dates.yaml"),
-                sentence_class=NevadaSentence,
+                sentence_class=_SentenceWithOffenseDate,
             ),
         )
+
+    def test_parse_condition_on_start_date(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Invalid conditions in term_multipliers entry "
+            r"\[early_start_term_reduction\]\. They use the field \[start_date\]\. "
+            r"Start dates are sentence-specific and change over time\. They "
+            r"shouldn't be used in rules\. Instead, compare against the offense date "
+            r"or the court sentencing date\.$",
+        ):
+            LawRegime.from_yaml(
+                fixtures.as_filepath("us_xx_law_regime_start_date_condition.yaml"),
+                sentence_class=NevadaSentence,
+                shared_conditions={},
+            )
 
     def test_schema_operators_match_python_enum(self) -> None:
         with open(LAW_REGIME_SCHEMA_PATH, encoding="utf-8") as f:
@@ -937,7 +961,7 @@ class TestLawRegimeValidation(unittest.TestCase):
                     "parole_eligibility_date": [
                         _date_rule(
                             name="parole_eligibility_date",
-                            formula="start_date + adjusted_min_days",
+                            formula="earliest_start_date + adjusted_min_days",
                             floor=None,
                         )
                     ]
@@ -959,7 +983,7 @@ class TestLawRegimeValidation(unittest.TestCase):
                     "parole_eligibility_date": [
                         _date_rule(
                             name="parole_eligibility_date",
-                            formula="start_date + adjusted_minimum_days",
+                            formula="earliest_start_date + adjusted_minimum_days",
                             floor=None,
                         )
                     ]
@@ -982,7 +1006,7 @@ class TestLawRegimeValidation(unittest.TestCase):
                 "projected_expiration_date": [
                     _date_rule(
                         name="projected_expiration_date",
-                        formula="start_date + adjusted_max_days",
+                        formula="earliest_start_date + adjusted_max_days",
                         floor=None,
                     )
                 ],
@@ -997,8 +1021,8 @@ class TestLawRegimeValidation(unittest.TestCase):
     def test_malformed_formula(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Expression \[start_date \+\] in rule \[parole_eligibility_date\] is "
-            r"not valid syntax\.$",
+            r"^Expression \[earliest_start_date \+\] in rule "
+            r"\[parole_eligibility_date\] is not valid syntax\.$",
         ):
             _law_regime(
                 term_multipliers=[],
@@ -1008,7 +1032,7 @@ class TestLawRegimeValidation(unittest.TestCase):
                     "parole_eligibility_date": [
                         _date_rule(
                             name="parole_eligibility_date",
-                            formula="start_date +",
+                            formula="earliest_start_date +",
                             floor=None,
                         )
                     ]
@@ -1019,7 +1043,7 @@ class TestLawRegimeValidation(unittest.TestCase):
         # start_date.year is the unsupported syntax that raises
         with self.assertRaisesRegex(
             ValueError,
-            r"^Expression \[start_date\.year \+ adjusted_min_days\] in rule "
+            r"^Expression \[earliest_start_date\.year \+ adjusted_min_days\] in rule "
             r"\[parole_eligibility_date\] uses unsupported syntax \[Attribute\]\. "
             r"Expressions can use numbers, variable names, parentheses, unary minus, "
             r"the operators \+, -, \*, /, and //, and the duration functions "
@@ -1033,7 +1057,7 @@ class TestLawRegimeValidation(unittest.TestCase):
                     "parole_eligibility_date": [
                         _date_rule(
                             name="parole_eligibility_date",
-                            formula="start_date.year + adjusted_min_days",
+                            formula="earliest_start_date.year + adjusted_min_days",
                             floor=None,
                         )
                     ]
@@ -1054,7 +1078,7 @@ class TestLawRegimeValidation(unittest.TestCase):
                     "release_date": [
                         _date_rule(
                             name="release_date",
-                            formula="start_date + adjusted_max_days",
+                            formula="earliest_start_date + adjusted_max_days",
                             floor=DateFloor(date="release_date", when=None),
                         )
                     ]
@@ -1065,8 +1089,8 @@ class TestLawRegimeValidation(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"^Rule \[release_date\] has a floor on \[adjusted_min_days\], which is "
-            r"not a date\. Available dates: \['max_ped', 'release_date', "
-            r"'start_date'\]\.$",
+            r"not a date\. Available dates: "
+            r"\['earliest_start_date', 'max_ped', 'release_date'\]\.$",
         ):
             _law_regime(
                 term_multipliers=[],
@@ -1076,7 +1100,7 @@ class TestLawRegimeValidation(unittest.TestCase):
                     "release_date": [
                         _date_rule(
                             name="release_date",
-                            formula="start_date + adjusted_max_days",
+                            formula="earliest_start_date + adjusted_max_days",
                             floor=DateFloor(date="adjusted_min_days", when=None),
                         )
                     ]
@@ -1159,7 +1183,7 @@ class TestLawRegimeValidation(unittest.TestCase):
                     "parole_eligibility_date": [
                         _date_rule(
                             name="parole_eligibility_date",
-                            formula="start_date + adjusted_min_days",
+                            formula="earliest_start_date + adjusted_min_days",
                             floor=DateFloor(date="release_date", when=None),
                         )
                     ],
@@ -1169,7 +1193,8 @@ class TestLawRegimeValidation(unittest.TestCase):
     def test_projected_date_named_like_calculation_value(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Law regime \[TEST_REGIME\] has a projected date named \[start_date\], "
+            r"^Law regime \[TEST_REGIME\] has a projected date named "
+            r"\[earliest_start_date\], "
             r"which is already the name of a calculation value\. Rename the "
             r"projected date\.$",
         ):
@@ -1178,10 +1203,10 @@ class TestLawRegimeValidation(unittest.TestCase):
                 credit_rates=[],
                 credit_caps=[],
                 projected_dates={
-                    "start_date": [
+                    "earliest_start_date": [
                         _date_rule(
-                            name="start_date",
-                            formula="start_date + 1",
+                            name="earliest_start_date",
+                            formula="earliest_start_date + 1",
                             floor=None,
                         )
                     ]
@@ -1208,14 +1233,14 @@ class TestProjectedDateEvaluationOrder(unittest.TestCase):
                 "release_date": [
                     _date_rule(
                         name="release_date",
-                        formula="start_date + adjusted_max_days",
+                        formula="earliest_start_date + adjusted_max_days",
                         floor=DateFloor(date="parole_eligibility_date", when=None),
                     )
                 ],
                 "parole_eligibility_date": [
                     _date_rule(
                         name="parole_eligibility_date",
-                        formula="start_date + adjusted_min_days",
+                        formula="earliest_start_date + adjusted_min_days",
                         floor=None,
                     )
                 ],
@@ -1302,12 +1327,12 @@ class TestExpressionVariableNames(unittest.TestCase):
     def test_duration_function_with_variable_argument(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Expression \[start_date \+ years\(unadjusted_max_years\)\] in rule "
-            r"\[test_rule\] calls \[years\(unadjusted_max_years\)\], but years\(\) "
-            r"takes one whole number, e\.g\. years\(12\)\.$",
+            r"^Expression \[earliest_start_date \+ years\(unadjusted_max_years\)\] "
+            r"in rule \[test_rule\] calls \[years\(unadjusted_max_years\)\], "
+            r"but years\(\) takes one whole number, e\.g\. years\(12\)\.$",
         ):
             expression_variable_names(
-                expression="start_date + years(unadjusted_max_years)",
+                expression="earliest_start_date + years(unadjusted_max_years)",
                 rule_name="test_rule",
             )
 
@@ -1315,14 +1340,14 @@ class TestExpressionVariableNames(unittest.TestCase):
         # start_date.year is the unsupported syntax that raises
         with self.assertRaisesRegex(
             ValueError,
-            r"^Expression \[start_date\.year \+ 1\] in rule \[test_rule\] uses "
-            r"unsupported syntax \[Attribute\]\. "
+            r"^Expression \[earliest_start_date\.year \+ 1\] in rule \[test_rule\] "
+            r"uses unsupported syntax \[Attribute\]\. "
             r"Expressions can use numbers, variable names, parentheses, unary minus, "
             r"the operators \+, -, \*, /, and //, and the duration functions "
             r"years\(n\) and months\(n\)\.$",
         ):
             expression_variable_names(
-                expression="start_date.year + 1", rule_name="test_rule"
+                expression="earliest_start_date.year + 1", rule_name="test_rule"
             )
 
     def test_unsupported_operator(self) -> None:

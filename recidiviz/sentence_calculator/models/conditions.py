@@ -54,7 +54,9 @@ conditions on the same field or two named conditions that must both hold go in
 an all_of list.
 
 Values are parsed into the field's type, so an unknown field or a value the field
-can't take fails when the file loads.
+can't take fails when the file loads. So does a condition on a start date, which
+for a consecutive sentence is computed and changes as the earlier sentences'
+terms do.
 
 A sentence with no value for a field never meets equals or in, and always meets
 not_equals and not_in, so offense_id: { not_in: [1576] } matches a sentence with
@@ -90,6 +92,14 @@ ALL_OF_KEY = "all_of"
 ANY_OF_KEY = "any_of"
 # The key in a when mapping that refers to a named condition.
 NAMED_CONDITION_KEY = "condition"
+
+# The name projected date formulas use for the date the first sentence on the
+# controlling path starts.
+EARLIEST_START_DATE_VALUE = "earliest_start_date"
+# The sentence field and the calculation value that hold start dates, which no
+# condition can compare. A consecutive sentence's start date is computed from the
+# terms of the sentences before it.
+_START_DATE_FIELDS = frozenset({"start_date", EARLIEST_START_DATE_VALUE})
 
 # The types a field must have for conditions to compare against it.
 _COMPARABLE_FIELD_TYPES: tuple[type, ...] = (bool, int, float, str, datetime.date)
@@ -288,8 +298,9 @@ is_opt_condition = attr.validators.optional(is_condition)
 
 
 def sentence_condition_field_types(sentence_class: type[Sentence]) -> dict[str, type]:
-    """Returns the type of each field of sentence_class that conditions can
-    compare against, keyed by field name. A field that may be None maps to its
+    """Returns the type of each field of sentence_class whose type conditions can
+    compare against, keyed by field name. ConditionParser still rejects start
+    dates. A field that may be None maps to its
     non-None type (since the YAML won't be declaring a None field value).
     Fields of other types (including generic types like list[str], type unions
     like int | str, and datetime) are left out."""
@@ -335,12 +346,16 @@ class ConditionParser:
         """
         Args:
             field_types: The type of each field the conditions can compare, keyed
-                by field name.
+                by field name. Start dates are left out even if listed.
             named_conditions: The conditions a 'when' mapping can refer to with
                 condition: <name>, or None if these conditions can't refer to
                 named conditions.
         """
-        self._field_types = field_types
+        self._field_types = {
+            field: field_type
+            for field, field_type in field_types.items()
+            if field not in _START_DATE_FIELDS
+        }
         self._named_conditions = named_conditions
 
     def parse(self, when_dict: YAMLDict, *, location: str) -> Condition:
@@ -418,6 +433,12 @@ class ConditionParser:
         for equals, a list for in, or a one-key mapping from an operator to its
         operand, e.g. {"greater_than": 1000}.
         """
+        if field in _START_DATE_FIELDS:
+            raise ValueError(
+                f"They use the field [{field}]. Start dates are sentence-specific "
+                f"and change over time. They shouldn't be used in rules. Instead, "
+                f"compare against the offense date or the court sentencing date."
+            )
         if field not in self._field_types:
             raise ValueError(
                 f"They use the field [{field}], which conditions here can't "

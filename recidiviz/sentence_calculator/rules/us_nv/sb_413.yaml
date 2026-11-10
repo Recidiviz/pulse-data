@@ -29,8 +29,8 @@ term_multipliers:
 
 projected_dates:
   # TODO(NV-15): For consecutive sentences, the test in test_golden_state_provided.py
-  # matches start_date + adjusted_min_days, need to check whether that was ACTUALLY a
-  # state-provided golden or was just named that way.
+  # matches earliest_start_date + adjusted_min_days, need to check whether that was
+  # ACTUALLY a state-provided golden or was just named that way.
   # TODO(NV-14): Add "youthful offender" statute.
   # TODO(NV-46): Handle when this date is in the past or needs to be overriden (e.g.
   # given the result of a parole board action).
@@ -42,7 +42,7 @@ projected_dates:
 
   projected_expiration_date:
     description: Projected Expiration Date (PEXD), based on the adjusted maximum term.
-    formula: start_date + adjusted_max_days - 1
+    formula: earliest_start_date + adjusted_max_days - 1
 
   # The mixing of units here (3 years, 12 months) is because that's what the statute
   # says.
@@ -62,4 +62,4 @@ projected_dates:
   # like. Details in the ticket.
   base_parole_eligibility_date:
     description: Base Parole Eligibility Date (BPED), the full unadjusted minimum term.
-    formula: start_date + unadjusted_min_days - 1
+    formula: earliest_start_date + unadjusted_min_days - 1

@@ -45,9 +45,9 @@ term_multipliers:
       min_term: always
     statute: ARS 41-1604.07
 
-# Dates for a single sentence with no discipline. The start_date of the
-# sentence is its sentencing date, and adjusted_max_days is the term after the
-# multiplier above less the jail credit.
+# Dates for a single sentence with no discipline. earliest_start_date, the
+# sentence's start date, is its sentencing date, and adjusted_max_days is the
+# term after the multiplier above less the jail credit.
 # TODO(OBT-56088): The community supervision term (one seventh of the sentence) and
 # the community supervision end date wait on the engine producing durations as
 # well as dates.
@@ -56,7 +56,7 @@ projected_dates:
     description: >-
       Sentence Begin Date (SBD): the sentencing date less the jail credit the
       court awarded.
-    formula: start_date - jail_credit_days
+    formula: earliest_start_date - jail_credit_days
 
   sentence_expiration_date:
     description: >-
@@ -68,7 +68,7 @@ projected_dates:
       Earned Release Credit Date (ERCD) when the person is not released early
       to community supervision: the SBD plus the days served once the release
       credits are exhausted.
-    formula: start_date + adjusted_max_days
+    formula: earliest_start_date + adjusted_max_days
 
   # TODO(OBT-56088): This date applies only when the person is eligible for
   # temporary release. Until the formulas can read a person-level eligibility

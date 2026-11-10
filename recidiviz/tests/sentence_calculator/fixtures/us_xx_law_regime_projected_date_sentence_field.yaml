@@ -6,4 +6,4 @@ projected_dates:
     description: Eligible once the adjusted min term is served, for sex offenses
     when:
       offense_group: SEX
-    formula: start_date + adjusted_min_days
+    formula: earliest_start_date + adjusted_min_days

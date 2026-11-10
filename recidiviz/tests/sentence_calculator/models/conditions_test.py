@@ -40,8 +40,20 @@ from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import (
 from recidiviz.utils.yaml_dict import YAMLDict
 
 _NEVADA_FIELD_TYPES = sentence_condition_field_types(NevadaSentence)
-_PARSER = ConditionParser(field_types=_NEVADA_FIELD_TYPES, named_conditions={})
 _LOCATION = "term_multipliers entry [standard]"
+
+
+@attr.define(frozen=True, kw_only=True)
+class _SentenceWithOffenseDate(NevadaSentence):
+    """A sentence with an offense date, for conditions that compare dates."""
+
+    offense_date: date | None = attr.ib(default=None)
+
+
+_PARSER = ConditionParser(
+    field_types=sentence_condition_field_types(_SentenceWithOffenseDate),
+    named_conditions={},
+)
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -112,7 +124,7 @@ class TestConditionParser(unittest.TestCase):
                     "qualified_for_enhanced_good_time": True,
                     "offense_category": ["A", "B"],
                     "offense_id": {"greater_than": 1000},
-                    "start_date": {"between_inclusive": ["2007-07-01", "2014-06-30"]},
+                    "offense_date": {"between_inclusive": ["2007-07-01", "2014-06-30"]},
                     "any_of": [
                         {"offense_group": "SEX"},
                         {"offense_group": {"not_equals": "OTHER"}},
@@ -144,7 +156,7 @@ class TestConditionParser(unittest.TestCase):
                         value=1000,
                     ),
                     FieldCondition(
-                        field="start_date",
+                        field="offense_date",
                         operator=ConditionOperator.BETWEEN_INCLUSIVE,
                         value=[date(2007, 7, 1), date(2014, 6, 30)],
                     ),
@@ -172,7 +184,7 @@ class TestConditionParser(unittest.TestCase):
             YAMLDict(
                 {
                     "offense_id": {"greater_than_or_equal": 1000},
-                    "start_date": {"on_or_after": "2014-07-01"},
+                    "offense_date": {"on_or_after": "2014-07-01"},
                 }
             ),
             location=_LOCATION,
@@ -187,7 +199,7 @@ class TestConditionParser(unittest.TestCase):
                         value=1000,
                     ),
                     FieldCondition(
-                        field="start_date",
+                        field="offense_date",
                         operator=ConditionOperator.ON_OR_AFTER,
                         value=date(2014, 7, 1),
                     ),
@@ -269,9 +281,40 @@ class TestConditionParser(unittest.TestCase):
             ValueError,
             r"^Invalid conditions in term_multipliers entry \[standard\]\. They use "
             r"the field \[offense_type\], which conditions here can't compare\. "
-            r"Fields they can compare: \['offense_category', 'offense_group', ",
+            r"Fields they can compare: \['offense_category', 'offense_date', "
+            r"'offense_group', 'offense_id', 'parent_sentence_id', "
+            r"'qualified_for_enhanced_good_time', 'sentence_id', 'sentence_type'\]\.$",
         ):
             _PARSER.parse(YAMLDict({"offense_type": "SEX"}), location=_LOCATION)
+
+    def test_parse_sentence_start_date(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Invalid conditions in term_multipliers entry \[standard\]\. They use "
+            r"the field \[start_date\]\. Start dates are sentence-specific and "
+            r"change over time\. They shouldn't be used in rules\. Instead, compare "
+            r"against the offense date or the court sentencing date\.$",
+        ):
+            _PARSER.parse(
+                YAMLDict({"start_date": {"before": "2014-07-01"}}), location=_LOCATION
+            )
+
+    def test_parse_earliest_start_date(self) -> None:
+        parser = ConditionParser(
+            field_types={"earliest_start_date": date, "adjusted_max_days": int},
+            named_conditions=None,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Invalid conditions in projected date \[release_date\]\. They use the "
+            r"field \[earliest_start_date\]\. Start dates are sentence-specific and "
+            r"change over time\. They shouldn't be used in rules\. Instead, compare "
+            r"against the offense date or the court sentencing date\.$",
+        ):
+            parser.parse(
+                YAMLDict({"earliest_start_date": {"before": "2014-07-01"}}),
+                location="projected date [release_date]",
+            )
 
     def test_parse_empty_conditions(self) -> None:
         with self.assertRaisesRegex(
@@ -369,11 +412,11 @@ class TestConditionParser(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"^Invalid conditions in term_multipliers entry \[standard\]\. The "
-            r"condition on field \[start_date\] has value \[July 1, 2007\], which is "
+            r"condition on field \[offense_date\] has value \[July 1, 2007\], which is "
             r"not an ISO date\.$",
         ):
             _PARSER.parse(
-                YAMLDict({"start_date": {"before": "July 1, 2007"}}),
+                YAMLDict({"offense_date": {"before": "July 1, 2007"}}),
                 location=_LOCATION,
             )
 
@@ -381,13 +424,13 @@ class TestConditionParser(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"^Invalid conditions in term_multipliers entry \[standard\]\. The "
-            r"condition on field \[start_date\] has value \[2007-07-01 00:00:00\], "
+            r"condition on field \[offense_date\] has value \[2007-07-01 00:00:00\], "
             r"which includes a time, but the field is a date\. Write the date without "
             r"a time, e\.g\. \[2007-07-01\]\.$",
         ):
             _PARSER.parse(
                 YAMLDict.from_io(
-                    io.StringIO("start_date: {before: 2007-07-01 00:00:00}")
+                    io.StringIO("offense_date: {before: 2007-07-01 00:00:00}")
                 ),
                 location=_LOCATION,
             )
@@ -396,11 +439,11 @@ class TestConditionParser(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"^Invalid conditions in term_multipliers entry \[standard\]\. The "
-            r"condition on field \[start_date\] uses operator \[between_inclusive\], "
+            r"condition on field \[offense_date\] uses operator \[between_inclusive\], "
             r"which requires a two-element list\. Found \[\['2007-07-01'\]\]\.$",
         ):
             _PARSER.parse(
-                YAMLDict({"start_date": {"between_inclusive": ["2007-07-01"]}}),
+                YAMLDict({"offense_date": {"between_inclusive": ["2007-07-01"]}}),
                 location=_LOCATION,
             )
 
@@ -408,13 +451,17 @@ class TestConditionParser(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"^Invalid conditions in term_multipliers entry \[standard\]\. The "
-            r"condition on field \[start_date\] uses operator \[between_inclusive\] "
+            r"condition on field \[offense_date\] uses operator \[between_inclusive\] "
             r"with start \[2014-06-30\] after end \[2007-07-01\], so it can never "
             r"hold\. List the earlier date first\.$",
         ):
             _PARSER.parse(
                 YAMLDict(
-                    {"start_date": {"between_inclusive": ["2014-06-30", "2007-07-01"]}}
+                    {
+                        "offense_date": {
+                            "between_inclusive": ["2014-06-30", "2007-07-01"]
+                        }
+                    }
                 ),
                 location=_LOCATION,
             )
@@ -561,7 +608,7 @@ class TestConditionIsMet(unittest.TestCase):
     def test_operators(self) -> None:
         values = {
             "offense_id": 1500,
-            "start_date": date(2010, 1, 1),
+            "offense_date": date(2010, 1, 1),
             "offense_group": NevadaOffenseGroup.SEX,
         }
         for operator, field, condition_value, expected in [
@@ -578,13 +625,13 @@ class TestConditionIsMet(unittest.TestCase):
                 [NevadaOffenseGroup.SEX],
                 False,
             ),
-            (ConditionOperator.BEFORE, "start_date", date(2010, 1, 1), False),
-            (ConditionOperator.ON_OR_BEFORE, "start_date", date(2010, 1, 1), True),
-            (ConditionOperator.AFTER, "start_date", date(2009, 12, 31), True),
-            (ConditionOperator.ON_OR_AFTER, "start_date", date(2010, 1, 1), True),
+            (ConditionOperator.BEFORE, "offense_date", date(2010, 1, 1), False),
+            (ConditionOperator.ON_OR_BEFORE, "offense_date", date(2010, 1, 1), True),
+            (ConditionOperator.AFTER, "offense_date", date(2009, 12, 31), True),
+            (ConditionOperator.ON_OR_AFTER, "offense_date", date(2010, 1, 1), True),
             (
                 ConditionOperator.BETWEEN_INCLUSIVE,
-                "start_date",
+                "offense_date",
                 [date(2009, 1, 1), date(2010, 1, 1)],
                 True,
             ),
@@ -721,7 +768,7 @@ class TestConditionHashing(unittest.TestCase):
             YAMLDict(
                 {
                     "offense_category": ["A", "B"],
-                    "start_date": {"between_inclusive": ["2007-07-01", "2014-06-30"]},
+                    "offense_date": {"between_inclusive": ["2007-07-01", "2014-06-30"]},
                 }
             ),
             location=_LOCATION,
@@ -739,7 +786,7 @@ class TestConditionHashing(unittest.TestCase):
                         ),
                     ),
                     FieldCondition(
-                        field="start_date",
+                        field="offense_date",
                         operator=ConditionOperator.BETWEEN_INCLUSIVE,
                         value=(date(2007, 7, 1), date(2014, 6, 30)),
                     ),

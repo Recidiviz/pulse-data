@@ -244,7 +244,7 @@ class TrackedProjectedDates:
     """The projected dates a regime's projected_dates rules computed, with their
     derivations."""
 
-    start_date: TrackedValue[date] = attr.ib(
+    earliest_start_date: TrackedValue[date] = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)
     )
     """Date the first sentence on the controlling path starts."""

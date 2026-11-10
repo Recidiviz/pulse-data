@@ -129,7 +129,7 @@ def _calculate_projected_dates(
 
     # TODO(NV-9): Summing each controlling sentence's full term can lead to
     # overcounting if they overlap.
-    start_date = path_terms[0].start_date
+    earliest_start_date = path_terms[0].start_date
     unadjusted_max_days = tracked_sum(
         [a.original_max_days for a in path_adjustments], "unadjusted_max_days"
     )
@@ -149,14 +149,14 @@ def _calculate_projected_dates(
     # right for one consecutive chain. A path that picks up a later chain whose
     # root has its own jail credit needs that chain's RETRO date too.
     first_jail_credit = path_adjustments[0].jail_credit
-    retro_date = start_date.derive(
-        new_value=start_date.value - timedelta(days=first_jail_credit.value),
+    retro_date = earliest_start_date.derive(
+        new_value=earliest_start_date.value - timedelta(days=first_jail_credit.value),
         label="retro_date",
-        formula=f"{start_date.label} - {first_jail_credit.label}",
+        formula=f"{earliest_start_date.label} - {first_jail_credit.label}",
         other_sources=[first_jail_credit],
     )
     context = DateCalculationContext(
-        start_date=start_date,
+        earliest_start_date=earliest_start_date,
         unadjusted_min_days=tracked_sum(
             [a.original_min_days for a in path_adjustments], "unadjusted_min_days"
         ),
@@ -180,7 +180,7 @@ def _calculate_projected_dates(
         ],
     )
     return TrackedProjectedDates(
-        start_date=start_date,
+        earliest_start_date=earliest_start_date,
         dates=evaluate_date_formulas(regime=engine.regime, context=context),
     )
 

@@ -18,7 +18,7 @@
 
 Rule expressions are written in law regime YAML files, for example a credit cap
 of "sentence_length_days * 0.58" or a date formula of
-"start_date + adjusted_min_days". Given the variables
+"earliest_start_date + adjusted_min_days". Given the variables
 
     sentence_length_days = TrackedValue(value=1000, label="S1.original_min_days")
 
@@ -54,8 +54,8 @@ from recidiviz.sentence_calculator.models.tracked import TrackedValue
 class _PendingDate:
     """A date plus the days an expression has added to or subtracted from it so
     far. The days stay exact until the expression is fully evaluated, so
-    start_date + 0.5 + 0.5 is the day after start_date rather than start_date
-    plus two half days truncated to zero."""
+    earliest_start_date + 0.5 + 0.5 is the day after earliest_start_date rather
+    than earliest_start_date plus two half days truncated to zero."""
 
     base_date: date = attr.ib(validator=attr.validators.instance_of(date))
     """The date before the pending days."""
@@ -146,11 +146,13 @@ def evaluate_date_expression(
 ) -> TrackedValue[date]:
     """Returns the date expression evaluates to, tracked back to the variables
     it used. The days added to or subtracted from a date are summed exactly and
-    truncated toward zero once, so "start_date + adjusted_min_days * 0.5 +
-    jail_credit_days * 0.5" with 365 and 3 days is 184 days after start_date.
+    truncated toward zero once, so "earliest_start_date + adjusted_min_days * 0.5 +
+    jail_credit_days * 0.5" with 365 and 3 days is 184 days after
+    earliest_start_date.
 
     Args:
-        expression: The expression to evaluate, e.g. "start_date + adjusted_min_days".
+        expression: The expression to evaluate, e.g.
+            "earliest_start_date + adjusted_min_days".
         variables: Values the expression may reference, keyed by name.
         label: Label for the resulting TrackedValue.
         rule_name: Name of the rule the expression belongs to.
