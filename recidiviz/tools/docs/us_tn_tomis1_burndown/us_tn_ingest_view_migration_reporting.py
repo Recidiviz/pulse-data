@@ -24,6 +24,7 @@ us_tn_tomis1_burndown_markdown_generator.py.
 from functools import cache
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.ingest.direct.direct_ingest_regions import (
     DirectIngestRegion,
     get_direct_ingest_region,
@@ -100,7 +101,9 @@ def _context_local() -> IngestViewContentsContext:
         is_production=False,
         is_sandbox=False,
         state_code=_STATE_CODE,
-        feature_flags=resolve_ingest_feature_flags(GCP_PROJECT_STAGING),
+        feature_flags=resolve_ingest_feature_flags(
+            GCP_PROJECT_STAGING, Tenant.from_state_code(_STATE_CODE)
+        ),
     )
 
 

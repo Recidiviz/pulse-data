@@ -27,7 +27,10 @@ from recidiviz.ingest.direct.activity_pipeline_identity_source import (
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
-_IDENTITY_SERVICE_EXPORT_TENANTS_TARGET = (
+# Patch target for tests that need a nonempty tenant map (the real map is
+# empty in both projects pre-flip). Shared with tests of code backed by
+# activity_pipeline_identity_source, e.g. the feature flag registry.
+IDENTITY_SERVICE_EXPORT_TENANTS_PATCH_TARGET = (
     "recidiviz.ingest.direct.activity_pipeline_identity_source"
     "._IDENTITY_SERVICE_EXPORT_TENANTS"
 )
@@ -59,7 +62,7 @@ class TestActivityPipelineIdentitySource(unittest.TestCase):
         )
 
     @patch.dict(
-        _IDENTITY_SERVICE_EXPORT_TENANTS_TARGET,
+        IDENTITY_SERVICE_EXPORT_TENANTS_PATCH_TARGET,
         {GCP_PROJECT_STAGING: frozenset({Tenant.US_XX})},
     )
     def test_tenant_in_export_tenants_resolves_to_identity_service_export(self) -> None:
@@ -71,7 +74,7 @@ class TestActivityPipelineIdentitySource(unittest.TestCase):
         )
 
     @patch.dict(
-        _IDENTITY_SERVICE_EXPORT_TENANTS_TARGET,
+        IDENTITY_SERVICE_EXPORT_TENANTS_PATCH_TARGET,
         {GCP_PROJECT_STAGING: frozenset({Tenant.US_XX})},
     )
     def test_export_tenants_entry_does_not_apply_to_other_tenants(self) -> None:
@@ -83,7 +86,7 @@ class TestActivityPipelineIdentitySource(unittest.TestCase):
         )
 
     @patch.dict(
-        _IDENTITY_SERVICE_EXPORT_TENANTS_TARGET,
+        IDENTITY_SERVICE_EXPORT_TENANTS_PATCH_TARGET,
         {GCP_PROJECT_STAGING: frozenset({Tenant.US_XX})},
     )
     def test_export_tenants_entry_does_not_apply_to_other_projects(self) -> None:

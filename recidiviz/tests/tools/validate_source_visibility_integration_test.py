@@ -597,6 +597,9 @@ def test_case_triage_server_dependencies() -> None:
                 "recidiviz.cloud_storage",
                 "recidiviz.common",
                 "recidiviz.firestore",
+                # Pulled in by feature_flags_registry, which reads the per-tenant
+                # identity-source constant to resolve identity_service_identity_enabled.
+                "recidiviz.ingest.direct.activity_pipeline_identity_source",
                 "recidiviz.ingest.direct.dataset_config",
                 "recidiviz.ingest.direct.feature_flags_registry",
                 "recidiviz.ingest.direct.regions.us_mi.constants",

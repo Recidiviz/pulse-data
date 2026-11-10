@@ -16,10 +16,16 @@
 # =============================================================================
 """Tests for the ingest feature flag registry."""
 import unittest
+from unittest.mock import patch
 
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.ingest.direct.feature_flags_registry import (
     all_feature_flag_names,
+    is_identity_service_identity_enabled,
     resolve_ingest_feature_flags,
+)
+from recidiviz.tests.ingest.direct.activity_pipeline_identity_source_test import (
+    IDENTITY_SERVICE_EXPORT_TENANTS_PATCH_TARGET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string_formatting import is_snake_case
@@ -49,7 +55,7 @@ class TestFeatureFlagsRegistry(unittest.TestCase):
             "recidiviz-789",
         ]:
             with self.subTest(project_id=project_id):
-                feature_flags = resolve_ingest_feature_flags(project_id)
+                feature_flags = resolve_ingest_feature_flags(project_id, Tenant.US_XX)
                 self.assertCountEqual(all_feature_flag_names(), feature_flags)
                 for flag_name, value in feature_flags.items():
                     self.assertIsInstance(
@@ -58,3 +64,46 @@ class TestFeatureFlagsRegistry(unittest.TestCase):
                         f"Feature flag [{flag_name}] returned a non-bool for "
                         f"project [{project_id}].",
                     )
+
+    def test_existing_flags_unchanged_by_per_tenant_resolution(self) -> None:
+        for project_id in [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]:
+            with self.subTest(project_id=project_id):
+                feature_flags = resolve_ingest_feature_flags(project_id, Tenant.US_XX)
+                self.assertFalse(feature_flags["tomis_2_0_enabled"])
+                self.assertFalse(feature_flags["coms_2026_enabled"])
+
+    def test_identity_service_identity_disabled_for_all_tenants_today(self) -> None:
+        """Guards the pre-flip state: no tenant's activity pipeline sources
+        identity from the Identity Service export yet, in either project."""
+        for project_id in [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]:
+            for tenant in Tenant:
+                with self.subTest(project_id=project_id, tenant=tenant):
+                    self.assertFalse(
+                        is_identity_service_identity_enabled(project_id, tenant)
+                    )
+
+    def test_identity_service_identity_enabled_resolves_per_tenant(self) -> None:
+        with patch(
+            IDENTITY_SERVICE_EXPORT_TENANTS_PATCH_TARGET,
+            {
+                GCP_PROJECT_STAGING: frozenset({Tenant.US_XX}),
+                GCP_PROJECT_PRODUCTION: frozenset(),
+            },
+        ):
+            self.assertTrue(
+                is_identity_service_identity_enabled(GCP_PROJECT_STAGING, Tenant.US_XX)
+            )
+            # A different tenant in the same project stays off.
+            self.assertFalse(
+                is_identity_service_identity_enabled(GCP_PROJECT_STAGING, Tenant.US_YY)
+            )
+            # The same tenant in a project where it is not flipped stays off.
+            self.assertFalse(
+                is_identity_service_identity_enabled(
+                    GCP_PROJECT_PRODUCTION, Tenant.US_XX
+                )
+            )
+            # Unknown project ids resolve to False rather than raising.
+            self.assertFalse(
+                is_identity_service_identity_enabled("recidiviz-789", Tenant.US_XX)
+            )

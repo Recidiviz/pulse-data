@@ -19,6 +19,7 @@ logic from the IngestViewManifest. This class may contain context that differs
 between rows in the ingest view results.
 """
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.tenants import Tenant
 from recidiviz.ingest.direct.feature_flags_registry import resolve_ingest_feature_flags
 from recidiviz.ingest.direct.ingest_mappings.env_property_utils import (
     IS_LOCAL_PROPERTY_NAME,
@@ -90,9 +91,10 @@ class IngestViewContentsContext:
         """Creates a context for use in tests. Ingest views gated with `is_local: True`
         will be run with this context.
 
-        Feature flags are resolved for `project_id`, which defaults to staging
-        to match the staging-like posture of the other properties here. Pass
-        GCP_PROJECT_PRODUCTION to exercise the production side of a flag.
+        Feature flags are resolved for project_id (which defaults to staging
+        to match the staging-like posture of the other properties here) and
+        state_code. Pass GCP_PROJECT_PRODUCTION to exercise the production
+        side of a flag.
         """
         return IngestViewContentsContext(
             is_local=True,
@@ -101,7 +103,9 @@ class IngestViewContentsContext:
             is_production=False,
             is_sandbox=False,
             state_code=state_code,
-            feature_flags=resolve_ingest_feature_flags(project_id),
+            feature_flags=resolve_ingest_feature_flags(
+                project_id, Tenant.from_state_code(state_code)
+            ),
         )
 
     @classmethod
@@ -120,5 +124,7 @@ class IngestViewContentsContext:
             is_production=project_id == GCP_PROJECT_PRODUCTION,
             is_sandbox=is_sandbox,
             state_code=state_code,
-            feature_flags=resolve_ingest_feature_flags(project_id),
+            feature_flags=resolve_ingest_feature_flags(
+                project_id, Tenant.from_state_code(state_code)
+            ),
         )

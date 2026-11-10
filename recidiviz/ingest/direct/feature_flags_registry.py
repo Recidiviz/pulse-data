@@ -17,22 +17,30 @@
 """Registry of feature flags that can be used to gate ingest logic.
 
 Each flag is a named function that answers "is this feature enabled for the
-given project?". Gating code can call a flag function directly (e.g. to pick
-which raw data table a view query should read from), and every registered
-flag is additionally exposed to ingest mapping YAML as a `feature__`-prefixed
-`$env` property -- see `ingest_mappings/env_property_utils.py`.
+given project and tenant?". Gating code can call a flag function directly
+(e.g. to pick which raw data table a view query should read from), and every
+registered flag is additionally exposed to ingest mapping YAML as a
+`feature__`-prefixed `$env` property -- see
+`ingest_mappings/env_property_utils.py`.
 
-IMPORTANT: a flag function must be a pure function of the `project_id` it is
-handed. It must not consult ambient state such as `metadata.project_id()` or
-`environment.in_gcp_production()`. Callers ask what is enabled *for a given
-project*, and that project is not always the one the current process is running
-in.
+IMPORTANT: a flag function must be a pure function of the `project_id` and
+`tenant` it is handed. It must not consult ambient state such as
+`metadata.project_id()` or `environment.in_gcp_production()`. Callers ask what
+is enabled *for a given project and tenant*, and that project is not always
+the one the current process is running in.
 """
 from typing import Callable
+
+from recidiviz.common.constants.tenants import Tenant
+from recidiviz.ingest.direct.activity_pipeline_identity_source import (
+    ActivityPipelineIdentitySource,
+    activity_pipeline_identity_source,
+)
 
 
 def is_tomis_2_0_enabled(
     project_id: str,  # pylint: disable=unused-argument
+    tenant: Tenant,  # pylint: disable=unused-argument
 ) -> bool:
     """Returns whether the data platform should read TOMIS 2.0 data (rather than
     TOMIS 1.0 data) for the given project.
@@ -45,6 +53,7 @@ def is_tomis_2_0_enabled(
 
 def is_coms_2026_enabled(
     project_id: str,  # pylint: disable=unused-argument
+    tenant: Tenant,  # pylint: disable=unused-argument
 ) -> bool:
     """Returns whether the data platform should read from the data that includes
     the new tables from the 2026 migration (rather than just the data tables from
@@ -56,13 +65,27 @@ def is_coms_2026_enabled(
     return False
 
 
+def is_identity_service_identity_enabled(project_id: str, tenant: Tenant) -> bool:
+    """Returns whether the given tenant's activity pipeline sources identity
+    from the Identity Service export in the given project. Backed by
+    activity_pipeline_identity_source, so mappings, the pipeline, and the DAG
+    cannot disagree. Project ids outside the deployed data-platform projects
+    resolve to False.
+    """
+    return (
+        activity_pipeline_identity_source(project_id=project_id, tenant=tenant)
+        is ActivityPipelineIdentitySource.IDENTITY_SERVICE_EXPORT
+    )
+
+
 # All feature flags available to gate ingest logic. Keys are bare, snake_case
-# names and values are pure functions of the project the logic is being
-# evaluated for. By convention a flag keyed `foo_enabled` is backed by a
+# names and values are pure functions of the project and tenant the logic is
+# being evaluated for. By convention a flag keyed `foo_enabled` is backed by a
 # function named `is_foo_enabled`.
-_INGEST_FEATURE_FLAGS: dict[str, Callable[[str], bool]] = {
+_INGEST_FEATURE_FLAGS: dict[str, Callable[[str, Tenant], bool]] = {
     "tomis_2_0_enabled": is_tomis_2_0_enabled,
     "coms_2026_enabled": is_coms_2026_enabled,
+    "identity_service_identity_enabled": is_identity_service_identity_enabled,
 }
 
 
@@ -71,11 +94,11 @@ def all_feature_flag_names() -> list[str]:
     return sorted(_INGEST_FEATURE_FLAGS)
 
 
-def resolve_ingest_feature_flags(project_id: str) -> dict[str, bool]:
+def resolve_ingest_feature_flags(project_id: str, tenant: Tenant) -> dict[str, bool]:
     """Returns the value of every registered feature flag, evaluated for the
-    given project.
+    given project and tenant.
     """
     return {
-        flag_name: is_enabled_fn(project_id)
+        flag_name: is_enabled_fn(project_id, tenant)
         for flag_name, is_enabled_fn in _INGEST_FEATURE_FLAGS.items()
     }
