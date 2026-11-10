@@ -25,6 +25,7 @@ import csv
 import os
 import re
 import unittest
+from collections.abc import Mapping
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
@@ -57,6 +58,16 @@ class BaseStateIngestTestCase(unittest.TestCase):
     @classmethod
     def state_code(cls) -> StateCode:
         raise NotImplementedError("Ingest tests must have a StateCode!")
+
+    @classmethod
+    def feature_flag_overrides(cls) -> Mapping[str, bool]:
+        """Returns feature flag values to pin, keyed by bare flag name, when
+        parsing mappings in this test. Defaults to no overrides, so each flag
+        uses its real value for the staging project. Override in a subclass when
+        a mapping's behavior is gated on a flag, so the test does not change
+        behavior when the flag's real value flips.
+        """
+        return {}
 
     @classmethod
     def build_ingest_view_manifest_compiler(cls) -> IngestViewManifestCompiler:
@@ -120,6 +131,7 @@ class EnumManifestParsingTestCase(BaseStateIngestTestCase):
             _ = enum_parser_manifest.build_from_row(
                 row,
                 context=IngestViewContentsContext.build_for_tests(
-                    state_code=self.state_code()
+                    state_code=self.state_code(),
+                    feature_flag_overrides=self.feature_flag_overrides(),
                 ),
             )

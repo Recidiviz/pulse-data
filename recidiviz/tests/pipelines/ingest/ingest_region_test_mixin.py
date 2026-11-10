@@ -16,6 +16,7 @@
 # =============================================================================
 """Shared base for ingest pipeline region test mixins."""
 import abc
+from collections.abc import Mapping
 from types import ModuleType
 
 from recidiviz.common.constants.states import StateCode
@@ -70,6 +71,16 @@ class IngestRegionTestMixin(abc.ABC):
         """Must be implemented by subclasses to return the region module override."""
 
     @classmethod
+    def feature_flag_overrides(cls) -> Mapping[str, bool]:
+        """Returns feature flag values to pin, keyed by bare flag name, when
+        parsing mappings in this test. Defaults to no overrides, so each flag
+        uses its real value for the staging project. Override in a subclass when
+        a mapping's behavior is gated on a flag, so the test does not change
+        behavior when the flag's real value flips.
+        """
+        return {}
+
+    @classmethod
     def region(cls) -> DirectIngestRegion:
         return get_direct_ingest_region(
             region_code=cls.state_code().value.lower(),
@@ -87,7 +98,10 @@ class IngestRegionTestMixin(abc.ABC):
     @classmethod
     def launchable_ingest_views(cls) -> list[str]:
         return cls.ingest_view_manifest_collector().launchable_ingest_views(
-            IngestViewContentsContext.build_for_tests(state_code=cls.state_code())
+            IngestViewContentsContext.build_for_tests(
+                state_code=cls.state_code(),
+                feature_flag_overrides=cls.feature_flag_overrides(),
+            )
         )
 
     @classmethod

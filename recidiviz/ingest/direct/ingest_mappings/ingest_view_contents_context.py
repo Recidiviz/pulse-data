@@ -18,6 +18,9 @@
 logic from the IngestViewManifest. This class may contain context that differs
 between rows in the ingest view results.
 """
+from collections.abc import Mapping
+from types import MappingProxyType
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.ingest.direct.feature_flags_registry import resolve_ingest_feature_flags
@@ -87,6 +90,7 @@ class IngestViewContentsContext:
         cls,
         state_code: StateCode,
         project_id: str = GCP_PROJECT_STAGING,
+        feature_flag_overrides: Mapping[str, bool] = MappingProxyType({}),
     ) -> "IngestViewContentsContext":
         """Creates a context for use in tests. Ingest views gated with `is_local: True`
         will be run with this context.
@@ -95,7 +99,23 @@ class IngestViewContentsContext:
         to match the staging-like posture of the other properties here) and
         state_code. Pass GCP_PROJECT_PRODUCTION to exercise the production
         side of a flag.
+
+        feature_flag_overrides pins individual flags (keyed by bare flag
+        name) to fixed values after resolution, so a test's behavior does not
+        change when a flag's real value for (project_id, state_code) flips.
+        Every overridden flag must be registered in
+        recidiviz/ingest/direct/feature_flags_registry.py.
         """
+        feature_flags = resolve_ingest_feature_flags(
+            project_id, Tenant.from_state_code(state_code)
+        )
+        if unregistered_flag_names := set(feature_flag_overrides) - set(feature_flags):
+            raise ValueError(
+                f"Found feature_flag_overrides for unregistered flags "
+                f"{sorted(unregistered_flag_names)}. Register them in "
+                f"recidiviz/ingest/direct/feature_flags_registry.py."
+            )
+        feature_flags.update(feature_flag_overrides)
         return IngestViewContentsContext(
             is_local=True,
             # We run all views gated to staging in tests
@@ -103,9 +123,7 @@ class IngestViewContentsContext:
             is_production=False,
             is_sandbox=False,
             state_code=state_code,
-            feature_flags=resolve_ingest_feature_flags(
-                project_id, Tenant.from_state_code(state_code)
-            ),
+            feature_flags=feature_flags,
         )
 
     @classmethod

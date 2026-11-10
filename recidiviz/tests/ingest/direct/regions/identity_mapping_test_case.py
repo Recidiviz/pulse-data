@@ -22,6 +22,7 @@ the produced entity trees match expectations.
 """
 import abc
 import unittest
+from collections.abc import Mapping
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.constants.tenants import Tenant
@@ -67,6 +68,16 @@ class IdentityMappingTestCase(
         """Returns the ingest view name whose mapping YAML is under test
         (e.g., `person`)."""
 
+    @classmethod
+    def feature_flag_overrides(cls) -> Mapping[str, bool]:
+        """Returns feature flag values to pin, keyed by bare flag name, when
+        parsing the mapping in this test. Defaults to no overrides, so each flag
+        uses its real value for the staging project. Override in a subclass when
+        the mapping's behavior is gated on a flag, so the test does not change
+        behavior when the flag's real value flips.
+        """
+        return {}
+
     def parse_rows(self, rows: list[dict]) -> list[IdentityFragment]:
         """Returns the IdentityFragment entities produced by feeding `rows`
         through this view's mapping YAML."""
@@ -78,7 +89,8 @@ class IdentityMappingTestCase(
         parsed = manifest.parse_contents(
             contents_iterator=iter(rows),
             context=IngestViewContentsContext.build_for_tests(
-                StateCode(self.tenant().value)
+                StateCode(self.tenant().value),
+                feature_flag_overrides=self.feature_flag_overrides(),
             ),
         )
         return [assert_type(entity, IdentityFragment) for entity in parsed]

@@ -86,3 +86,51 @@ class TestIngestViewContentsContextFeatureFlags(unittest.TestCase):
             self.assertFalse(
                 context.get_env_property(_IDENTITY_SERVICE_IDENTITY_ENV_PROPERTY)
             )
+
+    def test_feature_flag_overrides_pin_flag_on(self) -> None:
+        # No tenant map patch: the flag's real value for US_XX is False, so the
+        # override is what makes it True.
+        context = IngestViewContentsContext.build_for_tests(
+            state_code=StateCode.US_XX,
+            feature_flag_overrides={"identity_service_identity_enabled": True},
+        )
+        self.assertTrue(
+            context.get_env_property(_IDENTITY_SERVICE_IDENTITY_ENV_PROPERTY)
+        )
+
+    def test_feature_flag_overrides_pin_flag_off(self) -> None:
+        with patch(
+            IDENTITY_SERVICE_EXPORT_TENANTS_PATCH_TARGET,
+            {
+                GCP_PROJECT_STAGING: frozenset({Tenant.US_XX}),
+                GCP_PROJECT_PRODUCTION: frozenset(),
+            },
+        ):
+            # The flag's real value for (staging, US_XX) is True under the
+            # patched tenant map, so the override is what makes it False.
+            context = IngestViewContentsContext.build_for_tests(
+                state_code=StateCode.US_XX,
+                feature_flag_overrides={"identity_service_identity_enabled": False},
+            )
+            self.assertFalse(
+                context.get_env_property(_IDENTITY_SERVICE_IDENTITY_ENV_PROPERTY)
+            )
+
+    def test_feature_flag_overrides_leave_other_flags_resolved(self) -> None:
+        context = IngestViewContentsContext.build_for_tests(
+            state_code=StateCode.US_XX,
+            feature_flag_overrides={"identity_service_identity_enabled": True},
+        )
+        self.assertFalse(context.get_env_property("feature__tomis_2_0_enabled"))
+
+    def test_feature_flag_overrides_unregistered_flag_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Found feature_flag_overrides for unregistered flags "
+            r"\['not_a_real_flag'\]\. Register them in "
+            r"recidiviz/ingest/direct/feature_flags_registry\.py\.$",
+        ):
+            IngestViewContentsContext.build_for_tests(
+                state_code=StateCode.US_XX,
+                feature_flag_overrides={"not_a_real_flag": True},
+            )

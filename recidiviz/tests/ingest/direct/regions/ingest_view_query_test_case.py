@@ -481,7 +481,8 @@ class StateIngestViewAndMappingTestCase(
         parsed_ingest_view_results = manifest.parse_contents(
             contents_iterator=ingest_view_results,
             context=IngestViewContentsContext.build_for_tests(
-                state_code=self.state_code()
+                state_code=self.state_code(),
+                feature_flag_overrides=self.feature_flag_overrides(),
             ),
         )
 
