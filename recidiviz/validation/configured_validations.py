@@ -414,6 +414,9 @@ from recidiviz.validation.views.state.us_ar_edovo_writeback_no_unattempted_month
 from recidiviz.validation.views.state.us_ar_edovo_writeback_no_unresolved_writes import (
     US_AR_EDOVO_WRITEBACK_NO_UNRESOLVED_WRITES_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.us_ar_edovo_writeback_referrals_without_credit import (
+    US_AR_EDOVO_WRITEBACK_REFERRALS_WITHOUT_CREDIT_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.us_ar_edovo_writeback_stale_runs import (
     US_AR_EDOVO_WRITEBACK_STALE_RUNS_VIEW_BUILDER,
 )
@@ -1582,6 +1585,11 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_AR_EDOVO_WRITEBACK_STALE_RUNS_VIEW_BUILDER,
+            validation_category=ValidationCategory.CONSISTENCY,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AR_EDOVO_WRITEBACK_REFERRALS_WITHOUT_CREDIT_VIEW_BUILDER,
             validation_category=ValidationCategory.CONSISTENCY,
             projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
