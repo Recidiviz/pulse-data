@@ -423,10 +423,13 @@ class PersonIDLookupError(DiagnosisFailure):
         "for.\n"
         "- The client has not reached `normalized_state` yet — check whether "
         "ingest has run for this state since they were added.\n"
-        "- The diagnosis service account is not a member of this state's "
-        "row-access-policy group. Add the state to "
-        "`pg_diagnosis_data_access_states` in "
-        "`recidiviz/tools/deploy/terraform/pg-diagnosis.tf` and deploy."
+        "- The state is row-restricted (listed in "
+        "`recidiviz/big_query/config/restricted_access_state_groups.yaml`) and "
+        "the diagnosis service account is not in its row-access-policy group. "
+        "Add the state to `pg_diagnosis_data_access_states` in "
+        "`recidiviz/tools/deploy/terraform/pg-diagnosis.tf` and deploy. Other "
+        "states' rows come through the default state-data group, which the "
+        "service account is already in."
     )
 
 
