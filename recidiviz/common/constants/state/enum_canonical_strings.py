@@ -155,18 +155,6 @@ state_assessment_decision_approved = "APPROVED"
 state_assessment_decision_denied = "DENIED"
 
 # state_charge.py
-state_charge_classification_type_civil = "CIVIL"
-state_charge_classification_type_felony = "FELONY"
-state_charge_classification_type_misdemeanor = "MISDEMEANOR"
-
-state_charge_status_acquitted = "ACQUITTED"
-state_charge_status_adjudicated = "ADJUDICATED"
-state_charge_status_convicted = "CONVICTED"
-state_charge_status_dropped = "DROPPED"
-state_charge_status_pending = "PENDING"
-state_charge_status_transferred_away = "TRANSFERRED_AWAY"
-
-# TODO(#26240): Replace state_charge strings with these
 state_charge_v2_classification_type_civil = "CIVIL"
 state_charge_v2_classification_type_felony = "FELONY"
 state_charge_v2_classification_type_misdemeanor = "MISDEMEANOR"

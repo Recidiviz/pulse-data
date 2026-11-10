@@ -1065,7 +1065,7 @@ class TestRuleEngineIntegration(unittest.TestCase):
                 "metric": {
                     "labels": {
                         "region": "US_XX",
-                        "enum_type": "StateChargeClassificationType",
+                        "enum_type": "StateChargeV2ClassificationType",
                         "enum_field_name": "classification_type",
                     }
                 },
@@ -1082,7 +1082,7 @@ class TestRuleEngineIntegration(unittest.TestCase):
         self.assertEqual(
             result["title"],
             "🚨 [PRODUCTION] [US_XX] Unmapped enum: "
-            "StateChargeClassificationType.classification_type",
+            "StateChargeV2ClassificationType.classification_type",
         )
 
     def test_unmatched_alert_uses_defaults(self) -> None:

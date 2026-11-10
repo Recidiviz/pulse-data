@@ -27,7 +27,6 @@ from typing import Dict, List, Type
 
 from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.state.state_charge import (
-    StateChargeClassificationType,
     StateChargeV2ClassificationType,
 )
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
@@ -370,17 +369,6 @@ def parse_residency_status_from_address(
     if "HOMELESS" in raw_text.upper():
         return StateResidencyStatus.HOMELESS
     return StateResidencyStatus.PERMANENT
-
-
-def parse_classification_type_from_raw_text(
-    raw_text: str,
-) -> StateChargeClassificationType:
-    """Parses a raw text field with the level of an offense to determine classification type."""
-    if raw_text.startswith("F"):
-        return StateChargeClassificationType.FELONY
-    if raw_text.startswith("M"):
-        return StateChargeClassificationType.MISDEMEANOR
-    return StateChargeClassificationType.INTERNAL_UNKNOWN
 
 
 def parse_classification_type_from_raw_text_v2(

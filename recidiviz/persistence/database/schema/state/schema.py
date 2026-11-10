@@ -51,22 +51,20 @@ StateBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name="StateBas
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between tables / columns if necessary.
 state_charge_v2_classification_type = Enum(
-    # TODO(#26240): Replace state_charge usage with this
-    state_enum_strings.state_charge_classification_type_civil,
-    state_enum_strings.state_charge_classification_type_felony,
-    state_enum_strings.state_charge_classification_type_misdemeanor,
+    state_enum_strings.state_charge_v2_classification_type_civil,
+    state_enum_strings.state_charge_v2_classification_type_felony,
+    state_enum_strings.state_charge_v2_classification_type_misdemeanor,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_charge_v2_classification_type",
 )
 state_charge_v2_status = Enum(
-    # TODO(#26240): Replace state_charge usage with this
-    state_enum_strings.state_charge_status_acquitted,
-    state_enum_strings.state_charge_status_adjudicated,
-    state_enum_strings.state_charge_status_convicted,
-    state_enum_strings.state_charge_status_dropped,
-    state_enum_strings.state_charge_status_pending,
-    state_enum_strings.state_charge_status_transferred_away,
+    state_enum_strings.state_charge_v2_status_acquitted,
+    state_enum_strings.state_charge_v2_status_adjudicated,
+    state_enum_strings.state_charge_v2_status_convicted,
+    state_enum_strings.state_charge_v2_status_dropped,
+    state_enum_strings.state_charge_v2_status_pending,
+    state_enum_strings.state_charge_v2_status_transferred_away,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     state_enum_strings.present_without_info,
@@ -260,28 +258,6 @@ state_supervision_case_type = Enum(
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_supervision_case_type",
-)
-
-state_charge_classification_type = Enum(
-    state_enum_strings.state_charge_classification_type_civil,
-    state_enum_strings.state_charge_classification_type_felony,
-    state_enum_strings.state_charge_classification_type_misdemeanor,
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
-    name="state_charge_classification_type",
-)
-
-state_charge_status = Enum(
-    state_enum_strings.state_charge_status_acquitted,
-    state_enum_strings.state_charge_status_adjudicated,
-    state_enum_strings.state_charge_status_convicted,
-    state_enum_strings.state_charge_status_dropped,
-    state_enum_strings.state_charge_status_pending,
-    state_enum_strings.state_charge_status_transferred_away,
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
-    state_enum_strings.present_without_info,
-    name="state_charge_status",
 )
 
 state_incarceration_type = Enum(
@@ -2112,9 +2088,7 @@ class StateSentence(StateBase, _ReferencesStatePersonSharedColumns):
 
 
 class StateChargeV2(StateBase, _ReferencesStatePersonSharedColumns):
-    """Represents a StateCharge in the SQL schema"""
-
-    # TODO(#26240): Replace StateCharge with this model
+    """Represents a charge in the SQL schema"""
 
     __tablename__ = "state_charge_v2"
     __table_args__: tuple = (

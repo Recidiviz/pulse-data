@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Constants related to a StateCharge entity in the state schema."""
+"""Constants related to a StateChargeV2 entity in the state schema."""
 from enum import unique
 from typing import Dict
 
@@ -24,79 +24,8 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
 @unique
-class StateChargeClassificationType(StateEntityEnum):
-    CIVIL = state_enum_strings.state_charge_classification_type_civil
-    FELONY = state_enum_strings.state_charge_classification_type_felony
-    MISDEMEANOR = state_enum_strings.state_charge_classification_type_misdemeanor
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @classmethod
-    def get_enum_description(cls) -> str:
-        return "The classification of the offense a person has been charged with."
-
-    @classmethod
-    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
-        return _STATE_CHARGE_CLASSIFICATION_TYPE_VALUE_DESCRIPTIONS
-
-
-_STATE_CHARGE_CLASSIFICATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateChargeClassificationType.CIVIL: "Used when a person has been charged with "
-    "having committed a civil offense (also known as a municipal infraction), which "
-    "is defined as a violation of a local law enacted by a city or town. Also "
-    "describes a charge resulting from a case involving a private dispute between "
-    "persons or organizations (as opposed to a criminal case due to the violation of "
-    "a law).",
-    StateChargeClassificationType.FELONY: "Used when a person has been charged with "
-    "having committed a felony offense, which is defined as a crime of high "
-    "seriousness.",
-    StateChargeClassificationType.MISDEMEANOR: "Used when a person has been charged "
-    "with having committed a misdemeanor offense, which is defined as a crime of "
-    "moderate seriousness.",
-}
-
-
-class StateChargeStatus(StateEntityEnum):
-    ACQUITTED = state_enum_strings.state_charge_status_acquitted
-    ADJUDICATED = state_enum_strings.state_charge_status_adjudicated
-    CONVICTED = state_enum_strings.state_charge_status_convicted
-    DROPPED = state_enum_strings.state_charge_status_dropped
-    PENDING = state_enum_strings.state_charge_status_pending
-    TRANSFERRED_AWAY = state_enum_strings.state_charge_status_transferred_away
-    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @classmethod
-    def get_enum_description(cls) -> str:
-        return "The status of the charge in court."
-
-    @classmethod
-    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
-        return _STATE_CHARGE_STATUS_VALUE_DESCRIPTIONS
-
-
-_STATE_CHARGE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateChargeStatus.ACQUITTED: "Used when the person has been freed completely from "
-    "the charge due to a case reaching a verdict of not guilty.",
-    StateChargeStatus.ADJUDICATED: "Used when there has been a final judgement on a "
-    "charge by a judge, but the result is not legally classified as a conviction. For "
-    "example, this is used in Maine for all charges in juvenile court that result in "
-    "a guilty plea or if the court has found the juvenile guilty of the charge.",
-    StateChargeStatus.CONVICTED: "Used when the person has been declared guilty of the "
-    "offense by a judge or a jury.",
-    StateChargeStatus.DROPPED: "Describes a charge that was dropped by the prosecution, "
-    "which means the person has been freed completely from the charge.",
-    StateChargeStatus.PENDING: "Used when the charges have been filed with the court, "
-    "but there has not yet been a result of the case.",
-    StateChargeStatus.TRANSFERRED_AWAY: "Used when the case associated with the charge "
-    "has been transferred to another jurisdiction outside of the state.",
-}
-
-
-@unique
 class StateChargeV2ClassificationType(StateEntityEnum):
-    """A copy of state charge classification type to use in sentencing v2"""
+    """The classification of the offense a person has been charged with, used in sentencing v2."""
 
     CIVIL = state_enum_strings.state_charge_v2_classification_type_civil
     FELONY = state_enum_strings.state_charge_v2_classification_type_felony
@@ -130,7 +59,7 @@ _STATE_CHARGE_V2_CLASSIFICATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, s
 
 
 class StateChargeV2Status(StateEntityEnum):
-    """A copy of state charge status to use in sentencing v2"""
+    """The status in court of a charge, used in sentencing v2."""
 
     ACQUITTED = state_enum_strings.state_charge_v2_status_acquitted
     ADJUDICATED = state_enum_strings.state_charge_v2_status_adjudicated

@@ -469,7 +469,7 @@ class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
       - `date_charged` can be null for charges that have statuses like `DROPPED`.
       - `offense_date` can be null because of erroneous data from states
 
-    TODO(#26240): Replace NormalizedStateCharge with this entity
+    TODO(OBT-56634): Rename NormalizedStateChargeV2 to NormalizedStateCharge now that the v1 entity is deleted.
 
     TODO(OBT-19720): Consider including uniform offense information from the
     `cleaned_offense_description_to_labels` reference view

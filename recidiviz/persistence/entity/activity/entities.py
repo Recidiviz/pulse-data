@@ -2944,7 +2944,7 @@ class StateChargeV2(
       - `date_charged` can be null for charges that have statuses like `DROPPED`.
       - `offense_date` can be null because of erroneous data from states
 
-    TODO(#26240): Replace StateCharge with this entity
+    TODO(OBT-56634): Rename StateChargeV2 to StateCharge now that the v1 entity is deleted.
     """
 
     status: StateChargeV2Status = attr.ib(

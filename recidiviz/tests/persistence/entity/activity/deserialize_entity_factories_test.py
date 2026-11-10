@@ -994,7 +994,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_deserialize_StateChargeV2(self) -> None:
-        # TODO(#26240): Replace StateChargeFactory with this one
         result = deserialize_entity_factories.StateChargeV2Factory.deserialize(
             charge_v2_id=1,
             external_id="CHARGE-EXTERNAL-ID",

@@ -100,7 +100,6 @@ class _StateEntitiesModuleContext(EntitiesModuleContext):
             state_entities.StateDrugScreen.__name__,
             state_entities.StateTaskDeadline.__name__,
             state_entities.StateSentence.__name__,
-            # TODO(#26240): Replace StateCharge with this entity
             state_entities.StateChargeV2.__name__,
             state_entities.StateSentenceStatusSnapshot.__name__,
             state_entities.StateSentenceLength.__name__,
@@ -171,7 +170,6 @@ class _NormalizedStateEntitiesModuleContext(EntitiesModuleContext):
             normalized_entities.NormalizedStateDrugScreen.__name__,
             normalized_entities.NormalizedStateTaskDeadline.__name__,
             normalized_entities.NormalizedStateSentence.__name__,
-            # TODO(#26240): Replace NormalizedStateCharge with this entity
             normalized_entities.NormalizedStateChargeV2.__name__,
             normalized_entities.NormalizedStateSentenceStatusSnapshot.__name__,
             normalized_entities.NormalizedStateSentenceLength.__name__,

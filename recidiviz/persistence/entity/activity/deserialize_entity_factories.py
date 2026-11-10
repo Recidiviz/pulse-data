@@ -434,7 +434,6 @@ class StateSentenceFactory(EntityFactory):
         )
 
 
-# TODO(#26240): Replace StateChargeFactory with this one
 class StateChargeV2Factory(EntityFactory):
     @staticmethod
     def deserialize(

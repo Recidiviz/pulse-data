@@ -134,8 +134,6 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_assessment_level": state_assessment.StateAssessmentLevel,
             "state_assessment_subtype": state_assessment.StateAssessmentSubtype,
             "state_assessment_type": state_assessment.StateAssessmentType,
-            "state_charge_classification_type": state_charge.StateChargeClassificationType,
-            "state_charge_status": state_charge.StateChargeStatus,
             "state_drug_screen_result": StateDrugScreenResult,
             "state_drug_screen_sample_type": StateDrugScreenSampleType,
             "state_sentence_status": state_sentence.StateSentenceStatus,
