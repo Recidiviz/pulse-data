@@ -50,6 +50,8 @@ from recidiviz.pipelines.ingest.activity.pipeline_utils import (
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import OnDiskPostgresLaunchResult
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.types import assert_type
 
 PIPELINES_TESTS_WORKING_DIRECTORY = os.path.dirname(
@@ -87,7 +89,7 @@ class IngestDataflowOperations(TestCase):
         self.latest_jobs_patcher.start()
 
         self.state_code_list_patcher = mock.patch(
-            "recidiviz.admin_panel.ingest_dataflow_operations.get_direct_ingest_states_launched_in_env",
+            "recidiviz.admin_panel.ingest_dataflow_operations.get_direct_ingest_states_with_launchable_ingest_views_in_project",
             return_value=[
                 StateCode.US_XX,
                 StateCode.US_YY,
@@ -195,6 +197,7 @@ class IngestDataflowOperations(TestCase):
             return None
 
         with (
+            local_project_id_override(GCP_PROJECT_STAGING),
             mock.patch(
                 "recidiviz.admin_panel.ingest_dataflow_operations.DirectIngestDataflowJobManager.get_most_recent_jobs_location_and_id_by_state_and_instance",
                 return_value=most_recent_job_id_map,
@@ -259,6 +262,7 @@ class IngestDataflowOperations(TestCase):
             return None
 
         with (
+            local_project_id_override(GCP_PROJECT_STAGING),
             mock.patch(
                 "recidiviz.admin_panel.ingest_dataflow_operations.DirectIngestDataflowJobManager.get_most_recent_jobs_location_and_id_by_state_and_instance",
                 return_value=most_recent_job_id_map,

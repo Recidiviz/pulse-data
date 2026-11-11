@@ -37,7 +37,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager im
     DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_launched_in_env,
+    get_direct_ingest_states_with_launchable_ingest_views_in_project,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
@@ -148,7 +148,10 @@ def get_all_latest_ingest_jobs() -> Dict[
                     else None
                 ),
             ): state_code
-            for state_code in get_direct_ingest_states_launched_in_env()
+            for state_code in get_direct_ingest_states_with_launchable_ingest_views_in_project(
+                pipeline_type=IngestPipelineType.ACTIVITY,
+                project_id=metadata.project_id(),
+            )
         }
         for future in concurrent.futures.as_completed(locations_futures):
             state_code = locations_futures[future]

@@ -64,9 +64,11 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
+    get_direct_ingest_states_with_launchable_ingest_views_in_project,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestError
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.utils import metadata
 from recidiviz.utils.types import assert_type
 
@@ -211,7 +213,12 @@ class IngestOperationsStore(AdminPanelStore):
             StateCode,
             Optional[DataflowPipelineMetadataResponse],
         ] = defaultdict()
-        for state_code in get_direct_ingest_states_launched_in_env():
+        for (
+            state_code
+        ) in get_direct_ingest_states_with_launchable_ingest_views_in_project(
+            pipeline_type=IngestPipelineType.ACTIVITY,
+            project_id=metadata.project_id(),
+        ):
             # There is an edge case where if a state was newly added, it would not
             # appear in the cache results yet. We allow for this and just add a None
             # value for pipeline results until the cache is next hydrated.

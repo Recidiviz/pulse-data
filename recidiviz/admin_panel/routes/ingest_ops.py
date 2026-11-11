@@ -177,7 +177,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             get_ingest_operations_store().get_most_recent_dataflow_job_statuses()
         )
 
-        job_info = all_primary_pipeline_statuses[state_code]
+        job_info = all_primary_pipeline_statuses.get(state_code)
 
         return (
             jsonify(job_info.for_api() if job_info else None),

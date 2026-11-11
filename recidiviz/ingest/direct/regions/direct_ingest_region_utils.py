@@ -22,6 +22,7 @@ from typing import List, Set
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.file_system import is_non_empty_code_directory
 from recidiviz.ingest.direct import direct_ingest_regions, regions
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 
 _REGIONS_DIR = os.path.dirname(regions.__file__)
 
@@ -88,4 +89,21 @@ def get_direct_ingest_states_launched_in_env() -> List[StateCode]:
         if direct_ingest_regions.get_direct_ingest_region(
             state_code.value.lower()
         ).is_ingest_launched_in_env()
+    ]
+
+
+def get_direct_ingest_states_with_launchable_ingest_views_in_project(
+    *, pipeline_type: IngestPipelineType, project_id: str
+) -> List[StateCode]:
+    """Returns list of states with launchable ingest views for the given pipeline type
+    in the given project, i.e. states whose pipeline of that type actually runs there.
+    """
+    return [
+        state_code
+        for state_code in get_existing_direct_ingest_states()
+        if direct_ingest_regions.get_direct_ingest_region(
+            state_code.value.lower()
+        ).has_launchable_ingest_views_for_pipeline(
+            pipeline_type=pipeline_type, project_id=project_id
+        )
     ]

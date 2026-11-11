@@ -83,8 +83,13 @@ class IngestOperationsStoreTestBase(TestCase):
             "recidiviz.admin_panel.ingest_operations_store.get_direct_ingest_states_launched_in_env",
             return_value=[StateCode.US_XX, StateCode.US_YY],
         )
-
         self.state_code_list_patcher.start()
+
+        self.launchable_state_code_list_patcher = mock.patch(
+            "recidiviz.admin_panel.ingest_operations_store.get_direct_ingest_states_with_launchable_ingest_views_in_project",
+            return_value=[StateCode.US_XX, StateCode.US_YY],
+        )
+        self.launchable_state_code_list_patcher.start()
 
         self.fs = FakeGCSFileSystem()
         self.fs_patcher = mock.patch.object(GcsfsFactory, "build", return_value=self.fs)
@@ -109,6 +114,7 @@ class IngestOperationsStoreTestBase(TestCase):
             self.operations_key
         )
         self.state_code_list_patcher.stop()
+        self.launchable_state_code_list_patcher.stop()
         self.fs_patcher.stop()
         self.bq_client_patcher.stop()
         self.mock_redis_patcher.stop()
@@ -428,7 +434,8 @@ class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
         }
         mock_get_latest_jobs.return_value = latest_jobs
         # Act
-        statuses_map = self.operations_store.get_most_recent_dataflow_job_statuses()
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            statuses_map = self.operations_store.get_most_recent_dataflow_job_statuses()
 
         # Assert
         mock_get_latest_jobs.assert_called_once()
@@ -446,7 +453,8 @@ class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
 
         # Act
         self.operations_store.set_cache(latest_jobs=latest_jobs)
-        statuses_map = self.operations_store.get_most_recent_dataflow_job_statuses()
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            statuses_map = self.operations_store.get_most_recent_dataflow_job_statuses()
 
         # Assert
         mock_get_latest_jobs.assert_not_called()
@@ -463,7 +471,8 @@ class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
 
         # Act
         self.operations_store.set_cache(latest_jobs=latest_jobs)
-        statuses_map = self.operations_store.get_most_recent_dataflow_job_statuses()
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            statuses_map = self.operations_store.get_most_recent_dataflow_job_statuses()
 
         # Assert
         mock_get_latest_jobs.assert_not_called()
