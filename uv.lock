@@ -3,8 +3,8 @@ revision = 5
 requires-python = "==3.11.*"
 resolution-markers = [
     "python_full_version >= '3.11.5' and sys_platform == 'emscripten'",
-    "python_full_version < '3.11.5' and sys_platform == 'emscripten'",
     "python_full_version >= '3.11.5' and sys_platform != 'emscripten'",
+    "python_full_version < '3.11.5' and sys_platform == 'emscripten'",
     "python_full_version < '3.11.5' and sys_platform != 'emscripten'",
 ]
 
@@ -6073,6 +6073,7 @@ dependencies = [
     { name = "redis" },
     { name = "regex" },
     { name = "requests" },
+    { name = "ruamel-yaml" },
     { name = "scipy" },
     { name = "seaborn" },
     { name = "sendgrid" },
@@ -6165,7 +6166,6 @@ dev = [
     { name = "ratelimit-stubs" },
     { name = "responses" },
     { name = "rope" },
-    { name = "ruamel-yaml" },
     { name = "scikit-learn" },
     { name = "sentry-cli" },
     { name = "shapely" },
@@ -6368,7 +6368,7 @@ requires-dist = [
     { name = "requests" },
     { name = "responses", marker = "extra == 'dev'", specifier = "==0.20.0" },
     { name = "rope", marker = "extra == 'dev'" },
-    { name = "ruamel-yaml", marker = "extra == 'dev'" },
+    { name = "ruamel-yaml" },
     { name = "scikit-learn", marker = "extra == 'dev'" },
     { name = "scipy" },
     { name = "seaborn" },

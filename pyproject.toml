@@ -47,6 +47,7 @@ dependencies = [
     "Flask-WTF",
     "flask-smorest",
     "pyyaml",
+    "ruamel.yaml",
     "grpcio",
     "gunicorn",
     "gevent>=20.5.1",
@@ -209,7 +210,6 @@ dev = [
     # can reach it without shipping it in the deployed app image.
     "py7zr",
     "rope",
-    "ruamel.yaml",
     "tabula-py",
     "types-beautifulsoup4",
     "types-cachetools",
