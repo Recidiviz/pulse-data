@@ -24,7 +24,7 @@ conditions:
 - Sex: MALE only
 """
 
-from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
+from recidiviz.task_eligibility.utils.us_ix.us_ix_supervision_query_fragments import (
     us_ix_active_supervision_population_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

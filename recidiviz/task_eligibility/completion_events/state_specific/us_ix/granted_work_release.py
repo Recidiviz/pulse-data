@@ -25,7 +25,7 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
-from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
+from recidiviz.task_eligibility.utils.us_ix.us_ix_facility_query_fragments import (
     IX_CRC_FACILITIES,
     ix_crc_facilities_in_location_sessions,
 )

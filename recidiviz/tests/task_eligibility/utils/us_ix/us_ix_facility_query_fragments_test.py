@@ -14,13 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for us_ix_query_fragments.py"""
+"""Tests for us_ix_facility_query_fragments.py"""
 import unittest
 
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_release_district_spans import (
     UsIxReleaseDistrict,
 )
-from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
+from recidiviz.task_eligibility.utils.us_ix.us_ix_facility_query_fragments import (
     UsIxPlacementMatrixFacility,
 )
 
