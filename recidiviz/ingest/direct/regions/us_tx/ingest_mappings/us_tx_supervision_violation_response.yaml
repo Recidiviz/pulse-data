@@ -41,6 +41,8 @@ output:
                                   $key: VIOLATION_DECISION_RESULT
                                   $json: $iter_item
                               $mappings:
+                                # TDCJ spells this result "NO VIOLATION RECOMENDATION OCCURRED". Pairs with the
+                                # correct spelling never match today and are kept in case TDCJ fixes the typo.
                                 # CONTINUANCE mappings
                                 StateSupervisionViolationResponseDecision.CONTINUANCE:
                                   - "|NON REVOCATION ACTION - ALLOW TO DISCHARGE"
@@ -54,7 +56,6 @@ output:
                                   - "ISSUE WARRANT|AWAITING BPP VOTE"
                                   - "PENDING ADJUDICATION OF CHARGES|"
                                   - "|PROCEED TO PRELIMINARY HEARING"
-                                  - "REOPEN HEARING (REFER THE CASE TO HEARING ANALYST)|"
                                   - "CONTINUE SUPERVISION PENDING ADJUDICATION OF CHARGES|"
                                   - "|REOPEN HEARING (REFER THE CASE TO HEARING ANALYST)"
                                   - "RETURN FOR CORRECTIONS|"
@@ -65,21 +66,18 @@ output:
                                   - "|PROCEED TO REVOCATION HEARING"
                                   - "PROCEED TO REVOCATION HEARING|"
                                   - "|REVOKE"
-                                  - "REVOKE|"
                                 # NEW_CONDITIONS mapping
                                 StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
                                   - "|NON REVOCATION ACTION - CONTINUE SUPERVISION REAFFIRM OR MODIFY EXISTING SPECIAL CONDITIONS"
                                 # EXTERNAL_UNKNOWN mappings (for blank composite and unknown result)
                                 StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN:
                                   - "|" # when both decision and result are blank
-                                  - "|UNKNOWN VIOLATION RECOMMENDATION"
                                   - "UNKNOWN VIOLATION RECOMMENDATION|"
                                 # INTERNAL_UNKNOWN mappings (other unmapped values)
                                 StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
                                   - "DPO VIOLATION RECOMMENDATION|"
                                   - "IMPOSE LOCAL INTERVENTIONS|"
                                   - "INTERVENTIONS|"
-                                  - "|US VIOLATION RECOMMENDATION"
                                   - "US VIOLATION RECOMMENDATION|"
                                 # TREATMENT_IN_PRISON mappings
                                 StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON:
@@ -98,18 +96,17 @@ output:
                                   - "|NO VIOLATION RECOMMENDATION OCCURRED"
                                   - "|NO VIOLATION RECOMENDATION OCCURRED"
                                   - "ADMINISTRATIVE CLOSURE|"
-                                  # Acccounting for typos in "recommendation" that appear in the data
                                   - "CONTINUE SUPERVISION|NO VIOLATION RECOMMENDATION OCCURRED"
                                   - "CONTINUE SUPERVISION|NO VIOLATION RECOMENDATION OCCURRED"
-                                  - "CONTINUE WARRANT IN EFFECT|NO VIOLATION RECOMMENDATION OCCURRED"
-                                  - "CONTINUE WARRANT IN EFFECT|NO VIOLATION RECOMENDATION OCCURRED"
-                                  - "ISSUE WARRANT|NO VIOLATION RECOMMENDATION OCCURRED"
-                                  - "ISSUE WARRANT|NO VIOLATION RECOMENDATION OCCURRED"
                                   - "NO RECOMMENDATION|"
                                 # WARRANT_ISSUED mappings
                                 StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
                                   - "CONTINUE WARRANT IN EFFECT|"
                                   - "|CONTINUE WARRANT IN EFFECT"
                                   - "CONTINUE WARRANT IN EFFECT|CONTINUE WARRANT IN EFFECT"
+                                  - "CONTINUE WARRANT IN EFFECT|NO VIOLATION RECOMMENDATION OCCURRED"
+                                  - "CONTINUE WARRANT IN EFFECT|NO VIOLATION RECOMENDATION OCCURRED"
+                                  - "ISSUE WARRANT|NO VIOLATION RECOMMENDATION OCCURRED"
+                                  - "ISSUE WARRANT|NO VIOLATION RECOMENDATION OCCURRED"
                                   - "ISSUE SUMMONS|"
                                   - "ISSUE WARRANT|"
