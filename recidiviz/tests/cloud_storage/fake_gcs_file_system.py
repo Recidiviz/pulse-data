@@ -400,6 +400,23 @@ class FakeGCSFileSystem(GCSFileSystem):
         encoding: Optional[str] = None,
         verifiable: bool = True,
     ) -> Iterator[IO]:
+        if mode in ("w", "wt", "wb"):
+            if verifiable:
+                raise ValueError(
+                    f"Cannot open [{path.uri()}] with verifiable=True in write mode "
+                    f"[{mode}]; checksum verification only applies to reads."
+                )
+            # Mirror a real GCS streaming upload: the blob appears once the
+            # writer is closed.
+            temp_path = generate_random_temp_path()
+            with open(temp_path, mode=mode, encoding=encoding) as f:
+                yield f
+            self._add_entry(
+                FakeGCSFileSystemEntry(path, temp_path, "application/octet-stream")
+            )
+            self.uploaded_paths.add(path)
+            return
+
         if not self.exists(path):
             raise GCSBlobDoesNotExistError(f"Could not find blob at {path}")
 

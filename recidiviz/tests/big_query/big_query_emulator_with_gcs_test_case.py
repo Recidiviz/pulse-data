@@ -35,7 +35,7 @@ from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class _FakeGcsCsvLoader:
-    """Stand-in for BigQueryClientImpl.load_table_from_cloud_storage that reads the CSVs
+    """Stand-in for BigQueryClientImpl.load_table_from_csv_cloud_storage that reads the CSVs
     at the given source URIs out of a FakeGCSFileSystem and streams them into the
     destination emulator table. The emulator cannot load from a gs:// URI backed by the
     fake filesystem, so this replaces only that GCS->BQ transport step; every other query
@@ -100,7 +100,7 @@ class BigQueryEmulatorWithGCSTestCase(BigQueryEmulatorTestCase):
         self.enterContext(
             mock.patch.object(
                 self.bq_client,
-                "load_table_from_cloud_storage",
+                "load_table_from_csv_cloud_storage",
                 _FakeGcsCsvLoader(fs=self.fs, bq_client=self.bq_client),
             )
         )

@@ -415,7 +415,7 @@ class BigQueryClient:
         """Applies the relevant row access policies to the table."""
 
     @abc.abstractmethod
-    def load_table_from_cloud_storage(
+    def load_table_from_csv_cloud_storage(
         self,
         *,
         source_uris: List[str],
@@ -448,9 +448,46 @@ class BigQueryClient:
                 completely (WRITE_TRUNCATE) or adds to the table with new rows
                 (WRITE_APPEND). By default, WRITE_APPEND is used.
             skip_leading_rows: Optional number of leading rows to skip on each input
-                file. Defaults to zero
+                file. Defaults to zero.
             preserve_ascii_control_characters: Whether to preserve ASCII control characters in the data. Defaults to
                 False. When disabled, we will fail the load if we encounter ASCII control characters in the data.
+            encoding: Character encoding of the source files.
+            field_delimiter: Separator between fields in the source files.
+            job_labels: Metadata labels to attach to the BigQuery LoadJob, recorded in the JOBS view.
+        Returns:
+            The completed LoadJob object containing job details.
+        """
+
+    @abc.abstractmethod
+    def load_table_from_json_cloud_storage(
+        self,
+        *,
+        source_uris: List[str],
+        destination_address: BigQueryAddress,
+        destination_table_schema: List[bigquery.SchemaField],
+        write_disposition: str,
+        job_labels: Optional[list[ResourceLabel]] = None,
+    ) -> bigquery.job.LoadJob:
+        """Loads a table from newline-delimited JSON data in GCS to BigQuery. The
+        source files must be UTF-8 encoded.
+
+        Given a desired table name, source data URI(s) and destination schema, loads the
+        table into BigQuery.
+
+        The table is created if it does not exist, and overwritten with the contents of
+        the new data if they do exist and the write_disposition is WRITE_TRUNCATE. If
+        the write_disposition is WRITE_APPEND, data will be added to the table if it
+        already exists. Row-level permissions are applied to the table if applicable.
+
+        Args:
+            source_uris: The paths in Google Cloud Storage to read contents from (starts with 'gs://').
+            destination_address: The BigQuery address to load the table into. Gets
+                created if it does not already exist.
+            destination_table_schema: Defines a list of field schema information for each expected column in the input
+                file.
+            write_disposition: Indicates whether BigQuery should overwrite the table
+                completely (WRITE_TRUNCATE) or adds to the table with new rows
+                (WRITE_APPEND). By default, WRITE_APPEND is used.
             job_labels: Metadata labels to attach to the BigQuery LoadJob, recorded in the JOBS view.
         Returns:
             The completed LoadJob object containing job details.
@@ -1501,7 +1538,7 @@ class BigQueryClientImpl(BigQueryClient):
 
         return self.get_table(view.address)
 
-    def load_table_from_cloud_storage(
+    def load_table_from_csv_cloud_storage(
         self,
         *,
         source_uris: List[str],
@@ -1514,6 +1551,53 @@ class BigQueryClientImpl(BigQueryClient):
         field_delimiter: str = ",",
         job_labels: Optional[list[ResourceLabel]] = None,
     ) -> bigquery.job.LoadJob:
+        job_config = bigquery.LoadJobConfig(
+            labels=self._build_labels(job_labels, address=destination_address)
+        )
+        job_config.source_format = bigquery.SourceFormat.CSV
+        job_config.encoding = encoding
+        job_config.allow_quoted_newlines = True
+        job_config.skip_leading_rows = skip_leading_rows
+        job_config.preserve_ascii_control_characters = preserve_ascii_control_characters
+        job_config.field_delimiter = field_delimiter
+        return self._load_table_from_cloud_storage(
+            source_uris=source_uris,
+            destination_address=destination_address,
+            destination_table_schema=destination_table_schema,
+            write_disposition=write_disposition,
+            job_config=job_config,
+        )
+
+    def load_table_from_json_cloud_storage(
+        self,
+        *,
+        source_uris: List[str],
+        destination_address: BigQueryAddress,
+        destination_table_schema: List[bigquery.SchemaField],
+        write_disposition: str,
+        job_labels: Optional[list[ResourceLabel]] = None,
+    ) -> bigquery.job.LoadJob:
+        job_config = bigquery.LoadJobConfig(
+            labels=self._build_labels(job_labels, address=destination_address)
+        )
+        job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
+        return self._load_table_from_cloud_storage(
+            source_uris=source_uris,
+            destination_address=destination_address,
+            destination_table_schema=destination_table_schema,
+            write_disposition=write_disposition,
+            job_config=job_config,
+        )
+
+    def _load_table_from_cloud_storage(
+        self,
+        *,
+        source_uris: List[str],
+        destination_address: BigQueryAddress,
+        destination_table_schema: List[bigquery.SchemaField],
+        write_disposition: str,
+        job_config: bigquery.LoadJobConfig,
+    ) -> bigquery.job.LoadJob:
         """Triggers a load job, i.e. a job that will copy all of the data from the given
         Cloud Storage source into the given BigQuery destination. Returns once the job
         completes and row-level permissions were applied to the created table, if applicable.
@@ -1523,17 +1607,8 @@ class BigQueryClientImpl(BigQueryClient):
 
         destination_table_ref = self._table_ref_for_address(destination_address)
 
-        job_config = bigquery.LoadJobConfig(
-            labels=self._build_labels(job_labels, address=destination_address)
-        )
         job_config.schema = destination_table_schema
-        job_config.source_format = bigquery.SourceFormat.CSV
-        job_config.allow_quoted_newlines = True
         job_config.write_disposition = write_disposition
-        job_config.skip_leading_rows = skip_leading_rows
-        job_config.preserve_ascii_control_characters = preserve_ascii_control_characters
-        job_config.encoding = encoding
-        job_config.field_delimiter = field_delimiter
 
         load_job = self.client.load_table_from_uri(
             source_uris, destination_table_ref, job_config=job_config

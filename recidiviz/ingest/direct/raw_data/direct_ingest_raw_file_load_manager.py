@@ -156,7 +156,7 @@ class DirectIngestRawFileLoadManager:
             len(paths),
             destination_address.to_str(),
         )
-        load_job = self.big_query_client.load_table_from_cloud_storage(
+        load_job = self.big_query_client.load_table_from_csv_cloud_storage(
             source_uris=[p.uri() for p in paths],
             destination_address=destination_address,
             destination_table_schema=table_schema,

@@ -113,7 +113,7 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
 
         self.recorder.run(self.discovery_result)
 
-        self.bq_client.load_table_from_cloud_storage.assert_called_once()
+        self.bq_client.load_table_from_csv_cloud_storage.assert_called_once()
         # 2 queries: document_contents insert + metadata insert
         self.assertEqual(self.bq_client.run_query_async.call_count, 2)
         self.assertEqual(self.bq_client.delete_table.call_count, 2)
@@ -158,9 +158,11 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         self.assertTrue(any(prefixed_metadata_dataset in q for q in query_strings))
         self.assertTrue(any(prefixed_contents_dataset in q for q in query_strings))
         self.assertTrue(any(prefixed_upload_status_dataset in q for q in query_strings))
-        loaded_address = self.bq_client.load_table_from_cloud_storage.call_args.kwargs[
-            "destination_address"
-        ]
+        loaded_address = (
+            self.bq_client.load_table_from_csv_cloud_storage.call_args.kwargs[
+                "destination_address"
+            ]
+        )
         self.assertTrue(loaded_address.dataset_id.startswith("my_prefix_"))
 
     def test_some_uploads_failed_retains_temp_tables(self) -> None:
@@ -168,7 +170,7 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
 
         self.recorder.run(self.discovery_result)
 
-        self.bq_client.load_table_from_cloud_storage.assert_called_once()
+        self.bq_client.load_table_from_csv_cloud_storage.assert_called_once()
         # 2 queries: document_contents insert + metadata insert
         self.assertEqual(self.bq_client.run_query_async.call_count, 2)
         self.bq_client.delete_table.assert_not_called()
@@ -208,7 +210,7 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         self.recorder.run(metadata_only_result)
 
         # don't upload CSVs if there are no new document contents
-        self.bq_client.load_table_from_cloud_storage.assert_not_called()
+        self.bq_client.load_table_from_csv_cloud_storage.assert_not_called()
         # skip document_contents insert when there are no new contents rows;
         # still run the metadata insert.
         self.assertEqual(self.bq_client.run_query_async.call_count, 1)
@@ -225,7 +227,7 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
         to the original error."""
         load_job_mock = MagicMock()
         load_job_mock.result.side_effect = NotFound("Not found: Uris gs://...")
-        self.bq_client.load_table_from_cloud_storage.return_value = load_job_mock
+        self.bq_client.load_table_from_csv_cloud_storage.return_value = load_job_mock
 
         with self.assertRaisesRegex(
             ValueError,
@@ -239,18 +241,18 @@ class TestDocumentUploadResultRecorder(unittest.TestCase):
             self.recorder.run(self.discovery_result)
         self.assertIsInstance(caught.exception.__cause__, NotFound)
 
-        self.bq_client.load_table_from_cloud_storage.assert_called_once()
+        self.bq_client.load_table_from_csv_cloud_storage.assert_called_once()
         self.bq_client.run_query_async.assert_not_called()
         self.bq_client.delete_table.assert_not_called()
 
     def test_load_upload_status_fails(self) -> None:
-        self.bq_client.load_table_from_cloud_storage.side_effect = ValueError(
+        self.bq_client.load_table_from_csv_cloud_storage.side_effect = ValueError(
             "BQ load failed"
         )
 
         with self.assertRaisesRegex(ValueError, "BQ load failed"):
             self.recorder.run(self.discovery_result)
 
-        self.bq_client.load_table_from_cloud_storage.assert_called_once()
+        self.bq_client.load_table_from_csv_cloud_storage.assert_called_once()
         self.bq_client.run_query_async.assert_not_called()
         self.bq_client.delete_table.assert_not_called()

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the GCSFileSystem."""
+import io
 from unittest import TestCase
 from zipfile import ZIP_STORED, ZipFile
 
@@ -42,6 +43,38 @@ def no_retries_predicate(_exception: Exception) -> bool:
 
 class FakeError(Exception):
     pass
+
+
+class _FakeBlobWriter(io.BytesIO):
+    """Stands in for the BlobWriter returned by Blob.open in binary write mode,
+    recording whether the upload was finalized (close) or cancelled (terminate)."""
+
+    def __init__(self, *, ignore_flush: bool) -> None:
+        super().__init__()
+        self.ignore_flush = ignore_flush
+        self.terminated = False
+        self.finalized = False
+        self.contents_at_close = b""
+
+    def flush(self) -> None:
+        # Like the real BlobWriter.flush(), which a TextIOWrapper wrapping this
+        # writer calls on close().
+        if not self.ignore_flush:
+            raise io.UnsupportedOperation(
+                "Cannot flush without finalizing upload. Use close() instead."
+            )
+
+    def close(self) -> None:
+        if not self.closed:
+            self.finalized = True
+            self.contents_at_close = self.getvalue()
+        super().close()
+
+    def terminate(self) -> None:
+        self.terminated = True
+        # Like the real BlobWriter.terminate(), close the buffer without
+        # finalizing, bypassing the finalization in close() above.
+        io.BytesIO.close(self)
 
 
 class TestGcsFileSystem(TestCase):
@@ -131,6 +164,82 @@ class TestGcsFileSystem(TestCase):
 
         mock_bucket.blob.assert_called_once_with("dst.csv", chunk_size=33554432)
         mock_blob.upload_from_file.assert_called_once()
+
+    def test_open_write_mode_creates_blob_that_does_not_exist_yet(self) -> None:
+        """Write mode must build the blob reference without a metadata fetch:
+        the object does not exist until the writer closes, so a get_blob()
+        lookup would raise GCSBlobDoesNotExistError for every new file."""
+        bucket_path = GcsfsBucketPath(bucket_name="my-bucket")
+        dst_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "new.json")
+        mock_bucket = create_autospec(Bucket)
+        # The object does not exist yet, so a metadata fetch would find nothing.
+        mock_bucket.get_blob.return_value = None
+        mock_blob = create_autospec(Blob)
+        mock_bucket.blob.return_value = mock_blob
+        self.mock_storage_client.bucket.return_value = mock_bucket
+        fake_writer = _FakeBlobWriter(ignore_flush=True)
+        mock_blob.open.return_value = fake_writer
+
+        with self.fs.open(
+            dst_path, mode="w", chunk_size=262144, encoding="utf-8", verifiable=False
+        ) as f:
+            f.write("hello")
+
+        mock_bucket.blob.assert_called_once_with("new.json")
+        mock_bucket.get_blob.assert_not_called()
+        # ignore_flush=True is required for wrapped text modes: the real
+        # BlobWriter's flush() raises unless constructed with it, and the text
+        # wrapper's close() flushes.
+        mock_blob.open.assert_called_once_with(
+            mode="wb", chunk_size=262144, ignore_flush=True
+        )
+        self.assertTrue(fake_writer.finalized)
+        self.assertFalse(fake_writer.terminated)
+        self.assertEqual(b"hello", fake_writer.contents_at_close)
+
+    def test_open_write_mode_exception_cancels_upload(self) -> None:
+        """An exception inside the write-mode with block must cancel the
+        resumable upload rather than close the writer, so no partial object is
+        finalized in GCS."""
+        bucket_path = GcsfsBucketPath(bucket_name="my-bucket")
+        dst_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "new.json")
+        mock_bucket = create_autospec(Bucket)
+        mock_blob = create_autospec(Blob)
+        mock_bucket.blob.return_value = mock_blob
+        self.mock_storage_client.bucket.return_value = mock_bucket
+        fake_writer = _FakeBlobWriter(ignore_flush=True)
+        mock_blob.open.return_value = fake_writer
+
+        with self.assertRaisesRegex(FakeError, r"^boom$"):
+            with self.fs.open(dst_path, mode="w", verifiable=False) as f:
+                f.write("partial contents")
+                raise FakeError("boom")
+
+        self.assertTrue(fake_writer.terminated)
+        self.assertFalse(fake_writer.finalized)
+
+    def test_open_binary_write_mode_rejects_encoding(self) -> None:
+        bucket_path = GcsfsBucketPath(bucket_name="my-bucket")
+        dst_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "new.json")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Cannot pass encoding \[utf-8\] in binary write mode \[wb\]\.$",
+        ):
+            with self.fs.open(dst_path, mode="wb", encoding="utf-8", verifiable=False):
+                pass
+
+    def test_open_write_mode_with_verifiable_raises(self) -> None:
+        bucket_path = GcsfsBucketPath(bucket_name="my-bucket")
+        dst_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "new.json")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Cannot open \[gs://my-bucket/new\.json\] with verifiable=True in "
+            r"write mode \[w\]; checksum verification only applies to reads\.$",
+        ):
+            with self.fs.open(dst_path, mode="w"):
+                pass
 
     def test_copy_with_failure(self) -> None:
         bucket_path = GcsfsBucketPath(bucket_name="my-bucket")

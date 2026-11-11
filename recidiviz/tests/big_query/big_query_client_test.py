@@ -571,12 +571,12 @@ class BigQueryClientImplTest(unittest.TestCase):
             )
             self.mock_client.extract_table.assert_not_called()
 
-    def test_load_table_async_create_dataset(self) -> None:
-        """Test that load_table_from_cloud_storage tries to create a parent dataset."""
+    def test_load_table_from_csv_cloud_storage_create_dataset(self) -> None:
+        """Test that load_table_from_csv_cloud_storage tries to create a parent dataset."""
 
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
-        self.bq_client.load_table_from_cloud_storage(
+        self.bq_client.load_table_from_csv_cloud_storage(
             destination_address=self.mock_table_address,
             destination_table_schema=[
                 SchemaField(
@@ -593,11 +593,11 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.assert_called()
         self.mock_client.load_table_from_uri.assert_called()
 
-    def test_load_table_async_dataset_exists(self) -> None:
-        """Test that load_table_from_cloud_storage does not try to create a
+    def test_load_table_from_csv_cloud_storage_dataset_exists(self) -> None:
+        """Test that load_table_from_csv_cloud_storage does not try to create a
         parent dataset if it already exists."""
 
-        self.bq_client.load_table_from_cloud_storage(
+        self.bq_client.load_table_from_csv_cloud_storage(
             destination_address=self.mock_table_address,
             destination_table_schema=[
                 SchemaField(
@@ -612,6 +612,76 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.create_dataset.assert_not_called()
         self.mock_client.load_table_from_uri.assert_called()
+
+    def test_load_table_from_csv_cloud_storage_sets_csv_job_config(self) -> None:
+        """The CSV load's job config carries the CSV format and every CSV
+        parsing option."""
+        self.bq_client.load_table_from_csv_cloud_storage(
+            destination_address=self.mock_table_address,
+            destination_table_schema=[SchemaField("my_column", "STRING", "NULLABLE")],
+            source_uris=["gs://bucket/export-uri"],
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+            skip_leading_rows=1,
+            encoding="ISO-8859-1",
+            field_delimiter="|",
+        )
+
+        self.mock_client.load_table_from_uri.assert_called_once()
+        job_config = self.mock_client.load_table_from_uri.call_args.kwargs["job_config"]
+        self.assertEqual(bigquery.SourceFormat.CSV, job_config.source_format)
+        self.assertEqual(
+            bigquery.WriteDisposition.WRITE_TRUNCATE, job_config.write_disposition
+        )
+        self.assertEqual(
+            [SchemaField("my_column", "STRING", "NULLABLE")], job_config.schema
+        )
+        self.assertEqual(1, job_config.skip_leading_rows)
+        self.assertEqual("ISO-8859-1", job_config.encoding)
+        self.assertEqual("|", job_config.field_delimiter)
+        self.assertTrue(job_config.allow_quoted_newlines)
+        self.assertFalse(job_config.preserve_ascii_control_characters)
+
+    def test_load_table_from_json_cloud_storage_create_dataset(self) -> None:
+        """Test that load_table_from_json_cloud_storage tries to create a
+        parent dataset if it does not exist."""
+        self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
+
+        self.bq_client.load_table_from_json_cloud_storage(
+            destination_address=self.mock_table_address,
+            destination_table_schema=[SchemaField("my_column", "STRING", "NULLABLE")],
+            source_uris=["gs://bucket/export-uri"],
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+        )
+
+        self.mock_client.create_dataset.assert_called()
+        self.mock_client.load_table_from_uri.assert_called()
+
+    def test_load_table_from_json_cloud_storage_sets_json_job_config(self) -> None:
+        """The JSON load's job config carries the newline-delimited JSON format
+        and none of the CSV-only options."""
+        self.bq_client.load_table_from_json_cloud_storage(
+            destination_address=self.mock_table_address,
+            destination_table_schema=[SchemaField("my_column", "STRING", "NULLABLE")],
+            source_uris=["gs://bucket/export-uri"],
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE_DATA,
+        )
+
+        self.mock_client.load_table_from_uri.assert_called_once()
+        job_config = self.mock_client.load_table_from_uri.call_args.kwargs["job_config"]
+        self.assertEqual(
+            bigquery.SourceFormat.NEWLINE_DELIMITED_JSON, job_config.source_format
+        )
+        self.assertEqual(
+            bigquery.WriteDisposition.WRITE_TRUNCATE_DATA,
+            job_config.write_disposition,
+        )
+        self.assertEqual(
+            [SchemaField("my_column", "STRING", "NULLABLE")], job_config.schema
+        )
+        self.assertIsNone(job_config.field_delimiter)
+        self.assertIsNone(job_config.skip_leading_rows)
+        self.assertIsNone(job_config.allow_quoted_newlines)
+        self.assertIsNone(job_config.encoding)
 
     def test_load_into_table_from_file_create_dataset(self) -> None:
         """Test that load_into_table_from_file tries to create a parent dataset."""
@@ -1219,19 +1289,6 @@ class BigQueryClientImplTest(unittest.TestCase):
             location=BigQueryClient.DEFAULT_REGION,
             job_config=job_config,
         )
-
-    def test_load_into_table_from_cloud_storage(self) -> None:
-        self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
-
-        self.bq_client.load_table_from_cloud_storage(
-            destination_address=self.mock_table_address,
-            destination_table_schema=[SchemaField("my_column", "STRING", "NULLABLE")],
-            source_uris=["gs://bucket/export-uri"],
-            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-        )
-
-        self.mock_client.create_dataset.assert_called()
-        self.mock_client.load_table_from_uri.assert_called()
 
     def test_stream_into_table(self) -> None:
         self.mock_client.insert_rows.return_value = None

@@ -165,7 +165,7 @@ def load_from_gcs_to_temp_table(
     """Upload raw data from GCS to temporary BQ table"""
     bucket_name = f"{project_id}{BUCKET_SUFFIX}"
     try:
-        bq_client.load_table_from_cloud_storage(
+        bq_client.load_table_from_csv_cloud_storage(
             source_uris=[f"gs://{bucket_name}/{blob_name}"],
             destination_address=TEMP_DESTINATION_ADDRESS,
             destination_table_schema=[

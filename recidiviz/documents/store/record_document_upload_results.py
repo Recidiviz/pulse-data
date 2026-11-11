@@ -105,7 +105,7 @@ class DocumentUploadResultRecorder:
             source_uri,
             upload_status_table_address.to_str(),
         )
-        load_job = self.big_query_client.load_table_from_cloud_storage(
+        load_job = self.big_query_client.load_table_from_csv_cloud_storage(
             source_uris=[source_uri],
             destination_address=upload_status_table_address.to_project_agnostic_address(),
             destination_table_schema=DocumentUploadStatusTable.schema(),

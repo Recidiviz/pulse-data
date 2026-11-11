@@ -544,7 +544,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             # metadata-updates) = 9. 2 + 9 = 11.
             self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 11)
             self.mock_bq_client.run_query_async.assert_not_called()
-            self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
+            self.mock_bq_client.load_table_from_csv_cloud_storage.assert_not_called()
 
     def test_discovery_results_run_end_to_end(self) -> None:
         self._mock_bq_client_has_updates()
@@ -581,7 +581,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             # Status CSV load happened once per collection with content (content_rows > 0):
             # case-notes + 3 ER composites = 4.
             self.assertEqual(
-                self.mock_bq_client.load_table_from_cloud_storage.call_count, 4
+                self.mock_bq_client.load_table_from_csv_cloud_storage.call_count, 4
             )
 
             # All rows inserted, so every collection's temp tables are deleted. The
@@ -630,7 +630,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             # 6 + 9 = 15.
             self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 15)
             self.mock_bq_client.run_query_async.assert_not_called()
-            self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
+            self.mock_bq_client.load_table_from_csv_cloud_storage.assert_not_called()
 
     def test_discovery_failure_skips_remaining(self) -> None:
         """If discovery fails, build_args/upload/record upstream-fail and the
@@ -690,7 +690,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 ],
             )
             self.mock_bq_client.run_query_async.assert_not_called()
-            self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
+            self.mock_bq_client.load_table_from_csv_cloud_storage.assert_not_called()
 
     def test_build_upload_pod_arguments_filters_empty_task_instances(self) -> None:
         """build_document_upload_pod_arguments should emit one argv list per
@@ -865,7 +865,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
                 self.assertNotIn("_document_contents`", insert_query)
 
             # No upload status CSVs to load.
-            self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
+            self.mock_bq_client.load_table_from_csv_cloud_storage.assert_not_called()
 
             # Full success for each collection: discovery deleted the generation-output
             # temp table and the recorder deleted the metadata updates and new contents
@@ -907,7 +907,7 @@ class LlmDocumentExtractionDagTest(AirflowIntegrationTest):
             # (generation-output, entry→source map, metadata-updates) = 9. 4 + 9 = 13.
             self.assertEqual(self.mock_bq_client.create_table_from_query.call_count, 13)
             self.mock_bq_client.run_query_async.assert_not_called()
-            self.mock_bq_client.load_table_from_cloud_storage.assert_not_called()
+            self.mock_bq_client.load_table_from_csv_cloud_storage.assert_not_called()
 
     def test_unknown_document_collection_name_filter_fails_branching(self) -> None:
         with Session(bind=self.engine) as session:

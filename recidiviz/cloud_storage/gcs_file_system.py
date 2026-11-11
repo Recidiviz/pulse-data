@@ -212,6 +212,11 @@ class GCSFileSystem:
         memory consumption. If |verifiable| is True and all of the contents are read,
         will verify that the checksum is correct (or raises).
 
+        If the file is opened in write mode, the path does not need to exist yet:
+        contents is streamed to GCS as it is written, and the object is created when
+        the handler closes. A handler that exits on an exception aborts the upload
+        and creates nothing.
+
         |verifiable| can only be set to True when in a read-like mode.
         """
 

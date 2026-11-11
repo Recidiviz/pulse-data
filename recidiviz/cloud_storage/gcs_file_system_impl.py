@@ -547,6 +547,50 @@ class GCSFileSystemImpl(GCSFileSystem):
         encoding: Optional[str] = None,
         verifiable: bool = True,
     ) -> Iterator[IO]:
+        if mode in ("w", "wt", "wb"):
+            if verifiable:
+                raise ValueError(
+                    f"Cannot open [{path.uri()}] with verifiable=True in write mode "
+                    f"[{mode}]; checksum verification only applies to reads."
+                )
+            if mode == "wb" and encoding is not None:
+                raise ValueError(
+                    f"Cannot pass encoding [{encoding}] in binary write mode [{mode}]."
+                )
+            # bucket.blob() builds a reference without fetching metadata, so the
+            # object does not need to exist yet (_get_blob raises for paths that
+            # do not exist). The object is created only when the writer closes
+            # successfully below.
+            blob = self.storage_client.bucket(path.bucket_name).blob(path.blob_name)
+            # Always open the underlying writer in binary mode and wrap text modes
+            # ourselves. blob.open in a text mode returns a TextIOWrapper whose
+            # context manager closes, and therefore finalizes the upload of, a
+            # partially written object even when the with block raises; holding the
+            # binary writer directly lets us cancel the upload instead.
+            #
+            # BlobWriter.flush() raises io.UnsupportedOperation unless the writer
+            # is constructed with ignore_flush=True, and TextIOWrapper.close()
+            # flushes its buffer, so wrapped text modes require ignore_flush=True
+            # (blob.open's own text-mode branch hardcodes it for the same reason).
+            # Bare wb keeps the library default so a caller's stray flush() fails
+            # loudly rather than silently doing nothing.
+            writer = blob.open(
+                mode="wb", chunk_size=chunk_size, ignore_flush=mode != "wb"
+            )
+            handle: IO = (
+                writer if mode == "wb" else TextIOWrapper(writer, encoding=encoding)
+            )
+            try:
+                yield handle
+            except BaseException:
+                # Cancels the resumable upload (or discards the buffer if no
+                # upload session started yet) and closes the buffer, so a later
+                # close() of the text wrapper, including from __del__, cannot
+                # finalize the object.
+                writer.terminate()
+                raise
+            handle.close()
+            return
 
         blob = self._get_blob(path)
 

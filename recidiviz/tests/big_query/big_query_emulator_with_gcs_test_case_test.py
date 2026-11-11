@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for BigQueryEmulatorWithGCSTestCase: the FakeGCSFileSystem-backed
-load_table_from_cloud_storage stand-in reads the CSVs seeded into self.fs and
+load_table_from_csv_cloud_storage stand-in reads the CSVs seeded into self.fs and
 lands their rows in the emulator table."""
 
 from google.cloud import bigquery
@@ -38,7 +38,7 @@ _SCHEMA = [
 
 
 class BigQueryEmulatorWithGCSTestCaseTest(BigQueryEmulatorWithGCSTestCase):
-    """Drives the wired-up load_table_from_cloud_storage against self.fs the way a
+    """Drives the wired-up load_table_from_csv_cloud_storage against self.fs the way a
     real consumer does: seed CSVs into the fake filesystem, load a
     `gs://.../*.csv` glob, and read the rows back out of the emulator."""
 
@@ -58,7 +58,7 @@ class BigQueryEmulatorWithGCSTestCaseTest(BigQueryEmulatorWithGCSTestCase):
         )
 
     def _load(self, source_uris: list[str]) -> None:
-        self.bq_client.load_table_from_cloud_storage(
+        self.bq_client.load_table_from_csv_cloud_storage(
             source_uris=source_uris,
             destination_address=self._destination(),
             destination_table_schema=_SCHEMA,
