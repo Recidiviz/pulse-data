@@ -132,6 +132,19 @@ COMMON_VESTIGES = [
     "intercom_export.tickets",
     "intercom_export.tour_step_failure",
     "intercom_export.tour_step_view",
+    # Raw crawl tables read by no view yet; TODO(OBT-55693) removes these
+    # when fct_pull_request lands.
+    "github_api_raw.pull_requests",
+    "github_api_raw.reviews",
+    "github_api_raw.review_comments",
+    "github_api_raw.issue_comments",
+    "github_api_raw.timeline_items",
+    "github_api_raw.commits",
+    "github_api_raw.files",
+    # Run log of the github-metrics-crawl job. Only the
+    # github_metrics_crawl_freshness_check scheduled query reads it, never a
+    # view.
+    "github_api_raw.crawl_runs",
 ]
 
 # these are source tables which are in use, but not necessarily used by the main view graph

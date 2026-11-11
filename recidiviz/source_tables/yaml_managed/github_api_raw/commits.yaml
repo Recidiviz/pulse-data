@@ -1,0 +1,57 @@
+address:
+  dataset_id: github_api_raw
+  table_id: commits
+description:
+  Append-only snapshots of the commits on pull requests in the engineering
+  metrics repos, read from the GitHub GraphQL API by
+  recidiviz/entrypoints/github_metrics_crawl.py. Each crawl appends one row per
+  commit on every pull request it reads.
+schema:
+  - name: repository_full_name
+    type: STRING
+    mode: REQUIRED
+    description: The repository as owner/name, for example Recidiviz/pulse-data.
+  - name: pr_number
+    type: INTEGER
+    mode: REQUIRED
+    description: The pull request number within the repository.
+  - name: crawl_id
+    type: STRING
+    mode: REQUIRED
+    description: UUID of the crawl run that wrote this row. Every row one run writes for a pull request shares it.
+  - name: crawled_at
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: Start time of the crawl run that wrote this row; the partition column.
+  - name: commit_oid
+    type: STRING
+    mode: REQUIRED
+    description: Git SHA of the commit.
+  - name: authored_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: When the commit was authored, which a rebase keeps.
+  - name: committed_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: When the commit was committed, which a rebase moves.
+  - name: author_login
+    type: STRING
+    mode: NULLABLE
+    description: GitHub login linked to the commit's author email. Null when no GitHub account matches the email.
+  - name: additions
+    type: INTEGER
+    mode: NULLABLE
+    description: Lines the commit adds.
+  - name: deletions
+    type: INTEGER
+    mode: NULLABLE
+    description: Lines the commit deletes.
+  - name: raw
+    type: JSON
+    mode: NULLABLE
+    description: The pull request commit node as the GitHub GraphQL API returned it.
+time_partitioning:
+  type: DAY
+  field: crawled_at
+require_partition_filter: false

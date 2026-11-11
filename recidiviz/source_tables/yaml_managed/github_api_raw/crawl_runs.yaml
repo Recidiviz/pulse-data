@@ -1,0 +1,45 @@
+address:
+  dataset_id: github_api_raw
+  table_id: crawl_runs
+description:
+  Append-only log of completed runs of recidiviz/entrypoints/github_metrics_crawl.py,
+  one row per run. A run writes its row only after every requested repo has
+  finished, and a run that fails writes none, so the absence of a recent row
+  means the job did not complete. The github_metrics_crawl_freshness_check
+  scheduled query in recidiviz/tools/deploy/terraform/bigquery-scheduled-queries.tf
+  reads it.
+schema:
+  - name: crawl_id
+    type: STRING
+    mode: REQUIRED
+    description: UUID of the run; matches crawl_id on every row the run wrote to the other github_api_raw tables.
+  - name: mode
+    type: STRING
+    mode: REQUIRED
+    description: How the run found pull requests, backfill or incremental.
+  - name: started_at
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: When the run started; equals crawled_at on its rows in the other tables. The partition column.
+  - name: finished_at
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: When the run finished its last repo.
+  - name: repositories_requested
+    type: INTEGER
+    mode: REQUIRED
+    description: Number of repos the run was asked to crawl.
+  - name: repositories_crawled
+    type: INTEGER
+    mode: REQUIRED
+    description:
+      Number of repos the run crawled. An incremental run skips a repo with no rows
+      in pull_requests yet, so that repo counts as requested but not crawled.
+  - name: pull_requests_crawled
+    type: INTEGER
+    mode: REQUIRED
+    description: Number of distinct pull requests the run wrote to pull_requests, across all repos.
+time_partitioning:
+  type: DAY
+  field: started_at
+require_partition_filter: false

@@ -1,0 +1,56 @@
+address:
+  dataset_id: github_api_raw
+  table_id: issue_comments
+description:
+  Comments in the main conversation thread of a pull request, not attached to a
+  line of code. GitHub's API calls these issue comments because a pull request
+  is an issue underneath; the table keeps that name so it matches the API and
+  the issue_comment webhook event. Append-only snapshots for pull requests in
+  the engineering metrics repos, read from the GitHub GraphQL API by
+  recidiviz/entrypoints/github_metrics_crawl.py. Each crawl appends one row per
+  comment on every pull request it reads. Comment bodies are not stored.
+schema:
+  - name: repository_full_name
+    type: STRING
+    mode: REQUIRED
+    description: The repository as owner/name, for example Recidiviz/pulse-data.
+  - name: pr_number
+    type: INTEGER
+    mode: REQUIRED
+    description: The pull request number within the repository.
+  - name: crawl_id
+    type: STRING
+    mode: REQUIRED
+    description: UUID of the crawl run that wrote this row. Every row one run writes for a pull request shares it.
+  - name: crawled_at
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: Start time of the crawl run that wrote this row; the partition column.
+  - name: comment_id
+    type: STRING
+    mode: REQUIRED
+    description: GitHub's GraphQL node id for the comment.
+  - name: created_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: When the comment was created.
+  - name: author_login
+    type: STRING
+    mode: NULLABLE
+    description: GitHub login of the comment author. Null when the account was deleted.
+  - name: author_type
+    type: STRING
+    mode: NULLABLE
+    description: GraphQL type of the comment author account, for example User or Bot. Null when the account was deleted.
+  - name: body_length
+    type: INTEGER
+    mode: NULLABLE
+    description: Length in characters of the comment body.
+  - name: raw
+    type: JSON
+    mode: NULLABLE
+    description: The comment node as the GitHub GraphQL API returned it, without its body.
+time_partitioning:
+  type: DAY
+  field: crawled_at
+require_partition_filter: false

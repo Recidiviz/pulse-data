@@ -1,0 +1,59 @@
+address:
+  dataset_id: github_api_raw
+  table_id: timeline_items
+description:
+  Append-only snapshots of selected timeline events on pull requests in the
+  engineering metrics repos, read from the GitHub GraphQL API by
+  recidiviz/entrypoints/github_metrics_crawl.py. The crawl reads ready for
+  review, convert to draft, review requested and removed, closed, reopened,
+  merged, labeled and unlabeled, and auto-merge enabled and disabled events.
+  Each crawl appends one row per such event on every pull request it reads.
+schema:
+  - name: repository_full_name
+    type: STRING
+    mode: REQUIRED
+    description: The repository as owner/name, for example Recidiviz/pulse-data.
+  - name: pr_number
+    type: INTEGER
+    mode: REQUIRED
+    description: The pull request number within the repository.
+  - name: crawl_id
+    type: STRING
+    mode: REQUIRED
+    description: UUID of the crawl run that wrote this row. Every row one run writes for a pull request shares it.
+  - name: crawled_at
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: Start time of the crawl run that wrote this row; the partition column.
+  - name: item_type
+    type: STRING
+    mode: REQUIRED
+    description: GraphQL type of the event, for example ReadyForReviewEvent or MergedEvent.
+  - name: occurred_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: When the event happened, from the event's createdAt.
+  - name: actor_login
+    type: STRING
+    mode: NULLABLE
+    description: GitHub login of the account that caused the event. Null when the account was deleted.
+  - name: requested_reviewer_login
+    type: STRING
+    mode: NULLABLE
+    description: For review request events, the login of the requested user or bot; null otherwise.
+  - name: requested_team_slug
+    type: STRING
+    mode: NULLABLE
+    description: For review request events, the slug of the requested team; null otherwise.
+  - name: label_name
+    type: STRING
+    mode: NULLABLE
+    description: For labeled and unlabeled events, the label name; null otherwise.
+  - name: raw
+    type: JSON
+    mode: NULLABLE
+    description: The timeline item node as the GitHub GraphQL API returned it.
+time_partitioning:
+  type: DAY
+  field: crawled_at
+require_partition_filter: false

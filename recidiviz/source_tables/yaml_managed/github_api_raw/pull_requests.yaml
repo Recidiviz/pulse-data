@@ -1,0 +1,127 @@
+address:
+  dataset_id: github_api_raw
+  table_id: pull_requests
+description:
+  Append-only snapshots of pull requests in the engineering metrics repos, read
+  from the GitHub GraphQL API by recidiviz/entrypoints/github_metrics_crawl.py.
+  Each crawl appends one row per pull request it reads, tagged with that run's
+  crawl_id, so a pull request has one row per crawl that saw it. The crawl loads
+  this table after the six child tables, so a row here means that crawl's child
+  rows for the pull request have already landed.
+schema:
+  - name: repository_full_name
+    type: STRING
+    mode: REQUIRED
+    description: The repository as owner/name, for example Recidiviz/pulse-data.
+  - name: pr_number
+    type: INTEGER
+    mode: REQUIRED
+    description: The pull request number within the repository.
+  - name: crawl_id
+    type: STRING
+    mode: REQUIRED
+    description: UUID of the crawl run that wrote this row. Every row one run writes for a pull request shares it.
+  - name: crawled_at
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: Start time of the crawl run that wrote this row; the partition column.
+  - name: pr_id
+    type: STRING
+    mode: REQUIRED
+    description: GitHub's GraphQL node id for the pull request.
+  - name: title
+    type: STRING
+    mode: NULLABLE
+    description: The pull request title at crawl time.
+  - name: author_login
+    type: STRING
+    mode: NULLABLE
+    description: GitHub login of the pull request author. Null when the account was deleted.
+  - name: author_type
+    type: STRING
+    mode: NULLABLE
+    description: GraphQL type of the author account, for example User or Bot. Null when the account was deleted.
+  - name: state
+    type: STRING
+    mode: NULLABLE
+    description: Pull request state at crawl time, one of OPEN, CLOSED or MERGED.
+  - name: is_draft
+    type: BOOLEAN
+    mode: NULLABLE
+    description: Whether the pull request was a draft at crawl time.
+  - name: created_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: When the pull request was opened.
+  - name: updated_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: When GitHub last updated the pull request, which moves on every review, comment, label and push. The nightly crawl reads its watermark from this column.
+  - name: closed_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: When the pull request was last closed, or null while it is open.
+  - name: merged_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: When the pull request was merged, or null if it was not merged.
+  - name: merged_by_login
+    type: STRING
+    mode: NULLABLE
+    description: GitHub login of the account that merged the pull request, or null.
+  - name: merge_commit_oid
+    type: STRING
+    mode: NULLABLE
+    description: Git SHA of the merge commit, or null if the pull request was not merged.
+  - name: base_ref_name
+    type: STRING
+    mode: NULLABLE
+    description: Name of the branch the pull request merges into.
+  - name: head_ref_name
+    type: STRING
+    mode: NULLABLE
+    description: Name of the branch the pull request merges from.
+  - name: is_cross_repository
+    type: BOOLEAN
+    mode: NULLABLE
+    description: Whether the head branch lives in a fork rather than this repository.
+  - name: additions
+    type: INTEGER
+    mode: NULLABLE
+    description: Lines added across the whole pull request.
+  - name: deletions
+    type: INTEGER
+    mode: NULLABLE
+    description: Lines deleted across the whole pull request.
+  - name: changed_files
+    type: INTEGER
+    mode: NULLABLE
+    description: Number of files the pull request changes, as GitHub reports it.
+  - name: labels
+    type: STRING
+    mode: REPEATED
+    description: Names of the labels on the pull request at crawl time.
+  - name: review_count
+    type: INTEGER
+    mode: NULLABLE
+    description: Total number of reviews GitHub reports on the pull request.
+  - name: commit_count
+    type: INTEGER
+    mode: NULLABLE
+    description: Total number of commits GitHub reports on the pull request.
+  - name: timeline_count
+    type: INTEGER
+    mode: NULLABLE
+    description: Total number of timeline items of the crawled types GitHub reports on the pull request.
+  - name: truncated_connections
+    type: STRING
+    mode: REPEATED
+    description: Names of the nested connections this crawl could not read in full. The crawl reads every page of each child table's connection, so only labels can appear here, when a pull request has more than 20 labels.
+  - name: raw
+    type: JSON
+    mode: NULLABLE
+    description: The pull request node as the GitHub GraphQL API returned it, with the nested reviews, comments, commits, files, timeline items and labels removed.
+time_partitioning:
+  type: DAY
+  field: crawled_at
+require_partition_filter: false

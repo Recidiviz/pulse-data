@@ -1,0 +1,61 @@
+address:
+  dataset_id: github_api_raw
+  table_id: reviews
+description:
+  Append-only snapshots of the reviews on pull requests in the engineering
+  metrics repos, read from the GitHub GraphQL API by
+  recidiviz/entrypoints/github_metrics_crawl.py. Each crawl appends one row per
+  review on every pull request it reads. Review bodies are not stored.
+schema:
+  - name: repository_full_name
+    type: STRING
+    mode: REQUIRED
+    description: The repository as owner/name, for example Recidiviz/pulse-data.
+  - name: pr_number
+    type: INTEGER
+    mode: REQUIRED
+    description: The pull request number within the repository.
+  - name: crawl_id
+    type: STRING
+    mode: REQUIRED
+    description: UUID of the crawl run that wrote this row. Every row one run writes for a pull request shares it.
+  - name: crawled_at
+    type: TIMESTAMP
+    mode: REQUIRED
+    description: Start time of the crawl run that wrote this row; the partition column.
+  - name: review_id
+    type: STRING
+    mode: REQUIRED
+    description: GitHub's GraphQL node id for the review.
+  - name: state
+    type: STRING
+    mode: NULLABLE
+    description: Review state, for example APPROVED, CHANGES_REQUESTED, COMMENTED, DISMISSED or PENDING.
+  - name: submitted_at
+    type: TIMESTAMP
+    mode: NULLABLE
+    description: When the review was submitted. Null for a PENDING review.
+  - name: author_login
+    type: STRING
+    mode: NULLABLE
+    description: GitHub login of the reviewer. Null when the account was deleted.
+  - name: author_type
+    type: STRING
+    mode: NULLABLE
+    description: GraphQL type of the reviewer account, for example User or Bot. Null when the account was deleted.
+  - name: body_length
+    type: INTEGER
+    mode: NULLABLE
+    description: Length in characters of the review's top-level body.
+  - name: comment_count
+    type: INTEGER
+    mode: NULLABLE
+    description: Total number of inline comments GitHub reports on the review.
+  - name: raw
+    type: JSON
+    mode: NULLABLE
+    description: The review node as the GitHub GraphQL API returned it, without its body or nested comments.
+time_partitioning:
+  type: DAY
+  field: crawled_at
+require_partition_filter: false
