@@ -58,6 +58,11 @@ class GCSDocument:
                 content = f.read()
         """
         fs = GcsfsFactory.build()
+        # GCSFileSystemImpl.open()'s write-mode branch catches BaseException
+        # without a finally (deliberately, to always cancel the upload), which
+        # makes pylint flag every caller of open() in any mode, including this
+        # read-only one.
+        # pylint: disable-next=contextmanager-generator-missing-cleanup
         with fs.open(self.gcs_file_path, mode="r") as f:
             yield f
 

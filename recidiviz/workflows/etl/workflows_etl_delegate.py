@@ -124,6 +124,10 @@ class WorkflowsETLDelegate(abc.ABC):
                 f"File {filepath.abs_path()} does not exist in GCS."
             )
 
+        # GCSFileSystemImpl.open()'s write-mode branch catches BaseException
+        # without a finally (deliberately, to always cancel the upload), which
+        # makes pylint flag every caller of open() in any mode, including this
+        # read-only one.
         # pylint: disable-next=contextmanager-generator-missing-cleanup
         with client.open(filepath) as f:
             yield f
