@@ -50,6 +50,28 @@ INPUT_CHUNK_SIZE = 32 * 1024 * 1024  # 32 mb
 # the composite index below and the prune in step 3 both filter on it, so a document
 # missing it would never be cleaned up and would linger in Firestore indefinitely.
 STATE_CODE_KEY = "stateCode"
+JSON_STRING_OPENING_CHARS = ("{", "[")
+
+
+def recursive_json_loads(value: Any) -> Any:
+    """Parses value recursively so all nested json strings are parsed into a dictionary."""
+    if isinstance(value, str):
+        # Only JSON objects and arrays are parsed, so strings like "123", "true", or
+        # "null" stay strings instead of becoming ints, bools, or None.
+        if not value.lstrip().startswith(JSON_STRING_OPENING_CHARS):
+            return value
+        try:
+            parsed_value = json.loads(value)
+        except json.JSONDecodeError:
+            return value
+        return recursive_json_loads(parsed_value)
+
+    if isinstance(value, dict):
+        return {key: recursive_json_loads(value[key]) for key in value}
+    if isinstance(value, list):
+        return [recursive_json_loads(nested_value) for nested_value in value]
+
+    return value
 
 
 class WorkflowsETLDelegate(abc.ABC):
@@ -102,6 +124,7 @@ class WorkflowsETLDelegate(abc.ABC):
                 f"File {filepath.abs_path()} does not exist in GCS."
             )
 
+        # pylint: disable-next=contextmanager-generator-missing-cleanup
         with client.open(filepath) as f:
             yield f
 
@@ -213,7 +236,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                     batch = firestore_client.async_batch()
                     for line in rows:
                         try:
-                            line_data = json.loads(line)
+                            line_data = recursive_json_loads(line)
                             row_id, document_fields = self.transform_row(
                                 line_data, filename
                             )

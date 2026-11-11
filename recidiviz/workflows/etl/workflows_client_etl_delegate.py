@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Delegate class to ETL client records for Workflows into Firestore."""
-import json
 from typing import Any, List, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
@@ -62,8 +61,7 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
             match key:
                 case "person_name":
                     new_document[key] = {
-                        snake_to_camel(k): person_name_case(v)
-                        for k, v in json.loads(value).items()
+                        snake_to_camel(k): person_name_case(v) for k, v in value.items()
                     }
                 case "supervision_type":
                     new_document[key] = state_specific_supervision_type_transformation(
@@ -74,7 +72,7 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
                         state_code, value
                     )
                 case "metadata":
-                    new_document[key] = json.loads(value)
+                    new_document[key] = value
                 case _:
                     new_document[key] = value
 

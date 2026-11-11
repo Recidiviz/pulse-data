@@ -16,7 +16,6 @@
 #  =============================================================================
 """Delegate class to ETL supervision staff records for Workflows into Firestore."""
 
-import json
 from typing import Any, List, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
@@ -38,7 +37,7 @@ class WorkflowsSupervisionStaffETLDelegate(WorkflowsFirestoreETLDelegate):
 
         # This field is a nested JSON string that needs to be parsed as well
         state_specific_data = convert_nested_dictionary_keys(
-            json.loads(row.get("state_specific_data", "{}")), snake_to_camel
+            row.get("state_specific_data", {}), snake_to_camel
         )
         if state_specific_data.get("stateCode") == "US_IX":
             state_specific_data["stateCode"] = "US_ID"

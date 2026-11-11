@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests the ability for WorkflowsResidentETLDelegate to parse json rows."""
-import json
+
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any
@@ -41,14 +41,12 @@ TEST_DATA: dict[str, Any] = {
     "pseudonymized_id": "p300",
     "display_id": "d300",
     "state_code": "US_TN",
-    "person_name": json.dumps(
-        {
-            "given_names": "STASSI",
-            "middle_names": "FAKE",
-            "name_suffix": "",
-            "surname": "SCHROEDER",
-        }
-    ),
+    "person_name": {
+        "given_names": "STASSI",
+        "middle_names": "FAKE",
+        "name_suffix": "",
+        "surname": "SCHROEDER",
+    },
     "custody_level": "MEDIUM",
     "officer_id": "100",
     "facility_id": "ABC",
@@ -59,7 +57,7 @@ TEST_DATA: dict[str, Any] = {
     "all_eligible_opportunities": ["usTnCustodyLevelDowngrade"],
     "all_ineligible_opportunities": ["usTnAnnualReclassification2026Policy"],
     "gender": "FEMALE",
-    "metadata": json.dumps({"state_code": "US_TN"}),
+    "metadata": {"state_code": "US_TN"},
 }
 
 EXPECTED_DOCUMENT: dict[str, Any] = {
@@ -135,15 +133,13 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
             "usMoOverdueRestrictiveHousingReviewHearing"
         ]
         data["all_ineligible_opportunities"] = ["usMoWorkRelease"]
-        data["metadata"] = json.dumps(
-            {
-                "top_level_key": {
-                    "first_nested_key": "don't_reformat_me",
-                    "second_nested_key": 17,
-                },
-                "another_top_level_key": "jackalope",
-            }
-        )
+        data["metadata"] = {
+            "top_level_key": {
+                "first_nested_key": "don't_reformat_me",
+                "second_nested_key": 17,
+            },
+            "another_top_level_key": "jackalope",
+        }
 
         expected = deepcopy(EXPECTED_DOCUMENT)
         expected["stateCode"] = "US_MO"
