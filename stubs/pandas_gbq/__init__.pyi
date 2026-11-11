@@ -22,6 +22,7 @@ from pandas import DataFrame
 def read_gbq(
     query: str,
     project_id: Optional[str] = None,
+    progress_bar_type: Optional[str] = "tqdm",
 ) -> DataFrame: ...
 def to_gbq(
     dataframe: pandas.DataFrame,

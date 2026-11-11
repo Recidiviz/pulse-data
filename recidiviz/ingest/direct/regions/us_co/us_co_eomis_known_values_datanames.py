@@ -49,6 +49,8 @@ mapped below alongside the EOMIS columns.
 # than one DATANAME (a field combining multiple EOMIS code lists) maps to a tuple
 # with more than one entry.
 US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
+    # eomis_address
+    ("eomis_address", "COUNTY"): ("CDCOARAG",),
     # eomis_apptcalendar
     ("eomis_apptcalendar", "GATEPASSREQUIRFOROFNDR"): ("CIGATEPASS",),
     ("eomis_apptcalendar", "APPOINTMENTSTATUS"): ("CMAPSTAT",),
@@ -64,6 +66,9 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     ("eomis_apptcalendar", "LOCATIONWITHINAPPTFACL"): ("CO_HOSP_CD",),
     ("eomis_apptcalendar", "LABTESTTYPE"): ("LabTestType",),
     # eomis_clientprofile
+    ("eomis_clientprofile", "SUPVSTATUS"): ("SHSUPVSTAT",),
+    ("eomis_clientprofile", "CLIENTSUPVTYPE"): ("CDTYPESP",),
+    ("eomis_clientprofile", "LASTSUPVCATEGORY"): ("SECATEGORY",),
     ("eomis_clientprofile", "LASTGAINLOSSCD"): ("CDGLCODE",),
     ("eomis_clientprofile", "LASTRISKCLASS"): ("CDRISK",),
     ("eomis_clientprofile", "LASTRISKASMTLEVEL"): ("LastRskAsmtLevel",),
@@ -79,6 +84,10 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     ("eomis_commitmentsummary", "OBLIGATIONSFLAG"): ("ObligationsFlag",),
     ("eomis_commitmentsummary", "COUNTYOFSENTENCING"): ("CDCOARAG",),
     ("eomis_commitmentsummary", "OTHSTATE"): ("CMOTHST",),
+    # eomis_communityrefer
+    ("eomis_communityrefer", "COMMPROGRAMTYPE"): ("COMMPGMTYP",),
+    ("eomis_communityrefer", "STRUCTTREATPGMCODE"): ("CDTRMTYP",),
+    ("eomis_communityrefer", "REFERRALSTATUS"): ("CDREFSTA",),
     # eomis_custodyclass
     ("eomis_custodyclass", "DISCIPLINERPTLEVEL"): ("CIDRLEVL",),
     ("eomis_custodyclass", "DISCIPLINERPTHIST"): ("CIDRHIST",),
@@ -87,6 +96,11 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     ("eomis_custodyclass", "HISTORYDISCINFRACTIONS"): ("CIDRHIST2",),
     ("eomis_custodyclass", "DISCIPLINARYCONVICTIONSRECVD"): ("DiscCnvctRcvd",),
     # eomis_demographicprofile
+    ("eomis_demographicprofile", "PRIMARYLANGCODE"): ("CMPRILNG",),
+    ("eomis_demographicprofile", "COMPREHENDSENGLISH"): ("CMCMPENG",),
+    # INTERPRETERNEEDED combines the CDINTRPRET interpreter list, which holds NON
+    # (None) and covers almost every row, with CMPRILNG language codes.
+    ("eomis_demographicprofile", "INTERPRETERNEEDED"): ("CDINTRPRET", "CMPRILNG"),
     ("eomis_demographicprofile", "MARITALSTATUSCODE"): ("CDCLMARR",),
     ("eomis_demographicprofile", "EYECOLORCODE"): ("CMCLEYEC",),
     ("eomis_demographicprofile", "HAIRCOLORCODE"): ("CMHAIR",),
@@ -211,7 +225,13 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     ("eomis_jobpmedperformance", "EVALRECOMMENDATION"): ("EvalRecommendation",),
     ("eomis_jobpmedperformance", "PAYCHANGE"): ("PayChange",),
     # eomis_jobprogramasgmt
+    ("eomis_jobprogramasgmt", "FACILITYACTIVITYTYPECODE"): ("FACLACTY2",),
+    ("eomis_jobprogramasgmt", "WORKPGMASSIGNMENTCODE"): ("CIWRKPGM2",),
     ("eomis_jobprogramasgmt", "FULLORPARTTIMEOVERRIDE"): ("FullorPartTimeDay",),
+    ("eomis_jobprogramasgmt", "JOBPGMASSIGNMENTSTATUS"): ("ACTYSTAT",),
+    # INMATEWAGEBASIS holds D, H and M, the Days, Hours and Months codes of the
+    # CFDURAUNIT duration unit list.
+    ("eomis_jobprogramasgmt", "INMATEWAGEBASIS"): ("CFDURAUNIT",),
     ("eomis_jobprogramasgmt", "ASSIGNMENTOVERRIDEREASON"): ("AsgnOvrdRsn",),
     ("eomis_jobprogramasgmt", "INMATEPAYSCALE"): ("CFPAYSCALE2",),
     ("eomis_jobprogramasgmt", "PERFEVALCOMPLETED"): ("PerfEvalCmpl",),
@@ -248,6 +268,10 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     ("eomis_organizationprof", "HANDICAPACCESS"): ("ORGHNDCAP",),
     # eomis_paroledischgplan
     ("eomis_paroledischgplan", "TYPEOFRELEASE"): ("TYPEREL",),
+    # COUNTYOFRELEASE holds either a CDCOARAG county or a ReleaseDest destination,
+    # which splits some counties by parole office, such as 21S (El Paso - Southeast
+    # Region).
+    ("eomis_paroledischgplan", "COUNTYOFRELEASE"): ("CDCOARAG", "ReleaseDest"),
     ("eomis_paroledischgplan", "PAROLEPLANDNATESTSTATUS"): ("CIPLNDNASTAT",),
     ("eomis_paroledischgplan", "TRANSPORTATIONNEEDED"): ("TRNSPTNEEDED",),
     ("eomis_paroledischgplan", "TYPEOFPLAN"): ("TypeOfPlan",),
@@ -257,6 +281,7 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     ("eomis_plansponsor", "PAROLEPLANRECOMMENDED"): ("PlanRecommended",),
     ("eomis_plansponsor", "TYPEOFPLAN"): ("TypeOfPlan",),
     # eomis_procactionreferral
+    ("eomis_procactionreferral", "PARTYPE"): ("PARType",),
     ("eomis_procactionreferral", "HSACTIONSTATUS"): ("PARStatus",),
     ("eomis_procactionreferral", "TREATMENTFREQCODE"): ("TrmtFreqCode",),
     ("eomis_procactionreferral", "PARTYPESUBCODE"): ("PARTYPESUBCD",),
@@ -341,6 +366,8 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     ("eomis_sentencecomponent", "SENTENCEFINDINGFLAG"): ("CMFINDING",),
     ("eomis_sentencecomponent", "GUILTYPLEAFLAG"): ("CMGUILTY",),
     ("eomis_sentencecomponent", "SENTENCETYPE"): ("CMSNTYPE",),
+    ("eomis_sentencecomponent", "STATUTE1"): ("CMARSCD",),
+    ("eomis_sentencecomponent", "STATUTE2"): ("CMARSCD",),
     ("eomis_sentencecomponent", "FELONYCLASS"): ("CMFELCLS",),
     ("eomis_sentencecomponent", "DOCOFFENSECODE"): ("CDADCOFF",),
     ("eomis_sentencecomponent", "SENTENCEINCHOATEFLAG"): ("CMINCHOATE",),
@@ -356,6 +383,9 @@ US_CO_EOMIS_KNOWN_VALUES_DATANAMES: dict[tuple[str, str], tuple[str, ...]] = {
     ("eomis_sentencecompute", "TIMELINETYPE"): ("CDTIMELINETYPE",),
     ("eomis_sentencecompute", "SENTENCESTATUSFLAG"): ("CISTAFLG",),
     ("eomis_sentencecompute", "SENTENCELAWCODE"): ("CILAWCODE",),
+    # eomis_supervisioncontact
+    # EMPLOYMENTSTATUS also holds D, which is missing from CDEMPLSTAT.
+    ("eomis_supervisioncontact", "EMPLOYMENTSTATUS"): ("CDEMPLSTAT",),
     # eomis_supervisionevent
     ("eomis_supervisionevent", "OTHSTATE"): ("CMOTHST",),
     # eomis_wrksquadpgmofferrd
