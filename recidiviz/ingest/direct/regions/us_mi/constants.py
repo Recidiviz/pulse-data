@@ -49,3 +49,8 @@ ACTIVE_SUPERVISION_STATUSES = """
       'Interstate Compact Probation',
       'Probation'
 """
+
+
+def security_level_rank_clause(level_column: str) -> str:
+    """Returns SQL that ranks the roman-numeral security level in level_column."""
+    return f"CASE {level_column} WHEN 'I' THEN 1 WHEN 'IS' THEN 1 WHEN 'II' THEN 2 WHEN 'IV' THEN 4 WHEN 'V' THEN 5 END"

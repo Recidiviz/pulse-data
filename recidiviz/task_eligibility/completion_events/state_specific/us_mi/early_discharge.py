@@ -29,23 +29,26 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _QUERY_TEMPLATE = """
 WITH early_discharge_movements AS (
-    # TODO(#57799): migrate to a COMS movement source when available
     SELECT
         state_code,
         person_id,
-        DATE(movement_date) AS discharge_date,
+        DATE(Movement_Date) AS discharge_date,
     FROM
-        `{project_id}.{us_mi_raw_data_up_to_date_dataset}.ADH_OFFENDER_EXTERNAL_MOVEMENT_latest_materialized` movements
+        `{project_id}.{us_mi_raw_data_up_to_date_dataset}.COMS_Movements_latest_materialized` movements
     LEFT JOIN
         `{project_id}.normalized_state.state_person_external_id` pei
     ON
-        pei.external_id = movements.offender_booking_id
-        AND pei.id_type = 'US_MI_DOC_BOOK'
+        pei.external_id = movements.Offender_Number
+        AND pei.id_type = 'US_MI_DOC'
     WHERE
-        -- Only select early discharge movement end reasons
-        -- "30" (Early Discharge from Parole)
-        -- "125" (Early Discharge from Probation)
-        movements.movement_reason_id IN ("30", "125")
+        Movement_Code_Description IN (
+            -- early discharge movement reasons active in COMS
+            "Discharged - Early from Parole",
+            "Discharged - Early Discharge from Probation",
+            -- early discharge movement reasons migrated to COMS from OMNI
+            "Early Discharge from Parole",
+            "Early Discharge from Probation"
+        )
 )
 SELECT DISTINCT
     eds.state_code,

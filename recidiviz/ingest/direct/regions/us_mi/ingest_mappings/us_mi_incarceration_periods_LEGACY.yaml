@@ -68,6 +68,7 @@ output:
                         - "158" # New Commitment - HYTA Probationer"
                         - "16" # New Commitment, (SAI Only)
                         - "Intake" # COMS movement entered before the cutover date
+                        - "New Commitment" # COMS movement entered before the cutover date
                         - "New Commitment - While Under Sentence" # COMS movement entered before the cutover date
                       StateIncarcerationPeriodAdmissionReason.REVOCATION:
                         - "11" # New Commitment - Escaper w/ New Sentence (Rec. Ctr. Only)

@@ -142,6 +142,36 @@ def date_from_start_and_duration(
     return end_date.isoformat()
 
 
+def date_from_start_and_duration_not_after(
+    start_date_str: str,
+    years_str: str,
+    months_str: str,
+    days_str: str,
+    latest_date_str: str,
+) -> Optional[str]:
+    """Returns date_from_start_and_duration for the given start and duration, or None
+    if that date is after latest_date_str. An empty latest_date_str leaves the date
+    uncapped.
+
+    COMS projected minimum dates have no credits applied, so the minimum can land after
+    the credited Scheduled_End_Date. Sentence normalization swaps a minimum that is
+    later than the maximum, which would make the uncredited minimum the projected
+    maximum, so this drops such a minimum instead.
+    """
+    min_date_str = date_from_start_and_duration(
+        start_date_str=start_date_str,
+        years_str=years_str,
+        months_str=months_str,
+        days_str=days_str,
+    )
+    if not min_date_str:
+        return None
+    latest_date = parse_date(latest_date_str)
+    if latest_date and datetime.date.fromisoformat(min_date_str) > latest_date:
+        return None
+    return min_date_str
+
+
 def parole_possible(min_life: str, mcl: str, attempt: str) -> bool:
     """Returns a boolean for whether parole is possible for this offense"""
 

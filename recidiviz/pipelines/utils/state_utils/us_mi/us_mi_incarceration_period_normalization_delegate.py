@@ -109,7 +109,7 @@ class UsMiIncarcerationNormalizationDelegate(
         """
 
         # Scenario 1: infer an incarceration period in gaps between IPs that end with release reason TEMPORARY RELEASE
-        #             and IPs that begin with admission reason RETURN_FROM_TEMPORARY_RELEASE
+        #             and IPs that begin with admission reason RETURN_FROM_TEMPORARY_RELEASE or TEMPORARY_RELEASE
         new_incarceration_periods = (
             self._us_mi_infer_additional_temporary_release_periods(
                 person_id=person_id,
@@ -192,7 +192,9 @@ class UsMiIncarcerationNormalizationDelegate(
         """
         Infer an additional IP for gaps between IPs that end because of a temporary release
         (such as a hospital trip or a court writ) and subsequent non-adjacent IPs that start
-        because of return from temporary release
+        because of return from temporary release, or that start because of a temporary
+        release. The second case is someone still out on the temporary release, such as the
+        COMS period at the 2026 cutover for someone who left before it and hadn't returned.
         """
 
         new_incarceration_periods: List[StateIncarcerationPeriod] = []
@@ -241,11 +243,20 @@ class UsMiIncarcerationNormalizationDelegate(
                 critical_range.upper_bound_exclusive_date
             ]
 
-            if not any(
-                ip.admission_reason
-                == StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE
+            ips_returning_from_temp_release = [
+                ip
                 for ip in ips_following_range
-            ):
+                if ip.admission_reason
+                == StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE
+            ]
+            ips_still_on_temp_release = [
+                ip
+                for ip in ips_following_range
+                if ip.admission_reason
+                == StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE
+            ]
+
+            if not ips_returning_from_temp_release and not ips_still_on_temp_release:
                 # I'd rather continue rather than raise an error here because I could see scenarios
                 # where the raw movements data could be like "temporary release" and then "held in custody" or something,
                 # and in that case we wouldn't have a RETURN_FROM_TEMPORARY_RELEASE admission reason in the next IP,
@@ -253,11 +264,13 @@ class UsMiIncarcerationNormalizationDelegate(
                 continue
 
             previous_ip = ips_ending_in_temp_release[0]
-            next_ip = next(
-                ip
-                for ip in ips_following_range
-                if ip.admission_reason
-                == StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE
+            next_ip = (ips_returning_from_temp_release + ips_still_on_temp_release)[0]
+            # When the next IP is still on the temporary release, the inferred period
+            # hands off to it rather than ending with a return
+            release_reason = (
+                StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE
+                if ips_returning_from_temp_release
+                else StateIncarcerationPeriodReleaseReason.STATUS_CHANGE
             )
 
             # Create a new incarceration period for this TEMPORARY RELEASE period in the
@@ -268,7 +281,7 @@ class UsMiIncarcerationNormalizationDelegate(
                 admission_date=assert_type(previous_ip.release_date, datetime.date),
                 release_date=next_ip.admission_date,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
-                release_reason=StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,
+                release_reason=release_reason,
                 county_code=previous_ip.county_code,
                 custodial_authority=StateCustodialAuthority.STATE_PRISON,
                 custodial_authority_raw_text=previous_ip.custodial_authority_raw_text,

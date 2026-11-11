@@ -137,6 +137,13 @@ output:
                         - "Temporary Release - Outside Hospital"
                         - "Released - To Court on Writ"
                         - "Released - Court Released on Bond"
+                        - "Released - Other Criminal Justice Agencies"
+                        # Movements converted from OMNI, which only reach this view as the
+                        # temporary release someone is still out on at the cutover date
+                        - "Temporary Release - Outside Hospital/Funerals Only"
+                        - "Released to Court on Writ"
+                        - "Court Released on Bond"
+                        - "Released to Mntl Hlth Hospital/ Other Crimnl Justce Agencies"
                       StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
                         - "Transferred Back to Michigan"
                       StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
@@ -184,6 +191,13 @@ output:
               - $else_if:
                   $not_null: Status_Start_Reason
                 $then: $literal_enum(StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
+              # the view drops time under an Escaped modifier, so a period after one is a
+              # return from escape
+              - $else_if:
+                  $equal:
+                    - prev_Modifier_End_Reason
+                    - $literal("Escaped")
+                $then: $literal_enum(StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE)
               # if the previous period ended because a temporary release modifier ended, but no
               # return movement was recorded, map to RETURN_FROM_TEMPORARY_RELEASE
               - $else_if:
@@ -201,8 +215,15 @@ output:
           release_date: period_end
           release_reason:
             $conditional:
-              # If the next period starts a temporary release modifier, use next modifier value to map
+              # The view drops time under an Escaped modifier, so a period followed by one
+              # ends in an escape
               - $if:
+                  $equal:
+                    - next_Modifier
+                    - $literal("Escaped")
+                $then: $literal_enum(StateIncarcerationPeriodReleaseReason.ESCAPE)
+              # If the next period starts a temporary release modifier, use next modifier value to map
+              - $else_if:
                   $in:
                     $value: next_Modifier
                     $options:
@@ -299,6 +320,7 @@ output:
                               - "Temporary Release - Outside Hospital"
                               - "Released - To Court on Writ"
                               - "Released - Court Released on Bond"
+                              - "Released - Other Criminal Justice Agencies"
                             StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE:
                               - "Returned - From Temporary Release"
                               - "Returned from Temporary Release"

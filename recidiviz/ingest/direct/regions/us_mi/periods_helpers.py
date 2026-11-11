@@ -23,14 +23,6 @@ COMS_MIGRATION_DATE_2023 = date(2023, 8, 14)
 # Date when Michigan migrated from OMNI to COMS for all remaining data
 COMS_MIGRATION_DATE_2026 = date(2026, 10, 26)
 
-ACTIVE_SUPERVISION_STATUSES = """
-      'Parole',
-      'Delayed Sentence',
-      'Interstate Compact Parole',
-      'Interstate Compact Probation',
-      'Probation'
-"""
-
 # Excludes PENDING_MDOC_CUSTODY_STATUS. incarceration_periods_COMS_2026 adds it on top of
 # this list, but the staff relationship views only count case managers for Prison.
 ACTIVE_INCARCERATION_STATUSES = """

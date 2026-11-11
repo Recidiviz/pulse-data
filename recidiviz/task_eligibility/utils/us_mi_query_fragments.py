@@ -545,7 +545,10 @@ SELECT
             || " "
             || INITCAP(JSON_VALUE(PARSE_JSON(sp.full_name), '$.surname')) AS form_information_prisoner_name,
     DATE(sgt.person_projected_full_term_release_date_max) AS form_information_max_release_date,
-    DATE(sgt.person_projected_full_term_release_date_min) AS form_information_min_release_date,
+    -- COMS has no credited earliest release date yet, and the uncredited minimum from
+    -- COMS sentences would mislead staff, so leave it NULL. TODO(MI-8527): Populate
+    -- this and the other ERD fields below once we get PBJ dates from COMS.
+    CAST(NULL AS DATE) AS form_information_min_release_date,
     si.facility AS form_information_facility,
     si.housing_unit AS form_information_lock,
     (COALESCE(OPT.OPTLevelOfCare, "No") = "Y") AS form_information_OPT,
@@ -566,8 +569,8 @@ SELECT
     --metadata
     e.latest_scc_review_date AS metadata_latest_scc_review_date,
     DATE(sgt.person_projected_full_term_release_date_max) AS metadata_max_release_date,
-    DATE(sgt.person_projected_full_term_release_date_min) AS metadata_min_release_date,
-    DATE_DIFF(DATE(sgt.person_projected_full_term_release_date_min), CURRENT_DATE('US/Eastern'), MONTH) <24 AS metadata_less_than_24_months_from_erd,
+    CAST(NULL AS DATE) AS metadata_min_release_date,
+    CAST(NULL AS BOOL) AS metadata_less_than_24_months_from_erd,
     CASE 
         WHEN -- this is someone in temp seg who hasn't had a review before
             ssd.housing_unit_type_collapsed_scc_seg = "temp_seg_scc" AND e.latest_scc_review_date IS NULL
@@ -794,7 +797,7 @@ def secondary_officer_dockets_cte() -> str:
             SELECT 
                 state_code,
                 person_id,
-                supervising_officer_external_id AS Case_Manager_Omnni_Employee_Id
+                supervising_officer_external_id AS COMS_Case_Mgmt_Staff_Id
             FROM `{{project_id}}.workflows_views.client_record_supervision_cases_materialized`
         ),
         secondary_officer_metadata AS (
@@ -804,21 +807,21 @@ def secondary_officer_dockets_cte() -> str:
                     INITCAP(CONCAT(JSON_EXTRACT_SCALAR(s.full_name, "$.given_names"), 
                            " ", 
                            JSON_EXTRACT_SCALAR(s.full_name, "$.surname")))
-                    ORDER BY Case_Manager_Omnni_Employee_Id
+                    ORDER BY COMS_Case_Mgmt_Staff_Id
                 ) AS metadata_officers
-            FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Case_Managers_LEGACY_latest_materialized` cm
+            FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Case_Managers_latest_materialized` cm
             LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` ON Offender_Number = external_id AND id_type = 'US_MI_DOC'
             LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Supervision_Statuses_latest_materialized` ss USING(Supervision_Status_Id, Offender_Number)
-            LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` sei ON Case_Manager_Omnni_Employee_Id = sei.external_id AND sei.id_type = 'US_MI_OMNI_USER'
+            LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` sei ON COMS_Case_Mgmt_Staff_Id = sei.external_id AND sei.id_type = 'US_MI_COMS_USER'
             LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff` s ON sei.staff_id = s.staff_id
-            LEFT JOIN agent_in_client_rec USING(person_id, Case_Manager_Omnni_Employee_Id)
+            LEFT JOIN agent_in_client_rec USING(person_id, COMS_Case_Mgmt_Staff_Id)
             WHERE 
                 -- agent is currently supervising the client for an open supervision status
                 cm.end_date is null AND ss.end_date is null
                 -- only grab supervision-related agents
                 AND Supervision_Status IN ({ACTIVE_SUPERVISION_STATUSES})
                 -- only grab agents that aren't already the primary agent in the client record
-                AND agent_in_client_rec.Case_Manager_Omnni_Employee_Id IS NULL
+                AND agent_in_client_rec.COMS_Case_Mgmt_Staff_Id IS NULL
             GROUP BY 1
         ),
         dockets_metadata AS (
@@ -826,24 +829,72 @@ def secondary_officer_dockets_cte() -> str:
                 person_id,
                 ARRAY_AGG(
                 TO_JSON(
-                    STRUCT(docket_number_description AS docket_number,
-                        ref1.description AS legal_order_type, 
-                        DATE(effective_date) AS legal_order_effective_date, 
-                        DATE(expiration_date) AS legal_order_expiration_date,
-                        loc.name AS issue_location)
+                    STRUCT(docket_number AS docket_number,
+                        legal_order_type AS legal_order_type, 
+                        legal_order_effective_date AS legal_order_effective_date, 
+                        legal_order_expiration_date AS legal_order_expiration_date,
+                        issue_location AS issue_location)
                 )
-                ORDER BY docket_number_description
+                ORDER BY docket_number
                 ) AS metadata_dockets
-            FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_LEGAL_ORDER_latest_materialized`
-            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_REFERENCE_CODE_latest_materialized` ref1 ON order_type_id = ref1.reference_code_id
-            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_REFERENCE_CODE_latest_materialized` ref2 ON order_status_id = ref2.reference_code_id
-            LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_LOCATION_latest_materialized` loc ON issue_location_id = loc.location_id
-            LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei ON external_id = offender_booking_id AND id_type = 'US_MI_DOC_BOOK'
-            WHERE
-                -- only grab open legal orders 
-                ref2.description = 'Active'
-                -- only include Parole/Probation dockets
-                AND ref1.description IN ('Probation', 'Parole')
+            FROM (
+                -- Grab probation dockets from COMS_Dockets
+                SELECT DISTINCT
+                    pei.person_id,
+                    d.Docket_Number AS docket_number,
+                    s.Sentence_Type AS legal_order_type,
+                    DATE(s.Sentence_Effective_Date) AS legal_order_effective_date, 
+                    DATE(s.Scheduled_End_Date) AS legal_order_expiration_date,
+                    d.Jurisdiction AS issue_location
+                FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Dockets_latest_materialized` d
+                INNER JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Charges_latest_materialized` c
+                    ON d.Docket_ID = c.Docket_Id
+                INNER JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Sentences_latest_materialized` s
+                    ON c.Charge_Id = s.Charge_Id
+                INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+                    ON d.Offender_Number = pei.external_id AND pei.id_type = 'US_MI_DOC'
+                WHERE
+                    -- only grab open dockets
+                    d.End_Date IS NULL
+                    -- only include dockets with a probation sentence, using the same sentence
+                    -- types that us_mi_sentences_COMS_2026 maps to PROBATION; parole dockets
+                    -- come from the branch below
+                    AND (
+                        s.Sentence_Type IN ("Probation", "Delayed Sentence", "Interstate Compact Probation")
+                        OR (s.Sentence_Type = "HYTA" AND s.Probation_Applicable = "1")
+                    )
+
+                UNION ALL
+
+                -- Grab parole dockets from COMS_Supervision_Status + ADH_Legal_Order
+                -- as a workaround until we get Parole Discharge Date (only works for ~3 months)
+                -- Refactor (replace legal order with docket + join by supervision status + charge) 
+                -- when we get Parole Discharge Date from COMS (TODO(MI-8529))
+                SELECT DISTINCT
+                    pei_book.person_id,
+                    lo.docket_number_description AS docket_number,
+                    ref1.description AS legal_order_type, 
+                    DATE(lo.effective_date) AS legal_order_effective_date, 
+                    DATE(lo.expiration_date) AS legal_order_expiration_date,
+                    loc.name AS issue_location
+                FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_LEGAL_ORDER_latest_materialized` lo
+                LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_REFERENCE_CODE_latest_materialized` ref1 ON lo.order_type_id = ref1.reference_code_id
+                LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_REFERENCE_CODE_latest_materialized` ref2 ON lo.order_status_id = ref2.reference_code_id
+                LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.ADH_LOCATION_latest_materialized` loc ON lo.issue_location_id = loc.location_id
+                INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei_book
+                    ON lo.offender_booking_id = pei_book.external_id AND pei_book.id_type = 'US_MI_DOC_BOOK'
+                INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei_doc
+                    ON pei_book.person_id = pei_doc.person_id AND pei_doc.id_type = 'US_MI_DOC'
+                INNER JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_dataset}}.COMS_Supervision_Statuses_latest_materialized` stat
+                    ON pei_doc.external_id = stat.Offender_Number
+                WHERE
+                    -- only grab open legal orders 
+                    ref2.description = 'Active'
+                    -- only include Parole legal orders
+                    AND ref1.description = 'Parole'
+                    -- for people with an open parole supervision status 
+                    AND stat.End_Date IS NULL AND stat.Supervision_Status = 'Parole'
+            )
             GROUP BY 1
         )
     """

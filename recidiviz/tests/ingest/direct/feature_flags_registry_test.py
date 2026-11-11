@@ -70,7 +70,7 @@ class TestFeatureFlagsRegistry(unittest.TestCase):
             with self.subTest(project_id=project_id):
                 feature_flags = resolve_ingest_feature_flags(project_id, Tenant.US_XX)
                 self.assertFalse(feature_flags["tomis_2_0_enabled"])
-                self.assertFalse(feature_flags["coms_2026_enabled"])
+                self.assertTrue(feature_flags["coms_2026_enabled"])
 
     def test_identity_service_identity_disabled_for_all_tenants_today(self) -> None:
         """Guards the pre-flip state: no tenant's activity pipeline sources

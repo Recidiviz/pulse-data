@@ -18,7 +18,6 @@ input_columns:
   Maximum_Term_Months: STRING
   Maximum_Term_Days: STRING
   update_datetime: DATETIME
-  Parole_Expiration_Date: DATE
   seq_num: INTEGER
 unused_columns: []
 output:
@@ -34,17 +33,11 @@ output:
             - StateSentenceLength:
                 sequence_num: seq_num
                 length_update_datetime: update_datetime
-                # Parole_Expiration_Date is only set for prison sentences currently
-                # being served on parole, and it comes from OMNI until COMS sends
-                # parole sentences. TODO(MI-8530): Remove once COMS parole sentences
-                # are in the data transfer.
-                projected_completion_date_max_external:
-                  $conditional:
-                    - $if:
-                        $not_null: Parole_Expiration_Date
-                      $then: Parole_Expiration_Date
-                    - $else: Scheduled_End_Date
+                projected_completion_date_max_external: Scheduled_End_Date
                 # TODO(MI-8527): Hydrate ERD properly once we get PBJ Date
+                # The uncredited Sentence_Effective_Date + Minimum_Term is dropped when it
+                # falls after the credited Scheduled_End_Date, since normalization would
+                # swap the two dates.
                 projected_completion_date_min_external:
                   $conditional:
                     - $if:
@@ -54,12 +47,13 @@ output:
                             - $literal("1")
                       $then:
                         $custom:
-                          $function: us_mi_custom_parsers.date_from_start_and_duration
+                          $function: us_mi_custom_parsers.date_from_start_and_duration_not_after
                           $args:
                             start_date_str: Sentence_Effective_Date
                             years_str: Minimum_Term_Years
                             months_str: Minimum_Term_Months
                             days_str: Minimum_Term_Days
+                            latest_date_str: Scheduled_End_Date
                 sentence_length_days_min:
                   $conditional:
                     - $if:

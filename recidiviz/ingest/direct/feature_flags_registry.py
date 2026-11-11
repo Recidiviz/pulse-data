@@ -62,7 +62,7 @@ def is_coms_2026_enabled(
     TODO(MI-8297): Delete this flag, and any logic gated on it, once COMS 2026
     data has been fully incorporated into transfers and all data validated
     """
-    return False
+    return True
 
 
 def is_identity_service_identity_enabled(project_id: str, tenant: Tenant) -> bool:

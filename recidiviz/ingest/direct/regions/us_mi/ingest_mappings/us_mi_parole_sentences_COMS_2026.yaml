@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_parole_sentences_COMS_2026` to the
+# corresponding Ingest Object fields.
+# TODO(MI-8530): Delete this mapping once COMS parole sentences are in the data transfer.
+manifest_language: 1.0.0
+launch_env:
+  $env: feature__coms_2026_enabled
+input_columns:
+  Offender_Number: STRING
+  Supervision_Status_Id: STRING
+  Supervision_Status: STRING
+  Parole_Start_Date: DATE
+  Parole_End_Date: DATE
+  Parole_End_Reason: STRING
+  Parole_Expiration_Date: DATE
+  Charge_Ids: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    sentences:
+      - StateSentence:
+          # COMS Supervision_Status_Id and Sentence_Id values can overlap, so the prefix
+          # keeps these ids distinct from the COMS sentences' ids
+          external_id:
+            $concat:
+              $values:
+                - $literal("PAROLE")
+                - Supervision_Status_Id
+          sentence_type: $literal_enum(StateSentenceType.PAROLE)
+          sentencing_authority:
+            $enum_mapping:
+              $raw_text: Supervision_Status
+              $mappings:
+                StateSentencingAuthority.STATE:
+                  - "Parole"
+                StateSentencingAuthority.OTHER_STATE:
+                  - "Interstate Compact Parole"
+          is_life: $literal_bool(False)
+          imposed_date: Parole_Start_Date
+          current_state_provided_start_date: Parole_Start_Date
+          # The sentences view hydrates these charges. Referencing them by external_id
+          # alone, with the default status, lets ingest merge them into those charges.
+          charges:
+            - $foreach:
+                $iterable: Charge_Ids
+                $result:
+                  StateChargeV2:
+                    external_id: $iter_item
+                    status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
+          sentence_lengths:
+            - $conditional:
+                - $if:
+                    $not_null: Parole_Expiration_Date
+                  $then:
+                    StateSentenceLength:
+                      sequence_num: $literal("1")
+                      length_update_datetime: Parole_Start_Date
+                      projected_completion_date_max_external: Parole_Expiration_Date
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                sequence_num: $literal("1")
+                status_update_datetime: Parole_Start_Date
+                status: $literal_enum(StateSentenceStatus.SERVING)
+            - $conditional:
+                - $if:
+                    $not_null: Parole_End_Date
+                  $then:
+                    StateSentenceStatusSnapshot:
+                      sequence_num: $literal("2")
+                      status_update_datetime: Parole_End_Date
+                      status:
+                        $enum_mapping:
+                          $raw_text: Parole_End_Reason
+                          $mappings:
+                            StateSentenceStatus.COMPLETED:
+                              - "Discharge"
+                              - "Expiration of Sentence"
+                              - "Interstate Case Closed by Sending State"
+                              # COMMUTED counts as still serving, so it would leave the
+                              # sentence open after the parole ended
+                              - "Commuted"
+                              # Statuses migrated from OMNI and closed without a
+                              # specific outcome. Their end dates span decades, so they
+                              # are real ends of parole, and the COMS sentence status
+                              # mapping treats legacy closures the same way.
+                              - "Legacy Migration"
+                              - "Other"
+                              # Administrative closures. Most are followed by a new
+                              # parole status, which becomes its own sentence.
+                              - "Case Manager Changed"
+                              - "Client Number Reassignment"
+                            StateSentenceStatus.REVOKED:
+                              - "Return to Prison"
+                            StateSentenceStatus.DEATH:
+                              - "Death"
+                            StateSentenceStatus.VACATED:
+                              - "Acquitted/Dismissed"

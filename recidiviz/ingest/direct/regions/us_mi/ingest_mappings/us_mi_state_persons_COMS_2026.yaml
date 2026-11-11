@@ -205,4 +205,5 @@ output:
                   - "Welsh"
                   - "West Indian"
                   - "Yemini"
+                  - "LVD - Lac Vieux Desert Band of Lake Superior Chippewa"
         - $else: $literal_enum(StateEthnicity.PRESENT_WITHOUT_INFO)

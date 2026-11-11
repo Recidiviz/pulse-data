@@ -149,6 +149,77 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         self.assertEqual(result, expected_periods)
 
+    def test_infer_additional_periods_next_ip_still_on_temporary_release(self) -> None:
+        """A writ that starts before the COMS cutover and is still open at it gives a
+        LEGACY IP ending in TEMPORARY_RELEASE and a COMS IP starting at the cutover with
+        admission reason TEMPORARY_RELEASE. The gap between them is filled."""
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2026, 6, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            admission_reason_raw_text="status change",
+            release_date=date(2026, 10, 15),
+            release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+            release_reason_raw_text="Released - To Court on Writ",
+            external_id="ip-1",
+            custody_level=StateIncarcerationPeriodCustodyLevel.MEDIUM,
+            custody_level_raw_text="medium",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text="state prison",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text="general",
+            county_code="COUNTY A",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text="state",
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2026, 10, 22),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
+            admission_reason_raw_text="Released to Court on Writ",
+            external_id="ip-2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            incarceration_type_raw_text="Prison",
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        sp_index = default_normalized_sp_index_for_tests(supervision_periods=[])
+
+        result = self.delegate.infer_additional_periods(
+            incarceration_periods=incarceration_periods,
+            person_id=self.person_id,
+            supervision_period_index=sp_index,
+        )
+
+        expected_periods = [
+            incarceration_period_1,
+            incarceration_period_2,
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=2600000000012312345,
+                external_id="ip-1-TEMPORARY_RELEASE",
+                state_code=_STATE_CODE,
+                admission_date=date(2026, 10, 15),
+                release_date=date(2026, 10, 22),
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
+                # The person is still out at the next IP, so the inferred IP hands off
+                # to it rather than ending with a return
+                release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+                county_code="COUNTY A",
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                custodial_authority_raw_text="state",
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                specialized_purpose_for_incarceration_raw_text="general",
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                incarceration_type_raw_text="state prison",
+                custody_level=StateIncarcerationPeriodCustodyLevel.MEDIUM,
+                custody_level_raw_text="medium",
+            ),
+        ]
+
+        self.assertEqual(result, expected_periods)
+
     # Test case 2: test that new period does not get created if it's not a temporary release release reason
     def test_infer_additional_periods_not_release_release_reason(self) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
