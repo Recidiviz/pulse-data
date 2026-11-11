@@ -15,14 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the Identity Service export entrypoint."""
+import json
 import unittest
-from unittest.mock import MagicMock, create_autospec
+from typing import Any
+from unittest.mock import MagicMock, create_autospec, patch
 
 import pytest
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.identity import IdentifierType, PersonType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.constants.tenants import Tenant
@@ -40,6 +43,7 @@ from recidiviz.source_tables.identity_service_export_source_tables import (
     LEGACY_STAFF_ID_COLUMN,
     build_identity_service_export_source_table_collection,
 )
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.services.identity.test_utils import (
     NEW_ID,
     RECIDIVIZ_ID,
@@ -56,8 +60,9 @@ _PROJECT_ID = "recidiviz-456"
 
 @pytest.mark.uses_db
 class IdentityServiceExportTest(unittest.TestCase):
-    """Tests that the export reads the identity Postgres state and writes the
-    expected rows to every table in the identity_service_export dataset."""
+    """Tests that the export reads the identity Postgres state, stages the rows
+    as newline-delimited JSON in GCS, and loads the expected rows into every
+    table in the identity_service_export dataset."""
 
     postgres_launch_result: OnDiskPostgresLaunchResult
 
@@ -72,10 +77,16 @@ class IdentityServiceExportTest(unittest.TestCase):
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.postgres_launch_result, self.database_key
         )
+        self.fs = FakeGCSFileSystem()
         self.mock_bq_client = create_autospec(BigQueryClientImpl)
         self.mock_bq_client.project_id = _PROJECT_ID
-        self.mock_bq_client.load_into_table_async.return_value = MagicMock()
         self.mock_bq_client.delete_from_table_async.return_value = MagicMock()
+        # The staged GCS file is deleted after the load jobs run, so snapshot
+        # each load's rows at call time, when BigQuery would read the file.
+        self.recorded_loads: list[dict[str, Any]] = []
+        self.mock_bq_client.load_table_from_json_cloud_storage.side_effect = (
+            self._record_load
+        )
         self.collection = build_identity_service_export_source_table_collection()
 
     def tearDown(self) -> None:
@@ -89,17 +100,49 @@ class IdentityServiceExportTest(unittest.TestCase):
             cls.postgres_launch_result
         )
 
+    def _record_load(
+        self,
+        *,
+        source_uris: list[str],
+        destination_address: BigQueryAddress,
+        destination_table_schema: list[bigquery.SchemaField],
+        write_disposition: str,
+    ) -> MagicMock:
+        [source_uri] = source_uris
+        contents = self.fs.download_as_string(
+            GcsfsFilePath.from_absolute_path(source_uri)
+        )
+        self.recorded_loads.append(
+            {
+                "address": destination_address,
+                "schema": destination_table_schema,
+                "write_disposition": write_disposition,
+                "rows": [json.loads(line) for line in contents.splitlines()],
+            }
+        )
+        return MagicMock()
+
+    def _export(self, *, tenant: Tenant | None = None) -> None:
+        export_identity_service_to_bigquery(
+            bq_client=self.mock_bq_client, fs=self.fs, tenant=tenant
+        )
+
     def _rows_loaded_by_table_id(
         self,
         *,
         expected_disposition: str = bigquery.WriteDisposition.WRITE_TRUNCATE_DATA,
     ) -> dict[str, list[dict]]:
-        """Returns the rows passed to load_into_table_async, keyed by table id,
-        after asserting every load used the expected write disposition."""
+        """Returns the staged rows each load job would write, keyed by table
+        id, after asserting every load used the expected write disposition and
+        the table's collection schema."""
         rows_by_table_id = {}
-        for call in self.mock_bq_client.load_into_table_async.call_args_list:
-            self.assertEqual(expected_disposition, call.kwargs["write_disposition"])
-            rows_by_table_id[call.kwargs["address"].table_id] = call.kwargs["rows"]
+        for load in self.recorded_loads:
+            self.assertEqual(expected_disposition, load["write_disposition"])
+            self.assertEqual(
+                self.collection.source_tables_by_address[load["address"]].schema_fields,
+                load["schema"],
+            )
+            rows_by_table_id[load["address"].table_id] = load["rows"]
         return rows_by_table_id
 
     def _deleted_addresses(self) -> list[BigQueryAddress]:
@@ -113,12 +156,9 @@ class IdentityServiceExportTest(unittest.TestCase):
         rows, a full delete where there are none."""
         insert_identity(recidiviz_id=RECIDIVIZ_ID)
 
-        export_identity_service_to_bigquery(bq_client=self.mock_bq_client)
+        self._export()
 
-        loaded = {
-            call.kwargs["address"]
-            for call in self.mock_bq_client.load_into_table_async.call_args_list
-        }
+        loaded = {load["address"] for load in self.recorded_loads}
         deleted = set(self._deleted_addresses())
         self.assertEqual(
             set(self.collection.source_tables_by_address), loaded | deleted
@@ -126,6 +166,84 @@ class IdentityServiceExportTest(unittest.TestCase):
         self.assertFalse(loaded & deleted)
         for call in self.mock_bq_client.delete_from_table_async.call_args_list:
             self.assertEqual({}, call.kwargs)
+
+    def test_staged_load_files_deleted_after_success(self) -> None:
+        insert_identity(recidiviz_id=RECIDIVIZ_ID)
+
+        self._export()
+
+        self.assertEqual([], self.fs.all_paths)
+
+    def test_batched_read_exports_every_row(self) -> None:
+        """With a batch size smaller than the identity count, the keyset-
+        paginated read still exports every identity and child row exactly
+        once."""
+        insert_identity(recidiviz_id=RECIDIVIZ_ID)
+        insert_external_id(recidiviz_id=RECIDIVIZ_ID, external_id="A1")
+        insert_identity(recidiviz_id=NEW_ID)
+        insert_external_id(recidiviz_id=NEW_ID, external_id="A2")
+        insert_identity(recidiviz_id=RETIRED_ID)
+        insert_external_id(recidiviz_id=RETIRED_ID, external_id="A3")
+
+        with patch(
+            "recidiviz.entrypoints.identity.identity_service_export"
+            "._EXPORT_BATCH_SIZE",
+            2,
+        ):
+            self._export()
+
+        rows_by_table_id = self._rows_loaded_by_table_id()
+        # Length is asserted alongside the id set so a batch-boundary bug that
+        # exports a row twice fails here rather than collapsing into the set.
+        self.assertEqual(3, len(rows_by_table_id["identities"]))
+        self.assertEqual(
+            {str(RECIDIVIZ_ID), str(NEW_ID), str(RETIRED_ID)},
+            {row["recidiviz_id"] for row in rows_by_table_id["identities"]},
+        )
+        self.assertEqual(3, len(rows_by_table_id["external_ids"]))
+        self.assertEqual(
+            {"A1", "A2", "A3"},
+            {row["external_id"] for row in rows_by_table_id["external_ids"]},
+        )
+
+    def test_tenant_refresh_with_batched_read_exports_every_tenant_row(self) -> None:
+        """The tenant filter composed with the keyset predicate still reads
+        every one of the tenant's identities, exactly once, when batches are
+        smaller than the tenant's identity count."""
+        insert_identity(recidiviz_id=RECIDIVIZ_ID, tenant=Tenant.US_OZ)
+        insert_identity(recidiviz_id=NEW_ID, tenant=Tenant.US_OZ)
+        insert_identity(recidiviz_id=RETIRED_ID, tenant=Tenant.US_ND)
+
+        with patch(
+            "recidiviz.entrypoints.identity.identity_service_export"
+            "._EXPORT_BATCH_SIZE",
+            1,
+        ):
+            self._export(tenant=Tenant.US_OZ)
+
+        rows = self._rows_loaded_by_table_id(
+            expected_disposition=bigquery.WriteDisposition.WRITE_APPEND
+        )["identities"]
+        self.assertEqual(2, len(rows))
+        self.assertEqual(
+            {str(RECIDIVIZ_ID), str(NEW_ID)},
+            {row["recidiviz_id"] for row in rows},
+        )
+
+    def test_staged_load_files_kept_when_a_load_fails(self) -> None:
+        """A failure during the load phase leaves every staged file in place
+        for debugging; only the bucket's lifecycle rule removes them."""
+        insert_identity(recidiviz_id=RECIDIVIZ_ID)
+        self.mock_bq_client.load_table_from_json_cloud_storage.side_effect = ValueError(
+            "load failed"
+        )
+
+        with self.assertRaisesRegex(ValueError, r"^load failed$"):
+            self._export()
+
+        self.assertEqual(
+            len(self.collection.source_tables_by_address), len(self.fs.all_paths)
+        )
 
     def test_identity_row_matches_bq_schema_and_computes_key(self) -> None:
         insert_identity(recidiviz_id=RECIDIVIZ_ID)
@@ -140,7 +258,7 @@ class IdentityServiceExportTest(unittest.TestCase):
             id_type=IdentifierType.US_OZ_LOTR_ID,
         )
 
-        export_identity_service_to_bigquery(bq_client=self.mock_bq_client)
+        self._export()
 
         [identity_row] = self._rows_loaded_by_table_id()["identities"]
         expected_field_names = {
@@ -175,7 +293,7 @@ class IdentityServiceExportTest(unittest.TestCase):
             id_type=IdentifierType.US_OZ_KDS_PERSON_ID,
         )
 
-        export_identity_service_to_bigquery(bq_client=self.mock_bq_client)
+        self._export()
 
         [identity_row] = self._rows_loaded_by_table_id()["identities"]
         self.assertEqual(
@@ -194,7 +312,7 @@ class IdentityServiceExportTest(unittest.TestCase):
             recidiviz_id=RETIRED_ID, external_id="A1234", is_active=False
         )
 
-        export_identity_service_to_bigquery(bq_client=self.mock_bq_client)
+        self._export()
 
         rows = self._rows_loaded_by_table_id()["identities"]
         self.assertEqual(
@@ -212,7 +330,7 @@ class IdentityServiceExportTest(unittest.TestCase):
         insert_identity(recidiviz_id=NEW_ID, tenant=Tenant.RECIDIVIZ)
         insert_external_id(recidiviz_id=NEW_ID, external_id="EMP-1")
 
-        export_identity_service_to_bigquery(bq_client=self.mock_bq_client)
+        self._export()
 
         [identity_row] = self._rows_loaded_by_table_id()["identities"]
         self.assertIsNone(identity_row[LEGACY_PERSON_ID_COLUMN])
@@ -231,7 +349,7 @@ class IdentityServiceExportTest(unittest.TestCase):
             is_stable_id_for_type=False,
         )
 
-        export_identity_service_to_bigquery(bq_client=self.mock_bq_client)
+        self._export()
 
         [external_id_row] = self._rows_loaded_by_table_id()["external_ids"]
         self.assertEqual(
@@ -250,7 +368,7 @@ class IdentityServiceExportTest(unittest.TestCase):
         insert_identity(recidiviz_id=RECIDIVIZ_ID)
         insert_name(recidiviz_id=RECIDIVIZ_ID, given_name="ARAGORN", surname="ELESSAR")
 
-        export_identity_service_to_bigquery(bq_client=self.mock_bq_client)
+        self._export()
 
         rows_by_table_id = self._rows_loaded_by_table_id()
         [name_row] = rows_by_table_id["names"]
@@ -270,7 +388,7 @@ class IdentityServiceExportTest(unittest.TestCase):
     def test_excluded_identities_columns_not_exported(self) -> None:
         insert_identity(recidiviz_id=RECIDIVIZ_ID)
 
-        export_identity_service_to_bigquery(bq_client=self.mock_bq_client)
+        self._export()
 
         [identity_row] = self._rows_loaded_by_table_id()["identities"]
         self.assertNotIn("last_cluster_hash", identity_row)
@@ -285,9 +403,7 @@ class IdentityServiceExportTest(unittest.TestCase):
         insert_identity(recidiviz_id=NEW_ID, tenant=Tenant.US_ND)
         insert_external_id(recidiviz_id=NEW_ID, external_id="ND-1")
 
-        export_identity_service_to_bigquery(
-            bq_client=self.mock_bq_client, tenant=Tenant.US_OZ
-        )
+        self._export(tenant=Tenant.US_OZ)
 
         # Appends contain only the US_OZ rows, and only non-empty tables load.
         rows_by_table_id = self._rows_loaded_by_table_id(
@@ -321,9 +437,16 @@ class IdentityServiceExportTest(unittest.TestCase):
         # appended child rows through it.
         identities_address = delete_calls[-1].args[0]
         ordered_methods = [
-            (name, kwargs["address"] if "address" in kwargs else args[0])
+            (
+                name,
+                (
+                    kwargs["destination_address"]
+                    if "destination_address" in kwargs
+                    else args[0]
+                ),
+            )
             for name, args, kwargs in self.mock_bq_client.mock_calls
-            if name in ("delete_from_table_async", "load_into_table_async")
+            if name in ("delete_from_table_async", "load_table_from_json_cloud_storage")
         ]
         identities_delete_index = ordered_methods.index(
             ("delete_from_table_async", identities_address)
@@ -334,7 +457,7 @@ class IdentityServiceExportTest(unittest.TestCase):
             else:
                 self.assertGreater(index, identities_delete_index)
         self.assertEqual(
-            ("load_into_table_async", identities_address),
+            ("load_table_from_json_cloud_storage", identities_address),
             ordered_methods[identities_delete_index + 1],
         )
 

@@ -25,6 +25,7 @@ Usage:
 import argparse
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.constants.tenants import Tenant
 from recidiviz.entrypoints.identity.identity_service_export import (
     export_identity_service_to_bigquery,
@@ -71,6 +72,7 @@ def main(*, project_id: str, tenant: Tenant | None) -> None:
         with cloudsql_proxy_control.connection(schema_type=SchemaType.IDENTITY):
             export_identity_service_to_bigquery(
                 bq_client=BigQueryClientImpl(),
+                fs=GcsfsFactory.build(),
                 tenant=tenant,
                 use_proxy_session=True,
             )

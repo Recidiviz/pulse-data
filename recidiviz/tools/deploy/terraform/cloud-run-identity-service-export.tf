@@ -23,9 +23,10 @@ resource "google_service_account" "identity_service_export" {
   account_id   = "identity-service-export"
   display_name = "Identity Service Export Cloud Run Service Account"
   description  = <<EOT
-Runtime identity for the Identity Service export Cloud Run job. Least-privilege:
-read access to the Identity Service's Cloud SQL database and write access to the
-identity_service_export BigQuery dataset only. Managed in Terraform.
+Runtime identity for the Identity Service export Cloud Run job. Granted only
+the access the job needs: read from the Identity Service's Cloud SQL database,
+write to the identity_service_export BigQuery dataset and its GCS scratch
+bucket.
 EOT
 }
 
@@ -51,6 +52,49 @@ resource "google_bigquery_dataset_iam_member" "identity_service_export_dataset_e
   dataset_id = "identity_service_export"
   role       = "roles/bigquery.dataEditor"
   member     = "serviceAccount:${google_service_account.identity_service_export.email}"
+}
+
+# Scratch bucket the export streams newline-delimited JSON load files into
+# before loading them to BigQuery, so the job's memory use stays bounded no
+# matter how many identities are exported. Its name must match
+# _LOAD_FILES_BUCKET_SUFFIX in
+# recidiviz/entrypoints/identity/identity_service_export.py. The export deletes
+# its files after a successful run; the lifecycle rule cleans up after failed
+# runs.
+module "identity_service_export_load_files" {
+  source      = "./modules/cloud-storage-bucket"
+  project_id  = var.project_id
+  name_suffix = "identity-service-export"
+  use_cmek    = true
+  lifecycle_rules = [
+    # The staged files hold identity PII, so anything left behind by a failed
+    # run is purged after a day: long enough to debug the failure, no longer.
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        age = 1
+      }
+    },
+    # Setting lifecycle_rules replaces the module default, so the Delete rule
+    # on noncurrent versions is repeated.
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 3
+      }
+    },
+  ]
+}
+
+# Object access on the scratch bucket only, not project-wide storage access.
+resource "google_storage_bucket_iam_member" "identity_service_export_load_files_object_admin" {
+  bucket = module.identity_service_export_load_files.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.identity_service_export.email}"
 }
 
 # Secret-level access: only the Identity Service database credentials, not all

@@ -24,22 +24,35 @@ reads only the tenant's identities, deletes the tenant's rows from every
 BigQuery table, and appends the fresh rows, leaving other tenants' rows
 untouched.
 
+Identities are read in keyset-paginated batches, each batch is serialized and
+appended to one newline-delimited JSON GCS file per table, and each BigQuery
+table is then rewritten by a single load job from its GCS file, so memory use
+is bounded by the batch size no matter how many identities are exported.
+
 The exported identities table additionally carries legacy_person_id and
 legacy_staff_id: the activity pipeline primary key computed from the identity's
 active external IDs with the same code the activity pipeline uses, written to
 the column matching the identity's person_type.
 """
 import argparse
+import contextlib
 import datetime
 import enum
+import json
 import uuid
-from typing import Any
+from typing import IO, Any
 
+import attr
 from google.cloud import bigquery
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common import attr_validators
 from recidiviz.common.constants.identity import PersonType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.constants.tenants import Tenant
@@ -66,6 +79,48 @@ _IDENTITIES_ADDRESS = BigQueryAddress(
     table_id=schema.Identity.__tablename__,
 )
 
+# Identities read from Postgres per batch. Each batch's ORM objects and
+# serialized rows are released before the next batch is read, so this bounds
+# the export's memory use.
+_EXPORT_BATCH_SIZE = 2000
+
+# Must match the name_suffix of the identity_service_export_load_files bucket
+# module in recidiviz/tools/deploy/terraform/cloud-run-identity-service-export.tf.
+_LOAD_FILES_BUCKET_SUFFIX = "identity-service-export"
+
+# Buffer size per open GCS writer before a chunk is flushed to GCS. One writer
+# is open per exported table, so worst-case buffered memory is this times the
+# table count. Must be a multiple of 256 KiB per GCS resumable-upload rules.
+_GCS_WRITER_CHUNK_SIZE = 4 * 1024 * 1024
+
+
+@attr.define(frozen=True, kw_only=True)
+class _ExportTable:
+    """One exported BigQuery table and the GCS file its rows are staged in
+    during an export run."""
+
+    address: BigQueryAddress = attr.ib(
+        validator=attr.validators.instance_of(BigQueryAddress)
+    )
+    """Address of the BigQuery table this export rewrites."""
+
+    schema_fields: list[bigquery.SchemaField] = attr.ib(
+        validator=[
+            attr_validators.is_non_empty_list,
+            attr_validators.is_list_of(bigquery.SchemaField),
+        ]
+    )
+    """BigQuery schema of the table, from the source-table collection."""
+
+    load_file_path: GcsfsFilePath = attr.ib(
+        validator=attr.validators.instance_of(GcsfsFilePath)
+    )
+    """GCS path the table's rows are staged in for this run, unique per run."""
+
+    @property
+    def field_names(self) -> list[str]:
+        return [field.name for field in self.schema_fields]
+
 
 class IdentityServiceExportEntrypoint(EntrypointInterface):
     """Entrypoint that exports the Identity Service's Postgres state to the
@@ -89,13 +144,16 @@ class IdentityServiceExportEntrypoint(EntrypointInterface):
     @staticmethod
     def run_entrypoint(*, args: argparse.Namespace) -> None:
         export_identity_service_to_bigquery(
-            bq_client=BigQueryClientImpl(), tenant=args.tenant
+            bq_client=BigQueryClientImpl(),
+            fs=GcsfsFactory.build(),
+            tenant=args.tenant,
         )
 
 
 def export_identity_service_to_bigquery(
     *,
     bq_client: BigQueryClient,
+    fs: GCSFileSystem,
     tenant: Tenant | None = None,
     use_proxy_session: bool = False,
 ) -> None:
@@ -105,6 +163,20 @@ def export_identity_service_to_bigquery(
     use_proxy_session to read Postgres through a locally running Cloud SQL
     Proxy (see recidiviz.tools.identity.run_identity_service_export) instead of
     a direct connection."""
+    collection = build_identity_service_export_source_table_collection()
+    run_prefix = f"{tenant.value if tenant else 'full'}_{uuid.uuid4()}"
+    export_tables_by_address = {
+        address: _ExportTable(
+            address=address,
+            schema_fields=table.schema_fields,
+            load_file_path=GcsfsFilePath.from_absolute_path(
+                f"gs://{bq_client.project_id}-{_LOAD_FILES_BUCKET_SUFFIX}/"
+                f"{run_prefix}/{address.table_id}.json"
+            ),
+        )
+        for address, table in collection.source_tables_by_address.items()
+    }
+
     database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.IDENTITY)
     session_context = (
         SessionFactory.for_proxy(database_key, autocommit=False)
@@ -112,39 +184,119 @@ def export_identity_service_to_bigquery(
         else SessionFactory.using_database(database_key, autocommit=False)
     )
     with session_context as session:
-        # Read everything at one consistent snapshot so the exported tables
-        # cannot disagree with each other about a concurrent import's writes.
-        session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        identities_query = session.query(schema.Identity)
-        if tenant is not None:
-            identities_query = identities_query.filter(schema.Identity.tenant == tenant)
-        rows_by_address = _build_export_rows(identities_query.all())
+        row_counts_by_address = _stream_export_rows_to_gcs(
+            session=session,
+            fs=fs,
+            export_tables_by_address=export_tables_by_address,
+            tenant=tenant,
+        )
 
     if tenant is None:
-        _rewrite_all_tables(bq_client, rows_by_address)
+        _rewrite_all_tables(
+            bq_client,
+            export_tables_by_address=export_tables_by_address,
+            row_counts_by_address=row_counts_by_address,
+        )
     else:
-        _refresh_tenant_rows(bq_client, rows_by_address, tenant=tenant)
+        _refresh_tenant_rows(
+            bq_client,
+            export_tables_by_address=export_tables_by_address,
+            row_counts_by_address=row_counts_by_address,
+            tenant=tenant,
+        )
+
+    # The staged files have served their purpose. A failure during streaming
+    # aborts the uploads and leaves no files at all; a failure during the load
+    # phase leaves the staged files behind for debugging until the bucket's
+    # lifecycle rule removes them.
+    for export_table in export_tables_by_address.values():
+        fs.delete(export_table.load_file_path)
+
+
+def _stream_export_rows_to_gcs(
+    *,
+    session: Session,
+    fs: GCSFileSystem,
+    export_tables_by_address: dict[BigQueryAddress, "_ExportTable"],
+    tenant: Tenant | None,
+) -> dict[BigQueryAddress, int]:
+    """Reads identities in keyset-paginated batches at one repeatable-read
+    snapshot and appends each batch's rows to one newline-delimited JSON GCS
+    file per exported table. Returns the number of rows written per table."""
+    # Read everything at one consistent snapshot so the exported tables
+    # cannot disagree with each other about a concurrent import's writes.
+    session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+
+    row_counts_by_address = {address: 0 for address in export_tables_by_address}
+    with contextlib.ExitStack() as stack:
+        # Each file is written as one resumable upload, which only commits its
+        # object when the writer closes: a crash mid-stream leaves nothing
+        # behind, and the Cloud Run job's retry re-runs the whole export under
+        # a new run prefix. That makes losing in-flight rows acceptable here,
+        # unlike the incremental exports GcsCsvPartWriter exists for.
+        writers_by_address: dict[BigQueryAddress, IO[str]] = {
+            address: stack.enter_context(
+                fs.open(
+                    export_table.load_file_path,
+                    mode="w",
+                    chunk_size=_GCS_WRITER_CHUNK_SIZE,
+                    encoding="utf-8",
+                    verifiable=False,
+                )
+            )
+            for address, export_table in export_tables_by_address.items()
+        }
+
+        # Discrete keyset-paginated queries rather than one streamed query with
+        # yield_per: each batch query fully materializes its identities, so the
+        # selectin-loaded child relationships load per batch and expunge_all can
+        # release the whole batch. yield_per would stream rows off an open
+        # server-side cursor, which composes badly with the per-batch
+        # relationship loads.
+        last_recidiviz_id = None
+        while True:
+            batch_query = session.query(schema.Identity).order_by(
+                schema.Identity.recidiviz_id
+            )
+            if tenant is not None:
+                batch_query = batch_query.filter(schema.Identity.tenant == tenant)
+            if last_recidiviz_id is not None:
+                batch_query = batch_query.filter(
+                    schema.Identity.recidiviz_id > last_recidiviz_id
+                )
+            batch = batch_query.limit(_EXPORT_BATCH_SIZE).all()
+            if not batch:
+                break
+            rows_by_address = _build_export_rows(
+                batch, export_tables_by_address=export_tables_by_address
+            )
+            for address, rows in rows_by_address.items():
+                writer = writers_by_address[address]
+                for row in rows:
+                    writer.write(json.dumps(row) + "\n")
+                row_counts_by_address[address] += len(rows)
+            last_recidiviz_id = batch[-1].recidiviz_id
+            # Release this batch's ORM objects so memory stays bounded by the
+            # batch size.
+            session.expunge_all()
+
+    return row_counts_by_address
 
 
 def _build_export_rows(
     identities: list[schema.Identity],
+    *,
+    export_tables_by_address: dict[BigQueryAddress, "_ExportTable"],
 ) -> dict[BigQueryAddress, list[dict[str, Any]]]:
     """Returns the rows to write to each BigQuery table for the given
     identities, keyed by table address and serialized to JSON-compatible
     values. Child table rows are collected through the Identity relationships,
     whose names match the child table names."""
-    collection = build_identity_service_export_source_table_collection()
-
-    def field_names_for_address(address: BigQueryAddress) -> list[str]:
-        return [
-            field.name
-            for field in collection.source_tables_by_address[address].schema_fields
-        ]
-
     rows_by_address: dict[BigQueryAddress, list[dict[str, Any]]] = {
         _IDENTITIES_ADDRESS: [
             _serialize_identity_row(
-                identity, field_names=field_names_for_address(_IDENTITIES_ADDRESS)
+                identity,
+                field_names=export_tables_by_address[_IDENTITIES_ADDRESS].field_names,
             )
             for identity in identities
         ]
@@ -154,7 +306,7 @@ def _build_export_rows(
             dataset_id=IDENTITY_SERVICE_EXPORT_DATASET_ID,
             table_id=table.name,
         )
-        field_names = field_names_for_address(address)
+        field_names = export_tables_by_address[address].field_names
         rows_by_address[address] = [
             {name: _serialize_value(getattr(child, name)) for name in field_names}
             for identity in identities
@@ -163,9 +315,27 @@ def _build_export_rows(
     return rows_by_address
 
 
+def _load_table_from_staged_file(
+    bq_client: BigQueryClient,
+    export_table: "_ExportTable",
+    *,
+    write_disposition: str,
+) -> None:
+    """Runs a load job that writes the staged newline-delimited JSON file into
+    the given BigQuery table."""
+    bq_client.load_table_from_json_cloud_storage(
+        source_uris=[export_table.load_file_path.uri()],
+        destination_address=export_table.address,
+        destination_table_schema=export_table.schema_fields,
+        write_disposition=write_disposition,
+    )
+
+
 def _rewrite_all_tables(
     bq_client: BigQueryClient,
-    rows_by_address: dict[BigQueryAddress, list[dict[str, Any]]],
+    *,
+    export_tables_by_address: dict[BigQueryAddress, "_ExportTable"],
+    row_counts_by_address: dict[BigQueryAddress, int],
 ) -> None:
     """Rewrites every export table in full: a truncating load for tables with
     rows, a full delete for tables without (an empty load job is invalid).
@@ -174,25 +344,28 @@ def _rewrite_all_tables(
     table's schema and metadata such as clustering; plain WRITE_TRUNCATE
     would replace them with the load job's own (unclustered) configuration,
     undoing the table metadata the source-table update process manages."""
-    jobs: list[bigquery.job.LoadJob | bigquery.QueryJob] = []
-    for address, rows in rows_by_address.items():
-        if rows:
-            jobs.append(
-                bq_client.load_into_table_async(
-                    address=address,
-                    rows=rows,
-                    write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE_DATA,
-                )
+    delete_jobs: list[bigquery.QueryJob] = []
+    # TODO(OBT-56632): Submit the loads asynchronously and wait in bulk, like
+    # the deletes, so the tables rewrite in parallel and the window where some
+    # tables are fresh and others stale lasts seconds rather than the full
+    # load phase.
+    for address, row_count in row_counts_by_address.items():
+        if row_count:
+            _load_table_from_staged_file(
+                bq_client,
+                export_tables_by_address[address],
+                write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE_DATA,
             )
         else:
-            jobs.append(bq_client.delete_from_table_async(address))
-    bq_client.wait_for_big_query_jobs(jobs)
+            delete_jobs.append(bq_client.delete_from_table_async(address))
+    bq_client.wait_for_big_query_jobs(delete_jobs)
 
 
 def _refresh_tenant_rows(
     bq_client: BigQueryClient,
-    rows_by_address: dict[BigQueryAddress, list[dict[str, Any]]],
     *,
+    export_tables_by_address: dict[BigQueryAddress, "_ExportTable"],
+    row_counts_by_address: dict[BigQueryAddress, int],
     tenant: Tenant,
 ) -> None:
     """Replaces one tenant's rows in every export table, in four steps: delete
@@ -215,7 +388,7 @@ def _refresh_tenant_rows(
     )
     child_delete_jobs = [
         bq_client.delete_from_table_async(address, filter_clause=tenant_children_filter)
-        for address in rows_by_address
+        for address in row_counts_by_address
         if address != _IDENTITIES_ADDRESS
     ]
     bq_client.wait_for_big_query_jobs(child_delete_jobs)
@@ -224,23 +397,21 @@ def _refresh_tenant_rows(
         _IDENTITIES_ADDRESS, filter_clause=f"WHERE tenant = '{tenant.value}'"
     ).result()
 
-    if rows_by_address[_IDENTITIES_ADDRESS]:
-        bq_client.load_into_table_async(
-            address=_IDENTITIES_ADDRESS,
-            rows=rows_by_address[_IDENTITIES_ADDRESS],
-            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-        ).result()
-
-    child_append_jobs = [
-        bq_client.load_into_table_async(
-            address=address,
-            rows=rows,
+    if row_counts_by_address[_IDENTITIES_ADDRESS]:
+        _load_table_from_staged_file(
+            bq_client,
+            export_tables_by_address[_IDENTITIES_ADDRESS],
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
-        for address, rows in rows_by_address.items()
-        if rows and address != _IDENTITIES_ADDRESS
-    ]
-    bq_client.wait_for_big_query_jobs(child_append_jobs)
+
+    for address, row_count in row_counts_by_address.items():
+        if address == _IDENTITIES_ADDRESS or not row_count:
+            continue
+        _load_table_from_staged_file(
+            bq_client,
+            export_tables_by_address[address],
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+        )
 
 
 def _serialize_identity_row(
