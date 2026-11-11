@@ -42,6 +42,23 @@ class UsMiViolationResponseNormalizationDelegate(
 ):
     """US_MI implementation of the StateSpecificViolationResponseNormalizationDelegate."""
 
+    # Incarceration period admission reason raw text for a probation technical violation
+    # revocation: the OMNI movement reason code, then the COMS movement reasons, uppercased
+    # because ingest uppercases enum raw text
+    _PROBATION_TECHNICAL_REVOCATION_RAW_TEXTS = [
+        "15",
+        "NEW COMMITMENT - PROBATION TECHNICAL VIOLATOR",
+        "NEW COMMITMENT - PROBATION TECHNICAL VIOLATOR (REC CTR ONLY)",
+    ]
+
+    # Incarceration period admission reason raw text for a probation revocation with a new
+    # sentence: the OMNI movement reason code, then the COMS movement reasons
+    _PROBATION_NEW_SENTENCE_REVOCATION_RAW_TEXTS = [
+        "14",
+        "NEW COMMITMENT - PROBATIONER W/ NEW SENTENCE",
+        "NEW COMMITMENT - PROBATIONER W/ NEW SENTENCE (REC CTR. ONLY)",
+    ]
+
     def __init__(self, incarceration_periods: List[StateIncarcerationPeriod]):
         self._incarceration_periods = incarceration_periods
 
@@ -94,12 +111,17 @@ class UsMiViolationResponseNormalizationDelegate(
 
                 if incarceration_period.admission_date and response.response_date:
                     if (
-                        (incarceration_period.admission_reason_raw_text in ["14", "15"])
+                        incarceration_period.admission_reason_raw_text
+                        in self._PROBATION_TECHNICAL_REVOCATION_RAW_TEXTS
+                        + self._PROBATION_NEW_SENTENCE_REVOCATION_RAW_TEXTS
                         and response.response_date
                         < incarceration_period.admission_date
                         < next_response_date
                     ):
-                        if incarceration_period.admission_reason_raw_text == "15":
+                        if (
+                            incarceration_period.admission_reason_raw_text
+                            in self._PROBATION_TECHNICAL_REVOCATION_RAW_TEXTS
+                        ):
                             technical_entry = StateSupervisionViolationTypeEntry(
                                 state_code=response.state_code,
                                 violation_type=StateSupervisionViolationType.TECHNICAL,

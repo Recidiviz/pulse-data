@@ -62,16 +62,28 @@ class UsMiIncarcerationNormalizationDelegate(
     """US_MI implementation of the StateSpecificIncarcerationNormalizationDelegate."""
 
     _REASON_RAW_TEXT_TO_INCARCERATION_ADMISSION_VIOLATION_TYPE_MAP = {
-        # Movement reasons that indicate technical revocation
+        # Movement reasons from OMNI that indicate technical revocation
         # 15 - New Commitment - Probation Technical Violator (Rec Ctr Only)
         "15": StateSupervisionViolationType.TECHNICAL,
         # 17 - Returned as Parole Technical Rule Violator
         "17": StateSupervisionViolationType.TECHNICAL,
-        # Movement reasons that indicate new sentence revocation
+        # Movement reasons from OMNI that indicate new sentence revocation
         # 12 - New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
         "12": StateSupervisionViolationType.LAW,
         # 14 - New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
         "14": StateSupervisionViolationType.LAW,
+        # Movement reasons from COMS that indicate a revocation, uppercased because ingest
+        # uppercases enum raw text
+        # (some are only from legacy movement records migrated from OMNI which likely won't appear
+        #  in ingest since those will come in the _LEGACY view via the OMNI movements data)
+        "NEW COMMITMENT - PAROLE VIOL. W/ NEW SENTENCE": StateSupervisionViolationType.LAW,
+        "NEW COMMITMENT - PAROLE VIOL. W/ NEW SENTENCE (REC CTR ONLY)": StateSupervisionViolationType.LAW,  # Only appears in legacy movements
+        "NEW COMMITMENT - PROBATION TECHNICAL VIOLATOR": StateSupervisionViolationType.TECHNICAL,
+        "NEW COMMITMENT - PROBATION TECHNICAL VIOLATOR (REC CTR ONLY)": StateSupervisionViolationType.TECHNICAL,  # Only appears in legacy movements
+        "NEW COMMITMENT - PROBATIONER W/ NEW SENTENCE": StateSupervisionViolationType.LAW,
+        "NEW COMMITMENT - PROBATIONER W/ NEW SENTENCE (REC CTR. ONLY)": StateSupervisionViolationType.LAW,  # Only appears in legacy movements
+        "NEW COMMITMENT - ESCAPER W/ NEW SENTENCE": StateSupervisionViolationType.LAW,
+        "RETURNED - AS PAROLE TECHNICAL RULE VIOLATOR - VIOLATION SUSTAINED": StateSupervisionViolationType.TECHNICAL,
     }
 
     _MAX_INFERRENCE_GAP_LENGTH = 30
