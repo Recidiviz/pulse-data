@@ -81,6 +81,8 @@ EARNED_CREDIT_JSON_FIELD_FILTERS_WITH_SUGGESTIONS: dict[str, list[str]] = {
         "Void",
         "Write Failed",
     ],
+    "was_at_cap_before_attempt": ["False", "True"],
+    "is_at_cap_after_attempt": ["False", "True"],
 }
 
 EARNED_CREDIT_LOOKER_METRICS: list[AggregatedMetric] = [
@@ -91,4 +93,7 @@ EARNED_CREDIT_LOOKER_METRICS: list[AggregatedMetric] = [
     metric_config.SUM_EARNED_CREDIT_WRITEBACK_DAYS_WRITTEN,
     metric_config.SUM_EARNED_CREDIT_WRITEBACK_DAYS_APPLIED,
     metric_config.DISTINCT_POPULATION_WITH_EARNED_CREDIT_WRITEBACK_DAYS_APPLIED,
+    metric_config.DISTINCT_POPULATION_EARNED_CREDIT_WRITEBACK_ATTEMPT_AT_CAP_BEFORE,
+    metric_config.DISTINCT_POPULATION_EARNED_CREDIT_WRITEBACK_ATTEMPT_REACHED_CAP,
+    metric_config.DISTINCT_POPULATION_EARNED_CREDIT_WRITEBACK_ATTEMPT_AT_CAP_AFTER,
 ]

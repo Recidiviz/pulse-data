@@ -5062,6 +5062,39 @@ SUM_EARNED_CREDIT_WRITEBACK_DAYS_WRITTEN = SumEventValueMetric(
     event_value_numeric="days_written",
 )
 
+DISTINCT_POPULATION_EARNED_CREDIT_WRITEBACK_ATTEMPT_AT_CAP_BEFORE = EventDistinctUnitCountMetric(
+    name="distinct_population_earned_credit_writeback_attempt_at_cap_before",
+    display_name="Distinct Population: At Cap Before Earned Credit Writeback Attempt",
+    description="Total distinct count of people with at least one earned credit writeback attempt made when they already held the state's cap on that credit, which is 120 days of achievement earned time in Colorado. The credit held counts the rows entered in the person's system session before the attempt date, plus the days their earlier attempts wrote that day. Pending and Partially Applied rows count toward the cap, a Partially Applied row at the days entered. Achievement (Split) rows do not. Attempts with no system session covering the attempt date are not counted",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT_WRITEBACK_ATTEMPT,
+        event_conditions_dict={"was_at_cap_before_attempt": ["true"]},
+    ),
+)
+
+DISTINCT_POPULATION_EARNED_CREDIT_WRITEBACK_ATTEMPT_REACHED_CAP = EventDistinctUnitCountMetric(
+    name="distinct_population_earned_credit_writeback_attempt_reached_cap",
+    display_name="Distinct Population: Reached Cap With Earned Credit Writeback Attempt",
+    description="Total distinct count of people with at least one earned credit writeback attempt that took them to the state's cap on that credit: they were below it before the attempt and at it once the days the attempt wrote were added. Pending and Partially Applied rows count toward the cap, a Partially Applied row at the days entered. Achievement (Split) rows do not. Attempts with no system session covering the attempt date, or with no recorded day counts, are not counted",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT_WRITEBACK_ATTEMPT,
+        event_conditions_dict={
+            "was_at_cap_before_attempt": ["false"],
+            "is_at_cap_after_attempt": ["true"],
+        },
+    ),
+)
+
+DISTINCT_POPULATION_EARNED_CREDIT_WRITEBACK_ATTEMPT_AT_CAP_AFTER = EventDistinctUnitCountMetric(
+    name="distinct_population_earned_credit_writeback_attempt_at_cap_after",
+    display_name="Distinct Population: At Cap After Earned Credit Writeback Attempt",
+    description="Total distinct count of people with at least one earned credit writeback attempt after which they held the state's cap on that credit, including people who were already at the cap. This describes the writes as they happened: the credit held before the attempt plus the days the attempt wrote, not later voids or status changes in the state's system. Pending and Partially Applied rows count toward the cap, a Partially Applied row at the days entered. Achievement (Split) rows do not",
+    event_selector=EventSelector(
+        event_type=EventType.EARNED_CREDIT_WRITEBACK_ATTEMPT,
+        event_conditions_dict={"is_at_cap_after_attempt": ["true"]},
+    ),
+)
+
 CONTACTS_INCLUDED_IN_ROUTE_PLANNER = EventCountMetric(
     name="contacts_included_in_route_planner",
     display_name="Contacts Included in Route Planner",
