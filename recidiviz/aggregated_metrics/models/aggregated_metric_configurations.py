@@ -51,6 +51,9 @@ from recidiviz.calculator.query.state.views.sessions.justice_impact_sessions imp
     JusticeImpactType,
 )
 from recidiviz.calculator.query.state.views.tasks.assessment_type import AssessmentType
+from recidiviz.common.constants.state.state_incarceration_incident import (
+    StateIncarcerationIncidentSeverity,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -1602,6 +1605,23 @@ VIOLENT_INCARCERATION_INCIDENTS = EventCountMetric(
         event_conditions_dict={"is_violent": ["true"]},
     ),
 )
+
+INCARCERATION_INCIDENTS_BY_SEVERITY_METRICS = [
+    EventCountMetric(
+        name=f"incarceration_incidents_{severity.value.lower()}_severity",
+        display_name=f"Incarceration Incidents, {severity.value.replace('_', ' ').title()} Severity",
+        description=f"Number of incarceration incidents of the {severity.value.replace('_', ' ').lower()} severity",
+        event_selector=EventSelector(
+            event_type=EventType.INCARCERATION_INCIDENT,
+            event_conditions_dict={"incident_severity": [severity.value]},
+        ),
+    )
+    for severity in (
+        StateIncarcerationIncidentSeverity.HIGHEST,
+        StateIncarcerationIncidentSeverity.SECOND_HIGHEST,
+        StateIncarcerationIncidentSeverity.THIRD_HIGHEST,
+    )
+]
 
 INCARCERATION_STARTS = EventCountMetric(
     name="incarceration_starts",
