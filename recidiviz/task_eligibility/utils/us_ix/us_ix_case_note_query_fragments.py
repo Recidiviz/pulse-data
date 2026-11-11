@@ -120,6 +120,7 @@ def ix_general_case_notes(
     indent_level: int = 8,
     *,
     include_note_type: bool = False,
+    include_note_id_and_contact_mode_code: bool = False,
 ) -> str:
     """
     Returns a SQL query that returns case notes for a specified contact mode in Idaho.
@@ -134,15 +135,23 @@ def ix_general_case_notes(
             note's Atlas note type (e.g. Facility Notes, Supervision Notes). Off by
             default, so callers that union this with other case note queries keep
             the same columns.
+        include_note_id_and_contact_mode_code (bool): Whether to add a
+            note_external_id column holding the note's OffenderNoteId and a
+            note_contact_mode_code column holding the contact mode's abbreviation
+            (e.g. POS). Off by default for the same reason.
     Returns:
         str: SQL query as a string.
     """
-    note_type_column = (
-        "\n                note_type.NoteTypeDesc AS note_type,"
-        if include_note_type
-        else ""
+    optional_columns = []
+    if include_note_type:
+        optional_columns.append("note_type.NoteTypeDesc AS note_type,")
+    if include_note_id_and_contact_mode_code:
+        optional_columns.append("note.OffenderNoteId AS note_external_id,")
+        optional_columns.append("note_type_cm.Abbreviation AS note_contact_mode_code,")
+    optional_columns_sql = "".join(
+        f"\n                {column}" for column in optional_columns
     )
-    group_by_columns = "1,2,3,4,5,6" if include_note_type else "1,2,3,4,5"
+    group_by_columns = ",".join(str(i) for i in range(1, 6 + len(optional_columns)))
     date_filter_clause = ""
     if in_the_past_x_months is not None:
         date_filter_clause = f"""
@@ -157,7 +166,7 @@ def ix_general_case_notes(
                 '{criteria_str}' AS criteria,
                 note_type_cm.ContactModeDesc AS note_title,
                 REGEXP_REPLACE(note.Details, r'{ESCAPE_CURLY_AND_ANGLE_BRACKETS_REGEX}', '') AS note_body,
-                SAFE_CAST(LEFT(info.NoteDate, 10) AS DATE) AS event_date,{note_type_column}
+                SAFE_CAST(LEFT(info.NoteDate, 10) AS DATE) AS event_date,{optional_columns_sql}
             FROM `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_OffenderNote_latest_materialized` note
             LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_OffenderNoteInfo_latest_materialized` info
                 USING (OffenderNoteInfoId)
