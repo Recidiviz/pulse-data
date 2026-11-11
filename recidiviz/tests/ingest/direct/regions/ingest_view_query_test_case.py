@@ -69,19 +69,23 @@ from recidiviz.tests.ingest.direct.regions.ingest_view_cte_comment_exemptions im
 from recidiviz.tests.utils.discovery_guard import DiscoveryGuardMeta
 from recidiviz.utils.environment import in_ci
 
-DEFAULT_QUERY_RUN_DATETIME = datetime.datetime.utcnow()
+# Raw data upper bound for queries that read no raw data rows: the output schema and
+# linting checks, and tests whose fixtures are all empty. Only whether the query is
+# valid depends on it.
+UPPER_BOUND_DATETIME_FOR_QUERIES_WITHOUT_RAW_DATA = datetime.datetime(2026, 1, 1)
 
 
 def lint_ingest_view_query(
+    *,
     ingest_view: DirectIngestViewQueryBuilder,
-    query_run_dt: datetime.datetime,
+    raw_data_datetime_upper_bound: datetime.datetime,
     state_code: StateCode,
 ) -> None:
     """Does advanced checks of ingest view queries for efficiency and documentation."""
     query = ingest_view.build_query(
         query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
-            raw_data_datetime_upper_bound=query_run_dt,
+            raw_data_datetime_upper_bound=raw_data_datetime_upper_bound,
             parent_address_overrides=None,
         )
     )
@@ -156,6 +160,11 @@ class StateIngestViewAndMappingTestCase(
     # emulator boots, so no test writes to the emulator and there is nothing to clean
     # up between them. Wiping would only mean reseeding for the next test.
     wipe_emulator_data_on_teardown = False
+
+    # Raw data upper bound for every ingest view test in this class that does not pass
+    # its own to run_ingest_view_test. It also hydrates @update_timestamp. When unset,
+    # each test uses the latest update_datetime among its fixtures.
+    raw_data_datetime_upper_bound: datetime.datetime | None = None
 
     # Dataset prefix holding the empty raw tables test_validate_view_output_schema runs
     # against, kept separate from any test's own data.
@@ -279,10 +288,33 @@ class StateIngestViewAndMappingTestCase(
             )
         return builder.build()
 
+    @classmethod
+    def latest_fixture_update_datetime(cls, characteristic: str) -> datetime.datetime:
+        """Returns the latest update_datetime across every raw fixture the test for
+        |characteristic| reads, including shared code files. This is the raw data
+        upper bound for views that do not reference @update_timestamp, for which the
+        bound only filters rows; as the latest row's datetime, it filters none, just
+        as production's bound (the max upper bound across a view's raw data
+        dependencies) never does.
+
+        Empty fixtures are skipped, since tests often leave some dependencies empty
+        on purpose. If every fixture is empty, the bound cannot affect the result, so
+        this returns UPPER_BOUND_DATETIME_FOR_QUERIES_WITHOUT_RAW_DATA.
+        """
+        max_update_datetimes = [
+            fixture.max_update_datetime(SHARED_CODE_FILE_FIXTURE_NAME)
+            for fixture in cls._fixtures_by_file_tag(shared_code_files=True).values()
+        ] + [
+            fixture.max_update_datetime(characteristic)
+            for fixture in cls._fixtures_by_file_tag(shared_code_files=False).values()
+        ]
+        return max(
+            (dt for dt in max_update_datetimes if dt is not None),
+            default=UPPER_BOUND_DATETIME_FOR_QUERIES_WITHOUT_RAW_DATA,
+        )
+
     def setUp(self) -> None:
         super().setUp()
-        # Is replaced in some downstream tests
-        self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
         self.ingest_view_manifest_compiler = self.build_ingest_view_manifest_compiler()
 
     def test_validate_view_output_schema(self) -> None:
@@ -299,7 +331,7 @@ class StateIngestViewAndMappingTestCase(
         view_query = self.ingest_view_builder().build_query(
             query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                raw_data_datetime_upper_bound=self.query_run_dt,
+                raw_data_datetime_upper_bound=UPPER_BOUND_DATETIME_FOR_QUERIES_WITHOUT_RAW_DATA,
                 parent_address_overrides=self.raw_data_address_overrides(
                     self.EMPTY_RAW_DATA_PREFIX
                 ),
@@ -335,8 +367,24 @@ class StateIngestViewAndMappingTestCase(
             f"{ingest_view_name} does not match the actual output of the view query.",
         )
 
-    def run_ingest_view_test(self, create_expected_output: bool = False) -> None:
-        """Runs the ingest view query for this test's IngestViewBuilder and compares against expected results."""
+    def run_ingest_view_test(
+        self,
+        create_expected_output: bool = False,
+        *,
+        raw_data_datetime_upper_bound: datetime.datetime | None = None,
+    ) -> None:
+        """Runs the ingest view query for this test's IngestViewBuilder and compares
+        against expected results.
+
+        Args:
+            create_expected_output: If True, writes the query's results and the
+                mapping output as this test's expected fixtures instead of comparing.
+                Never allowed in CI.
+            raw_data_datetime_upper_bound: Raw data upper bound for this test, which
+                also hydrates @update_timestamp. Overrides the class's
+                raw_data_datetime_upper_bound. When neither is set, the bound is the
+                latest update_datetime among the test's fixtures.
+        """
         if in_ci() and create_expected_output:
             raise ValueError("Cannot have create_expected_output=True in the CI.")
         expected_ingest_view_name = self.ingest_view_builder().ingest_view_name
@@ -360,7 +408,13 @@ class StateIngestViewAndMappingTestCase(
 
         # This test's raw data was seeded into its own dataset when the emulator
         # booted - see get_seeded_tables().
-        results = self._run_ingest_view_query(characteristic)
+        results = self._run_ingest_view_query(
+            characteristic=characteristic,
+            raw_data_datetime_upper_bound=self.resolve_raw_data_datetime_upper_bound(
+                characteristic=characteristic,
+                test_raw_data_datetime_upper_bound=raw_data_datetime_upper_bound,
+            ),
+        )
 
         expected_output_fixture_path = fixture_path_for_address(
             self.state_code(),
@@ -388,13 +442,71 @@ class StateIngestViewAndMappingTestCase(
             characteristic=characteristic,
         )
 
-    def _run_ingest_view_query(self, characteristic: str) -> pd.DataFrame:
+    @classmethod
+    def resolve_raw_data_datetime_upper_bound(
+        cls,
+        *,
+        characteristic: str,
+        test_raw_data_datetime_upper_bound: datetime.datetime | None,
+    ) -> datetime.datetime:
+        """Returns the raw data upper bound for the test for |characteristic|:
+        |test_raw_data_datetime_upper_bound| if set, otherwise the class's
+        raw_data_datetime_upper_bound, otherwise the latest update_datetime among the
+        test's fixtures.
+
+        Raises if the chosen bound would filter out any row of the test's own fixtures,
+        or every row of a shared code file. A bound may select an older snapshot of a
+        shared code file, but must keep the full scenario the test's own fixtures set
+        up.
+        """
+        upper_bound = (
+            test_raw_data_datetime_upper_bound or cls.raw_data_datetime_upper_bound
+        )
+        ingest_view_name = cls.ingest_view_builder().ingest_view_name
+        if upper_bound is None:
+            return cls.latest_fixture_update_datetime(characteristic)
+
+        for file_tag, fixture in cls._fixtures_by_file_tag(
+            shared_code_files=False
+        ).items():
+            max_update_datetime = fixture.max_update_datetime(characteristic)
+            if max_update_datetime is not None and upper_bound < max_update_datetime:
+                raise ValueError(
+                    f"raw_data_datetime_upper_bound [{upper_bound.isoformat()}] for "
+                    f"the [{ingest_view_name}] test for characteristic "
+                    f"[{characteristic}] is earlier than the latest row in raw data "
+                    f"fixture [{file_tag}] (update_datetime "
+                    f"[{max_update_datetime.isoformat()}]), so the query would drop "
+                    f"rows the test sets up. Choose a raw_data_datetime_upper_bound on "
+                    f"or after [{max_update_datetime.isoformat()}]."
+                )
+        for file_tag, fixture in cls._fixtures_by_file_tag(
+            shared_code_files=True
+        ).items():
+            min_update_datetime = fixture.min_update_datetime(
+                SHARED_CODE_FILE_FIXTURE_NAME
+            )
+            if min_update_datetime is not None and upper_bound < min_update_datetime:
+                raise ValueError(
+                    f"raw_data_datetime_upper_bound [{upper_bound.isoformat()}] for "
+                    f"the [{ingest_view_name}] test for characteristic "
+                    f"[{characteristic}] is earlier than every row in shared code file "
+                    f"fixture [{file_tag}] (earliest update_datetime "
+                    f"[{min_update_datetime.isoformat()}]), so the query would read "
+                    f"none of that table. Choose a raw_data_datetime_upper_bound on or "
+                    f"after [{min_update_datetime.isoformat()}]."
+                )
+        return upper_bound
+
+    def _run_ingest_view_query(
+        self, *, characteristic: str, raw_data_datetime_upper_bound: datetime.datetime
+    ) -> pd.DataFrame:
         """Uses the ingest view query run by Dataflow pipelines to query the raw data
         seeded for |characteristic|."""
         view_query = self.ingest_view_builder().build_query(
             query_structure_config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                raw_data_datetime_upper_bound=self.query_run_dt,
+                raw_data_datetime_upper_bound=raw_data_datetime_upper_bound,
                 parent_address_overrides=self.raw_data_address_overrides(
                     characteristic
                 ),
@@ -518,5 +630,7 @@ class StateIngestViewAndMappingTestCase(
 
     def test_validate_view_query_linting(self) -> None:
         lint_ingest_view_query(
-            self.ingest_view_builder(), self.query_run_dt, self.state_code()
+            ingest_view=self.ingest_view_builder(),
+            raw_data_datetime_upper_bound=UPPER_BOUND_DATETIME_FOR_QUERIES_WITHOUT_RAW_DATA,
+            state_code=self.state_code(),
         )

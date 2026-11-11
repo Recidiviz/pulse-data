@@ -16,6 +16,7 @@
 # =============================================================================
 """This module consolidates operations on raw data fixtures for direct ingest."""
 
+import datetime
 import os
 from typing import Any, Callable
 
@@ -31,6 +32,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder imp
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     RAW_DATA_METADATA_COLUMNS,
+    UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.big_query.big_query_emulator_input_schema_json import SeededTable
@@ -140,6 +142,50 @@ class RawDataFixture:
         Tests that share an emulator each get their own dataset, so |dataset_id| is
         what keeps one test's raw data from being visible to another's query.
         """
+        return SeededTable(
+            address=BigQueryAddress(
+                dataset_id=dataset_id, table_id=self.raw_file_config.file_tag
+            ),
+            schema=self.schema,
+            rows=self._seeded_rows(test_identifier),
+        )
+
+    def max_update_datetime(self, test_identifier: str) -> datetime.datetime | None:
+        """Returns the latest update_datetime among this fixture's rows for
+        |test_identifier|, or None if the fixture has no rows.
+        """
+        update_datetimes = [
+            self._parse_update_datetime(row[UPDATE_DATETIME_COL_NAME])
+            for row in self._seeded_rows(test_identifier)
+        ]
+        return max(update_datetimes, default=None)
+
+    def min_update_datetime(self, test_identifier: str) -> datetime.datetime | None:
+        """Returns the earliest update_datetime among this fixture's rows for
+        |test_identifier|, or None if the fixture has no rows.
+        """
+        update_datetimes = [
+            self._parse_update_datetime(row[UPDATE_DATETIME_COL_NAME])
+            for row in self._seeded_rows(test_identifier)
+        ]
+        return min(update_datetimes, default=None)
+
+    @staticmethod
+    def _parse_update_datetime(update_datetime_str: str) -> datetime.datetime:
+        """Returns |update_datetime_str| as a naive UTC datetime. Fixtures write this
+        column in several forms the emulator accepts, e.g. "2025-01-15",
+        "2024-01-05 0:00:00" and "2025-02-11 21:00:14.954652+00:00".
+        """
+        timestamp = pd.Timestamp(update_datetime_str)
+        if timestamp.tzinfo is not None:
+            timestamp = timestamp.tz_convert("UTC").tz_localize(None)
+        return timestamp.to_pydatetime()
+
+    def _seeded_rows(self, test_identifier: str) -> list[dict[str, Any]]:
+        """Returns this fixture's rows for |test_identifier| as they are seeded into
+        the emulator, parsing the fixture file only the first time it is requested in
+        this process.
+        """
         raw_fixture_path = fixture_path_for_raw_file_config(
             self.state_code, self.raw_file_config, test_identifier
         )
@@ -147,14 +193,7 @@ class RawDataFixture:
             _SEEDED_ROWS_BY_FIXTURE_PATH[raw_fixture_path] = self._build_seeded_rows(
                 test_identifier
             )
-
-        return SeededTable(
-            address=BigQueryAddress(
-                dataset_id=dataset_id, table_id=self.raw_file_config.file_tag
-            ),
-            schema=self.schema,
-            rows=_SEEDED_ROWS_BY_FIXTURE_PATH[raw_fixture_path],
-        )
+        return _SEEDED_ROWS_BY_FIXTURE_PATH[raw_fixture_path]
 
     def to_empty_seeded_table(self, *, dataset_id: str) -> SeededTable:
         """Returns this fixture's table, with its schema but no rows, for the emulator
