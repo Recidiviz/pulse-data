@@ -1,0 +1,10 @@
+# Era table whose second era starts on a different date than its regime's
+# effective date.
+eras:
+  - name: FIRST
+    description: The first era.
+    regime: REGIME_1
+  - name: SECOND
+    description: The second era.
+    offenses_on_or_after: 2000-01-01
+    regime: REGIME_2

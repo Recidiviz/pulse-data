@@ -173,7 +173,7 @@ class _UniqueKeySafeLoader(yaml.SafeLoader):
         return super().construct_mapping(node, deep=deep)
 
 
-def _yaml_dict_from_path(yaml_path: str | Path) -> YAMLDict:
+def yaml_dict_from_path_with_unique_keys(yaml_path: str | Path) -> YAMLDict:
     """Returns the top-level mapping of the YAML file at yaml_path, raising if
     any mapping in the file repeats a key or the file uses an alias."""
     with open(yaml_path, encoding="utf-8") as yaml_file:
@@ -1084,7 +1084,7 @@ class LawRegime:
             shared_conditions: The state's named conditions, which the regime's
                 conditions can refer to.
         """
-        yaml_dict = _yaml_dict_from_path(yaml_path)
+        yaml_dict = yaml_dict_from_path_with_unique_keys(yaml_path)
         _validate_against_schema(yaml_dict, LAW_REGIME_SCHEMA_PATH)
 
         sentence_field_types = sentence_condition_field_types(sentence_class)
@@ -1185,7 +1185,7 @@ def parse_state_conditions(
         sentence_class: The Sentence subclass for the state, whose fields the
             conditions can compare.
     """
-    yaml_dict = _yaml_dict_from_path(yaml_path)
+    yaml_dict = yaml_dict_from_path_with_unique_keys(yaml_path)
     _validate_against_schema(yaml_dict, STATE_CONDITIONS_SCHEMA_PATH)
     return parse_named_conditions(
         yaml_dict,

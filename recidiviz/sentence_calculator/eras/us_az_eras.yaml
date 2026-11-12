@@ -1,0 +1,82 @@
+# The sentencing eras of Arizona: which law regime a sentence gets, by the
+# date of its offense. ADCRR routes every sentence this way, because the
+# statutes in force on the offense date decide how the person earns release.
+# The eras are in date order. Each one runs from its offenses_on_or_after date
+# up to the start of the next, and the first covers every earlier offense.
+#
+# Drug possession release (the DPR regime) is not an era. It is a faster credit
+# rate that a Truth in Sentencing sentence gets once the person qualifies and
+# ADCRR approves, so the input layer assigns it by a fact about the sentence,
+# not by the offense date.
+eras:
+  # TODO(OBT-56089): The training places this boundary at noon on 1978-10-01, while
+  # ADCRR's electronic calculation compares dates only. This table compares
+  # dates only.
+  - name: OLD_CODE
+    description: >-
+      Indeterminate sentences with a minimum and a maximum term. The person
+      earned copper time for each year served plus two-for-one credits, and
+      parole was available.
+    regime: OLD_CODE
+
+  - name: NEW_CODE_A
+    description: >-
+      The New Code took effect. Parole eligibility at half or two thirds of
+      the term, release credits of one per two or three days served, and
+      mandatory release 180 days before the earned sentence expiration date.
+    offenses_on_or_after: 1978-10-01
+    regime: NEW_CODE_A_B
+
+  # TODO(OBT-56089): The New Code training slides give offenses before 1986-08-13
+  # mandatory release, while ADCRR's electronic calculation and the exception
+  # statutes switch to provisional release here. Confirm with TCU.
+  - name: NEW_CODE_B
+    description: >-
+      Provisional release replaced mandatory release under the exception
+      statutes; the NEW_CODE_A_B regime still computes mandatory release for
+      this era until TCU confirms. The credit rates and the earned sentence
+      expiration date did not change.
+    offenses_on_or_after: 1985-08-07
+    regime: NEW_CODE_A_B
+
+  - name: NEW_CODE_C
+    description: >-
+      The earned release credit date replaced the earned sentence expiration
+      date, and worksheet 1002-15 replaced worksheet 1002-14.
+    offenses_on_or_after: 1986-08-13
+    regime: NEW_CODE_C_D
+
+  # TODO(OBT-56088): The quarter-minimum wait is not encoded yet, so this era shares
+  # the NEW_CODE_C_D regime with the era before it.
+  - name: NEW_CODE_D
+    description: >-
+      Under some statutes the person serves a quarter of the time to parole
+      eligibility before release credits start to accrue.
+    offenses_on_or_after: 1990-09-27
+    regime: NEW_CODE_C_D
+
+  - name: TIS_A
+    description: >-
+      Truth in Sentencing took effect. Parole ended for most offenses, release
+      credits fell to one per six days served, and community supervision of
+      one seventh of the term followed release, kept in exact days.
+    offenses_on_or_after: 1994-01-01
+    regime: TIS_A
+
+  - name: TIS_B
+    description: >-
+      Release to community supervision moved up to 90 days before the earned
+      release credit date, and the community supervision term rounds up to a
+      whole month at 16 or more days.
+    offenses_on_or_after: 1995-07-13
+    regime: TIS_B
+
+  # TODO(OBT-56089): The Handbook and ADCRR's electronic calculation end TIS_B on
+  # 2001-08-08, while three training handouts end it on 2001-08-18. Confirm
+  # with TCU.
+  - name: TIS_C
+    description: >-
+      The community supervision term rounds down to whole months. The dates
+      are otherwise computed as in the era before.
+    offenses_on_or_after: 2001-08-09
+    regime: TIS_C

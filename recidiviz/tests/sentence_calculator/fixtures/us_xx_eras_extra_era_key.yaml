@@ -1,0 +1,9 @@
+# Era table whose second era carries a key the table does not define.
+eras:
+  - name: FIRST
+    description: The first era.
+    regime: REGIME_1
+  - name: SECOND
+    description: The second era, with a misspelled start key.
+    offenses_before: 2000-01-01
+    regime: REGIME_2
