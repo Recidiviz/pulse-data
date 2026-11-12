@@ -164,3 +164,43 @@ ASSERT (
 EOT
   }
 }
+
+# Freshness signal for the GitHub metrics crawl, read from github_api_raw.crawl_runs,
+# where a run writes its one row only after every requested repo finished. The
+# first ASSERT fails the run, and so sends the failure email, when no crawl has
+# completed in 36 hours; the second fails when completed crawls wrote no pull
+# requests in 4 days, which points at an empty search or a credential that sees
+# nothing. The first also fails while the table is empty, so a job that has failed
+# since its first night, for example for a missing or wrong credential, is not
+# silent. It is expected to fire from the deploy until the credential is added, and
+# then until the first load of every repo's history has finished, which can take a
+# few nightly runs. The second passes while the table is empty.
+resource "google_bigquery_data_transfer_config" "github_metrics_crawl_freshness_check" {
+  display_name         = "github_metrics_crawl_freshness_check"
+  location             = "US"
+  data_source_id       = "scheduled_query"
+  schedule             = "every day 06:00" # UTC, three hours after the crawl starts
+  service_account_name = google_service_account.bigquery_scheduled_queries.email
+
+  email_preferences {
+    enable_failure_email = true
+  }
+
+  params = {
+    query = <<-EOT
+ASSERT IFNULL(
+  (SELECT MAX(finished_at) FROM `${var.project_id}.${module.terraform_managed_bigquery_dataset["github_api_raw"].dataset_id}.crawl_runs`)
+    >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 36 HOUR),
+  FALSE
+) AS 'github_api_raw.crawl_runs is stale: no crawl completed in the last 36 hours, or none ever has; check the github-metrics-crawl Cloud Run job and that its GitHub App secrets have values (expected while the first load of a repo is still running)';
+ASSERT (
+  (SELECT COUNT(*) FROM `${var.project_id}.${module.terraform_managed_bigquery_dataset["github_api_raw"].dataset_id}.crawl_runs`) = 0
+  OR (
+    SELECT COALESCE(SUM(pull_requests_crawled), 0)
+    FROM `${var.project_id}.${module.terraform_managed_bigquery_dataset["github_api_raw"].dataset_id}.crawl_runs`
+    WHERE finished_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 4 DAY)
+  ) > 0
+) AS 'github_api_raw crawl completed but wrote no pull requests in 4 days; the search query or the credential may be returning empty results';
+EOT
+  }
+}
