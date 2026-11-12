@@ -24,12 +24,14 @@ from unittest.mock import MagicMock, patch
 
 from freezegun import freeze_time
 from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
+from mock.mock import call
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.workflows.etl.workflows_firestore_etl_delegate_test import (
     FakeFileStream,
 )
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsETLDelegate
 from recidiviz.workflows.etl.workflows_resident_etl_delegate import (
     WorkflowsResidentETLDelegate,
 )
@@ -212,14 +214,34 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
                 123,
                 {"personExternalId": 123, "stateCode": "US_XX"},
             )
-            delegate = WorkflowsResidentETLDelegate(StateCode.US_TN)
-            await delegate.run_etl("resident_record.json")
-            mock_collection.document.assert_called_once_with(document_id)
-            mock_batch_set.set.assert_called_once_with(
-                mock_document_ref,
-                {
-                    "personExternalId": 123,
-                    "stateCode": "US_XX",
-                    "__loadedAt": mock_now,
-                },
-            )
+            with patch.object(
+                WorkflowsETLDelegate, "pseudonymize_record"
+            ) as mock_pseudonymize:
+                mock_pseudonymize.return_value = (
+                    {"personExternalId": 123, "stateCode": "US_XX"},
+                )
+                delegate = WorkflowsResidentETLDelegate(StateCode.US_TN)
+                await delegate.run_etl("resident_record.json")
+                mock_collection.document.assert_has_calls(
+                    [call(document_id), call(document_id)]
+                )
+                mock_batch_set.set.assert_has_calls(
+                    [
+                        call(
+                            mock_document_ref,
+                            {
+                                "personExternalId": 123,
+                                "stateCode": "US_XX",
+                                "__loadedAt": mock_now,
+                            },
+                        ),
+                        call(
+                            mock_document_ref,
+                            {
+                                "personExternalId": 123,
+                                "stateCode": "US_XX",
+                                "__loadedAt": mock_now,
+                            },
+                        ),
+                    ]
+                )

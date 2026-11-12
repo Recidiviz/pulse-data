@@ -24,6 +24,7 @@ import mock.mock
 from freezegun import freeze_time
 from google.api_core.exceptions import AlreadyExists
 from google.cloud.firestore_admin_v1 import CreateIndexRequest
+from mock.mock import call
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.metadata import local_project_id_override
@@ -116,7 +117,9 @@ class WorkflowsFirestoreEtlDelegateTest(IsolatedAsyncioTestCase):
             delegate = TestETLDelegate(StateCode.US_XX)
             await delegate.run_etl("test_export.json")
 
-        mock_get_collection.assert_called_once_with("testOpportunity")
+        mock_get_collection.assert_has_calls(
+            [call("testOpportunity"), call("PSEUDONYMIZED_testOpportunity")]
+        )
 
     async def test_run_etl_timestamp(
         self,

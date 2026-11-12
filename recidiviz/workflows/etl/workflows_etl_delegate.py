@@ -30,6 +30,7 @@ from faker import Faker
 from google.api_core.exceptions import AlreadyExists
 from google.cloud.firestore_admin_v1 import CreateIndexRequest, Index
 from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
+from google.cloud.firestore_v1.collection import CollectionReference
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -238,6 +239,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
 
     async def run_etl(self, filename: str) -> None:
         collection_name = self.COLLECTION_BY_FILENAME[filename]
+        pseudonymized_collection_name = "PSEUDONYMIZED_" + collection_name
 
         logging.info(
             'Starting export of %s to the Firestore collection "%s".',
@@ -246,6 +248,10 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
         )
         firestore_client = FirestoreClientImpl()
         firestore_collection = firestore_client.get_collection(collection_name)
+        pseudonymized_firestore_collection = firestore_client.get_collection(
+            pseudonymized_collection_name
+        )
+        has_pseudonymized_collection = False
         num_records_to_write = 0
         self.total_records_written = 0
 
@@ -258,40 +264,35 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                 async with TaskGroup() as tg:
                     batch = firestore_client.async_batch()
                     for line in rows:
-                        try:
-                            line_data = recursive_json_loads(line)
-                            row_id, document_fields = self.transform_row(
-                                line_data, filename
-                            )
-                        except Exception as e:
-                            logging.error(
-                                "Transform row failed on [%s] due to: %s",
-                                line,
-                                str(e),
-                            )
-                            continue
+                        line_data = recursive_json_loads(line)
 
-                        if row_id is None or document_fields is None:
-                            continue
-
-                        if not document_fields.get(STATE_CODE_KEY):
-                            logging.error(
-                                "Skipping row [%s] in [%s]: document has no [%s]",
-                                row_id,
-                                filename,
-                                STATE_CODE_KEY,
-                            )
-                            continue
-
-                        document_id = self.doc_id_for_row_id(row_id)
-                        new_document = {
-                            **document_fields,
-                            self.timestamp_key: etl_timestamp,
-                        }
-                        batch.set(
-                            firestore_collection.document(document_id), new_document
+                        row_id = self._add_row_to_batch(
+                            line_data,
+                            filename,
+                            etl_timestamp,
+                            firestore_collection,
+                            batch,
                         )
+
+                        # If the row_id is None that means this row was not added to
+                        # the firestore collection for some reason.
+                        if not row_id:
+                            continue
+
                         num_records_to_write += 1
+                        pseudonymized_data = self.pseudonymize_record(
+                            line_data, seed=self.doc_id_for_row_id(row_id)
+                        )
+                        if pseudonymized_data:
+                            if self._add_row_to_batch(
+                                pseudonymized_data,
+                                filename,
+                                etl_timestamp,
+                                pseudonymized_firestore_collection,
+                                batch,
+                            ):
+                                num_records_to_write += 1
+                                has_pseudonymized_collection = True
 
                         if num_records_to_write >= MAX_FIRESTORE_RECORDS_PER_BATCH:
                             tg.create_task(self._send_batch(batch))
@@ -308,6 +309,69 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                 )
 
         # step 2: Create composite indexes if they do not exist
+        self._create_index_on_firestore(firestore_client, collection_name)
+        if has_pseudonymized_collection:
+            self._create_index_on_firestore(
+                firestore_client, pseudonymized_collection_name
+            )
+
+        # step 3: Delete any pre-existing documents that we didn't just overwrite
+        firestore_client.delete_old_documents(
+            collection_name, self.state_code.value, self.timestamp_key, etl_timestamp
+        )
+        if has_pseudonymized_collection:
+            firestore_client.delete_old_documents(
+                pseudonymized_collection_name,
+                self.state_code.value,
+                self.timestamp_key,
+                etl_timestamp,
+            )
+
+    def _add_row_to_batch(
+        self,
+        row: dict[str, Any],
+        filename: str,
+        etl_timestamp: datetime,
+        firestore_collection: CollectionReference,
+        batch: AsyncWriteBatch,
+    ) -> str | None:
+        """Transforms and adds the row to the given `batch` to add it to the given
+        `firestore_collection`."""
+        try:
+            row_id, document_fields = self.transform_row(row, filename)
+        except Exception as e:
+            logging.error(
+                "Transform row failed on [%s] due to: %s",
+                row,
+                str(e),
+            )
+            return None
+
+        if row_id is None or document_fields is None:
+            return None
+
+        if not document_fields.get(STATE_CODE_KEY):
+            logging.error(
+                "Skipping row [%s] in [%s]: document has no [%s]",
+                row_id,
+                filename,
+                STATE_CODE_KEY,
+            )
+            return None
+
+        document_id = self.doc_id_for_row_id(row_id)
+        new_document = {
+            **document_fields,
+            self.timestamp_key: etl_timestamp,
+        }
+        batch.set(firestore_collection.document(document_id), new_document)
+        return row_id
+
+    def _create_index_on_firestore(
+        self, firestore_client: FirestoreClientImpl, collection_name: str
+    ) -> None:
+        """Creates composite index for the given `collection_name` if the index doesn't
+        already exist."""
         if not firestore_client.index_exists_for_collection(collection_name):
             try:
                 create_index_request = CreateIndexRequest(
@@ -341,11 +405,6 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                     "Skip create composite index for collection %s. Index already exists.",
                     collection_name,
                 )
-
-        # step 3: Delete any pre-existing documents that we didn't just overwrite
-        firestore_client.delete_old_documents(
-            collection_name, self.state_code.value, self.timestamp_key, etl_timestamp
-        )
 
 
 class WorkflowsSingleStateETLDelegate(WorkflowsFirestoreETLDelegate):

@@ -19,7 +19,7 @@ import io
 from datetime import datetime, timezone
 from typing import Any, List
 from unittest import IsolatedAsyncioTestCase, TestCase
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 from freezegun import freeze_time
 
@@ -233,6 +233,10 @@ class TestFirestoreETLDelegate(WorkflowsFirestoreETLDelegate):
         self, row: dict[str, Any], filename: str
     ) -> tuple[str | None, dict | None]:
         return row["id"], row["document"]
+
+
+class TestFirestoreETLDelegateWithPseudonymizedFields(TestFirestoreETLDelegate):
+    PSEUDONYMIZED_FIELDS = {"document": {"name": "first_name"}}
 
 
 class FakeAsyncBatch:
@@ -482,3 +486,68 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
             self.committed_batches,
         )
         self.assertEqual(2, self.delegate.total_records_written)
+
+    @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
+    async def test_run_etl_writes_pseudonymized_documents(self) -> None:
+        def build_collection(collection_name: str) -> MagicMock:
+            collection = MagicMock()
+            # Prefix document references with the collection name so that committed
+            # batches show which collection each document was written to.
+            collection.document.side_effect = (
+                lambda document_id: f"{collection_name}/{document_id}"
+            )
+            return collection
+
+        self.mock_firestore_client.get_collection.side_effect = build_collection
+        self.mock_get_file_stream.return_value = [
+            io.StringIO(
+                '{"id": "A1", "document": {"stateCode": "US_XX", "name": "Ann"}}\n'
+            )
+        ]
+        delegate = TestFirestoreETLDelegateWithPseudonymizedFields(StateCode.US_XX)
+
+        await delegate.run_etl("export_filename.json")
+
+        self.assertEqual(
+            [
+                {
+                    "testCollection/us_xx_a1": {
+                        "stateCode": "US_XX",
+                        "name": "Ann",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                    "PSEUDONYMIZED_testCollection/us_xx_a1": {
+                        "stateCode": "US_XX",
+                        "name": "Alyssa",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                }
+            ],
+            self.committed_batches,
+        )
+        self.assertEqual(2, delegate.total_records_written)
+
+        # Verify both collection names are indexed.
+        self.assertEqual(
+            [call("testCollection"), call("PSEUDONYMIZED_testCollection")],
+            self.mock_firestore_client.index_exists_for_collection.call_args_list,
+        )
+
+        # Verify old documents are deleted for both collection names.
+        self.assertEqual(
+            [
+                call(
+                    "testCollection",
+                    "US_XX",
+                    "__loadedAt",
+                    datetime(2026, 1, 1, tzinfo=timezone.utc),
+                ),
+                call(
+                    "PSEUDONYMIZED_testCollection",
+                    "US_XX",
+                    "__loadedAt",
+                    datetime(2026, 1, 1, tzinfo=timezone.utc),
+                ),
+            ],
+            self.mock_firestore_client.delete_old_documents.call_args_list,
+        )

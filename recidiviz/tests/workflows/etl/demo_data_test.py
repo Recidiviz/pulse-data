@@ -21,6 +21,7 @@ from unittest.mock import mock_open, patch
 
 import mock.mock
 from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
+from mock.mock import call
 
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.demo_data import load_all_demo_data, load_demo_fixture
@@ -77,7 +78,9 @@ class WorkflowsDemoDataTest(IsolatedAsyncioTestCase):
         with local_project_id_override("test-project"):
             await load_demo_fixture(TestETLDelegate, "US_TN", "test_export.json")
 
-        mock_get_collection.assert_called_once_with("DEMO_test_collection")
+        mock_get_collection.assert_has_calls(
+            [call("DEMO_test_collection"), call("PSEUDONYMIZED_DEMO_test_collection")]
+        )
 
     async def test_fixtures(
         self,
