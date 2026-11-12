@@ -16,7 +16,7 @@ schema:
   - name: mode
     type: STRING
     mode: REQUIRED
-    description: How the run found pull requests, backfill or incremental.
+    description: How the run found pull requests. Always incremental, by update time.
   - name: started_at
     type: TIMESTAMP
     mode: REQUIRED
@@ -33,8 +33,8 @@ schema:
     type: INTEGER
     mode: REQUIRED
     description:
-      Number of repos the run crawled. An incremental run skips a repo with no rows
-      in pull_requests yet, so that repo counts as requested but not crawled.
+      Number of repos the run crawled. Equal to repositories_requested, because a run
+      writes its row only after it has crawled every requested repo.
   - name: pull_requests_crawled
     type: INTEGER
     mode: REQUIRED

@@ -1048,3 +1048,28 @@ def test_entrypoint_linear_project_snapshot_dependencies() -> None:
             }
         ),
     )
+
+
+def test_entrypoint_github_metrics_crawl_dependencies() -> None:
+    """Test that the github_metrics_crawl entrypoint has valid dependencies."""
+    validate_dependencies_for_entrypoint(
+        "recidiviz.entrypoints.github_metrics_crawl",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.big_query",
+                "recidiviz.calculator.query.state.dataset_config",
+                "recidiviz.cloud_resources",
+                "recidiviz.cloud_storage.gcsfs_path",
+                "recidiviz.common",
+                "recidiviz.datasets.static_data.terraform_managed.config",
+                "recidiviz.entrypoints.entrypoint_interface",
+                "recidiviz.entrypoints.github_metrics_crawl",
+                "recidiviz.github.metrics",
+                "recidiviz.metrics.metric_big_query_view",
+                "recidiviz.monitoring.eng_metrics.exclusions",
+                "recidiviz.persistence.database.reserved_words",
+                "recidiviz.source_tables.yaml_managed.datasets",
+                "recidiviz.utils",
+            }
+        ),
+    )
