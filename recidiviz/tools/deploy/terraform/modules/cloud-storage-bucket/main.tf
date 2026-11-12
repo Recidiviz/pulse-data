@@ -194,6 +194,15 @@ resource "google_storage_bucket" "bucket" {
       default_kms_key_name = google_kms_crypto_key.gcs_cmek[0].id
     }
   }
+
+  # TODO(OBT-56801): Remove once the relocated buckets set custom_placement_config
+  # in their module configuration. Some buckets are being relocated to a dual-region
+  # outside Terraform, and the provider marks data_locations as ForceNew, so until
+  # then any difference between a bucket's live placement and this config would plan
+  # a destroy and recreate of the bucket.
+  lifecycle {
+    ignore_changes = [custom_placement_config]
+  }
 }
 
 # Bucket tag bindings are location-scoped, and the location must be lowercase: a
