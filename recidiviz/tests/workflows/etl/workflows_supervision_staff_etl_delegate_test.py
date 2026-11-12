@@ -16,6 +16,7 @@
 #  =============================================================================
 """Tests the ability for SupervisionStaffRecordEtlDelegate to parse json rows."""
 
+import json
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any
@@ -148,10 +149,9 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
             StateCode.US_XX, SUPERVISION_STAFF_FILENAME
         )
         data = deepcopy(TEST_DATA)
-        data["state_specific_data"] = {
-            "state_code": "US_IX",
-            "some_field": "some_value",
-        }
+        data["state_specific_data"] = json.dumps(
+            {"state_code": "US_IX", "some_field": "some_value"}
+        )
         expected = deepcopy(EXPECTED_DOCUMENT)
         expected["stateSpecificData"] = {
             "stateCode": "US_ID",

@@ -176,8 +176,9 @@ class TestPseudonymizeRecord(TestCase):
             )
         self.assertEqual(1, len(logs.records))
         self.assertIn(
-            "Failed to create the pseudonymized record. Expected a "
-            "dictionary for field: address on record {'address': '123 Real St'}.",
+            "Failed to create the pseudonymized record. Expected a json dictionary "
+            "string or dictionary for field: address on record {'address': '123 Real "
+            "St'}.",
             logs.output[0],
         )
 
@@ -199,6 +200,59 @@ class TestPseudonymizeRecord(TestCase):
             "Failed to create the pseudonymized record. Expected a string, integer, "
             "or double value for field: address on record: {'address': {'address_city': "
             "'RealCity'}}. Did not expect a dictionary.",
+            logs.output[0],
+        )
+
+    def test_replaces_fields_nested_in_json_string(self) -> None:
+        delegate = TestETLDelegateWithPseudonymizedFields(StateCode.US_XX, FILENAME)
+        record = {
+            "person_external_id": "A123456",
+            "person_name": '{"given_names": "Jane", "surname": "Realperson", '
+            '"name_suffix": "Jr"}',
+        }
+        self.assertEqual(
+            {
+                "person_external_id": "A123456",
+                "person_name": '{"given_names": "Sandra", "surname": "Hall", '
+                '"name_suffix": "Jr"}',
+            },
+            delegate.pseudonymize_record(record, seed=SEED),
+        )
+
+    def test_returns_none_when_json_string_field_is_not_an_object(self) -> None:
+        delegate = TestETLDelegateWithPseudonymizedFields(StateCode.US_XX, FILENAME)
+        with self.assertLogs(level="INFO") as logs:
+            self.assertIsNone(
+                delegate.pseudonymize_record(
+                    record={"person_name": '["Jane", "Realperson"]'}, seed=SEED
+                )
+            )
+        self.assertEqual(1, len(logs.records))
+        self.assertIn(
+            "Failed to create the pseudonymized record. Expected a json dictionary "
+            "string or dictionary for field: person_name on record {'person_name': "
+            '\'["Jane", "Realperson"]\'}.',
+            logs.output[0],
+        )
+
+    def test_returns_none_when_doubly_nested_field_does_not_match(self) -> None:
+        class TestETLDelegateWithDoublyNestedPseudonymizedField(TestETLDelegate):
+            PSEUDONYMIZED_FIELDS = {"metadata": {"address": {"address_city": "city"}}}
+
+        delegate = TestETLDelegateWithDoublyNestedPseudonymizedField(
+            StateCode.US_XX, FILENAME
+        )
+        with self.assertLogs(level="INFO") as logs:
+            self.assertIsNone(
+                delegate.pseudonymize_record(
+                    record={"metadata": '{"address": "123 Real St"}'}, seed=SEED
+                )
+            )
+        self.assertEqual(1, len(logs.records))
+        self.assertIn(
+            "Failed to create the pseudonymized record. Expected a json dictionary "
+            "string or dictionary for field: address on record {'address': '123 Real "
+            "St'}.",
             logs.output[0],
         )
 
@@ -333,7 +387,7 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
         )
 
     @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
-    async def test_run_etl_skips_rows_that_fail_to_transform(self) -> None:
+    async def test_run_etl_skips_rows_that_are_not_valid_json(self) -> None:
         self.mock_get_file_stream.return_value = [
             io.StringIO(
                 '{"id": "A1", "document": {"stateCode": "US_XX"}}\nnot valid json\n'
@@ -356,7 +410,37 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
         )
         self.assertEqual(1, self.delegate.total_records_written)
         self.assertEqual(1, len(logs.records))
-        self.assertIn("Transform row failed on [not valid json", logs.output[0])
+        self.assertIn("Failed to parse row [not valid json", logs.output[0])
+
+    @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
+    async def test_run_etl_skips_rows_that_fail_to_transform(self) -> None:
+        self.mock_get_file_stream.return_value = [
+            io.StringIO(
+                '{"id": "A1", "document": {"stateCode": "US_XX"}}\n'
+                '{"document": {"stateCode": "US_XX"}}\n'
+            )
+        ]
+
+        with self.assertLogs(level="ERROR") as logs:
+            await self.delegate.run_etl("export_filename.json")
+
+        self.assertEqual(
+            [
+                {
+                    "us_xx_a1": {
+                        "stateCode": "US_XX",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                }
+            ],
+            self.committed_batches,
+        )
+        self.assertEqual(1, self.delegate.total_records_written)
+        self.assertEqual(1, len(logs.records))
+        self.assertIn(
+            "Transform row failed on [{'document': {'stateCode': 'US_XX'}}]",
+            logs.output[0],
+        )
 
     @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
     async def test_run_etl_skips_rows_without_id_or_document(self) -> None:

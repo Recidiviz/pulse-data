@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Delegate class to ETL resident records for Workflows into Firestore."""
-
+import json
 from typing import Any, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
@@ -40,7 +40,7 @@ class WorkflowsResidentETLDelegate(WorkflowsSingleFileETLDelegate):
 
     def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
         metadata = convert_nested_dictionary_keys(
-            row.get("metadata", {}), snake_to_camel
+            json.loads(row.get("metadata", "{}")), snake_to_camel
         )
 
         new_document = {
@@ -51,7 +51,7 @@ class WorkflowsResidentETLDelegate(WorkflowsSingleFileETLDelegate):
             "gender": row.get("gender"),
             "personName": {
                 snake_to_camel(k): person_name_case(v)
-                for k, v in row["person_name"].items()
+                for k, v in json.loads(row["person_name"]).items()
             },
             "officerId": row.get("officer_id"),
             "facilityId": row.get("facility_id"),

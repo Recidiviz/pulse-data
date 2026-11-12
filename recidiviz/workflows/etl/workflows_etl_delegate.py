@@ -51,28 +51,6 @@ INPUT_CHUNK_SIZE = 32 * 1024 * 1024  # 32 mb
 # the composite index below and the prune in step 3 both filter on it, so a document
 # missing it would never be cleaned up and would linger in Firestore indefinitely.
 STATE_CODE_KEY = "stateCode"
-JSON_STRING_OPENING_CHARS = ("{", "[")
-
-
-def recursive_json_loads(value: Any) -> Any:
-    """Parses value recursively so all nested json strings are parsed into a dictionary."""
-    if isinstance(value, str):
-        # Only JSON objects and arrays are parsed, so strings like "123", "true", or
-        # "null" stay strings instead of becoming ints, bools, or None.
-        if not value.lstrip().startswith(JSON_STRING_OPENING_CHARS):
-            return value
-        try:
-            parsed_value = json.loads(value)
-        except json.JSONDecodeError:
-            return value
-        return recursive_json_loads(parsed_value)
-
-    if isinstance(value, dict):
-        return {key: recursive_json_loads(value[key]) for key in value}
-    if isinstance(value, list):
-        return [recursive_json_loads(nested_value) for nested_value in value]
-
-    return value
 
 
 class WorkflowsETLDelegate(abc.ABC):
@@ -168,17 +146,34 @@ class WorkflowsETLDelegate(abc.ABC):
                     return None
                 record[field] = getattr(self._faker, value)()
             elif isinstance(value, dict):
+                # Nested fields such as person_name arrive as JSON strings. Parse them
+                # to reach their fields, then serialize them back so transform_row
+                # receives the same shape as it does for the original record.
+                is_nested_json_string = False
+                if isinstance(nested_record, str):
+                    try:
+                        nested_record = json.loads(nested_record)
+                        is_nested_json_string = True
+                    except json.JSONDecodeError:
+                        nested_record = None
                 if not isinstance(nested_record, dict):
                     logging.info(
                         "Failed to create the pseudonymized record. Expected a "
-                        "dictionary for field: %s on record %s.",
+                        "json dictionary string or dictionary for field: %s on record "
+                        "%s.",
                         field,
                         record,
                     )
                     return None
-                self._pseudonymize_fields_on_record(
-                    record=nested_record, pseudonymized_fields=value
-                )
+                if (
+                    self._pseudonymize_fields_on_record(
+                        record=nested_record, pseudonymized_fields=value
+                    )
+                    is None
+                ):
+                    return None
+                if is_nested_json_string:
+                    record[field] = json.dumps(nested_record)
         return record
 
 
@@ -256,7 +251,13 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                 async with TaskGroup() as tg:
                     batch = firestore_client.async_batch()
                     for line in rows:
-                        line_data = recursive_json_loads(line)
+                        try:
+                            line_data = json.loads(line)
+                        except json.JSONDecodeError as e:
+                            logging.error(
+                                "Failed to parse row [%s] due to: %s", line, str(e)
+                            )
+                            continue
 
                         row_id = self._add_row_to_batch(
                             line_data,

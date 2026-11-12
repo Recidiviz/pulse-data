@@ -16,6 +16,7 @@
 #  =============================================================================
 """Tests the ability for WorkflowsClientETLDelegate to parse json rows."""
 
+import json
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any
@@ -43,12 +44,14 @@ TEST_DATA: dict[str, Any] = {
     "pseudonymized_id": "p200",
     "display_id": "d200",
     "state_code": "US_TN",
-    "person_name": {
-        "given_names": "MATILDA",
-        "middle_names": "",
-        "name_suffix": "",
-        "surname": "MOUSE-HOUSE",
-    },
+    "person_name": json.dumps(
+        {
+            "given_names": "MATILDA",
+            "middle_names": "",
+            "name_suffix": "",
+            "surname": "MOUSE-HOUSE",
+        }
+    ),
     "officer_id": "100",
     "supervision_type": "TN PROBATIONER",
     "supervision_level": "MEDIUM",
