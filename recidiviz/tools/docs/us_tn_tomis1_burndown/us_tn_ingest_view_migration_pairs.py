@@ -30,7 +30,7 @@ does not prescribe which; that judgment call belongs to whoever adds the view.
 # of None -- add the 2.0 ingest view as they are written
 US_TN_INGEST_VIEW_MIGRATION_PAIRS: dict[str, str | None] = {
     "ProgramAssignment": None,
-    "AssignedStaff": None,
+    "AssignedStaff": "AssignedStaff_v2",
     "AssignedStaffSupervisionPeriod_v2": None,
     "CAFScoreAssessment": None,
     "DisciplinaryIncarcerationIncident": "DisciplinaryIncarcerationIncident_v2",

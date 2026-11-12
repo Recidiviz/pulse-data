@@ -2402,6 +2402,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tn_identity_rejections.rejected_identity_cluster",
     "us_tn_ingest_view_results.AssignedStaff",
     "us_tn_ingest_view_results.AssignedStaffSupervisionPeriod_v2",
+    "us_tn_ingest_view_results.AssignedStaff_v2",
     "us_tn_ingest_view_results.CAFScoreAssessment",
     "us_tn_ingest_view_results.DisciplinaryIncarcerationIncident",
     "us_tn_ingest_view_results.DisciplinaryIncarcerationIncident_v2",

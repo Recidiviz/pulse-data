@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in
+# view_AssignedStaff_v2 (MiCase / TOMIS 2.0 source) to the same StatePerson
+# and StatePersonStaffRelationshipPeriod fields as us_tn_AssignedStaff.yaml
+# (TOMIS 1.0). See the AssignedStaff migration spec Notion page for the full
+# rewrite spec and the open questions referenced below.
+manifest_language: 1.0.0
+launch_env:
+  $env: is_local # TODO(TN-1943): change this to feature__tomis_2_0_enabled
+input_columns:
+  PERSON_ID: STRING
+  OffenderID: STRING
+  StartDate: DATE
+  EndDate: DATE
+  StaffUserID: STRING
+  AssignmentSource: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_TN_PERSON_ID")
+      # OffenderID is null for a small number of people with no DOC record.
+      - $conditional:
+          - $if:
+              $not_null: OffenderID
+            $then:
+              StatePersonExternalId:
+                external_id: OffenderID
+                id_type: $literal("US_TN_DOC")
+    staff_relationship_periods:
+      - StatePersonStaffRelationshipPeriod:
+          relationship_start_date: StartDate
+          relationship_end_date_exclusive: EndDate
+          associated_staff_external_id: StaffUserID
+          associated_staff_external_id_type: $literal("US_TN_STAFF_USERID")
+          system_type:
+            $enum_mapping:
+              $raw_text: AssignmentSource
+              $mappings:
+                StateSystemType.INCARCERATION:
+                  - incarceration
+                StateSystemType.SUPERVISION:
+                  - supervision
+          relationship_type:
+            $enum_mapping:
+              $raw_text: AssignmentSource
+              $mappings:
+                StatePersonStaffRelationshipType.CASE_MANAGER:
+                  - incarceration
+                StatePersonStaffRelationshipType.SUPERVISING_OFFICER:
+                  - supervision
