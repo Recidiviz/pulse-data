@@ -35,7 +35,14 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.identity import IdentifierType
+from recidiviz.common.constants.state.external_id_types import (
+    US_CO_DOC_BADGE_NUMBER,
+    US_CO_PARTYID,
+    US_ND_DOCSTARS_EMAIL,
+)
 from recidiviz.common.constants.states import PLAYGROUND_STATE_INFO, StateCode
+from recidiviz.common.constants.tenants import Tenant
+from recidiviz.common.external_id_selection import has_shared_selection_strategy
 from recidiviz.common.file_system import is_valid_code_path
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct import direct_ingest_regions, regions, templates
@@ -151,6 +158,27 @@ AUXILIARY_INGEST_UNIT_TEST_NAMES = [
     "test_validate_view_output_schema",
     "test_validate_view_query_linting",
 ]
+
+# Identity-mapping-emitted (tenant, id_type) pairs with no display/stable
+# selection strategy registered in recidiviz/common/external_id_selection.py.
+# External ids in the Identity Service are additive, so id churn can leave an
+# identity holding two active ids of one type even when no single cluster
+# carries two at once; the service then rejects every update of that identity
+# until a strategy is registered for the pair. Each entry records why the
+# decision is deferred.
+_IDENTITY_ID_TYPES_MISSING_SELECTION_STRATEGY: set[tuple[Tenant, str]] = {
+    # TODO(OBT-55091): The US_CO activity mappings select among these staff ids
+    # with flags set at ingest, and an id type may not have both an ingest-set
+    # flag and a shared strategy (see state_specific_normalization_delegate.py).
+    # Declare shared strategies when US_CO's activity pipeline moves to the
+    # Identity Service and the flags retire.
+    (Tenant.US_CO, US_CO_DOC_BADGE_NUMBER),
+    (Tenant.US_CO, US_CO_PARTYID),
+    # TODO(OBT-55733): The email external id is being removed from the
+    # docstars_staff identity mapping entirely, so no strategy will ever be
+    # declared for it; remove this exemption with the id.
+    (Tenant.US_ND, US_ND_DOCSTARS_EMAIL),
+}
 
 
 @pytest.mark.uses_db
@@ -750,6 +778,77 @@ class DirectIngestRegionDirStructure(
                         f"[{state_code.value}] in external_id_types.py. Add the "
                         f"missing type(s) there.",
                     )
+
+    def test_identity_mapping_id_types_declare_selection_strategy(self) -> None:
+        """Checks each (tenant, id_type) an identity mapping emits either has a
+        display/stable selection strategy registered in
+        recidiviz/common/external_id_selection.py or is explicitly exempted in
+        _IDENTITY_ID_TYPES_MISSING_SELECTION_STRATEGY.
+
+        External ids in the Identity Service are additive, so id churn can
+        leave an identity holding two active ids of one type even when no
+        single cluster carries two at once. The service then rejects every
+        update of that identity until a strategy is registered for the pair,
+        so each tenant must make the choice, or record why it is deferred,
+        for every id type its mappings emit."""
+        emitted_pairs: set[tuple[Tenant, str]] = set()
+        for region_code in self.region_dir_names:
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code, region_module_override=self.region_module_override
+            )
+            delegate = IdentityIngestViewManifestCompilerDelegate(region=region)
+            collector = IngestViewManifestCollector(
+                region=region,
+                delegate=delegate,
+                ingest_pipeline_type=IngestPipelineType.IDENTITY,
+            )
+            for ingest_view_name, manifest in collector.ingest_view_to_manifest.items():
+                for id_type in sorted(manifest.root_entity_external_id_types):
+                    emitted_pairs.add((delegate.tenant, id_type))
+                    if (
+                        delegate.tenant,
+                        id_type,
+                    ) in _IDENTITY_ID_TYPES_MISSING_SELECTION_STRATEGY:
+                        continue
+                    with self.test.subTest(
+                        region_code=region_code,
+                        ingest_view_name=ingest_view_name,
+                        id_type=id_type,
+                    ):
+                        self.test.assertTrue(
+                            has_shared_selection_strategy(
+                                tenant=delegate.tenant, id_type=id_type
+                            ),
+                            f"Identity ingest view [{ingest_view_name}] for region "
+                            f"[{region_code}] emits id_type [{id_type}] with no "
+                            f"display/stable selection strategy registered in "
+                            f"recidiviz/common/external_id_selection.py. Id churn can "
+                            f"leave an identity with two active ids of this type, and "
+                            f"the Identity Service then rejects every update of that "
+                            f"identity until a strategy exists. Register a strategy "
+                            f"in _SELECTION_STRATEGY_BY_TENANT_AND_ID_TYPE, or add "
+                            f"the pair to "
+                            f"_IDENTITY_ID_TYPES_MISSING_SELECTION_STRATEGY in this "
+                            f"file with the reason the decision is deferred.",
+                        )
+        for tenant, id_type in sorted(
+            _IDENTITY_ID_TYPES_MISSING_SELECTION_STRATEGY,
+            key=lambda pair: (pair[0].value, pair[1]),
+        ):
+            with self.test.subTest(tenant=tenant.value, id_type=id_type):
+                self.test.assertFalse(
+                    has_shared_selection_strategy(tenant=tenant, id_type=id_type),
+                    f"Tenant [{tenant.value}] and id_type [{id_type}] now have a "
+                    f"registered selection strategy; remove the pair from "
+                    f"_IDENTITY_ID_TYPES_MISSING_SELECTION_STRATEGY.",
+                )
+                self.test.assertIn(
+                    (tenant, id_type),
+                    emitted_pairs,
+                    f"No identity mapping emits id_type [{id_type}] for tenant "
+                    f"[{tenant.value}]; remove the stale pair from "
+                    f"_IDENTITY_ID_TYPES_MISSING_SELECTION_STRATEGY.",
+                )
 
 
 class DirectIngestRegionTemplateDirStructure(

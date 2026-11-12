@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests that the shared external-id selection registry stays in lockstep with the
-activity pipeline's allowed-multiples allowlist."""
+id types that can need a display/stable selection: the activity pipeline's
+allowed-multiples allowlist, plus every id type an identity mapping emits (external
+ids in the Identity Service are additive, so id churn can leave an identity with two
+active ids of a type that never allows multiples within a single cluster)."""
 import unittest
 
 from recidiviz.common.constants.state.external_id_types import (
@@ -30,6 +33,17 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.external_id_selection import (
     shared_selection_tenant_and_id_type_keys,
 )
+from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.ingest_mappings.identity_ingest_view_manifest_compiler_delegate import (
+    IdentityIngestViewManifestCompilerDelegate,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
+    IngestViewManifestCollector,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_direct_ingest_states,
+)
+from recidiviz.ingest.direct.types.ingest_pipeline_type import IngestPipelineType
 from recidiviz.pipelines.ingest.activity.multiple_external_id_helpers import (
     person_external_id_types_with_allowed_multiples_per_person,
     staff_external_id_types_with_allowed_multiples_per_person,
@@ -67,6 +81,30 @@ def _shared_selection_keys_by_state_code() -> set[tuple[StateCode, str]]:
     }
 
 
+def _identity_emitted_selection_keys() -> set[tuple[StateCode, str]]:
+    """Returns each (state, id_type) pair some identity ingest mapping emits. Every
+    such pair can need a display/stable selection even when the id type never allows
+    multiples within a single cluster, because external ids in the Identity Service
+    are additive and id churn can leave an identity with two active ids of the type.
+    """
+    emitted_keys: set[tuple[StateCode, str]] = set()
+    for state_code in get_existing_direct_ingest_states():
+        region = direct_ingest_regions.get_direct_ingest_region(
+            state_code.value.lower()
+        )
+        collector = IngestViewManifestCollector(
+            region=region,
+            delegate=IdentityIngestViewManifestCompilerDelegate(region=region),
+            ingest_pipeline_type=IngestPipelineType.IDENTITY,
+        )
+        for manifest in collector.ingest_view_to_manifest.values():
+            emitted_keys |= {
+                (state_code, id_type)
+                for id_type in manifest.root_entity_external_id_types
+            }
+    return emitted_keys
+
+
 class TestSharedSelectionCoversAllowedMultiples(unittest.TestCase):
     """Tests the shared selection registry against the allowed-multiples allowlist."""
 
@@ -98,13 +136,15 @@ class TestSharedSelectionCoversAllowedMultiples(unittest.TestCase):
         )
 
         orphaned_selection = sorted(
-            covered_keys - allowed_multiples_keys, key=lambda k: (k[0].value, k[1])
+            covered_keys - allowed_multiples_keys - _identity_emitted_selection_keys(),
+            key=lambda k: (k[0].value, k[1]),
         )
         self.assertEqual(
             [],
             orphaned_selection,
-            f"These (state, id_type) pairs have a display/stable selection but no longer "
-            f"allow multiple ids per entity: {orphaned_selection}. Remove each from "
+            f"These (state, id_type) pairs have a display/stable selection but neither "
+            f"allow multiple ids per entity nor are emitted by any identity mapping: "
+            f"{orphaned_selection}. Remove each from "
             f"_SELECTION_STRATEGY_BY_TENANT_AND_ID_TYPE or _PIPELINE_ONLY_SELECTION_KEYS.",
         )
 
