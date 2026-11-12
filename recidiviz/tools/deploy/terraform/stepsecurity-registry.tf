@@ -30,8 +30,12 @@ locals {
     "stepsecurity_registry_username",
     "stepsecurity_registry_password",
   ]) : toset([])
+  # Engineers need no binding here. Each engineering team's standing baseline
+  # role on recidiviz-staging (rzDevBaseline, rzImplementationBaseline,
+  # rzDataAnalystBaseline, rzDataScienceBaseline, managed in recidiviz-iam)
+  # grants secretmanager.versions.access on the whole project. If a baseline
+  # role drops that permission, its team needs a group binding added here.
   stepsecurity_registry_secret_readers = local.stepsecurity_registry_enabled ? toset([
-    "group:s-engineering@recidiviz.org",
     # The staging release trigger in build-trigger.tf sets no service account,
     # so its builds run as the project's legacy Cloud Build service account.
     "serviceAccount:${data.google_project.current.number}@cloudbuild.gserviceaccount.com",
