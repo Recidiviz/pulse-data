@@ -1,2 +1,246 @@
 reference_data_type: known_organizations
-entries: []
+entries:
+  # --- Sober living / transitional housing ---
+  - name: "Rising Sun Sober Living"
+    organization_type: sober_living
+    aliases: ["Rising Sun", "Rising Sun House", "RSSL"]
+  - name: "Full Moon Housing"
+    organization_type: sober_living
+    aliases: ["Full Moon"]
+  - name: "Oxford House"
+    organization_type: sober_living
+  - name: "Stewards of Recovery Grace House"
+    organization_type: sober_living
+    aliases: ["Grace House", "The Grace House"]
+  - name: "Safe Release House"
+    organization_type: halfway_house
+    aliases: ["Safe Release"]
+  - name: "Hummingbird House"
+    organization_type: sober_living
+    aliases: ["Hummingbird"]
+  # No "Phoenix" alias: notes also use Phoenix for the city in Arizona.
+  - name: "Phoenix House"
+    organization_type: sober_living
+  # No "Joe's" alias: notes also use Joe's for people named Joe.
+  - name: "Joe's House"
+    organization_type: sober_living
+  - name: "New Hope Transition Center"
+    organization_type: halfway_house
+    aliases: ["New Hope"]
+  - name: "River Sober Living"
+    organization_type: sober_living
+  - name: "Risen House"
+    organization_type: halfway_house
+  - name: "Chrysalis Women's Transitional Living"
+    organization_type: halfway_house
+    aliases: ["Chrysalis", "Chrysalis House"]
+  - name: "Realcovery"
+    organization_type: sober_living
+  - name: "Andre's House"
+    organization_type: sober_living
+    aliases: ["Andres House"]
+  - name: "Lady Liberty"
+    organization_type: sober_living
+  - name: "The Way Home CDA"
+    organization_type: sober_living
+    aliases: ["The Way Home"]
+  - name: "Harbor House"
+    organization_type: sober_living
+  - name: "Lazarus House"
+    organization_type: halfway_house
+    aliases: ["Lazaruz House"]
+
+  # --- Shelters ---
+  - name: "River of Life Rescue Mission"
+    organization_type: shelter
+    aliases: ["River of Life"]
+  - name: "Boise Rescue Mission"
+    organization_type: shelter
+    aliases: ["the Mission", "BRM"]
+  - name: "City Light Home for Women and Children"
+    organization_type: shelter
+    aliases: ["City Light", "City Light Shelter"]
+  - name: "Interfaith Sanctuary"
+    organization_type: shelter
+  - name: "Salvation Army"
+    organization_type: shelter
+
+  # --- Community corrections ---
+  # Courts order people to live at the CTC as part of a sentence
+  - name: "Ada County Sheriff Community Transition Center"
+    organization_type: community_corrections
+    aliases: ["CTC", "ACSO CTC", "Community Transition Center"]
+  - name: "Twin Falls Community Reentry Center"
+    organization_type: community_corrections
+    aliases: ["TFCRC"]
+
+  # --- Residential treatment ---
+  # These organizations run both residential and outpatient programs, so the
+  # model decides from context whether someone lives there or attends.
+  - name: "Stewards of Recovery"
+    organization_type: residential_treatment
+    aliases: ["Stewards"]
+  - name: "Renaissance Ranch"
+    organization_type: residential_treatment
+    aliases: ["RR"]
+  - name: "Allumbaugh House"
+    organization_type: residential_treatment
+  - name: "Lifeways"
+    organization_type: residential_treatment
+    aliases: ["Lifeways, Inc.", "Lifeways Hospital"]
+  - name: "Caldwell Recovery Center"
+    organization_type: residential_treatment
+    aliases: ["Caldwell Recovery"]
+  - name: "Lean On Me, Inc."
+    organization_type: residential_treatment
+    aliases: ["Lean On Me"]
+  - name: "Moonlight Mountain Recovery"
+    organization_type: residential_treatment
+    aliases: ["Moonlight Mountain", "Moonlight", "MMR"]
+  - name: "Walker Center"
+    organization_type: residential_treatment
+    aliases: ["The Walker Center"]
+  - name: "Northpoint Recovery"
+    organization_type: residential_treatment
+    aliases: ["Northpoint"]
+  - name: "Intermountain Hospital"
+    organization_type: residential_treatment
+    aliases: ["Intermountain"]
+  - name: "Good Samaritan Rehabilitation"
+    organization_type: residential_treatment
+    aliases: ["Good Samaritan", "Good Sam", "Good Sams", "Good Sam's"]
+  - name: "Port of Hope"
+    organization_type: residential_treatment
+    aliases: ["POH"]
+
+  # --- Nonresidential programs (outpatient treatment, counseling) ---
+  - name: "Marimn Health"
+    organization_type: nonresidential_program
+    aliases: ["Marimn"]
+  - name: "Waapi Kani Cedar House"
+    organization_type: nonresidential_program
+    aliases: ["Cedar House", "Waapi Kani"]
+  - name: "Terry Reilly Health Services"
+    organization_type: nonresidential_program
+    aliases: ["Terry Reilly", "TRHS"]
+  - name: "Thrive Community Services"
+    organization_type: nonresidential_program
+    aliases: ["Thrive"]
+  - name: "Altis Counseling"
+    organization_type: nonresidential_program
+    aliases: ["Altis"]
+  - name: "Brick House Recovery"
+    organization_type: nonresidential_program
+    aliases: ["Brickhouse", "Brick House", "BHR"]
+  - name: "Ascent Behavioral Health"
+    organization_type: nonresidential_program
+    aliases: ["Ascent"]
+  - name: "Twin Falls County Treatment and Recovery Clinic"
+    organization_type: nonresidential_program
+    aliases: ["TARC"]
+  - name: "Gateway Counseling"
+    organization_type: nonresidential_program
+    aliases: ["Gateway"]
+  - name: "Heritage Health"
+    organization_type: nonresidential_program
+  - name: "Remind Behavioral Health"
+    organization_type: nonresidential_program
+    aliases: ["Remind"]
+  - name: "ChangePoint Behavioral Health"
+    organization_type: nonresidential_program
+    aliases: ["ChangePoint", "Change Point"]
+  - name: "SANE Solutions"
+    organization_type: nonresidential_program
+    aliases: ["SANE"]
+  - name: "Access Behavioral Health"
+    organization_type: nonresidential_program
+  - name: "Trivium Life Services"
+    organization_type: nonresidential_program
+    aliases: ["Trivium"]
+  - name: "H&H Treatment Programs"
+    organization_type: nonresidential_program
+    aliases: ["H&H", "H&H Treatment", "H & H"]
+  - name: "Health West"
+    organization_type: nonresidential_program
+  - name: "Ambitions of Idaho"
+    organization_type: nonresidential_program
+    aliases: ["Ambitions"]
+  - name: "Hope and Recovery Resource Center"
+    organization_type: nonresidential_program
+    aliases: ["Hope and Recovery"]
+  - name: "Center for Hope"
+    organization_type: nonresidential_program
+    aliases: ["C4H"]
+  - name: "Cognitive Restructuring"
+    organization_type: nonresidential_program
+  - name: "Rehabilitative Health Services"
+    organization_type: nonresidential_program
+    aliases: ["RHS"]
+  - name: "Pacific Rim"
+    organization_type: nonresidential_program
+  - name: "Freedom Recovery"
+    organization_type: nonresidential_program
+    aliases: ["Freedom in Recovery"]
+  - name: "Ashwood Recovery"
+    organization_type: nonresidential_program
+    aliases: ["Ashwood"]
+  - name: "GEO Reentry Services"
+    organization_type: nonresidential_program
+    aliases: ["GEO"]
+  - name: "Ideal Option"
+    organization_type: nonresidential_program
+    aliases: ["Ideal Options"]
+  - name: "Mountain Home Behavioral Health"
+    organization_type: nonresidential_program
+    aliases: ["MHBH"]
+  - name: "Human Supports of Idaho"
+    organization_type: nonresidential_program
+    aliases: ["HSI"]
+  - name: "Dragonfly"
+    organization_type: nonresidential_program
+  - name: "Friendship Club"
+    organization_type: nonresidential_program
+  - name: "Fortitude"
+    organization_type: nonresidential_program
+  - name: "Tru Living Recovery"
+    organization_type: nonresidential_program
+    aliases: ["Tru Living", "TruLiving"]
+  - name: "Avanzar"
+    organization_type: nonresidential_program
+
+  # --- Staffing agencies ---
+  - name: "Elwood Staffing"
+    organization_type: staffing_agency
+    aliases: ["Elwood"]
+  - name: "Gem State Staffing"
+    organization_type: staffing_agency
+  - name: "Express Employment Professionals"
+    organization_type: staffing_agency
+    aliases: ["Express Employment", "Express Pros"]
+  - name: "PeopleReady"
+    organization_type: staffing_agency
+    aliases: ["Labor Ready", "People Ready"]
+
+  # --- Employers whose names could be misread ---
+  # Idaho Youth Ranch also runs youth programs, but adults on supervision
+  # work at its thrift stores and donation centers.
+  - name: "Idaho Youth Ranch"
+    organization_type: employer
+  - name: "Stinker Stores"
+    organization_type: employer
+    aliases: ["Stinker"]
+  - name: "Maverik"
+    organization_type: employer
+    aliases: ["Maverick"]
+  - name: "Jacksons Food Stores"
+    organization_type: employer
+    aliases: ["Jacksons", "Jackson's"]
+  - name: "Broulim's"
+    organization_type: employer
+    aliases: ["Broulims"]
+  - name: "Ridley's Family Markets"
+    organization_type: employer
+    aliases: ["Ridley's"]
+  - name: "Hilex Poly"
+    organization_type: employer
+    aliases: ["Novolex"]

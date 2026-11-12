@@ -1,2 +1,58 @@
 reference_data_type: acronyms
-entries: []
+entries:
+  - acronym: COS
+    expansion: Cost of Supervision
+  - acronym: LSI
+    expansion: Level of Service Inventory-Revised
+  - acronym: PPO
+    expansion: Probation and Parole Officer
+  - acronym: SPPO
+    expansion: Senior Probation and Parole Officer
+  - acronym: LPPO
+    expansion: Lead Probation and Parole Officer
+  - acronym: FFR
+    expansion: Fines, Fees, and Restitution
+  - acronym: CFF
+    expansion: Court Fines and Fees
+  - acronym: NCO
+    expansion: No Contact Order
+  - acronym: LSU
+    expansion: Limited Supervision Unit
+  - acronym: AOS
+    expansion: Agreement of Supervision
+  - acronym: PV
+    expansion: Probation or Parole Violation
+  - acronym: RV
+    expansion: Residence Verification
+  - acronym: HV
+    expansion: Home Visit
+  - acronym: HC
+    expansion: Home Contact
+  - acronym: EV
+    expansion: Employment Verification
+  - acronym: AP
+    expansion: Aftercare Program
+  - acronym: SILD
+    expansion: Sheriff's Inmate Labor Detail
+  - acronym: DJT
+    expansion: Discretionary Jail Time
+  - acronym: EDR
+    expansion: Early Discharge Request
+  - acronym: FTRD
+    expansion: Full Term Release Date
+  - acronym: ICOTS
+    expansion: Interstate Compact Offender Tracking System
+  - acronym: IRM
+    expansion: Idaho Response Matrix
+  - acronym: TTF
+    expansion: Transition and Treatment Funding
+  - acronym: CTC
+    expansion: Ada County Sheriff Community Transition Center
+  - acronym: SIE
+    expansion: Southern Idaho Examiners
+  - acronym: ILETS
+    expansion: Idaho Law Enforcement Telecommunications System
+  - acronym: CBRS
+    expansion: Community Based Rehabilitation Services
+  - acronym: CSH
+    expansion: Community Service Hours
