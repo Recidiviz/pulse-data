@@ -16,8 +16,8 @@
 # =============================================================================
 """Tests for enforcing documentation of views that reference raw data."""
 import unittest
-from typing import Any, Dict, List, Set, Tuple
-from unittest.mock import patch
+from collections import defaultdict
+from typing import Dict, List, Set, Tuple
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
@@ -29,6 +29,8 @@ from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
     RAW_DATA_REFERENCES_YAML,
     RawDataReferenceReasonsYamlLoader,
 )
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_view_graphs import (
     builders_for_all_view_graphs_across_projects,
 )
@@ -44,26 +46,46 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
     queries / mappings or in normalization pipeline logic.
     """
 
-    project_id_patcher: Any
     yaml_raw_data: Dict[str, Dict[str, Set[str]]]
     yaml_data: Dict[StateCode, Dict[str, Set[BigQueryAddress]]]
     deployed_views_references: Dict[StateCode, Dict[str, Set[BigQueryAddress]]]
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
-        cls.project_id_patcher.start().return_value = "recidiviz-testing"
         cls.yaml_data = RawDataReferenceReasonsYamlLoader.get_yaml_data()
-        cls.deployed_views_references = find_direct_raw_data_references(
-            builders_for_all_view_graphs_across_projects()
+        cls.deployed_views_references = (
+            cls._deployed_views_references_across_data_platform_projects()
         )
 
     def tearDown(self) -> None:
         RawDataReferenceReasonsYamlLoader.reset_data()
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        cls.project_id_patcher.stop()
+    @staticmethod
+    def _deployed_views_references_across_data_platform_projects() -> (
+        Dict[StateCode, Dict[str, Set[BigQueryAddress]]]
+    ):
+        """Returns the union, across every real data-platform project, of every
+        view's direct raw data references.
+
+        Some views (e.g. a TOMIS 1.0 -> TOMIS 2.0 migration view keyed on a
+        project-dependent feature flag) reference a different raw data table
+        depending on the project they are deployed to. Checking only one project
+        id -- or a placeholder id that matches neither -- can only ever see one
+        side of such a view's references and would wrongly flag the other side's
+        documented entries as stale.
+        """
+        combined: Dict[StateCode, Dict[str, Set[BigQueryAddress]]] = defaultdict(
+            lambda: defaultdict(set)
+        )
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
+            with local_project_id_override(project_id):
+                references = find_direct_raw_data_references(
+                    builders_for_all_view_graphs_across_projects()
+                )
+            for state_code, file_tags in references.items():
+                for file_tag, views in file_tags.items():
+                    combined[state_code][file_tag].update(views)
+        return combined
 
     def test_verify_yaml_entries_in_alphabetical_order(self) -> None:
         self.assertTrue(
