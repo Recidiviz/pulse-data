@@ -19,9 +19,13 @@ from. CitationGroundingCheck uses it to decide whether a quote appears in the
 document at all, and CitationOffsetDriftAdjustment uses it to correct the offsets
 the model reported for the quote.
 """
+import re
+
 import attr
 
 from recidiviz.common import attr_validators
+
+_WHITESPACE_RUN_PATTERN = r"\s+"
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -48,7 +52,8 @@ class CitationSpan:
 @attr.define(frozen=True, kw_only=True)
 class SourceDocumentText:
     """The text of the document an extraction's citations are matched against. Matching
-    ignores case but is otherwise exact.
+    ignores case and treats any run of whitespace as equal to any other, but is
+    otherwise exact.
     """
 
     text: str = attr.ib(validator=attr_validators.is_str)
@@ -61,10 +66,18 @@ class SourceDocumentText:
         The offsets the model reports for a citation are unreliable, so they play
         no part in choosing a span. A quote that is empty or nothing but
         whitespace matches nothing.
+
+        Whitespace at either end of the quote is ignored, and each run of
+        whitespace inside it matches any run of whitespace in the document. For
+        example, the quote "123 Example Dr Denver" matches the document text
+        "123 Example Dr\n\nDenver", and the span covers the document text, blank
+        line included.
         """
-        if not citation_text.strip():
+        words = citation_text.split()
+        if not words:
             return None
-        start = self.text.lower().find(citation_text.lower())
-        if start == -1:
+        pattern = _WHITESPACE_RUN_PATTERN.join(re.escape(word) for word in words)
+        match = re.search(pattern, self.text, flags=re.IGNORECASE)
+        if match is None:
             return None
-        return CitationSpan(start=start, end=start + len(citation_text))
+        return CitationSpan(start=match.start(), end=match.end())

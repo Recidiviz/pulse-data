@@ -26,6 +26,7 @@ from recidiviz.documents.extraction.validation.citation_matching import (
     CitationSpan,
     SourceDocumentText,
 )
+from recidiviz.utils.types import assert_type
 
 _DOCUMENT = "Client reported starting work at the Kitchen on Monday."
 
@@ -100,24 +101,66 @@ class SourceDocumentTextTest(TestCase):
     def test_empty_document_grounds_nothing(self) -> None:
         self.assertIsNone(self._find("Kitchen", document=""))
 
-    def test_quote_with_different_whitespace_not_found(self) -> None:
-        # Matching is exact, not whitespace-normalized: a quote that reformats the
-        # document's line breaks or spacing is not the document's own text.
+    def test_quote_with_different_whitespace_found(self) -> None:
         document = "Client reported\n   starting  work"
-        self.assertIsNone(
-            self._find("Client reported starting work", document=document)
+        self.assertEqual(
+            CitationSpan(start=0, end=len(document)),
+            self._find("Client reported starting work", document=document),
         )
 
-    def test_document_with_different_whitespace_not_found(self) -> None:
-        # The mirror image: the document is the one carrying the line breaks the
-        # quote doesn't.
+    def test_document_with_different_whitespace_found(self) -> None:
         document = "Assigned to the\nKitchen today"
-        self.assertIsNone(self._find("the Kitchen", document=document))
+        self.assertEqual(
+            CitationSpan(start=12, end=23),
+            self._find("the Kitchen", document=document),
+        )
 
-    def test_quote_with_surrounding_whitespace_not_found(self) -> None:
-        # Leading/trailing whitespace makes the quote no longer the document's
-        # exact text, so it is left ungrounded rather than trimmed and matched.
-        self.assertIsNone(self._find("  Kitchen\n "))
+    def test_quote_with_surrounding_whitespace_found(self) -> None:
+        self.assertEqual(CitationSpan(start=37, end=44), self._find("  Kitchen\n "))
+
+    def test_quote_spanning_blank_line_found(self) -> None:
+        document = "123 Example Dr\n\nDenver, CO 80000"
+        whole_document = CitationSpan(start=0, end=len(document))
+        self.assertEqual(
+            whole_document,
+            self._find("123 Example Dr Denver, CO 80000", document=document),
+        )
+        self.assertEqual(
+            whole_document,
+            self._find("123 Example Dr\nDenver, CO 80000", document=document),
+        )
+
+    def test_quote_with_newline_where_document_has_space_found(self) -> None:
+        self.assertEqual(CitationSpan(start=33, end=44), self._find("the\nKitchen"))
+
+    def test_span_end_covers_document_whitespace(self) -> None:
+        document = "works at the\n\nKitchen now"
+        span = assert_type(self._find("the Kitchen", document=document), CitationSpan)
+        self.assertEqual("the\n\nKitchen", document[span.start : span.end])
+
+    def test_word_broken_by_document_whitespace_not_found(self) -> None:
+        # Some source systems hard-wrap notes mid-word. A quote that rejoins the
+        # word has no whitespace at the break, so it does not match.
+        self.assertIsNone(
+            self._find("COLORADO SPRINGS", document="COLORADO S\n\nPRINGS")
+        )
+
+    def test_quote_adding_whitespace_inside_document_word_not_found(self) -> None:
+        self.assertIsNone(self._find("Kit chen"))
+
+    def test_regex_metacharacters_in_quote_match_literally(self) -> None:
+        document = "makes $200-$300 (weekly) at a.c. repair"
+        self.assertEqual(
+            CitationSpan(start=6, end=24),
+            self._find("$200-$300 (weekly)", document=document),
+        )
+        self.assertIsNone(self._find("a.c.", document="abcd"))
+
+    def test_recased_quote_with_different_whitespace_found(self) -> None:
+        self.assertEqual(
+            CitationSpan(start=12, end=24),
+            self._find("the Kitchen", document="ASSIGNED TO THE\n\nKITCHEN"),
+        )
 
     def test_quote_differing_in_wording_not_found(self) -> None:
         self.assertIsNone(self._find("Kitchen assignment"))

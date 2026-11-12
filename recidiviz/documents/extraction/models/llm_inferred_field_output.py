@@ -114,11 +114,6 @@ class FieldCitation:
             raise ValueError(f"{prefix}: start must be non-negative.")
         if end <= start:
             raise ValueError(f"{prefix}: end must be after start.")
-        if end - start != len(self.text):
-            raise ValueError(
-                f"{prefix}: span length [{end - start}] does not match the quoted "
-                f"text length [{len(self.text)}]."
-            )
         self.citation_json[CITATION_START_FIELD_NAME] = start
         self.citation_json[CITATION_END_FIELD_NAME] = end
 

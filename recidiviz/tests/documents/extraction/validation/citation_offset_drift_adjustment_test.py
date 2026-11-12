@@ -238,20 +238,35 @@ class CitationOffsetDriftAdjustmentTest(TestCase):
             source_document_text=grounded.source_document_text,
         )
 
-    def test_quote_broken_across_lines_left_ungrounded(self) -> None:
-        # Matching is exact, not whitespace-normalized: a document that
-        # reformats the quote's line breaks no longer contains it verbatim, so
-        # there is no span to correct the citation's offsets to.
+    def test_quote_broken_across_lines_corrected_to_document_span(self) -> None:
         grounded = ground_citations_in_fake_source_text(
             fake_minimal_relevant_result_json()
         )
+        quote = _citations(grounded.result_json, "primary_status")[0][
+            CITATION_TEXT_FIELD_NAME
+        ]
         source_document_text = grounded.source_document_text.replace(
             "citation for active", "citation\n   for active"
         )
 
-        self._assert_unchanged(
+        issues, adjusted_json = self._apply(
             grounded.result_json, source_document_text=source_document_text
         )
+
+        self.assertEqual(
+            [ValidationCheckType.CITATION_OFFSET_DRIFT],
+            [issue.check_type for issue in issues],
+        )
+        adjusted_citation = _citations(adjusted_json, "primary_status")[0]
+        self.assertEqual(
+            quote.replace("citation for active", "citation\n   for active"),
+            source_document_text[
+                adjusted_citation[CITATION_START_FIELD_NAME] : adjusted_citation[
+                    CITATION_END_FIELD_NAME
+                ]
+            ],
+        )
+        self.assertEqual(quote, adjusted_citation[CITATION_TEXT_FIELD_NAME])
 
     def test_far_drifted_offsets_corrected(self) -> None:
         grounded = ground_citations_in_fake_source_text(

@@ -159,15 +159,19 @@ class FieldCitationTest(_LLMRequestOutputValuesTestBase):
         ):
             citation.correct_offsets(start=40, end=40)
 
-    def test_correct_offsets_length_mismatch_raises(self) -> None:
-        citation = self._citation(self._full_output_values(), "location")
-        with self.assertRaisesRegex(
-            ValueError,
-            r"^Cannot correct citation \[0\] on field \[location\] to offsets "
-            r"\[40, 55\): span length \[15\] does not match the quoted text length "
-            r"\[20\]\.$",
-        ):
-            citation.correct_offsets(start=40, end=55)
+    def test_correct_offsets_accepts_span_longer_than_quote(self) -> None:
+        # The document can hold more whitespace than the quote does, e.g. a blank
+        # line where the quote has a space.
+        output_values = self._full_output_values()
+        citation = self._citation(output_values, "location")
+        citation.correct_offsets(start=40, end=63)
+
+        self.assertEqual(
+            [{"text": "citation for Kitchen", "start": 40, "end": 63}],
+            assert_type(output_values.output_json, dict)[RESULT_KEY]["location"][
+                CITATIONS_FIELD_NAME
+            ],
+        )
 
 
 class LLMInferredFieldOutputTest(TestCase):

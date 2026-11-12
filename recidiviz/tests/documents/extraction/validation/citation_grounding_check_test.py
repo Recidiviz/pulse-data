@@ -185,19 +185,18 @@ class CitationGroundingCheckTest(TestCase):
             ),
         )
 
-    def test_quote_broken_across_lines_flagged(self) -> None:
-        # Matching is exact, not whitespace-normalized: a document that
-        # reformats the quote's line breaks no longer contains it verbatim.
+    def test_quote_broken_across_lines_not_flagged(self) -> None:
         grounded = ground_citations_in_fake_source_text(
             fake_minimal_relevant_result_json()
         )
-        self._assert_single_issue(
-            grounded.result_json,
-            source_document_text=grounded.source_document_text.replace(
-                "citation for", "citation\n   for"
+        self.assertEqual(
+            [],
+            self._issues(
+                grounded.result_json,
+                source_document_text=grounded.source_document_text.replace(
+                    "citation for", "citation\n   for"
+                ),
             ),
-            expected_field_name="primary_status",
-            expected_detail_substring="quotes text that does not appear in the document",
         )
 
     def test_empty_citation_text_flagged(self) -> None:
