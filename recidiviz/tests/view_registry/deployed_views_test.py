@@ -123,6 +123,9 @@ from recidiviz.utils.types import assert_type
 from recidiviz.validation.views.classification.recommended_custody_level_future_score_increase import (
     RECOMMENDED_CUSTODY_LEVEL_FUTURE_SCORE_INCREASE_VIEW_BUILDER,
 )
+from recidiviz.validation.views.classification.recommended_custody_level_multi_level_drop import (
+    RECOMMENDED_CUSTODY_LEVEL_MULTI_LEVEL_DROP_VIEW_BUILDER,
+)
 from recidiviz.validation.views.dataset_config import (
     CLASSIFICATION_VALIDATION_VIEWS_DATASET,
 )
@@ -407,6 +410,7 @@ class ViewDagInvariantTests(unittest.TestCase):
             # spans; reading the unioned view is what lets a new policy flow through
             # without adding a branch here.
             RECOMMENDED_CUSTODY_LEVEL_FUTURE_SCORE_INCREASE_VIEW_BUILDER.address,
+            RECOMMENDED_CUSTODY_LEVEL_MULTI_LEVEL_DROP_VIEW_BUILDER.address,
             # Sessionized views over validated document extraction results, each
             # tracking a status field over time across all states at once.
             *(
