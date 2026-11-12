@@ -132,34 +132,53 @@ class WorkflowsETLDelegate(abc.ABC):
         with client.open(filepath) as f:
             yield f
 
-    def pseudonymize_record(self, record: dict, seed: str) -> dict | None:
+    def pseudonymize_record(
+        self, record: dict[str, Any], seed: str
+    ) -> dict[str, Any] | None:
         if not self.PSEUDONYMIZED_FIELDS:
             return None
 
         self._faker.seed_instance(seed)
         result = copy.deepcopy(record)
-        self._pseudonymize_fields_on_record(result, self.PSEUDONYMIZED_FIELDS)
-
-        return result
+        return self._pseudonymize_fields_on_record(result, self.PSEUDONYMIZED_FIELDS)
 
     def _pseudonymize_fields_on_record(
         self, record: dict, pseudonymized_fields: dict
-    ) -> None:
+    ) -> dict[str, Any] | None:
+        """
+        Updates record in place with pseudonymized values for all fields in
+        `pseudonymized_fields`. Returns None if `psuedonymized_fields` structure does
+        not mirror `record`.
+        """
         for field, value in pseudonymized_fields.items():
             if field not in record or record[field] is None:
                 continue
 
+            nested_record = record[field]
             if isinstance(value, str):
+                if isinstance(nested_record, dict):
+                    logging.info(
+                        "Failed to create the pseudonymized record. Expected a string, "
+                        "integer, or double value for field: %s on record: %s. Did not "
+                        "expect a dictionary.",
+                        field,
+                        record,
+                    )
+                    return None
                 record[field] = getattr(self._faker, value)()
             elif isinstance(value, dict):
-                nested_record = record[field]
                 if not isinstance(nested_record, dict):
-                    raise ValueError(
-                        f"Expected a dictionary, but got {type(nested_record).__name__} for field: {field} on record: {record}"
+                    logging.info(
+                        "Failed to create the pseudonymized record. Expected a "
+                        "dictionary for field: %s on record %s.",
+                        field,
+                        record,
                     )
+                    return None
                 self._pseudonymize_fields_on_record(
                     record=nested_record, pseudonymized_fields=value
                 )
+        return record
 
 
 class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):

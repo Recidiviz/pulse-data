@@ -19,7 +19,7 @@ import io
 from datetime import datetime, timezone
 from typing import Any, List
 from unittest import IsolatedAsyncioTestCase, TestCase
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from freezegun import freeze_time
 
@@ -171,20 +171,42 @@ class TestPseudonymizeRecord(TestCase):
         result = delegate.pseudonymize_record(record={"state_code": "US_XX"}, seed=SEED)
         self.assertEqual({"state_code": "US_XX"}, result)
 
-    def test_raises_when_nested_field_is_not_a_dict(self) -> None:
+    def test_returns_none_when_nested_field_is_not_a_dict(self) -> None:
         class TestETLDelegateWithAddressPseudonymizedField(TestETLDelegate):
             PSEUDONYMIZED_FIELDS = {"address": {"address_city": "city"}}
 
         delegate = TestETLDelegateWithAddressPseudonymizedField(StateCode.US_XX)
-        with self.assertRaisesRegex(
-            ValueError,
-            r"^Expected a dictionary, but got str for field: address on record: "
-            r"\{'address': '123 Real St'\}$",
-        ):
-            delegate.pseudonymize_record(  # pylint: disable=protected-access
-                record={"address": "123 Real St"},
-                seed=SEED,
+        with self.assertLogs(level="INFO") as logs:
+            self.assertIsNone(
+                delegate.pseudonymize_record(
+                    record={"address": "123 Real St"}, seed=SEED
+                )
             )
+        self.assertEqual(1, len(logs.records))
+        self.assertIn(
+            "Failed to create the pseudonymized record. Expected a "
+            "dictionary for field: address on record {'address': '123 Real St'}.",
+            logs.output[0],
+        )
+
+    def test_returns_none_when_nested_field_is_not_a_str(self) -> None:
+        class TestETLDelegateWithAddressPseudonymizedField(TestETLDelegate):
+            PSEUDONYMIZED_FIELDS = {"address": "address"}
+
+        delegate = TestETLDelegateWithAddressPseudonymizedField(StateCode.US_XX)
+        with self.assertLogs(level="INFO") as logs:
+            self.assertIsNone(
+                delegate.pseudonymize_record(
+                    record={"address": {"address_city": "RealCity"}}, seed=SEED
+                )
+            )
+        self.assertEqual(1, len(logs.records))
+        self.assertIn(
+            "Failed to create the pseudonymized record. Expected a string, integer, "
+            "or double value for field: address on record: {'address': {'address_city': "
+            "'RealCity'}}. Did not expect a dictionary.",
+            logs.output[0],
+        )
 
     def test_raises_on_unknown_provider(self) -> None:
         class TestETLDelegateWithIncorrectPseudonymizedField(TestETLDelegate):
@@ -288,6 +310,51 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
         )
         self.assertEqual(2, self.delegate.total_records_written)
 
+        # Verify that a new index was created for the collection.
+        self.assertEqual(
+            [call("testCollection")],
+            self.mock_firestore_client.index_exists_for_collection.call_args_list,
+        )
+
+        # Verify that old documents were deleted.
+        self.assertEqual(
+            [
+                call(
+                    "testCollection",
+                    "US_XX",
+                    "__loadedAt",
+                    datetime(2026, 1, 1, tzinfo=timezone.utc),
+                )
+            ],
+            self.mock_firestore_client.delete_old_documents.call_args_list,
+        )
+
+    @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
+    async def test_run_etl_skips_rows_that_fail_to_transform(self) -> None:
+        self.mock_get_file_stream.return_value = [
+            io.StringIO(
+                '{"id": "A1", "document": {"stateCode": "US_XX"}}\nnot valid json\n'
+            )
+        ]
+
+        with self.assertLogs(level="ERROR") as logs:
+            await self.delegate.run_etl("export_filename.json")
+
+        self.assertEqual(
+            [
+                {
+                    "us_xx_a1": {
+                        "stateCode": "US_XX",
+                        "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                    },
+                }
+            ],
+            self.committed_batches,
+        )
+        self.assertEqual(1, self.delegate.total_records_written)
+        self.assertEqual(1, len(logs.records))
+        self.assertIn("Transform row failed on [not valid json", logs.output[0])
+
     @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
     async def test_run_etl_skips_rows_without_id_or_document(self) -> None:
         self.mock_get_file_stream.return_value = [
@@ -314,10 +381,11 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
         self.assertEqual(1, self.delegate.total_records_written)
 
     @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
-    async def test_run_etl_skips_rows_that_fail_to_transform(self) -> None:
+    async def test_run_etl_skips_rows_without_state_code(self) -> None:
         self.mock_get_file_stream.return_value = [
             io.StringIO(
-                '{"id": "A1", "document": {"stateCode": "US_XX"}}\nnot valid json\n'
+                '{"id": "A1", "document": {"stateCode": "US_XX", "name": "Ann"}}\n'
+                '{"id": "B2", "document": {"name": "Bea"}}\n'
             )
         ]
 
@@ -329,14 +397,20 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
                 {
                     "us_xx_a1": {
                         "stateCode": "US_XX",
+                        "name": "Ann",
                         "__loadedAt": datetime(2026, 1, 1, tzinfo=timezone.utc),
                     },
                 }
             ],
             self.committed_batches,
         )
+        self.assertEqual(1, self.delegate.total_records_written)
+
         self.assertEqual(1, len(logs.records))
-        self.assertIn("Transform row failed on [not valid json", logs.output[0])
+        self.assertIn(
+            "Skipping row [B2] in [export_filename.json]: document has no [stateCode]",
+            logs.output[0],
+        )
 
     @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
     @patch(
