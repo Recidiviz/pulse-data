@@ -89,6 +89,7 @@ _ASSESSMENT_SUBTYPE_SUGGESTIONS = [
 INCARCERATION_SYSTEM_HEALTH_JSON_FIELD_FILTERS_WITH_SUGGESTIONS: dict[
     str, list[str]
 ] = {
+    "custody_level": _CUSTODY_LEVEL_SUGGESTIONS,
     "previous_custody_level": _CUSTODY_LEVEL_SUGGESTIONS,
     "new_custody_level": _CUSTODY_LEVEL_SUGGESTIONS,
     "assessment_level": _ASSESSMENT_LEVEL_SUGGESTIONS,
