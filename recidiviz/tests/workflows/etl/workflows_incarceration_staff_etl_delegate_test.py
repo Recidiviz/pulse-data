@@ -92,7 +92,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
         delegate = WorkflowsIncarcerationStaffETLDelegate(
             StateCode.US_XX, INCARCERATION_STAFF_FILENAME
         )
-        doc_id, row = delegate.transform_row(TEST_DATA, INCARCERATION_STAFF_FILENAME)
+        doc_id, row = delegate.transform_row(TEST_DATA)
         self.assertEqual("100", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
 
@@ -115,7 +115,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
         expected["givenNames"] = ""
         expected["surname"] = ""
 
-        doc_id, row = delegate.transform_row(data, INCARCERATION_STAFF_FILENAME)
+        doc_id, row = delegate.transform_row(data)
         self.assertEqual("100", doc_id)
         self.assertEqual(expected, row)
 
@@ -162,7 +162,7 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
                     delegate = WorkflowsIncarcerationStaffETLDelegate(
                         StateCode.US_TN, INCARCERATION_STAFF_FILENAME
                     )
-                    await delegate.run_etl("incarceration_staff_record.json")
+                    await delegate.run_etl()
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(
                         mock_document_ref,

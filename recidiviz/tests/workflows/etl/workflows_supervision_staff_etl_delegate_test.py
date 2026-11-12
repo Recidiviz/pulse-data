@@ -96,7 +96,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
         delegate = WorkflowsSupervisionStaffETLDelegate(
             StateCode.US_XX, SUPERVISION_STAFF_FILENAME
         )
-        doc_id, row = delegate.transform_row(TEST_DATA, SUPERVISION_STAFF_FILENAME)
+        doc_id, row = delegate.transform_row(TEST_DATA)
         self.assertEqual("100", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
 
@@ -117,7 +117,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
         del expected["roleSubtype"]
         del expected["supervisorExternalId"]
 
-        doc_id, row = delegate.transform_row(data, SUPERVISION_STAFF_FILENAME)
+        doc_id, row = delegate.transform_row(data)
         self.assertEqual("100", doc_id)
         self.assertEqual(expected, row)
 
@@ -136,7 +136,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
         expected["givenNames"] = ""
         expected["surname"] = ""
 
-        doc_id, row = delegate.transform_row(data, SUPERVISION_STAFF_FILENAME)
+        doc_id, row = delegate.transform_row(data)
         self.assertEqual("100", doc_id)
         self.assertEqual(expected, row)
 
@@ -158,7 +158,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
             "someField": "some_value",
         }
 
-        doc_id, row = delegate.transform_row(data, SUPERVISION_STAFF_FILENAME)
+        doc_id, row = delegate.transform_row(data)
         self.assertEqual("100", doc_id)
         self.assertEqual(expected, row)
 
@@ -205,7 +205,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
                     delegate = WorkflowsSupervisionStaffETLDelegate(
                         StateCode.US_TN, SUPERVISION_STAFF_FILENAME
                     )
-                    await delegate.run_etl("supervision_staff_record.json")
+                    await delegate.run_etl()
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(
                         mock_document_ref,

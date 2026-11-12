@@ -48,8 +48,8 @@ class WorkflowsTasksETLDelegate(WorkflowsFirestoreETLDelegate):
         """Name of the key this delegate will insert into each document to record when it was loaded."""
         return "__loadedAt"
 
-    def filepath_url(self, filename: str) -> str:
-        return f"gs://{self.get_filepath(filename).abs_path()}"
+    def filepath_url(self) -> str:
+        return f"gs://{self.get_filepath().abs_path()}"
 
     def format_state_code(self, state_code: str) -> str:
         if state_code == "US_IX":
@@ -57,7 +57,7 @@ class WorkflowsTasksETLDelegate(WorkflowsFirestoreETLDelegate):
         return state_code
 
     def transform_row(
-        self, row: dict[str, Any], filename: str
+        self, row: dict[str, Any]
     ) -> Tuple[Optional[str], Optional[dict]]:
         new_document: dict[str, Any] = {
             "externalId": row["person_external_id"],

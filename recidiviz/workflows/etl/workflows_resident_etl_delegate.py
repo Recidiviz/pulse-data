@@ -38,7 +38,7 @@ class WorkflowsResidentETLDelegate(WorkflowsSingleFileETLDelegate):
     EXPECTED_FILENAME = "resident_record.json"
     COLLECTION_NAME = "residents"
 
-    def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
+    def transform_row(self, row: dict[str, Any]) -> Tuple[str, dict]:
         metadata = convert_nested_dictionary_keys(
             json.loads(row.get("metadata", "{}")), snake_to_camel
         )

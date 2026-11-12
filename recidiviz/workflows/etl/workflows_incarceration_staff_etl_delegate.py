@@ -29,7 +29,7 @@ class WorkflowsIncarcerationStaffETLDelegate(WorkflowsSingleFileETLDelegate):
     EXPECTED_FILENAME = "incarceration_staff_record.json"
     COLLECTION_NAME = "incarcerationStaff"
 
-    def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
+    def transform_row(self, row: dict[str, Any]) -> Tuple[str, dict]:
         if email := row.get("email"):
             email = email.lower()
 

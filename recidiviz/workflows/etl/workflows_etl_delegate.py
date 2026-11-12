@@ -72,15 +72,15 @@ class WorkflowsETLDelegate(abc.ABC):
     collection_name: str = ""
 
     @abc.abstractmethod
-    async def run_etl(self, filename: str) -> None:
-        """Runs the ETL logic for the provided filename and state_code."""
+    async def run_etl(self) -> None:
+        """Runs the ETL logic for self.filename and self.state_code."""
 
     @classmethod
     @abc.abstractmethod
     def supports_file(cls, state_code: StateCode, filename: str) -> bool:
         """Returns if the class supports the given filename and state_code."""
 
-    def get_filepath(self, filename: str) -> GcsfsFilePath:
+    def get_filepath(self) -> GcsfsFilePath:
         return GcsfsFilePath.from_absolute_path(
             os.path.join(
                 StrictStringFormatter().format(
@@ -88,15 +88,15 @@ class WorkflowsETLDelegate(abc.ABC):
                     project_id=metadata.project_id(),
                 ),
                 self.state_code.value.upper(),
-                filename,
+                self.filename,
             )
         )
 
-    def get_file_stream(self, filename: str) -> Iterator[IO]:
+    def get_file_stream(self) -> Iterator[IO]:
         """Returns a stream of the contents of the file this delegate is watching for."""
         client = GcsfsFactory.build()
 
-        filepath = self.get_filepath(filename)
+        filepath = self.get_filepath()
 
         if not client.is_file(filepath.abs_path()):
             raise FileNotFoundError(
@@ -188,21 +188,18 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
 
     @abc.abstractmethod
     def transform_row(
-        self, row: dict[str, Any], filename: str
+        self, row: dict[str, Any]
     ) -> Tuple[Optional[str], Optional[dict]]:
         """Prepares a row of the exported file for Firestore ingestion.
-        Returns a tuple of the document ID and the document contents.
-
-        `filename` identifies the source file the row came from, so delegates
-        that serve multiple collections can vary the transform per file."""
+        Returns a tuple of the document ID and the document contents."""
 
     @property
     def timestamp_key(self) -> str:
         """Name of the key this delegate will insert into each document to record when it was loaded."""
         return "__loadedAt"
 
-    def filepath_url(self, filename: str) -> str:
-        return f"gs://{self.get_filepath(filename).abs_path()}"
+    def filepath_url(self) -> str:
+        return f"gs://{self.get_filepath().abs_path()}"
 
     def doc_id_for_row_id(self, row_id: str) -> str:
         doc_id = (
@@ -226,11 +223,11 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
         await batch.commit()
         self.total_records_written += len(batch)
 
-    async def run_etl(self, filename: str) -> None:
+    async def run_etl(self) -> None:
         pseudonymized_collection_name = "PSEUDONYMIZED_" + self.collection_name
         logging.info(
             'Starting export of %s to the Firestore collection "%s".',
-            self.filepath_url(filename),
+            self.filepath_url(),
             self.collection_name,
         )
         firestore_client = FirestoreClientImpl()
@@ -245,7 +242,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
         etl_timestamp = datetime.now(timezone.utc)
 
         # step 1: Load new documents
-        for file_stream in self.get_file_stream(filename):
+        for file_stream in self.get_file_stream():
             while rows := file_stream.readlines(INPUT_CHUNK_SIZE):
                 # wait for all writes in this chunk to finish before starting the next one
                 async with TaskGroup() as tg:
@@ -261,7 +258,6 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
 
                         row_id = self._add_row_to_batch(
                             line_data,
-                            filename,
                             etl_timestamp,
                             firestore_collection,
                             batch,
@@ -279,7 +275,6 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                         if pseudonymized_data:
                             if self._add_row_to_batch(
                                 pseudonymized_data,
-                                filename,
                                 etl_timestamp,
                                 pseudonymized_firestore_collection,
                                 batch,
@@ -326,7 +321,6 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
     def _add_row_to_batch(
         self,
         row: dict[str, Any],
-        filename: str,
         etl_timestamp: datetime,
         firestore_collection: CollectionReference,
         batch: AsyncWriteBatch,
@@ -334,7 +328,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
         """Transforms and adds the row to the given `batch` to add it to the given
         `firestore_collection`."""
         try:
-            row_id, document_fields = self.transform_row(row, filename)
+            row_id, document_fields = self.transform_row(row)
         except Exception as e:
             logging.error(
                 "Transform row failed on [%s] due to: %s",
@@ -350,7 +344,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
             logging.error(
                 "Skipping row [%s] in [%s]: document has no [%s]",
                 row_id,
-                filename,
+                self.filename,
                 STATE_CODE_KEY,
             )
             return None

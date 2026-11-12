@@ -91,19 +91,12 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
         }
 
     @property
-    def OPPORTUNITY_TYPE_BY_FILENAME(self) -> Dict[str, str]:
-        return {
-            config.source_filename: config.opportunity_type
-            for config in WORKFLOWS_OPPORTUNITY_CONFIGS
-        }
-
-    @property
     def timestamp_key(self) -> str:
         """Name of the key this delegate will insert into each document to record when it was loaded."""
         return "__loadedAt"
 
-    def filepath_url(self, filename: str) -> str:
-        return f"gs://{self.get_filepath(filename).abs_path()}"
+    def filepath_url(self) -> str:
+        return f"gs://{self.get_filepath().abs_path()}"
 
     def _preprocess_criterion_name(self, criterion: str) -> str:
         # Rename US_IX criteria to US_ID so we don't have to make frontend changes
@@ -200,7 +193,7 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
         return convert_nested_dictionary_keys(new_document, snake_to_camel)
 
     def transform_row(
-        self, row: dict[str, Any], filename: str
+        self, row: dict[str, Any]
     ) -> Tuple[Optional[str], Optional[dict]]:
         if row.get("external_id", None) is None:
             return None, None
@@ -210,5 +203,5 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
             if row.get("opportunity_id", None) is None
             else f"{row['external_id']}_{row['opportunity_id']}"
         )
-        opportunity_type = self.OPPORTUNITY_TYPE_BY_FILENAME[filename]
+        opportunity_type = self.opportunity_type
         return doc_id, self.build_document(row, opportunity_type)

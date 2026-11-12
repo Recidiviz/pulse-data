@@ -36,7 +36,7 @@ FILENAME = "export_filename.json"
 
 
 class TestETLDelegate(WorkflowsETLDelegate):
-    async def run_etl(self, _filename: str) -> None:
+    async def run_etl(self) -> None:
         pass
 
     @classmethod
@@ -76,7 +76,7 @@ class TestWorkflowsETLDelegate(TestCase):
                     bucket_name="test-project-practices-etl-data",
                     blob_name="US_XX/export_filename.json",
                 ),
-                delegate.get_filepath("export_filename.json"),
+                delegate.get_filepath(),
             )
 
 
@@ -219,7 +219,7 @@ class TestPseudonymizeRecord(TestCase):
             delegate.pseudonymize_record(record, seed=SEED),
         )
 
-    def test_returns_none_when_json_string_field_is_not_an_object(self) -> None:
+    def test_returns_none_when_json_string_field_is_not_expected_object(self) -> None:
         delegate = TestETLDelegateWithPseudonymizedFields(StateCode.US_XX, FILENAME)
         with self.assertLogs(level="INFO") as logs:
             self.assertIsNone(
@@ -282,9 +282,7 @@ class TestFirestoreETLDelegate(WorkflowsFirestoreETLDelegate):
         super().__init__(state_code, filename)
         self.collection_name = "testCollection"
 
-    def transform_row(
-        self, row: dict[str, Any], filename: str
-    ) -> tuple[str | None, dict | None]:
+    def transform_row(self, row: dict[str, Any]) -> tuple[str | None, dict | None]:
         return row["id"], row["document"]
 
 
@@ -346,7 +344,7 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
             )
         ]
 
-        await self.delegate.run_etl("export_filename.json")
+        await self.delegate.run_etl()
 
         self.assertEqual(
             [
@@ -395,7 +393,7 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
         ]
 
         with self.assertLogs(level="ERROR") as logs:
-            await self.delegate.run_etl("export_filename.json")
+            await self.delegate.run_etl()
 
         self.assertEqual(
             [
@@ -422,7 +420,7 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
         ]
 
         with self.assertLogs(level="ERROR") as logs:
-            await self.delegate.run_etl("export_filename.json")
+            await self.delegate.run_etl()
 
         self.assertEqual(
             [
@@ -452,7 +450,7 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
             )
         ]
 
-        await self.delegate.run_etl("export_filename.json")
+        await self.delegate.run_etl()
 
         self.assertEqual(
             [
@@ -477,7 +475,7 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
         ]
 
         with self.assertLogs(level="ERROR") as logs:
-            await self.delegate.run_etl("export_filename.json")
+            await self.delegate.run_etl()
 
         self.assertEqual(
             [
@@ -513,7 +511,7 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
             )
         ]
 
-        await self.delegate.run_etl("export_filename.json")
+        await self.delegate.run_etl()
 
         self.assertEqual(
             [
@@ -549,7 +547,7 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
             )
         ]
 
-        await self.delegate.run_etl("export_filename.json")
+        await self.delegate.run_etl()
 
         self.assertEqual(
             [
@@ -591,7 +589,7 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
             StateCode.US_XX, FILENAME
         )
 
-        await delegate.run_etl("export_filename.json")
+        await delegate.run_etl()
 
         self.assertEqual(
             [

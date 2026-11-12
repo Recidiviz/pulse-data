@@ -85,7 +85,7 @@ class WorkflowsTasksETLDelegateTest(IsolatedAsyncioTestCase):
             ],
         }
 
-        doc_id, row = delegate.transform_row(data, TASKS_FILENAME)
+        doc_id, row = delegate.transform_row(data)
         self.assertEqual(doc_id, "100")
         self.assertEqual(
             row,
@@ -143,9 +143,10 @@ class WorkflowsTasksETLDelegateTest(IsolatedAsyncioTestCase):
                         123,
                         {"personExternalId": 123, "stateCode": "US_XX"},
                     )
-                    filename = "us_ix_supervision_tasks_record_v2.json"
-                    delegate = WorkflowsTasksETLDelegate(StateCode.US_ID, filename)
-                    await delegate.run_etl(filename)
+                    delegate = WorkflowsTasksETLDelegate(
+                        StateCode.US_ID, "us_ix_supervision_tasks_record_v2.json"
+                    )
+                    await delegate.run_etl()
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(
                         mock_document_ref,

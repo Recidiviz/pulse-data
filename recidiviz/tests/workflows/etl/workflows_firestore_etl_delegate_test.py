@@ -45,7 +45,7 @@ class TestETLDelegate(WorkflowsFirestoreETLDelegate):
         super().__init__(state_code, filename)
         self.collection_name = "testOpportunity"
 
-    def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
+    def transform_row(self, row: dict[str, Any]) -> Tuple[str, dict]:
         return str(row), {"data": row, "stateCode": StateCode.US_XX.value}
 
 
@@ -120,7 +120,7 @@ class WorkflowsFirestoreEtlDelegateTest(IsolatedAsyncioTestCase):
         mock_get_file_stream.return_value = [FakeFileStream(3000)]
         with local_project_id_override("test-project"):
             delegate = TestETLDelegate(StateCode.US_XX, FILENAME)
-            await delegate.run_etl("test_export.json")
+            await delegate.run_etl()
 
         mock_get_collection.assert_has_calls(
             [call("testOpportunity"), call("PSEUDONYMIZED_testOpportunity")]
@@ -146,7 +146,7 @@ class WorkflowsFirestoreEtlDelegateTest(IsolatedAsyncioTestCase):
         with local_project_id_override("test-project"):
             delegate = TestETLDelegate(StateCode.US_XX, FILENAME)
             with freeze_time(mock_now):
-                await delegate.run_etl("test_export.json")
+                await delegate.run_etl()
 
     async def test_run_etl_delete_outdated(
         self,
@@ -168,7 +168,7 @@ class WorkflowsFirestoreEtlDelegateTest(IsolatedAsyncioTestCase):
         with local_project_id_override("test-project"):
             delegate = TestETLDelegate(StateCode.US_XX, FILENAME)
             with freeze_time(mock_now):
-                await delegate.run_etl("test_export.json")
+                await delegate.run_etl()
 
         mock_delete_old_documents.assert_called_once_with(
             "testOpportunity", "US_XX", "__loadedAt", mock_now
@@ -210,7 +210,7 @@ class WorkflowsFirestoreEtlDelegateTest(IsolatedAsyncioTestCase):
                             ),
                             Exception,
                         ]
-                        await delegate.run_etl("test_export.json")
+                        await delegate.run_etl()
                         mock_logger.assert_called_once()
                         assert mock_transform.call_count == 2
 
@@ -244,7 +244,7 @@ class WorkflowsFirestoreEtlDelegateTest(IsolatedAsyncioTestCase):
                         # Present but empty, which is just as unusable.
                         ("row-3", {"data": 3, "stateCode": ""}),
                     ]
-                    await delegate.run_etl("test_export.json")
+                    await delegate.run_etl()
 
         self.assertEqual(2, mock_logger.call_count)
         for mock_call in mock_logger.call_args_list:
@@ -274,7 +274,7 @@ class WorkflowsFirestoreEtlDelegateTest(IsolatedAsyncioTestCase):
         with local_project_id_override("test-project"):
             mock_index_exists_for_collection.return_value = False
             delegate = TestETLDelegate(StateCode.US_XX, FILENAME)
-            await delegate.run_etl("test_export.json")
+            await delegate.run_etl()
             mock_create_index.assert_called_once()
             call_args = mock_create_index.mock_calls[0].args
 
@@ -317,7 +317,7 @@ class WorkflowsFirestoreEtlDelegateTest(IsolatedAsyncioTestCase):
         with local_project_id_override("test-project"):
             mock_index_exists_for_collection.return_value = True
             delegate = TestETLDelegate(StateCode.US_XX, FILENAME)
-            await delegate.run_etl("test_export.json")
+            await delegate.run_etl()
             mock_create_index.assert_not_called()
 
     @patch(
@@ -346,7 +346,7 @@ class WorkflowsFirestoreEtlDelegateTest(IsolatedAsyncioTestCase):
             mock_create_index.side_effect = AlreadyExists("Index already exists.")
             with self.assertLogs(level="INFO") as log:
                 delegate = TestETLDelegate(StateCode.US_XX, FILENAME)
-                await delegate.run_etl("test_export.json")
+                await delegate.run_etl()
                 self.assertTrue("Index already exists." in str(log.output))
 
     async def test_run_etl_sanitize_doc_id(
@@ -376,5 +376,5 @@ class WorkflowsFirestoreEtlDelegateTest(IsolatedAsyncioTestCase):
                 {"stateCode": StateCode.US_XX.value},
             )
             delegate = TestETLDelegate(StateCode.US_XX, FILENAME)
-            await delegate.run_etl("test_export.json")
+            await delegate.run_etl()
             mock_collection.document.assert_called_once_with(document_id)

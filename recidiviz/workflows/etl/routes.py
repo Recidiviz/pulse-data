@@ -243,7 +243,7 @@ def get_workflows_etl_blueprint(cloud_run_metadata: CloudRunMetadata) -> Bluepri
             StateCode(state_code), filename
         ):
             try:
-                await delegate.run_etl(filename)
+                await delegate.run_etl()
                 _maybe_enqueue_typesense_backfill(
                     delegate=delegate,
                     filename=filename,

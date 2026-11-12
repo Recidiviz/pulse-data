@@ -52,7 +52,7 @@ class WorkflowsClientETLDelegate(WorkflowsSingleFileETLDelegate):
     EXPECTED_FILENAME = "client_record.json"
     COLLECTION_NAME = "clients"
 
-    def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
+    def transform_row(self, row: dict[str, Any]) -> Tuple[str, dict]:
         new_document: dict[str, Any] = {}
 
         state_code = row["state_code"]

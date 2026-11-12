@@ -53,7 +53,7 @@ class WorkflowsPersonExternalIdKeyedETLDelegateTest(unittest.TestCase):
             "move_to_nici_ineligible_criteria": ["US_XX_NOT_IN_NICI"],
         }
 
-        doc_id, document = delegate.transform_row(row, "fake_record.json")
+        doc_id, document = delegate.transform_row(row)
 
         self.assertEqual("A100", doc_id)
         self.assertEqual(

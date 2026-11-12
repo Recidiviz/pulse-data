@@ -44,6 +44,6 @@ class WorkflowsPersonExternalIdKeyedETLDelegate(WorkflowsSingleFileETLDelegate):
          "moveToNiciIsEligible": true}
     """
 
-    def transform_row(self, row: dict[str, Any], filename: str) -> tuple[str, dict]:
+    def transform_row(self, row: dict[str, Any]) -> tuple[str, dict]:
         person_external_id = row.pop(PERSON_EXTERNAL_ID_COLUMN_NAME)
         return person_external_id, convert_nested_dictionary_keys(row, snake_to_camel)

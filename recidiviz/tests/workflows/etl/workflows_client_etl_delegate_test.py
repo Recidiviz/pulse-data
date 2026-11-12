@@ -168,7 +168,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
         Test that the transform_row method correctly parses the json
         """
         delegate = WorkflowsClientETLDelegate(StateCode.US_TN, CLIENT_FILENAME)
-        doc_id, row = delegate.transform_row(TEST_DATA, CLIENT_FILENAME)
+        doc_id, row = delegate.transform_row(TEST_DATA)
         self.assertEqual("200", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
 
@@ -202,7 +202,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
         del expected["supervisionStartDate"]
         del expected["milestones"]
 
-        doc_id, row = delegate.transform_row(data, CLIENT_FILENAME)
+        doc_id, row = delegate.transform_row(data)
         self.assertEqual("200", doc_id)
         self.assertEqual(expected, row)
 
@@ -217,7 +217,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
         expected = deepcopy(EXPECTED_DOCUMENT)
         expected["allEligibleOpportunities"] = ["supervisionLevelDowngrade"]
 
-        doc_id, row = delegate.transform_row(data, CLIENT_FILENAME)
+        doc_id, row = delegate.transform_row(data)
         self.assertEqual("200", doc_id)
         self.assertEqual(expected, row)
 
@@ -235,7 +235,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
         expected["supervisionType"] = "DUAL"
         expected["address"] = "456 Fake st., Faketown, ND 12345"
 
-        doc_id, row = delegate.transform_row(data, CLIENT_FILENAME)
+        doc_id, row = delegate.transform_row(data)
         self.assertEqual("200", doc_id)
         self.assertEqual(expected, row)
 
@@ -289,7 +289,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
                         delegate = WorkflowsClientETLDelegate(
                             StateCode.US_TN, CLIENT_FILENAME
                         )
-                        await delegate.run_etl("client_record.json")
+                        await delegate.run_etl()
                         mock_collection.document.assert_has_calls(
                             [call(document_id), call(document_id)]
                         )

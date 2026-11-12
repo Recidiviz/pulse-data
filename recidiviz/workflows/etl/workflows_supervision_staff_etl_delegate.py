@@ -32,7 +32,7 @@ class WorkflowsSupervisionStaffETLDelegate(WorkflowsSingleFileETLDelegate):
     EXPECTED_FILENAME = "supervision_staff_record.json"
     COLLECTION_NAME = "supervisionStaff"
 
-    def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
+    def transform_row(self, row: dict[str, Any]) -> Tuple[str, dict]:
         # Convert all keys to camelcase
         new_document = convert_nested_dictionary_keys(row, snake_to_camel)
 

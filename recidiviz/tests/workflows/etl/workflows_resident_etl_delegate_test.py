@@ -121,7 +121,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
         Test that the transform_row method correctly parses the json
         """
         delegate = WorkflowsResidentETLDelegate(StateCode.US_MO, RESIDENT_FILENAME)
-        doc_id, row = delegate.transform_row(TEST_DATA, RESIDENT_FILENAME)
+        doc_id, row = delegate.transform_row(TEST_DATA)
         self.assertEqual("300", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
 
@@ -163,7 +163,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
             "anotherTopLevelKey": "jackalope",
         }
 
-        doc_id, row = delegate.transform_row(data, RESIDENT_FILENAME)
+        doc_id, row = delegate.transform_row(data)
         self.assertEqual("300", doc_id)
         self.assertEqual(expected, row)
 
@@ -175,7 +175,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
         expected = deepcopy(EXPECTED_DOCUMENT)
         expected["gender"] = None
 
-        doc_id, row = delegate.transform_row(data, RESIDENT_FILENAME)
+        doc_id, row = delegate.transform_row(data)
         self.assertEqual("300", doc_id)
         self.assertEqual(expected, row)
 
@@ -228,7 +228,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
                 delegate = WorkflowsResidentETLDelegate(
                     StateCode.US_TN, RESIDENT_FILENAME
                 )
-                await delegate.run_etl("resident_record.json")
+                await delegate.run_etl()
                 mock_collection.document.assert_has_calls(
                     [call(document_id), call(document_id)]
                 )

@@ -46,20 +46,20 @@ async def load_demo_fixture(
             super().__init__(state_code, filename)
             self.collection_name: str = "DEMO_" + self.collection_name
 
-        def fixture_filepath(self, filename: str) -> Path:
-            return Path(__file__).parent / "demo_fixtures" / filename
+        def fixture_filepath(self) -> Path:
+            return Path(__file__).parent / "demo_fixtures" / self.filename
 
-        def filepath_url(self, filename: str) -> str:
-            return self.fixture_filepath(filename).as_uri()
+        def filepath_url(self) -> str:
+            return self.fixture_filepath().as_uri()
 
-        def get_file_stream(self, filename: str) -> Iterator[IO]:
+        def get_file_stream(self) -> Iterator[IO]:
             """Returns a stream of the contents of the file this delegate is watching for."""
             # bypassing self.get_filepath since it assumes a GCS file
-            with open(self.fixture_filepath(filename), "r", encoding="utf8") as f:
+            with open(self.fixture_filepath(), "r", encoding="utf8") as f:
                 yield f
 
     delegate = DemoDelegate(StateCode(state_code), filename)
-    await delegate.run_etl(filename)
+    await delegate.run_etl()
 
 
 async def load_all_demo_data() -> None:

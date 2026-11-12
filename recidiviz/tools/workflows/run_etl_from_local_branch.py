@@ -42,7 +42,7 @@ async def main(
             StateCode(state_code), filename
         ):
             try:
-                await delegate.run_etl(filename)
+                await delegate.run_etl()
             except ValueError:
                 logging.info(
                     "Error running Firestore ETL for file %s for state_code %s",

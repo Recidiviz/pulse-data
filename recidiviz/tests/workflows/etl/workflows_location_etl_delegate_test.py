@@ -82,7 +82,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
         Test that the transform_row method correctly parses the json
         """
         delegate = WorkflowsLocationETLDelegate(StateCode.US_XX, LOCATION_FILENAME)
-        doc_id, row = delegate.transform_row(TEST_DATA, LOCATION_FILENAME)
+        doc_id, row = delegate.transform_row(TEST_DATA)
         self.assertEqual("U2", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
 
@@ -97,7 +97,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
         expected = deepcopy(EXPECTED_DOCUMENT)
         expected["id"] = "WOMEN'S FACILITY 1/2"
 
-        doc_id, row = delegate.transform_row(data, LOCATION_FILENAME)
+        doc_id, row = delegate.transform_row(data)
         self.assertEqual("WOMEN'S FACILITY 1/2", doc_id)
         self.assertEqual(expected, row)
 
@@ -144,7 +144,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
                     delegate = WorkflowsLocationETLDelegate(
                         StateCode.US_TN, LOCATION_FILENAME
                     )
-                    await delegate.run_etl("location_record.json")
+                    await delegate.run_etl()
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(
                         mock_document_ref,

@@ -38,7 +38,7 @@ class TestETLDelegate(WorkflowsFirestoreETLDelegate):
         super().__init__(state_code, filename)
         self.collection_name = "test_collection"
 
-    def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
+    def transform_row(self, row: dict[str, Any]) -> Tuple[str, dict]:
         return str(row), {"data": row}
 
 

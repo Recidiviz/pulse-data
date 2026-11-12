@@ -204,7 +204,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
                 "/practices-etl/_run_firestore_etl",
                 json={"state_code": state_code, "filename": filename},
             )
-            mock_delegate.run_etl.assert_called_with(filename)
+            mock_delegate.run_etl.assert_called_once()
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(b"", response.data)
 
