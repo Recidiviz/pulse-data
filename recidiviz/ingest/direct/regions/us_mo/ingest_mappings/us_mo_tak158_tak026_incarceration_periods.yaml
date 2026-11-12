@@ -88,14 +88,15 @@ output:
                   - "HOS" # Hospitalized
                   - "***" # UNKNOWN
                   - "INF" # Infirmary
-                  # TODO(MO-13026) Revisit this mapping once MO defines ERH.
-                  - "ERH" # Unknown
                 StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT:
                   - "ADS" # Administrative Segregation
                   - "DIS" # Disciplinary Segregation
                   - "NOC" # Ad Seg No Contact
                   - "PRC" # Protective Custody
                   - "TAS" # Temporary Administrative Segregation
+                  - "ERH" # Extended Restrictive Housing House
+                  - "RH" # Restrictive Housing House
+                  - "TA" # Temporary Assignment House
           housing_unit_type:
             $enum_mapping:
               $raw_text: $variable(housing_type_detail)
@@ -105,17 +106,21 @@ output:
                   - "DIS"
                   - "ADS-T" # The ADS housing type is disciplinary, not administrative, if it's flagged as temporary.
                 StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY: "PRC"
-                StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT: "TAS"
+                StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
+                  - "TAS"
+                  - "TA"
                 StateIncarcerationPeriodHousingUnitType.HOSPITAL:
                   - "HOS"
                   - "INF"
                 StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT:
                   - "ADS"
                   - "NOC"
+                StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT:
+                  - "ERH"
+                StateIncarcerationPeriodHousingUnitType.OTHER_SOLITARY_CONFINEMENT:
+                  - "RH"
                 StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN:
                   - "***"
-                  # TODO(MO-13026) Revisit this mapping once MO defines ERH.
-                  - "ERH" # Unknown
           custody_level:
             $enum_mapping:
               $raw_text: CUSTODY_LVL
