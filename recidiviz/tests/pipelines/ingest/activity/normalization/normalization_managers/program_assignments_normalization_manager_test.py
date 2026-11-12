@@ -136,6 +136,62 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
             normalized_assignments,
         )
 
+    def test_default_sorted_program_assignments_same_date_tiebreak_by_external_id(
+        self,
+    ) -> None:
+        pa_a = StateProgramAssignment.new_with_defaults(
+            program_assignment_id=1,
+            external_id="pa_a",
+            state_code=self.state_code,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            referral_date=datetime.date(2000, 1, 1),
+        )
+        pa_b = StateProgramAssignment.new_with_defaults(
+            program_assignment_id=2,
+            external_id="pa_b",
+            state_code=self.state_code,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            referral_date=datetime.date(2000, 1, 1),
+        )
+        pa_c = StateProgramAssignment.new_with_defaults(
+            program_assignment_id=3,
+            external_id="pa_c",
+            state_code=self.state_code,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            start_date=datetime.date(2000, 1, 1),
+        )
+
+        entity_normalization_manager = ProgramAssignmentNormalizationManager(
+            program_assignments=[pa_c, pa_b, pa_a],
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
+        )
+        (
+            normalized_assignments,
+            additional_attributes,
+        ) = (
+            entity_normalization_manager.normalized_program_assignments_and_additional_attributes()
+        )
+
+        self.assertEqual([pa_a, pa_b, pa_c], normalized_assignments)
+        self.assertEqual(
+            {
+                StateProgramAssignment.__name__: {
+                    1: {"referring_staff_id": None, "sequence_num": 0},
+                    2: {"referring_staff_id": None, "sequence_num": 1},
+                    3: {"referring_staff_id": None, "sequence_num": 2},
+                }
+            },
+            additional_attributes,
+        )
+        self.assertEqual(
+            [pa_a, pa_b, pa_c],
+            self._normalized_program_assignments_for_calculations(
+                program_assignments=[pa_a, pa_b, pa_c]
+            ),
+        )
+
     def test_default_filtered_program_assignments_additional_attributes(self) -> None:
         pg_1 = StateProgramAssignment.new_with_defaults(
             state_code=self.state_code,

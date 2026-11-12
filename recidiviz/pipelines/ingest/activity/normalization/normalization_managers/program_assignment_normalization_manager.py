@@ -111,15 +111,16 @@ class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
     def _sorted_program_assignments(
         self, program_assignments: List[StateProgramAssignment]
     ) -> List[StateProgramAssignment]:
-        """Sorts the program assignments first by referral date, then by start date,
-        then by discharge date, depending on whichever is present."""
+        """Sorts the program assignments by the first present of referral date,
+        start date, and discharge date, then by external_id."""
         program_assignments.sort(
-            # TODO(#31377): This sorting is non-deterministic when, for example, two
-            #  program assignments have the same referral_date.
-            key=lambda b: b.referral_date
-            or b.start_date
-            or b.discharge_date
-            or datetime.date.min
+            key=lambda b: (
+                b.referral_date
+                or b.start_date
+                or b.discharge_date
+                or datetime.date.min,
+                b.external_id,
+            )
         )
         return program_assignments
 
