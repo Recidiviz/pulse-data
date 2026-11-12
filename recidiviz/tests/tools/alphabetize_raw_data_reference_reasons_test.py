@@ -42,8 +42,18 @@ class TestAlphabetizeRawDataReferenceReasons(unittest.TestCase):
         _mock_open: MagicMock,
     ) -> None:
         sorted_data = {
-            "a": {"file2": {"addr": "test", "c_addr": "test"}},
-            "b": {"file1": {"addr": "test", "b_addr": "test"}},
+            "a": {
+                "file2": {
+                    "addr": {"variants": ["LATEST"], "reason": "test"},
+                    "c_addr": {"variants": ["LATEST"], "reason": "test"},
+                }
+            },
+            "b": {
+                "file1": {
+                    "addr": {"variants": ["LATEST"], "reason": "test"},
+                    "b_addr": {"variants": ["LATEST"], "reason": "test"},
+                }
+            },
         }
         mock_get_raw_yaml_data.return_value = sorted_data
 
@@ -66,14 +76,34 @@ class TestAlphabetizeRawDataReferenceReasons(unittest.TestCase):
         _mock_open: MagicMock,
     ) -> None:
         unsorted_data = {
-            "b": {"file1": {"b_addr": "test", "addr": "test"}},
-            "a": {"file2": {"c_addr": "test", "addr": "test"}},
+            "b": {
+                "file1": {
+                    "b_addr": {"variants": ["LATEST"], "reason": "test"},
+                    "addr": {"variants": ["LATEST"], "reason": "test"},
+                }
+            },
+            "a": {
+                "file2": {
+                    "c_addr": {"variants": ["LATEST"], "reason": "test"},
+                    "addr": {"variants": ["LATEST"], "reason": "test"},
+                }
+            },
         }
         mock_get_raw_yaml_data.return_value = unsorted_data
 
         sorted_data = {
-            "a": {"file2": {"addr": "test", "c_addr": "test"}},
-            "b": {"file1": {"addr": "test", "b_addr": "test"}},
+            "a": {
+                "file2": {
+                    "addr": {"variants": ["LATEST"], "reason": "test"},
+                    "c_addr": {"variants": ["LATEST"], "reason": "test"},
+                }
+            },
+            "b": {
+                "file1": {
+                    "addr": {"variants": ["LATEST"], "reason": "test"},
+                    "b_addr": {"variants": ["LATEST"], "reason": "test"},
+                }
+            },
         }
 
         sort_yaml_file()

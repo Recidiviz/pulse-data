@@ -17,12 +17,13 @@
 """Alphabetize RAW_DATA_REFERENCES_YAML.
 """
 
-from typing import Dict, Set
+from typing import Dict
 
 from ruamel.yaml import YAML
 
 from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
     RAW_DATA_REFERENCES_YAML_PATH,
+    VARIANTS_KEY,
     RawDataReferenceReasonsYamlLoader,
 )
 
@@ -36,6 +37,10 @@ def sort_yaml_file(yaml_path: str = RAW_DATA_REFERENCES_YAML_PATH) -> None:
 
 
 def _sort_dict(d: Dict) -> Dict:
+    # A reference's {variants, reason} value is an opaque leaf - leave its key
+    # order intact rather than alphabetizing it.
+    if VARIANTS_KEY in d:
+        return d
     sorted_dict = {}
     for key in sorted(d):
         value = d[key]
@@ -43,7 +48,7 @@ def _sort_dict(d: Dict) -> Dict:
     return sorted_dict
 
 
-def is_sorted(references: Dict[str, Dict[str, Set[str]]]) -> bool:
+def is_sorted(references: Dict[str, Dict[str, Dict[str, Dict]]]) -> bool:
     state_codes = references.keys()
     if list(state_codes) != sorted(state_codes):
         return False

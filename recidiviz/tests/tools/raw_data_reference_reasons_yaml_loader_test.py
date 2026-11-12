@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests for raw_data_reference_reasons_yaml_loader.py."""
 import unittest
-from collections import defaultdict
 from unittest.mock import mock_open, patch
 
 from mock import MagicMock
@@ -26,43 +25,74 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
     RawDataReferenceReasonsYamlLoader,
+    RawDataReferenceVariant,
 )
 
 mock_yaml_content = """
 US_XX:
   table1:
-    dataset1.table1: |-
-      Usage reason unknown.
-    dataset2.table2: |-
-      Usage reason unknown.
+    dataset1.table1:
+      variants: [LATEST]
+      reason: |-
+        Usage reason unknown.
+    dataset2.table2:
+      variants: [ALL, LATEST]
+      reason: |-
+        Usage reason unknown.
 US_YY:
   table2:
-    dataset3.table3: |-
-      Usage reason unknown.
+    dataset3.table3:
+      variants: [TABLE]
+      reason: |-
+        Usage reason unknown.
 """
 mock_yaml_invalid_content = """
 US_NOT_REAL:
     table1:
-        dataset1.table1: |-
-            Usage reason unknown.
+        dataset1.table1:
+            variants: [LATEST]
+            reason: |-
+                Usage reason unknown.
 """
 mock_raw_data = {
     "US_XX": {
         "table1": {
-            "dataset1.table1": "Usage reason unknown.",
-            "dataset2.table2": "Usage reason unknown.",
+            "dataset1.table1": {
+                "variants": ["LATEST"],
+                "reason": "Usage reason unknown.",
+            },
+            "dataset2.table2": {
+                "variants": ["ALL", "LATEST"],
+                "reason": "Usage reason unknown.",
+            },
         }
     },
-    "US_YY": {"table2": {"dataset3.table3": "Usage reason unknown."}},
+    "US_YY": {
+        "table2": {
+            "dataset3.table3": {
+                "variants": ["TABLE"],
+                "reason": "Usage reason unknown.",
+            }
+        }
+    },
 }
 mock_converted_data = {
     StateCode.US_XX: {
         "table1": {
-            BigQueryAddress.from_str("dataset1.table1"),
-            BigQueryAddress.from_str("dataset2.table2"),
+            BigQueryAddress.from_str("dataset1.table1"): {
+                RawDataReferenceVariant.LATEST
+            },
+            BigQueryAddress.from_str("dataset2.table2"): {
+                RawDataReferenceVariant.ALL,
+                RawDataReferenceVariant.LATEST,
+            },
         }
     },
-    StateCode.US_YY: {"table2": {BigQueryAddress.from_str("dataset3.table3")}},
+    StateCode.US_YY: {
+        "table2": {
+            BigQueryAddress.from_str("dataset3.table3"): {RawDataReferenceVariant.TABLE}
+        }
+    },
 }
 
 
@@ -121,8 +151,21 @@ class TestRawDataReferenceReasonsYamlLoader(unittest.TestCase):
         result = RawDataReferenceReasonsYamlLoader.get_downstream_referencing_views(
             StateCode.US_WW
         )
+        self.assertEqual(result, {})
+
+    @patch("builtins.open", new_callable=mock_open, read_data=mock_yaml_content)
+    def test_get_referenced_variants_by_file_tag(self, _: MagicMock) -> None:
+        result = RawDataReferenceReasonsYamlLoader.get_referenced_variants_by_file_tag(
+            StateCode.US_XX
+        )
+        # table1's variants are the union across both referencing views; file tags
+        # with no referencing views are absent entirely.
         self.assertEqual(
             result,
-            defaultdict(set),
+            {
+                "table1": {
+                    RawDataReferenceVariant.LATEST,
+                    RawDataReferenceVariant.ALL,
+                }
+            },
         )
-        self.assertEqual(result["non_existent_file_tag"], set())

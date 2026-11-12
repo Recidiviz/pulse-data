@@ -25,6 +25,9 @@ from recidiviz.big_query.big_query_view import (
     SimpleBigQueryViewBuilder,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.views.direct_ingest_all_view_collector import (
+    RAW_DATA_ALL_VIEW_ID_SUFFIX,
+)
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     RAW_DATA_LATEST_VIEW_ID_SUFFIX,
 )
@@ -32,11 +35,16 @@ from recidiviz.tests.big_query.big_query_view_test_utils import MINIMAL_SCHEMA
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.tools.find_direct_raw_data_references import (
+    _file_tag_for_table,
     find_direct_raw_data_references,
+)
+from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
+    RawDataReferenceVariant,
 )
 
 RAW_DATASET_XX = "us_xx_raw_data"
 RAW_DATASET_XX_LATEST = "us_xx_raw_data_up_to_date_views"
+RAW_DATASET_XX_ALL = "us_xx_raw_data_views"
 RAW_DATASET_YY = "us_yy_raw_data"
 SOURCE_TABLE_1 = "source_table"
 SOURCE_TABLE_2 = "source_table_2"
@@ -52,7 +60,7 @@ class TestFindDirectRawDataReferences(unittest.TestCase):
         ingest_states = [StateCode.US_XX, StateCode.US_YY]
 
         self.mock_get_existing_direct_ingest_states = patch(
-            "recidiviz.ingest.direct.dataset_helpers.get_existing_direct_ingest_states"
+            "recidiviz.tools.find_direct_raw_data_references.get_existing_direct_ingest_states"
         )
         self.mock_get_existing_direct_ingest_states.start().return_value = ingest_states
 
@@ -103,8 +111,8 @@ class TestFindDirectRawDataReferences(unittest.TestCase):
 
         expected_references = {
             StateCode.US_XX: {
-                SOURCE_TABLE_1: {view1.address},
-                SOURCE_TABLE_2: {view2.address},
+                SOURCE_TABLE_1: {view1.address: {RawDataReferenceVariant.TABLE}},
+                SOURCE_TABLE_2: {view2.address: {RawDataReferenceVariant.TABLE}},
             }
         }
 
@@ -123,10 +131,10 @@ class TestFindDirectRawDataReferences(unittest.TestCase):
 
         expected_references = {
             StateCode.US_XX: {
-                SOURCE_TABLE_1: {view.address},
+                SOURCE_TABLE_1: {view.address: {RawDataReferenceVariant.TABLE}},
             },
             StateCode.US_YY: {
-                SOURCE_TABLE_2: {view.address},
+                SOURCE_TABLE_2: {view.address: {RawDataReferenceVariant.TABLE}},
             },
         }
 
@@ -145,14 +153,16 @@ class TestFindDirectRawDataReferences(unittest.TestCase):
 
         expected_references = {
             StateCode.US_XX: {
-                SOURCE_TABLE_1: {view.address},
-                SOURCE_TABLE_2: {view.address},
+                SOURCE_TABLE_1: {view.address: {RawDataReferenceVariant.TABLE}},
+                SOURCE_TABLE_2: {view.address: {RawDataReferenceVariant.TABLE}},
             }
         }
 
         self.assertEqual(references, expected_references)
 
-    def test_no_distinction_between_latest_and_raw_datasets(self) -> None:
+    def test_all_latest_and_raw_table_share_file_tag_but_record_distinct_variants(
+        self,
+    ) -> None:
         view1 = self._create_view_builder(
             "dataset_1",
             "table_1",
@@ -170,13 +180,29 @@ class TestFindDirectRawDataReferences(unittest.TestCase):
                 f"{SOURCE_TABLE_1}{RAW_DATA_LATEST_VIEW_ID_SUFFIX}",
             ),
         )
+        view3 = self._create_view_builder(
+            "dataset_3",
+            "table_3",
+            self._build_view_address_string(
+                RAW_DATASET_XX_ALL,
+                f"{SOURCE_TABLE_1}{RAW_DATA_ALL_VIEW_ID_SUFFIX}",
+            ),
+        )
 
-        view_list = [view1, view2]
+        view_list = [view1, view2, view3]
         references = find_direct_raw_data_references(view_list)
 
         expected_references = {
             StateCode.US_XX: {
-                SOURCE_TABLE_1: {view1.address, view2.address},
+                SOURCE_TABLE_1: {
+                    # view1 reads both the raw table and the _latest view.
+                    view1.address: {
+                        RawDataReferenceVariant.TABLE,
+                        RawDataReferenceVariant.LATEST,
+                    },
+                    view2.address: {RawDataReferenceVariant.LATEST},
+                    view3.address: {RawDataReferenceVariant.ALL},
+                },
             }
         }
 
@@ -195,8 +221,34 @@ class TestFindDirectRawDataReferences(unittest.TestCase):
         references = find_direct_raw_data_references([view])
 
         self.assertEqual(
-            references, {StateCode.US_XX: {SOURCE_TABLE_1: {view.address}}}
+            references,
+            {
+                StateCode.US_XX: {
+                    SOURCE_TABLE_1: {view.address: {RawDataReferenceVariant.LATEST}}
+                }
+            },
         )
+
+    def test_file_tag_for_table_raises_on_missing_variant_suffix(self) -> None:
+        self.assertEqual(
+            SOURCE_TABLE_1,
+            _file_tag_for_table(SOURCE_TABLE_1, RawDataReferenceVariant.TABLE),
+        )
+        self.assertEqual(
+            SOURCE_TABLE_1,
+            _file_tag_for_table(
+                f"{SOURCE_TABLE_1}{RAW_DATA_LATEST_VIEW_ID_SUFFIX}{MATERIALIZED_SUFFIX}",
+                RawDataReferenceVariant.LATEST,
+            ),
+        )
+        # A table in a `_latest`/`_all` view dataset that is missing its expected
+        # suffix is a misclassification we want to fail on, not silently absorb.
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Expected table \[source_table\] read via variant \[LATEST\] to end "
+            r"with suffix \[_latest\]$",
+        ):
+            _file_tag_for_table(SOURCE_TABLE_1, RawDataReferenceVariant.LATEST)
 
     def _build_view_address_string(self, dataset_id: str, table_id: str) -> str:
         return f"{dataset_id}.{table_id}"

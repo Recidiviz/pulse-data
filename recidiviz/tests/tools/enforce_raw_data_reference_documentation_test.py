@@ -28,6 +28,7 @@ from recidiviz.tools.find_direct_raw_data_references import (
 from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
     RAW_DATA_REFERENCES_YAML,
     RawDataReferenceReasonsYamlLoader,
+    RawDataReferenceVariant,
 )
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
@@ -47,8 +48,12 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
     """
 
     yaml_raw_data: Dict[str, Dict[str, Set[str]]]
-    yaml_data: Dict[StateCode, Dict[str, Set[BigQueryAddress]]]
-    deployed_views_references: Dict[StateCode, Dict[str, Set[BigQueryAddress]]]
+    yaml_data: Dict[
+        StateCode, Dict[str, Dict[BigQueryAddress, Set[RawDataReferenceVariant]]]
+    ]
+    deployed_views_references: Dict[
+        StateCode, Dict[str, Dict[BigQueryAddress, Set[RawDataReferenceVariant]]]
+    ]
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -62,7 +67,7 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
 
     @staticmethod
     def _deployed_views_references_across_data_platform_projects() -> (
-        Dict[StateCode, Dict[str, Set[BigQueryAddress]]]
+        Dict[StateCode, Dict[str, Dict[BigQueryAddress, Set[RawDataReferenceVariant]]]]
     ):
         """Returns the union, across every real data-platform project, of every
         view's direct raw data references.
@@ -74,9 +79,9 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
         side of such a view's references and would wrongly flag the other side's
         documented entries as stale.
         """
-        combined: Dict[StateCode, Dict[str, Set[BigQueryAddress]]] = defaultdict(
-            lambda: defaultdict(set)
-        )
+        combined: Dict[
+            StateCode, Dict[str, Dict[BigQueryAddress, Set[RawDataReferenceVariant]]]
+        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(set)))
         for project_id in DATA_PLATFORM_GCP_PROJECTS:
             with local_project_id_override(project_id):
                 references = find_direct_raw_data_references(
@@ -84,7 +89,8 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
                 )
             for state_code, file_tags in references.items():
                 for file_tag, views in file_tags.items():
-                    combined[state_code][file_tag].update(views)
+                    for view, variants in views.items():
+                        combined[state_code][file_tag][view].update(variants)
         return combined
 
     def test_verify_yaml_entries_in_alphabetical_order(self) -> None:
@@ -124,24 +130,32 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
 
     @staticmethod
     def _missing_references_to_str(
-        missing_references: List[Tuple[StateCode, str, BigQueryAddress]]
+        missing_references: List[
+            Tuple[StateCode, str, BigQueryAddress, RawDataReferenceVariant]
+        ]
     ) -> str:
         return "\n".join(
             [
-                f"    {state_code.value}: `{view.to_str()}` references `{file_tag}`"
-                for state_code, file_tag, view in missing_references
+                f"    {state_code.value}: `{view.to_str()}` references `{file_tag}` "
+                f"(variant {variant.value})"
+                for state_code, file_tag, view, variant in missing_references
             ]
         )
 
     @staticmethod
     def _find_missing_references(
-        expected: Dict[StateCode, Dict[str, Set[BigQueryAddress]]],
-        actual: Dict[StateCode, Dict[str, Set[BigQueryAddress]]],
-    ) -> List[Tuple[StateCode, str, BigQueryAddress]]:
+        expected: Dict[
+            StateCode, Dict[str, Dict[BigQueryAddress, Set[RawDataReferenceVariant]]]
+        ],
+        actual: Dict[
+            StateCode, Dict[str, Dict[BigQueryAddress, Set[RawDataReferenceVariant]]]
+        ],
+    ) -> List[Tuple[StateCode, str, BigQueryAddress, RawDataReferenceVariant]]:
         return [
-            (state, file_tag, view)
+            (state, file_tag, view, variant)
             for state, file_tags in expected.items()
             for file_tag, views in file_tags.items()
-            for view in views
-            if view not in actual.get(state, {}).get(file_tag, set())
+            for view, variants in views.items()
+            for variant in variants
+            if variant not in actual.get(state, {}).get(file_tag, {}).get(view, set())
         ]
