@@ -21,6 +21,7 @@ from unittest.mock import MagicMock, patch
 
 from freezegun import freeze_time
 from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
+from parameterized import parameterized
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.workflows.etl.workflows_firestore_etl_delegate_test import (
@@ -33,20 +34,44 @@ from recidiviz.workflows.etl.workflows_tasks_etl_delegate import (
 
 TASKS_FILENAME = "us_ix_supervision_tasks_record_v2.json"
 
+COLLECTION_BY_FILENAME = {
+    "us_ix_supervision_tasks_record_v2.json": "US_ID-supervisionTasksV2",
+    "us_mo_supervision_tasks_record.json": "US_MO-supervisionTasks",
+    "us_nd_supervision_tasks_record.json": "US_ND-supervisionTasks",
+    "us_ne_supervision_tasks_record.json": "US_NE-supervisionTasks",
+    "us_tx_supervision_tasks_record.json": "US_TX-supervisionTasks",
+    "us_co_supervision_tasks_record.json": "US_CO-supervisionTasks",
+}
+
 
 class WorkflowsTasksETLDelegateTest(IsolatedAsyncioTestCase):
     """
     Test class for the WorkflowsTasksETLDelegate
     """
 
-    def test_supports_filename(self) -> None:
-        """Test that the staff file is supported for any state"""
-        delegate = WorkflowsTasksETLDelegate(StateCode.US_ID)
-        self.assertFalse(delegate.supports_file("not_tasks_record.json"))
+    @parameterized.expand(COLLECTION_BY_FILENAME.keys())
+    def test_supports_filename(self, filename: str) -> None:
+        self.assertTrue(
+            WorkflowsTasksETLDelegate.supports_file(StateCode.US_XX, filename)
+        )
+
+    def test_does_not_support_unknown_filename(self) -> None:
+        self.assertFalse(
+            WorkflowsTasksETLDelegate.supports_file(
+                StateCode.US_XX, "not_tasks_record.json"
+            )
+        )
+
+    @parameterized.expand(COLLECTION_BY_FILENAME.items())
+    def test_collection_name(
+        self, filename: str, expected_collection_name: str
+    ) -> None:
+        delegate = WorkflowsTasksETLDelegate(StateCode.US_XX, filename)
+        self.assertEqual(delegate.collection_name, expected_collection_name)
 
     def test_transform_row_with_us_ix_state_code(self) -> None:
         """Test that transform_row method remaps a US_IX state code to US_ID"""
-        delegate = WorkflowsTasksETLDelegate(StateCode.US_ID)
+        delegate = WorkflowsTasksETLDelegate(StateCode.US_ID, TASKS_FILENAME)
         data = {
             "person_external_id": "100",
             "officer_id": "200",
@@ -118,8 +143,9 @@ class WorkflowsTasksETLDelegateTest(IsolatedAsyncioTestCase):
                         123,
                         {"personExternalId": 123, "stateCode": "US_XX"},
                     )
-                    delegate = WorkflowsTasksETLDelegate(StateCode.US_ID)
-                    await delegate.run_etl("us_ix_supervision_tasks_record_v2.json")
+                    filename = "us_ix_supervision_tasks_record_v2.json"
+                    delegate = WorkflowsTasksETLDelegate(StateCode.US_ID, filename)
+                    await delegate.run_etl(filename)
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(
                         mock_document_ref,

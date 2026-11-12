@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Delegate class to ETL client records for Workflows into Firestore."""
-from typing import Any, List, Tuple
+from typing import Any, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
@@ -23,13 +23,13 @@ from recidiviz.workflows.etl.state_specific_etl_transformations import (
     state_specific_client_address_transformation,
     state_specific_supervision_type_transformation,
 )
-from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
+from recidiviz.workflows.etl.workflows_etl_delegate import (
+    WorkflowsSingleFileETLDelegate,
+)
 
 
-class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
+class WorkflowsClientETLDelegate(WorkflowsSingleFileETLDelegate):
     """Delegate class to ETL the client_record.json file into Firestore."""
-
-    COLLECTION_BY_FILENAME = {"client_record.json": "clients"}
 
     PSEUDONYMIZED_FIELDS = {
         "person_name": {
@@ -48,9 +48,8 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
         "phone_number": "phone_number",
         "email_address": "email",
     }
-
-    def get_supported_files(self) -> List[str]:
-        return ["client_record.json"]
+    EXPECTED_FILENAME = "client_record.json"
+    COLLECTION_NAME = "clients"
 
     def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
         new_document: dict[str, Any] = {}

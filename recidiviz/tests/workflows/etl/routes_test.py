@@ -22,6 +22,7 @@ from unittest.mock import MagicMock, patch
 
 from flask import Flask
 from freezegun import freeze_time
+from parameterized import parameterized
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -29,17 +30,36 @@ from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.workflows.etl.routes import (
     WORKFLOWS_TYPESENSE_BACKFILL_QUEUE,
+    get_supported_workflows_delegates,
     get_workflows_etl_blueprint,
 )
 from recidiviz.workflows.etl.workflows_client_etl_delegate import (
     WorkflowsClientETLDelegate,
 )
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsETLDelegate
+from recidiviz.workflows.etl.workflows_incarceration_staff_etl_delegate import (
+    WorkflowsIncarcerationStaffETLDelegate,
+)
+from recidiviz.workflows.etl.workflows_location_etl_delegate import (
+    WorkflowsLocationETLDelegate,
+)
 from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
     WorkflowsOpportunityETLDelegate,
 )
+from recidiviz.workflows.etl.workflows_parole_board_client_profile_etl_delegate import (
+    WorkflowsParoleBoardClientProfileETLDelegate,
+)
+from recidiviz.workflows.etl.workflows_resident_etl_delegate import (
+    WorkflowsResidentETLDelegate,
+)
+from recidiviz.workflows.etl.workflows_supervision_staff_etl_delegate import (
+    WorkflowsSupervisionStaffETLDelegate,
+)
 from recidiviz.workflows.etl.workflows_tasks_etl_delegate import (
     WorkflowsTasksETLDelegate,
+)
+from recidiviz.workflows.etl.workflows_us_ix_moves_management_etl_delegate import (
+    WorkflowsUsIxMovesManagementETLDelegate,
 )
 from recidiviz.workflows.types import WorkflowsSystemType
 
@@ -173,7 +193,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
             self.assertEqual(b"Invalid Pub/Sub message", response.data)
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
-    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
+    @patch("recidiviz.workflows.etl.routes.get_supported_workflows_delegates")
     def test_run_firestore_etl(self, mock_get_delegates: MagicMock) -> None:
         mock_delegate = MagicMock(WorkflowsETLDelegate)
         mock_get_delegates.return_value = [mock_delegate]
@@ -184,21 +204,19 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
                 "/practices-etl/_run_firestore_etl",
                 json={"state_code": state_code, "filename": filename},
             )
-            mock_delegate.supports_file.assert_called_with(filename)
             mock_delegate.run_etl.assert_called_with(filename)
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(b"", response.data)
 
     @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
-    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
+    @patch("recidiviz.workflows.etl.routes.get_supported_workflows_delegates")
     def test_run_firestore_etl_enqueues_typesense_backfill(
         self, mock_get_delegates: MagicMock, mock_task_manager: MagicMock
     ) -> None:
         filename = "client_record.json"
         mock_delegate = MagicMock(WorkflowsClientETLDelegate)
         mock_delegate.state_code = StateCode.US_XX
-        mock_delegate.supports_file.return_value = True
-        mock_delegate.COLLECTION_BY_FILENAME = {filename: "clientCollection"}
+        mock_delegate.collection_name = "clientCollection"
         mock_get_delegates.return_value = [mock_delegate]
         with self.test_app.test_client() as client:
             response = client.post(
@@ -217,7 +235,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
             )
 
     @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
-    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
+    @patch("recidiviz.workflows.etl.routes.get_supported_workflows_delegates")
     def test_run_firestore_etl_enqueues_opportunities_typesense_backfill(
         self, mock_get_delegates: MagicMock, mock_task_manager: MagicMock
     ) -> None:
@@ -226,10 +244,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         filename = "us_xx_supervision_level_downgrade_record.json"
         mock_delegate = MagicMock(WorkflowsOpportunityETLDelegate)
         mock_delegate.state_code = StateCode.US_XX
-        mock_delegate.supports_file.return_value = True
-        mock_delegate.COLLECTION_BY_FILENAME = {
-            filename: "US_XX-supervisionLevelDowngrade"
-        }
+        mock_delegate.collection_name = "US_XX-supervisionLevelDowngrade"
         mock_delegate.SYSTEM_TYPE_BY_FILENAME = {
             filename: WorkflowsSystemType.SUPERVISION
         }
@@ -251,14 +266,13 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
             )
 
     @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
-    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
+    @patch("recidiviz.workflows.etl.routes.get_supported_workflows_delegates")
     def test_run_firestore_etl_skips_backfill_for_untracked_delegate(
         self, mock_get_delegates: MagicMock, mock_task_manager: MagicMock
     ) -> None:
         filename = "us_xx_supervision_tasks_record.json"
         mock_delegate = MagicMock(WorkflowsTasksETLDelegate)
         mock_delegate.state_code = StateCode.US_XX
-        mock_delegate.supports_file.return_value = True
         mock_get_delegates.return_value = [mock_delegate]
         with self.test_app.test_client() as client:
             response = client.post(
@@ -269,7 +283,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
             mock_task_manager.return_value.create_task.assert_not_called()
 
     @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
-    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
+    @patch("recidiviz.workflows.etl.routes.get_supported_workflows_delegates")
     def test_run_firestore_etl_enqueue_failure_does_not_fail_etl(
         self, mock_get_delegates: MagicMock, mock_task_manager: MagicMock
     ) -> None:
@@ -279,8 +293,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         filename = "client_record.json"
         mock_delegate = MagicMock(WorkflowsClientETLDelegate)
         mock_delegate.state_code = StateCode.US_XX
-        mock_delegate.supports_file.return_value = True
-        mock_delegate.COLLECTION_BY_FILENAME = {filename: "clientCollection"}
+        mock_delegate.collection_name = "clientCollection"
         mock_get_delegates.return_value = [mock_delegate]
         mock_task_manager.return_value.create_task.side_effect = RuntimeError("boom")
         with self.test_app.test_client() as client:
@@ -410,23 +423,23 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
             )
             mock_client.return_value.trigger_backfill.assert_not_called()
 
-    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
+    @patch("recidiviz.workflows.etl.routes.get_supported_workflows_delegates")
     def test_run_firestore_etl_unsupported_file(
         self, mock_get_delegates: MagicMock
     ) -> None:
-        mock_delegate = MagicMock()
-        mock_delegate.supports_file.return_value = False
-        mock_get_delegates.return_value = [mock_delegate]
+        mock_get_delegates.return_value = []
         with self.test_app.test_client() as client:
             response = client.post(
                 "/practices-etl/_run_firestore_etl",
                 json={"state_code": "US_XX", "filename": "test_file.json"},
             )
-            mock_delegate.return_value.run_etl.assert_not_called()
+            mock_get_delegates.assert_called_once_with(
+                StateCode.US_XX, "test_file.json"
+            )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(b"", response.data)
 
-    @patch("recidiviz.workflows.etl.routes.get_workflows_delegates")
+    @patch("recidiviz.workflows.etl.routes.get_supported_workflows_delegates")
     def test_run_firestore_etl_missing_param(
         self, _mock_get_delegates: MagicMock
     ) -> None:
@@ -539,3 +552,125 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
                     )
                 )
             )
+
+
+class TestGetSupportedWorkflowsDelegates(unittest.TestCase):
+    """Tests for get_supported_workflows_delegates"""
+
+    @parameterized.expand(
+        [
+            (
+                "supervision_staff_record.json",
+                WorkflowsSupervisionStaffETLDelegate,
+                "supervisionStaff",
+            ),
+            (
+                "incarceration_staff_record.json",
+                WorkflowsIncarcerationStaffETLDelegate,
+                "incarcerationStaff",
+            ),
+            (
+                "client_record.json",
+                WorkflowsClientETLDelegate,
+                "clients",
+            ),
+            (
+                "resident_record.json",
+                WorkflowsResidentETLDelegate,
+                "residents",
+            ),
+            (
+                "parole_board_client_profile_record.json",
+                WorkflowsParoleBoardClientProfileETLDelegate,
+                "paroleBoardClientProfiles",
+            ),
+            (
+                "us_ix_moves_management_record.json",
+                WorkflowsUsIxMovesManagementETLDelegate,
+                "usIxMovesManagementRecords",
+            ),
+            (
+                "location_record.json",
+                WorkflowsLocationETLDelegate,
+                "locations",
+            ),
+        ]
+    )
+    def test_file_returns_matching_delegate(
+        self,
+        filename: str,
+        expected_delegate_type: type[WorkflowsETLDelegate],
+        expected_collection_name: str,
+    ) -> None:
+        delegates = get_supported_workflows_delegates(StateCode.US_XX, filename)
+
+        self.assertEqual(len(delegates), 1)
+        actual_delegate = delegates[0]
+        self.assertEqual(type(actual_delegate), expected_delegate_type)
+        self.assertEqual(actual_delegate.state_code, StateCode.US_XX)
+        self.assertEqual(actual_delegate.collection_name, expected_collection_name)
+
+    def test_opportunity_file_for_its_own_state_returns_opportunity_delegate(
+        self,
+    ) -> None:
+        delegates = get_supported_workflows_delegates(
+            StateCode.US_TN, "us_tn_supervision_level_downgrade_record.json"
+        )
+
+        self.assertEqual(len(delegates), 1)
+        actual_delegate = delegates[0]
+        self.assertEqual(type(actual_delegate), WorkflowsOpportunityETLDelegate)
+        self.assertEqual(actual_delegate.state_code, StateCode.US_TN)
+        self.assertEqual(
+            actual_delegate.collection_name, "US_TN-supervisionLevelDowngrade"
+        )
+
+    def test_opportunity_file_for_another_state_returns_no_delegates(self) -> None:
+        delegates = get_supported_workflows_delegates(
+            StateCode.US_XX, "us_tn_supervision_level_downgrade_record.json"
+        )
+
+        self.assertEqual([], delegates)
+
+    def test_us_ix_opportunity_file_is_supported_in_us_id_bucket(self) -> None:
+        """US_IX opportunity files are still exported to the US_ID bucket, so the ETL
+        runs them with state code US_ID."""
+        delegates = get_supported_workflows_delegates(
+            StateCode.US_ID, "us_ix_supervision_level_downgrade_record.json"
+        )
+
+        self.assertEqual(len(delegates), 1)
+        actual_delegate = delegates[0]
+        self.assertEqual(type(actual_delegate), WorkflowsOpportunityETLDelegate)
+        self.assertEqual(actual_delegate.state_code, StateCode.US_ID)
+        self.assertEqual(
+            actual_delegate.collection_name, "US_ID-supervisionLevelDowngrade"
+        )
+
+    @parameterized.expand(
+        [
+            ("us_ix_supervision_tasks_record_v2.json", "US_ID-supervisionTasksV2"),
+            ("us_mo_supervision_tasks_record.json", "US_MO-supervisionTasks"),
+            ("us_nd_supervision_tasks_record.json", "US_ND-supervisionTasks"),
+            ("us_ne_supervision_tasks_record.json", "US_NE-supervisionTasks"),
+            ("us_tx_supervision_tasks_record.json", "US_TX-supervisionTasks"),
+            ("us_co_supervision_tasks_record.json", "US_CO-supervisionTasks"),
+        ]
+    )
+    def test_tasks_file_returns_tasks_delegate_with_collection_for_file(
+        self, filename: str, expected_collection_name: str
+    ) -> None:
+        delegates = get_supported_workflows_delegates(StateCode.US_XX, filename)
+
+        self.assertEqual(len(delegates), 1)
+        actual_delegate = delegates[0]
+        self.assertEqual(type(actual_delegate), WorkflowsTasksETLDelegate)
+        self.assertEqual(actual_delegate.state_code, StateCode.US_XX)
+        self.assertEqual(actual_delegate.collection_name, expected_collection_name)
+
+    def test_unsupported_file_returns_no_delegates(self) -> None:
+        delegates = get_supported_workflows_delegates(
+            StateCode.US_XX, "unsupported_file.json"
+        )
+
+        self.assertEqual([], delegates)

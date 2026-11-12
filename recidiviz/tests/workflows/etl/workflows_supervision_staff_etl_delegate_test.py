@@ -69,24 +69,32 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
     """
 
     def test_supports_filename(self) -> None:
-        """Test that the supervision_staff_record file is supported for any state"""
-        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_ND)
-        self.assertTrue(delegate.supports_file("supervision_staff_record.json"))
+        """Test that the supervision_staff_record file is supported"""
+        self.assertTrue(
+            WorkflowsSupervisionStaffETLDelegate.supports_file(
+                StateCode.US_XX, "supervision_staff_record.json"
+            )
+        )
+        self.assertFalse(
+            WorkflowsSupervisionStaffETLDelegate.supports_file(
+                StateCode.US_XX, "not_supervision_staff_record.json"
+            )
+        )
 
-        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_TN)
-        self.assertTrue(delegate.supports_file("supervision_staff_record.json"))
-
-        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_WW)
-        self.assertTrue(delegate.supports_file("supervision_staff_record.json"))
-
-        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_ND)
-        self.assertFalse(delegate.supports_file("not_supervision_staff_record.json"))
+    def test_collection_name(self) -> None:
+        """Test that the correct collection_name is set after initialization"""
+        delegate = WorkflowsSupervisionStaffETLDelegate(
+            StateCode.US_TN, SUPERVISION_STAFF_FILENAME
+        )
+        self.assertEqual(delegate.collection_name, "supervisionStaff")
 
     def test_transform_row(self) -> None:
         """
         Test that the transform_row method correctly parses the json
         """
-        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_XX)
+        delegate = WorkflowsSupervisionStaffETLDelegate(
+            StateCode.US_XX, SUPERVISION_STAFF_FILENAME
+        )
         doc_id, row = delegate.transform_row(TEST_DATA, SUPERVISION_STAFF_FILENAME)
         self.assertEqual("100", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
@@ -96,7 +104,9 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
         Test that transform_row method omits email, supervisorExternalId, roleSubtype
         when they are missing
         """
-        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_XX)
+        delegate = WorkflowsSupervisionStaffETLDelegate(
+            StateCode.US_XX, SUPERVISION_STAFF_FILENAME
+        )
         data = deepcopy(TEST_DATA)
         del data["email"]
         del data["role_subtype"]
@@ -115,7 +125,9 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
         Test that transform_row method defaults the names to empty strings when they are
         missing
         """
-        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_XX)
+        delegate = WorkflowsSupervisionStaffETLDelegate(
+            StateCode.US_XX, SUPERVISION_STAFF_FILENAME
+        )
         data = deepcopy(TEST_DATA)
         del data["given_names"]
         del data["surname"]
@@ -132,7 +144,9 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
         Test that transform_row method parses the state_specific_data JSON string and
         remaps a US_IX state code within it to US_ID
         """
-        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_XX)
+        delegate = WorkflowsSupervisionStaffETLDelegate(
+            StateCode.US_XX, SUPERVISION_STAFF_FILENAME
+        )
         data = deepcopy(TEST_DATA)
         data["state_specific_data"] = {
             "state_code": "US_IX",
@@ -188,7 +202,9 @@ class WorkflowsSupervisionStaffETLDelegateTest(IsolatedAsyncioTestCase):
                         123,
                         {"personExternalId": 123, "stateCode": "US_XX"},
                     )
-                    delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_TN)
+                    delegate = WorkflowsSupervisionStaffETLDelegate(
+                        StateCode.US_TN, SUPERVISION_STAFF_FILENAME
+                    )
                     await delegate.run_etl("supervision_staff_record.json")
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(

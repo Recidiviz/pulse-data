@@ -17,7 +17,7 @@
 """Tests for the Workflows ETL delegates."""
 import io
 from datetime import datetime, timezone
-from typing import Any, List
+from typing import Any
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import MagicMock, call, patch
 
@@ -32,14 +32,16 @@ from recidiviz.workflows.etl.workflows_etl_delegate import (
 )
 
 SEED = "A123456"
+FILENAME = "export_filename.json"
 
 
 class TestETLDelegate(WorkflowsETLDelegate):
-    def get_supported_files(self) -> List[str]:
-        return ["export_filename.json"]
-
     async def run_etl(self, _filename: str) -> None:
         pass
+
+    @classmethod
+    def supports_file(cls, state_code: StateCode, filename: str) -> bool:
+        return True
 
 
 class TestETLDelegateWithPseudonymizedFields(TestETLDelegate):
@@ -65,22 +67,10 @@ class TestETLDelegateWithPseudonymizedFields(TestETLDelegate):
 class TestWorkflowsETLDelegate(TestCase):
     """Tests for the Workflows ETL delegate."""
 
-    def test_supports_file_matching(self) -> None:
-        """Test that the supports_file returns true when delegate supports file."""
-        delegate = TestETLDelegate(StateCode.US_XX)
-        self.assertTrue(delegate.supports_file("export_filename.json"))
-        self.assertFalse(delegate.supports_file("some_other_file.json"))
-
-    def test_supports_file_extension(self) -> None:
-        """Test that the supports_file matcher does not ignore the file format."""
-        delegate = TestETLDelegate(StateCode.US_XX)
-        self.assertTrue(delegate.supports_file("export_filename.json"))
-        self.assertFalse(delegate.supports_file("export_filename.csv"))
-
     def test_get_filepath_uses_project_id(self) -> None:
         """Tests that get_filepath() incorporates the current project ID."""
         with local_project_id_override("test-project"):
-            delegate = TestETLDelegate(StateCode.US_XX)
+            delegate = TestETLDelegate(StateCode.US_XX, FILENAME)
             self.assertEqual(
                 GcsfsFilePath(
                     bucket_name="test-project-practices-etl-data",
@@ -94,7 +84,7 @@ class TestPseudonymizeRecord(TestCase):
     """Tests for WorkflowsETLDelegate.pseudonymize_record."""
 
     def test_returns_none_without_pseudonymized_fields(self) -> None:
-        delegate = TestETLDelegate(StateCode.US_XX)
+        delegate = TestETLDelegate(StateCode.US_XX, FILENAME)
         record = {
             "person_external_id": "A123456",
             "state_code": "US_XX",
@@ -103,7 +93,7 @@ class TestPseudonymizeRecord(TestCase):
         self.assertIsNone(delegate.pseudonymize_record(record, seed=SEED))
 
     def test_replaces_only_configured_fields(self) -> None:
-        delegate = TestETLDelegateWithPseudonymizedFields(StateCode.US_XX)
+        delegate = TestETLDelegateWithPseudonymizedFields(StateCode.US_XX, FILENAME)
         record = {
             "person_external_id": "A123456",
             "state_code": "US_XX",
@@ -147,7 +137,7 @@ class TestPseudonymizeRecord(TestCase):
         )
 
     def test_does_not_mutate_input_record(self) -> None:
-        delegate = TestETLDelegateWithPseudonymizedFields(StateCode.US_XX)
+        delegate = TestETLDelegateWithPseudonymizedFields(StateCode.US_XX, FILENAME)
         record = {
             "email_address": "jane.realperson@testdomain.com",
             "person_name": {"given_names": "Jane", "surname": "Realperson"},
@@ -167,7 +157,7 @@ class TestPseudonymizeRecord(TestCase):
         class TestETLDelegateWithEmailPseudonymizedField(TestETLDelegate):
             PSEUDONYMIZED_FIELDS = {"email_address": "email"}
 
-        delegate = TestETLDelegateWithEmailPseudonymizedField(StateCode.US_XX)
+        delegate = TestETLDelegateWithEmailPseudonymizedField(StateCode.US_XX, FILENAME)
         result = delegate.pseudonymize_record(record={"state_code": "US_XX"}, seed=SEED)
         self.assertEqual({"state_code": "US_XX"}, result)
 
@@ -175,7 +165,9 @@ class TestPseudonymizeRecord(TestCase):
         class TestETLDelegateWithAddressPseudonymizedField(TestETLDelegate):
             PSEUDONYMIZED_FIELDS = {"address": {"address_city": "city"}}
 
-        delegate = TestETLDelegateWithAddressPseudonymizedField(StateCode.US_XX)
+        delegate = TestETLDelegateWithAddressPseudonymizedField(
+            StateCode.US_XX, FILENAME
+        )
         with self.assertLogs(level="INFO") as logs:
             self.assertIsNone(
                 delegate.pseudonymize_record(
@@ -193,7 +185,9 @@ class TestPseudonymizeRecord(TestCase):
         class TestETLDelegateWithAddressPseudonymizedField(TestETLDelegate):
             PSEUDONYMIZED_FIELDS = {"address": "address"}
 
-        delegate = TestETLDelegateWithAddressPseudonymizedField(StateCode.US_XX)
+        delegate = TestETLDelegateWithAddressPseudonymizedField(
+            StateCode.US_XX, FILENAME
+        )
         with self.assertLogs(level="INFO") as logs:
             self.assertIsNone(
                 delegate.pseudonymize_record(
@@ -212,7 +206,9 @@ class TestPseudonymizeRecord(TestCase):
         class TestETLDelegateWithIncorrectPseudonymizedField(TestETLDelegate):
             PSEUDONYMIZED_FIELDS = {"person_name": "person.first_name"}
 
-        delegate = TestETLDelegateWithIncorrectPseudonymizedField(StateCode.US_XX)
+        delegate = TestETLDelegateWithIncorrectPseudonymizedField(
+            StateCode.US_XX, FILENAME
+        )
         with self.assertRaisesRegex(
             AttributeError,
             r"^'Generator' object has no attribute 'person\.first_name'$",
@@ -224,10 +220,13 @@ class TestPseudonymizeRecord(TestCase):
 
 
 class TestFirestoreETLDelegate(WorkflowsFirestoreETLDelegate):
-    COLLECTION_BY_FILENAME = {"export_filename.json": "testCollection"}
+    @classmethod
+    def supports_file(cls, state_code: StateCode, filename: str) -> bool:
+        return True
 
-    def get_supported_files(self) -> List[str]:
-        return ["export_filename.json"]
+    def __init__(self, state_code: StateCode, filename: str):
+        super().__init__(state_code, filename)
+        self.collection_name = "testCollection"
 
     def transform_row(
         self, row: dict[str, Any], filename: str
@@ -282,7 +281,7 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
         )
         self.enterContext(local_project_id_override("test-project"))
 
-        self.delegate = TestFirestoreETLDelegate(StateCode.US_XX)
+        self.delegate = TestFirestoreETLDelegate(StateCode.US_XX, FILENAME)
 
     @freeze_time(datetime(2026, 1, 1, tzinfo=timezone.utc))
     async def test_run_etl_writes_transformed_documents(self) -> None:
@@ -504,7 +503,9 @@ class TestWorkflowsFirestoreETLDelegateRunETL(IsolatedAsyncioTestCase):
                 '{"id": "A1", "document": {"stateCode": "US_XX", "name": "Ann"}}\n'
             )
         ]
-        delegate = TestFirestoreETLDelegateWithPseudonymizedFields(StateCode.US_XX)
+        delegate = TestFirestoreETLDelegateWithPseudonymizedFields(
+            StateCode.US_XX, FILENAME
+        )
 
         await delegate.run_etl("export_filename.json")
 

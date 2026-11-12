@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Delegate class to ETL Supervision Tasks records for Workflows into Firestore."""
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
@@ -35,15 +35,13 @@ COLLECTION_BY_FILENAME = {
 class WorkflowsTasksETLDelegate(WorkflowsFirestoreETLDelegate):
     """Generic delegate for loading Workflows' tasks records into Firestore."""
 
-    def __init__(self, state_code: StateCode):
-        super().__init__(state_code)
+    @classmethod
+    def supports_file(cls, state_code: StateCode, filename: str) -> bool:
+        return filename in COLLECTION_BY_FILENAME
 
-    @property
-    def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
-        return COLLECTION_BY_FILENAME
-
-    def get_supported_files(self) -> List[str]:
-        return list(COLLECTION_BY_FILENAME.keys())
+    def __init__(self, state_code: StateCode, filename: str):
+        super().__init__(state_code, filename)
+        self.collection_name = COLLECTION_BY_FILENAME[filename]
 
     @property
     def timestamp_key(self) -> str:

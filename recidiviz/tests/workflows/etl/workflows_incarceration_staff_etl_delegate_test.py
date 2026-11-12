@@ -66,24 +66,32 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
     """
 
     def test_supports_filename(self) -> None:
-        """Test that the incarceration_staff_record file is supported for any state"""
-        delegate = WorkflowsIncarcerationStaffETLDelegate(StateCode.US_ND)
-        self.assertTrue(delegate.supports_file("incarceration_staff_record.json"))
+        """Test that the incarceration_staff_record file is supported"""
+        self.assertTrue(
+            WorkflowsIncarcerationStaffETLDelegate.supports_file(
+                StateCode.US_XX, "incarceration_staff_record.json"
+            )
+        )
+        self.assertFalse(
+            WorkflowsIncarcerationStaffETLDelegate.supports_file(
+                StateCode.US_XX, "not_incarceration_staff_record.json"
+            )
+        )
 
-        delegate = WorkflowsIncarcerationStaffETLDelegate(StateCode.US_TN)
-        self.assertTrue(delegate.supports_file("incarceration_staff_record.json"))
-
-        delegate = WorkflowsIncarcerationStaffETLDelegate(StateCode.US_WW)
-        self.assertTrue(delegate.supports_file("incarceration_staff_record.json"))
-
-        delegate = WorkflowsIncarcerationStaffETLDelegate(StateCode.US_ND)
-        self.assertFalse(delegate.supports_file("not_incarceration_staff_record.json"))
+    def test_collection_name(self) -> None:
+        """Test that the correct collection_name is set after initialization"""
+        delegate = WorkflowsIncarcerationStaffETLDelegate(
+            StateCode.US_TN, INCARCERATION_STAFF_FILENAME
+        )
+        self.assertEqual(delegate.collection_name, "incarcerationStaff")
 
     def test_transform_row(self) -> None:
         """
         Test that the transform_row method correctly parses the json
         """
-        delegate = WorkflowsIncarcerationStaffETLDelegate(StateCode.US_XX)
+        delegate = WorkflowsIncarcerationStaffETLDelegate(
+            StateCode.US_XX, INCARCERATION_STAFF_FILENAME
+        )
         doc_id, row = delegate.transform_row(TEST_DATA, INCARCERATION_STAFF_FILENAME)
         self.assertEqual("100", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
@@ -93,7 +101,9 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
         Test that transform_row method defaults email and roleSubtype to None and the
         names to empty strings when they are missing
         """
-        delegate = WorkflowsIncarcerationStaffETLDelegate(StateCode.US_XX)
+        delegate = WorkflowsIncarcerationStaffETLDelegate(
+            StateCode.US_XX, INCARCERATION_STAFF_FILENAME
+        )
         data = deepcopy(TEST_DATA)
         del data["email"]
         del data["role_subtype"]
@@ -149,7 +159,9 @@ class WorkflowsIncarcerationStaffETLDelegateTest(IsolatedAsyncioTestCase):
                         123,
                         {"personExternalId": 123, "stateCode": "US_XX"},
                     )
-                    delegate = WorkflowsIncarcerationStaffETLDelegate(StateCode.US_TN)
+                    delegate = WorkflowsIncarcerationStaffETLDelegate(
+                        StateCode.US_TN, INCARCERATION_STAFF_FILENAME
+                    )
                     await delegate.run_etl("incarceration_staff_record.json")
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(

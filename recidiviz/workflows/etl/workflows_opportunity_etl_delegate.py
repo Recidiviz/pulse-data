@@ -43,8 +43,21 @@ CRITERIA_TO_DEPREFIX: List[str] = [
 class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
     """Generic delegate for loading Workflows' opportunity records into Firestore."""
 
-    def __init__(self, state_code: StateCode):
-        super().__init__(state_code)
+    @classmethod
+    def supports_file(cls, state_code: StateCode, filename: str) -> bool:
+        return filename in [
+            config.source_filename
+            for config in WORKFLOWS_OPPORTUNITY_CONFIGS
+            if config.state_code == state_code
+            or (
+                # The bucket for US_IX files is still US_ID
+                config.state_code == StateCode.US_IX
+                and state_code == StateCode.US_ID
+            )
+        ]
+
+    def __init__(self, state_code: StateCode, filename: str):
+        super().__init__(state_code, filename)
 
         self.criteria_to_deprefix = {
             f"{state_code.value.upper()}_{criterion}": criterion
@@ -57,6 +70,11 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
             self.criteria_to_deprefix.update(
                 {f"US_IX_{criterion}": criterion for criterion in CRITERIA_TO_DEPREFIX}
             )
+
+        for config in WORKFLOWS_OPPORTUNITY_CONFIGS:
+            if config.source_filename == filename:
+                self.collection_name = config.export_collection_name
+                self.opportunity_type = config.opportunity_type
 
     @property
     def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
@@ -78,18 +96,6 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
             config.source_filename: config.opportunity_type
             for config in WORKFLOWS_OPPORTUNITY_CONFIGS
         }
-
-    def get_supported_files(self) -> List[str]:
-        return [
-            config.source_filename
-            for config in WORKFLOWS_OPPORTUNITY_CONFIGS
-            if config.state_code == self.state_code
-            or (
-                # The bucket for US_IX files is still US_ID
-                config.state_code == StateCode.US_IX
-                and self.state_code == StateCode.US_ID
-            )
-        ]
 
     @property
     def timestamp_key(self) -> str:

@@ -95,18 +95,28 @@ DELEGATES_TRIGGERING_TYPESENSE_BACKFILL = (
     WorkflowsLocationETLDelegate,
 )
 
+ALL_DELEGATES: list[type[WorkflowsETLDelegate]] = [
+    WorkflowsOpportunityETLDelegate,
+    WorkflowsSupervisionStaffETLDelegate,
+    WorkflowsIncarcerationStaffETLDelegate,
+    WorkflowsClientETLDelegate,
+    WorkflowsResidentETLDelegate,
+    WorkflowsParoleBoardClientProfileETLDelegate,
+    WorkflowsUsIxMovesManagementETLDelegate,
+    WorkflowsTasksETLDelegate,
+    WorkflowsLocationETLDelegate,
+]
 
-def get_workflows_delegates(state_code: StateCode) -> List[WorkflowsETLDelegate]:
+
+def get_supported_workflows_delegates(
+    state_code: StateCode, filename: str
+) -> List[WorkflowsETLDelegate]:
+    """Initializes and returns the delegates thaat support the given state and
+    filename"""
     return [
-        WorkflowsOpportunityETLDelegate(state_code),
-        WorkflowsSupervisionStaffETLDelegate(state_code),
-        WorkflowsIncarcerationStaffETLDelegate(state_code),
-        WorkflowsClientETLDelegate(state_code),
-        WorkflowsResidentETLDelegate(state_code),
-        WorkflowsParoleBoardClientProfileETLDelegate(state_code),
-        WorkflowsUsIxMovesManagementETLDelegate(state_code),
-        WorkflowsTasksETLDelegate(state_code),
-        WorkflowsLocationETLDelegate(state_code),
+        Delegate(state_code, filename)
+        for Delegate in ALL_DELEGATES
+        if Delegate.supports_file(state_code, filename)
     ]
 
 
@@ -123,7 +133,7 @@ def _typesense_backfill_task_body(
     if isinstance(delegate, WorkflowsOpportunityETLDelegate):
         return {
             STATE_CODE_KEY: delegate.state_code.value,
-            SOURCE_COLLECTION_KEY: delegate.COLLECTION_BY_FILENAME[filename],
+            SOURCE_COLLECTION_KEY: delegate.collection_name,
             SYSTEM_TYPE_KEY: delegate.SYSTEM_TYPE_BY_FILENAME[filename].value,
         }
 
@@ -132,7 +142,7 @@ def _typesense_backfill_task_body(
 
     return {
         STATE_CODE_KEY: delegate.state_code.value,
-        COLLECTION_KEY: delegate.COLLECTION_BY_FILENAME[filename],
+        COLLECTION_KEY: delegate.collection_name,
     }
 
 
@@ -229,15 +239,16 @@ def get_workflows_etl_blueprint(cloud_run_metadata: CloudRunMetadata) -> Bluepri
                 HTTPStatus.BAD_REQUEST,
             )
 
-        for delegate in get_workflows_delegates(StateCode(state_code)):
+        for delegate in get_supported_workflows_delegates(
+            StateCode(state_code), filename
+        ):
             try:
-                if delegate.supports_file(filename):
-                    await delegate.run_etl(filename)
-                    _maybe_enqueue_typesense_backfill(
-                        delegate=delegate,
-                        filename=filename,
-                        cloud_run_metadata=cloud_run_metadata,
-                    )
+                await delegate.run_etl(filename)
+                _maybe_enqueue_typesense_backfill(
+                    delegate=delegate,
+                    filename=filename,
+                    cloud_run_metadata=cloud_run_metadata,
+                )
             except ValueError as e:
                 logging.error(str(e))
                 logging.info(

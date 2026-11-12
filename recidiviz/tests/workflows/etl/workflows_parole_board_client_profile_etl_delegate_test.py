@@ -27,16 +27,22 @@ from recidiviz.workflows.etl.workflows_parole_board_client_profile_etl_delegate 
 class WorkflowsParoleBoardClientProfileETLDelegateTest(unittest.TestCase):
     """Tests for WorkflowsParoleBoardClientProfileETLDelegate."""
 
-    def test_supports_only_the_profile_record_file(self) -> None:
-        delegate = WorkflowsParoleBoardClientProfileETLDelegate(StateCode.US_XX)
+    def test_supports_filename(self) -> None:
+        """Test that the parole_board_client_profile_record file is supported"""
         self.assertTrue(
-            delegate.supports_file("parole_board_client_profile_record.json")
+            WorkflowsParoleBoardClientProfileETLDelegate.supports_file(
+                StateCode.US_XX, "parole_board_client_profile_record.json"
+            )
         )
-        self.assertFalse(delegate.supports_file("resident_record.json"))
+        self.assertFalse(
+            WorkflowsParoleBoardClientProfileETLDelegate.supports_file(
+                StateCode.US_XX, "resident_record.json"
+            )
+        )
 
-    def test_writes_to_the_parole_board_client_profiles_collection(self) -> None:
-        delegate = WorkflowsParoleBoardClientProfileETLDelegate(StateCode.US_XX)
-        self.assertEqual(
-            {"parole_board_client_profile_record.json": "paroleBoardClientProfiles"},
-            delegate.COLLECTION_BY_FILENAME,
+    def test_collection_name(self) -> None:
+        """Test that the correct collection_name is set after initialization"""
+        delegate = WorkflowsParoleBoardClientProfileETLDelegate(
+            StateCode.US_TN, "parole_board_client_profile_record.json"
         )
+        self.assertEqual(delegate.collection_name, "paroleBoardClientProfiles")

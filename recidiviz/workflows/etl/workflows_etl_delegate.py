@@ -24,7 +24,7 @@ import os
 import re
 from asyncio import TaskGroup
 from datetime import datetime, timezone
-from typing import IO, Any, Dict, Iterator, List, Optional, Tuple
+from typing import IO, Any, Iterator, Optional, Tuple
 
 from faker import Faker
 from google.api_core.exceptions import AlreadyExists
@@ -78,9 +78,10 @@ def recursive_json_loads(value: Any) -> Any:
 class WorkflowsETLDelegate(abc.ABC):
     """Abstract class containing the ETL logic for transforming and exporting Workflows records."""
 
-    def __init__(self, state_code: StateCode):
+    def __init__(self, state_code: StateCode, filename: str):
         self.state_code = state_code
         self._faker = Faker()
+        self.filename = filename
 
     PSEUDONYMIZED_FIELDS: dict | None = None
     """
@@ -90,17 +91,16 @@ class WorkflowsETLDelegate(abc.ABC):
     exports no pseudonymized copy.
     """
 
-    @abc.abstractmethod
-    def get_supported_files(self) -> List[str]:
-        """Provides list of source files supported for the given state."""
+    collection_name: str = ""
 
     @abc.abstractmethod
     async def run_etl(self, filename: str) -> None:
         """Runs the ETL logic for the provided filename and state_code."""
 
-    def supports_file(self, filename: str) -> bool:
-        """Checks if the given filename is supported by this delegate."""
-        return filename in self.get_supported_files()
+    @classmethod
+    @abc.abstractmethod
+    def supports_file(cls, state_code: StateCode, filename: str) -> bool:
+        """Returns if the class supports the given filename and state_code."""
 
     def get_filepath(self, filename: str) -> GcsfsFilePath:
         return GcsfsFilePath.from_absolute_path(
@@ -191,12 +191,6 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
     See Managing Indexes in Firestore: https://firebase.google.com/docs/firestore/query-data/indexing
     """
 
-    @property
-    @abc.abstractmethod
-    def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
-        """Mapping of the base name for the Firestore collection to the record type. Collection name may be
-        augmented for different environment targets."""
-
     @abc.abstractmethod
     def transform_row(
         self, row: dict[str, Any], filename: str
@@ -238,16 +232,14 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
         self.total_records_written += len(batch)
 
     async def run_etl(self, filename: str) -> None:
-        collection_name = self.COLLECTION_BY_FILENAME[filename]
-        pseudonymized_collection_name = "PSEUDONYMIZED_" + collection_name
-
+        pseudonymized_collection_name = "PSEUDONYMIZED_" + self.collection_name
         logging.info(
             'Starting export of %s to the Firestore collection "%s".',
             self.filepath_url(filename),
-            collection_name,
+            self.collection_name,
         )
         firestore_client = FirestoreClientImpl()
-        firestore_collection = firestore_client.get_collection(collection_name)
+        firestore_collection = firestore_client.get_collection(self.collection_name)
         pseudonymized_firestore_collection = firestore_client.get_collection(
             pseudonymized_collection_name
         )
@@ -305,11 +297,11 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                 logging.info(
                     '%d total records written to Firestore collection "%s".',
                     self.total_records_written,
-                    collection_name,
+                    self.collection_name,
                 )
 
         # step 2: Create composite indexes if they do not exist
-        self._create_index_on_firestore(firestore_client, collection_name)
+        self._create_index_on_firestore(firestore_client, self.collection_name)
         if has_pseudonymized_collection:
             self._create_index_on_firestore(
                 firestore_client, pseudonymized_collection_name
@@ -317,7 +309,10 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
 
         # step 3: Delete any pre-existing documents that we didn't just overwrite
         firestore_client.delete_old_documents(
-            collection_name, self.state_code.value, self.timestamp_key, etl_timestamp
+            self.collection_name,
+            self.state_code.value,
+            self.timestamp_key,
+            etl_timestamp,
         )
         if has_pseudonymized_collection:
             firestore_client.delete_old_documents(
@@ -407,31 +402,22 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                 )
 
 
-class WorkflowsSingleStateETLDelegate(WorkflowsFirestoreETLDelegate):
-    """Abstract class containing the ETL logic for transforming and exporting Workflows records for a single state."""
+class WorkflowsSingleFileETLDelegate(WorkflowsFirestoreETLDelegate):
+    """Abstract class containing the logic to set the collection_name and determine if a filename is supported."""
+
+    EXPECTED_FILENAME: str | None
 
     @property
     @abc.abstractmethod
-    def SUPPORTED_STATE_CODE(self) -> StateCode:
-        """State code of the data this delegate watches for."""
+    def COLLECTION_NAME(self) -> str:
+        """Firestore collection the delegate loads data into."""
 
-    @property
-    @abc.abstractmethod
-    def EXPORT_FILENAME(self) -> str:
-        """Name of the file this delegate is watching for."""
+    @classmethod
+    def supports_file(cls, state_code: StateCode, filename: str) -> bool:
+        if cls.EXPECTED_FILENAME:
+            return filename == cls.EXPECTED_FILENAME
+        return False
 
-    @property
-    @abc.abstractmethod
-    def _COLLECTION_NAME_BASE(self) -> str:
-        """Name of the Firestore collection to use."""
-
-    def get_supported_files(self) -> List[str]:
-        return (
-            [self.EXPORT_FILENAME]
-            if self.state_code == self.SUPPORTED_STATE_CODE
-            else []
-        )
-
-    @property
-    def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
-        return {self.EXPORT_FILENAME: self._COLLECTION_NAME_BASE}
+    def __init__(self, state_code: StateCode, filename: str):
+        super().__init__(state_code, filename)
+        self.collection_name = self.COLLECTION_NAME

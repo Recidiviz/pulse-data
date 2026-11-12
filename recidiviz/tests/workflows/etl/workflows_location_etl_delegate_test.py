@@ -60,24 +60,28 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
     """
 
     def test_supports_filename(self) -> None:
-        """Test that the location file is supported for any state"""
-        delegate = WorkflowsLocationETLDelegate(StateCode.US_ND)
-        self.assertTrue(delegate.supports_file("location_record.json"))
+        """Test that the location_record file is supported"""
+        self.assertTrue(
+            WorkflowsLocationETLDelegate.supports_file(
+                StateCode.US_XX, "location_record.json"
+            )
+        )
+        self.assertFalse(
+            WorkflowsLocationETLDelegate.supports_file(
+                StateCode.US_XX, "not_location_record.json"
+            )
+        )
 
-        delegate = WorkflowsLocationETLDelegate(StateCode.US_TN)
-        self.assertTrue(delegate.supports_file("location_record.json"))
-
-        delegate = WorkflowsLocationETLDelegate(StateCode.US_WW)
-        self.assertTrue(delegate.supports_file("location_record.json"))
-
-        delegate = WorkflowsLocationETLDelegate(StateCode.US_ND)
-        self.assertFalse(delegate.supports_file("not_location_record.json"))
+    def test_collection_name(self) -> None:
+        """Test that the correct collection_name is set after initialization"""
+        delegate = WorkflowsLocationETLDelegate(StateCode.US_TN, LOCATION_FILENAME)
+        self.assertEqual(delegate.collection_name, "locations")
 
     def test_transform_row(self) -> None:
         """
         Test that the transform_row method correctly parses the json
         """
-        delegate = WorkflowsLocationETLDelegate(StateCode.US_XX)
+        delegate = WorkflowsLocationETLDelegate(StateCode.US_XX, LOCATION_FILENAME)
         doc_id, row = delegate.transform_row(TEST_DATA, LOCATION_FILENAME)
         self.assertEqual("U2", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
@@ -87,7 +91,7 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
         Test that transform_row method leaves an apostrophe and a slash in the doc id
         since WorkflowsFirestoreETLDelegate sanitizes them before uploading
         """
-        delegate = WorkflowsLocationETLDelegate(StateCode.US_XX)
+        delegate = WorkflowsLocationETLDelegate(StateCode.US_XX, LOCATION_FILENAME)
         data = deepcopy(TEST_DATA)
         data["id"] = "WOMEN'S FACILITY 1/2"
         expected = deepcopy(EXPECTED_DOCUMENT)
@@ -137,7 +141,9 @@ class WorkflowsLocationETLDelegateTest(IsolatedAsyncioTestCase):
                         "facility_1",
                         {"id": "facility 1", "stateCode": "US_XX"},
                     )
-                    delegate = WorkflowsLocationETLDelegate(StateCode.US_TN)
+                    delegate = WorkflowsLocationETLDelegate(
+                        StateCode.US_TN, LOCATION_FILENAME
+                    )
                     await delegate.run_etl("location_record.json")
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(

@@ -15,19 +15,19 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Delegate class to ETL incarceration staff records for Workflows into Firestore."""
-from typing import Any, List, Tuple
+from typing import Any, Tuple
 
 from recidiviz.common.str_field_utils import person_name_case
-from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
+from recidiviz.workflows.etl.workflows_etl_delegate import (
+    WorkflowsSingleFileETLDelegate,
+)
 
 
-class WorkflowsIncarcerationStaffETLDelegate(WorkflowsFirestoreETLDelegate):
+class WorkflowsIncarcerationStaffETLDelegate(WorkflowsSingleFileETLDelegate):
     """Delegate class to ETL the incarceration_staff_record.json file into Firestore."""
 
-    COLLECTION_BY_FILENAME = {"incarceration_staff_record.json": "incarcerationStaff"}
-
-    def get_supported_files(self) -> List[str]:
-        return ["incarceration_staff_record.json"]
+    EXPECTED_FILENAME = "incarceration_staff_record.json"
+    COLLECTION_NAME = "incarcerationStaff"
 
     def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
         if email := row.get("email"):

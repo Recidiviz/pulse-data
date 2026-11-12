@@ -97,27 +97,28 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
     """
 
     def test_supports_filename(self) -> None:
-        """Test that the resident file is supported for any state"""
-        delegate = WorkflowsResidentETLDelegate(StateCode.US_ND)
-        self.assertTrue(delegate.supports_file("resident_record.json"))
+        """Test that the resident_record file is supported"""
+        self.assertTrue(
+            WorkflowsResidentETLDelegate.supports_file(
+                StateCode.US_XX, "resident_record.json"
+            )
+        )
+        self.assertFalse(
+            WorkflowsResidentETLDelegate.supports_file(
+                StateCode.US_XX, "not_resident_record.json"
+            )
+        )
 
-        delegate = WorkflowsResidentETLDelegate(StateCode.US_TN)
-        self.assertTrue(delegate.supports_file("resident_record.json"))
-
-        delegate = WorkflowsResidentETLDelegate(StateCode.US_ID)
-        self.assertTrue(delegate.supports_file("resident_record.json"))
-
-        delegate = WorkflowsResidentETLDelegate(StateCode.US_WW)
-        self.assertTrue(delegate.supports_file("resident_record.json"))
-
-        delegate = WorkflowsResidentETLDelegate(StateCode.US_ND)
-        self.assertFalse(delegate.supports_file("not_resident_record.json"))
+    def test_collection_name(self) -> None:
+        """Test that the correct collection_name is set after initialization"""
+        delegate = WorkflowsResidentETLDelegate(StateCode.US_TN, RESIDENT_FILENAME)
+        self.assertEqual(delegate.collection_name, "residents")
 
     def test_transform_row(self) -> None:
         """
         Test that the transform_row method correctly parses the json
         """
-        delegate = WorkflowsResidentETLDelegate(StateCode.US_MO)
+        delegate = WorkflowsResidentETLDelegate(StateCode.US_MO, RESIDENT_FILENAME)
         doc_id, row = delegate.transform_row(TEST_DATA, RESIDENT_FILENAME)
         self.assertEqual("300", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
@@ -127,7 +128,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
         Test that transform_row method correctly parses the json for US_MO resident with
         RestrictiveHousingOpp and metadata blob
         """
-        delegate = WorkflowsResidentETLDelegate(StateCode.US_MO)
+        delegate = WorkflowsResidentETLDelegate(StateCode.US_MO, RESIDENT_FILENAME)
         data = deepcopy(TEST_DATA)
         data["state_code"] = "US_MO"
         del data["custody_level"]
@@ -164,7 +165,7 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
 
     def test_transform_row_with_missing_gender(self) -> None:
         """Test that the transform_row method handles missing gender gracefully."""
-        delegate = WorkflowsResidentETLDelegate(StateCode.US_MO)
+        delegate = WorkflowsResidentETLDelegate(StateCode.US_MO, RESIDENT_FILENAME)
         data = deepcopy(TEST_DATA)
         del data["gender"]
         expected = deepcopy(EXPECTED_DOCUMENT)
@@ -220,7 +221,9 @@ class WorkflowsResidentETLDelegateTest(IsolatedAsyncioTestCase):
                 mock_pseudonymize.return_value = (
                     {"personExternalId": 123, "stateCode": "US_XX"},
                 )
-                delegate = WorkflowsResidentETLDelegate(StateCode.US_TN)
+                delegate = WorkflowsResidentETLDelegate(
+                    StateCode.US_TN, RESIDENT_FILENAME
+                )
                 await delegate.run_etl("resident_record.json")
                 mock_collection.document.assert_has_calls(
                     [call(document_id), call(document_id)]

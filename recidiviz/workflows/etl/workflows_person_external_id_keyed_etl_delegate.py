@@ -25,10 +25,12 @@ from recidiviz.calculator.query.state.views.workflows.firestore.resident_record 
 )
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import snake_to_camel
-from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
+from recidiviz.workflows.etl.workflows_etl_delegate import (
+    WorkflowsSingleFileETLDelegate,
+)
 
 
-class WorkflowsPersonExternalIdKeyedETLDelegate(WorkflowsFirestoreETLDelegate):
+class WorkflowsPersonExternalIdKeyedETLDelegate(WorkflowsSingleFileETLDelegate):
     """Abstract delegate class to ETL records exported alongside the resident record
     into Firestore, one document per resident, under the same document id as that
     resident's document in the residents collection.

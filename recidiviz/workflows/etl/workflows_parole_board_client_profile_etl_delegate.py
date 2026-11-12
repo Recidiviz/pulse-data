@@ -39,9 +39,5 @@ class WorkflowsParoleBoardClientProfileETLDelegate(
     Firestore, one document per resident, under the same document id as that
     resident's document in the residents collection."""
 
-    COLLECTION_BY_FILENAME = {
-        PAROLE_BOARD_CLIENT_PROFILE_RECORD_FILENAME: PAROLE_BOARD_CLIENT_PROFILES_COLLECTION_NAME
-    }
-
-    def get_supported_files(self) -> list[str]:
-        return [PAROLE_BOARD_CLIENT_PROFILE_RECORD_FILENAME]
+    EXPECTED_FILENAME = PAROLE_BOARD_CLIENT_PROFILE_RECORD_FILENAME
+    COLLECTION_NAME = PAROLE_BOARD_CLIENT_PROFILES_COLLECTION_NAME

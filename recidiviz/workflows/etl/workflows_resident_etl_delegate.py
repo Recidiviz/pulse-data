@@ -16,17 +16,17 @@
 #  =============================================================================
 """Delegate class to ETL resident records for Workflows into Firestore."""
 
-from typing import Any, List, Tuple
+from typing import Any, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
-from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
+from recidiviz.workflows.etl.workflows_etl_delegate import (
+    WorkflowsSingleFileETLDelegate,
+)
 
 
-class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
+class WorkflowsResidentETLDelegate(WorkflowsSingleFileETLDelegate):
     """Delegate class to ETL the resident_record.json file into Firestore."""
-
-    COLLECTION_BY_FILENAME = {"resident_record.json": "residents"}
 
     PSEUDONYMIZED_FIELDS = {
         "person_name": {
@@ -35,9 +35,8 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
             "surname": "last_name",
         }
     }
-
-    def get_supported_files(self) -> List[str]:
-        return ["resident_record.json"]
+    EXPECTED_FILENAME = "resident_record.json"
+    COLLECTION_NAME = "residents"
 
     def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
         metadata = convert_nested_dictionary_keys(

@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Tests for the Firestore Demo ETL Delegate."""
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional, Tuple
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import mock_open, patch
 
@@ -23,18 +23,20 @@ import mock.mock
 from google.cloud.firestore_v1.async_batch import AsyncWriteBatch
 from mock.mock import call
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.demo_data import load_all_demo_data, load_demo_fixture
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
 
 
 class TestETLDelegate(WorkflowsFirestoreETLDelegate):
-    @property
-    def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
-        return {"test_export.json": "test_collection"}
+    @classmethod
+    def supports_file(cls, state_code: StateCode, filename: str) -> bool:
+        return True
 
-    def get_supported_files(self) -> List[str]:
-        return ["test_export.json"]
+    def __init__(self, state_code: StateCode, filename: str):
+        super().__init__(state_code, filename)
+        self.collection_name = "test_collection"
 
     def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
         return str(row), {"data": row}

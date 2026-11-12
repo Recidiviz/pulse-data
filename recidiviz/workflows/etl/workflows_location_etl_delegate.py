@@ -15,20 +15,20 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Delegate class to ETL location records for Workflows into Firestore."""
-from typing import Any, List, Tuple
+from typing import Any, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import snake_to_camel
-from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
+from recidiviz.workflows.etl.workflows_etl_delegate import (
+    WorkflowsSingleFileETLDelegate,
+)
 
 
-class WorkflowsLocationETLDelegate(WorkflowsFirestoreETLDelegate):
+class WorkflowsLocationETLDelegate(WorkflowsSingleFileETLDelegate):
     """Delegate class to ETL the location_record.json file into Firestore."""
 
-    COLLECTION_BY_FILENAME = {"location_record.json": "locations"}
-
-    def get_supported_files(self) -> List[str]:
-        return ["location_record.json"]
+    EXPECTED_FILENAME = "location_record.json"
+    COLLECTION_NAME = "locations"
 
     def transform_row(self, row: dict[str, Any], filename: str) -> Tuple[str, dict]:
         new_document = convert_nested_dictionary_keys(row, snake_to_camel)

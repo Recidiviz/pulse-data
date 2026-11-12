@@ -27,14 +27,22 @@ from recidiviz.workflows.etl.workflows_us_ix_moves_management_etl_delegate impor
 class WorkflowsUsIxMovesManagementETLDelegateTest(unittest.TestCase):
     """Tests for WorkflowsUsIxMovesManagementETLDelegate."""
 
-    def test_supports_only_the_moves_management_record_file(self) -> None:
-        delegate = WorkflowsUsIxMovesManagementETLDelegate(StateCode.US_XX)
-        self.assertTrue(delegate.supports_file("us_ix_moves_management_record.json"))
-        self.assertFalse(delegate.supports_file("resident_record.json"))
-
-    def test_writes_to_the_moves_management_records_collection(self) -> None:
-        delegate = WorkflowsUsIxMovesManagementETLDelegate(StateCode.US_XX)
-        self.assertEqual(
-            {"us_ix_moves_management_record.json": "usIxMovesManagementRecords"},
-            delegate.COLLECTION_BY_FILENAME,
+    def test_supports_filename(self) -> None:
+        """Test that the supervision_staff_record file is supported"""
+        self.assertTrue(
+            WorkflowsUsIxMovesManagementETLDelegate.supports_file(
+                StateCode.US_XX, "us_ix_moves_management_record.json"
+            )
         )
+        self.assertFalse(
+            WorkflowsUsIxMovesManagementETLDelegate.supports_file(
+                StateCode.US_XX, "not_us_ix_moves_management_record.json"
+            )
+        )
+
+    def test_collection_name(self) -> None:
+        """Test that the correct collection_name is set after initialization"""
+        delegate = WorkflowsUsIxMovesManagementETLDelegate(
+            StateCode.US_TN, "us_ix_moves_management_record.json"
+        )
+        self.assertEqual(delegate.collection_name, "usIxMovesManagementRecords")

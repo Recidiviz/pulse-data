@@ -25,10 +25,8 @@ from recidiviz.workflows.etl.workflows_person_external_id_keyed_etl_delegate imp
 
 
 class _FakeRecordETLDelegate(WorkflowsPersonExternalIdKeyedETLDelegate):
-    COLLECTION_BY_FILENAME = {"fake_record.json": "fakeRecords"}
-
-    def get_supported_files(self) -> list[str]:
-        return ["fake_record.json"]
+    EXPECTED_FILENAME = "fake_record.json"
+    COLLECTION_NAME = "fakeRecords"
 
 
 class WorkflowsPersonExternalIdKeyedETLDelegateTest(unittest.TestCase):
@@ -39,7 +37,7 @@ class WorkflowsPersonExternalIdKeyedETLDelegateTest(unittest.TestCase):
     ) -> None:
         """The person_external_id keys the document id, matching the resident's own
         document, and is left out of the document body."""
-        delegate = _FakeRecordETLDelegate(StateCode.US_XX)
+        delegate = _FakeRecordETLDelegate(StateCode.US_XX, "fake_record.json")
         row = {
             "state_code": "US_XX",
             "person_external_id": "A100",

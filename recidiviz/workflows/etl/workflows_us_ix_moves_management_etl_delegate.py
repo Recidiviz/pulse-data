@@ -37,9 +37,5 @@ class WorkflowsUsIxMovesManagementETLDelegate(
     Firestore, one document per resident, under the same document id as that
     resident's document in the residents collection."""
 
-    COLLECTION_BY_FILENAME = {
-        US_IX_MOVES_MANAGEMENT_RECORD_FILENAME: US_IX_MOVES_MANAGEMENT_RECORDS_COLLECTION_NAME
-    }
-
-    def get_supported_files(self) -> list[str]:
-        return [US_IX_MOVES_MANAGEMENT_RECORD_FILENAME]
+    EXPECTED_FILENAME = US_IX_MOVES_MANAGEMENT_RECORD_FILENAME
+    COLLECTION_NAME = US_IX_MOVES_MANAGEMENT_RECORDS_COLLECTION_NAME

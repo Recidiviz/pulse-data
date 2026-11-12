@@ -18,7 +18,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import IO, Dict, Iterator
+from typing import IO, Iterator
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -42,6 +42,10 @@ async def load_demo_fixture(
     class DemoDelegate(delegate_cls):  # type: ignore
         """Abstract class containing the ETL logic for exporting a specified demo data fixture to Firestore."""
 
+        def __init__(self, state_code: StateCode, filename: str):
+            super().__init__(state_code, filename)
+            self.collection_name: str = "DEMO_" + self.collection_name
+
         def fixture_filepath(self, filename: str) -> Path:
             return Path(__file__).parent / "demo_fixtures" / filename
 
@@ -54,12 +58,7 @@ async def load_demo_fixture(
             with open(self.fixture_filepath(filename), "r", encoding="utf8") as f:
                 yield f
 
-        @property
-        def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
-            originalMapping = super().COLLECTION_BY_FILENAME
-            return {k: f"DEMO_{v}" for k, v in originalMapping.items()}
-
-    delegate = DemoDelegate(StateCode(state_code))
+    delegate = DemoDelegate(StateCode(state_code), filename)
     await delegate.run_etl(filename)
 
 

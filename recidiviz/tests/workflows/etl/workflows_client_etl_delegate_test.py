@@ -143,24 +143,28 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
     """
 
     def test_supports_filename(self) -> None:
-        """Test that the client file is supported for any state"""
-        delegate = WorkflowsClientETLDelegate(StateCode.US_ND)
-        self.assertTrue(delegate.supports_file("client_record.json"))
+        """Test that the client file is supported"""
+        self.assertTrue(
+            WorkflowsClientETLDelegate.supports_file(
+                StateCode.US_XX, "client_record.json"
+            )
+        )
+        self.assertFalse(
+            WorkflowsClientETLDelegate.supports_file(
+                StateCode.US_XX, "not_client_record.json"
+            )
+        )
 
-        delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
-        self.assertTrue(delegate.supports_file("client_record.json"))
-
-        delegate = WorkflowsClientETLDelegate(StateCode.US_WW)
-        self.assertTrue(delegate.supports_file("client_record.json"))
-
-        delegate = WorkflowsClientETLDelegate(StateCode.US_ND)
-        self.assertFalse(delegate.supports_file("not_client_record.json"))
+    def test_collection_name(self) -> None:
+        """Test that the correct collection_name is set after initialization"""
+        delegate = WorkflowsClientETLDelegate(StateCode.US_TN, CLIENT_FILENAME)
+        self.assertEqual(delegate.collection_name, "clients")
 
     def test_transform_row(self) -> None:
         """
         Test that the transform_row method correctly parses the json
         """
-        delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
+        delegate = WorkflowsClientETLDelegate(StateCode.US_TN, CLIENT_FILENAME)
         doc_id, row = delegate.transform_row(TEST_DATA, CLIENT_FILENAME)
         self.assertEqual("200", doc_id)
         self.assertEqual(EXPECTED_DOCUMENT, row)
@@ -170,7 +174,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
         Test that transform_row method omits optional fields that are missing rather
         than defaulting them
         """
-        delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
+        delegate = WorkflowsClientETLDelegate(StateCode.US_TN, CLIENT_FILENAME)
         data = deepcopy(TEST_DATA)
         del data["supervision_level"]
         del data["all_eligible_opportunities"]
@@ -204,7 +208,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
         Test that transform_row method correctly parses json when the row has a
         supervision downgrade eligible
         """
-        delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
+        delegate = WorkflowsClientETLDelegate(StateCode.US_TN, CLIENT_FILENAME)
         data = deepcopy(TEST_DATA)
         data["all_eligible_opportunities"] = ["supervisionLevelDowngrade"]
         expected = deepcopy(EXPECTED_DOCUMENT)
@@ -218,7 +222,7 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
         """
         Test that transform_row method for US_ND correctly parses the json
         """
-        delegate = WorkflowsClientETLDelegate(StateCode.US_ND)
+        delegate = WorkflowsClientETLDelegate(StateCode.US_ND, CLIENT_FILENAME)
         data = deepcopy(TEST_DATA)
         data["state_code"] = "US_ND"
         data["supervision_type"] = "DUAL"
@@ -279,7 +283,9 @@ class WorkflowsClientETLDelegateTest(IsolatedAsyncioTestCase):
                             {"personExternalId": 123, "stateCode": "US_XX"},
                         )
 
-                        delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
+                        delegate = WorkflowsClientETLDelegate(
+                            StateCode.US_TN, CLIENT_FILENAME
+                        )
                         await delegate.run_etl("client_record.json")
                         mock_collection.document.assert_has_calls(
                             [call(document_id), call(document_id)]
