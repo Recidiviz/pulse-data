@@ -134,11 +134,6 @@ US_TN_LEGACY_TOMIS_REFERENCE_EXEMPTIONS: dict[
         US_TN_PAYMENTS_PREPROCESSED_VIEW_BUILDER.address: "TODO(TN-2019): Migrate this reference off of legacy TOMIS 1.0 raw data",
     },
     BigQueryAddress.from_str(
-        "us_tn_raw_data_up_to_date_views.OffenderAttributes_latest"
-    ): {
-        US_TN_TRANSFER_TO_COMPLIANT_REPORTING_2025_POLICY_RECORD_VIEW_BUILDER.address: "TODO(TN-2020): Migrate this reference off of legacy TOMIS 1.0 raw data",
-    },
-    BigQueryAddress.from_str(
         "us_tn_raw_data_up_to_date_views.OffenderExemptions_latest"
     ): {
         US_TN_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER.address: "TODO(TN-2023): Migrate this reference off of legacy TOMIS 1.0 raw data",
