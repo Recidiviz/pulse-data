@@ -1007,7 +1007,6 @@ KNOWN_UNDOCUMENTED_COLUMNS: dict[BigQueryAddress, list[str]] = {
     ],
     BigQueryAddress.from_str("analyst_data.us_tn_annex_sessions_preprocessed"): [
         "end_date_exclusive",
-        "in_annex_housing_unit_sessions_2026_pilot",
         "in_or_should_be_in_annex",
         "in_or_should_be_in_annex_from_custody_level_sessions",
         "in_tdoc_custody",
