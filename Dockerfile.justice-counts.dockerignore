@@ -43,6 +43,7 @@ recidiviz/tests/calculator/calculation_documentation_generator_test.py
 recidiviz/tests/ingest/direct/direct_ingest_fixtures/**
 recidiviz/tests/ingest/direct/raw_data/direct_ingest_raw_file_import_manager_test.py
 recidiviz/tests/ingest/direct/regions/us_*/**
+recidiviz/tests/sentence_calculator/us_*/**
 recidiviz/tests/tools/docs/**
 recidiviz/tests/tools/ingest/development/region_files_generator_test.py
 recidiviz/tools/postgres/access_cloudsql_instance.sh
