@@ -1,0 +1,146 @@
+{
+  "id": "PR_synthetic_101",
+  "number": 101,
+  "title": "Synthetic PR 1",
+  "state": "MERGED",
+  "isDraft": false,
+  "createdAt": "2026-10-01T15:00:00Z",
+  "updatedAt": "2026-10-03T18:30:00Z",
+  "closedAt": "2026-10-03T18:00:00Z",
+  "mergedAt": "2026-10-03T18:00:00Z",
+  "additions": 40,
+  "deletions": 12,
+  "changedFiles": 3,
+  "baseRefName": "main",
+  "headRefName": "synthetic-user-1/synthetic-branch",
+  "isCrossRepository": false,
+  "author": { "login": "synthetic-user-1", "__typename": "User" },
+  "mergedBy": { "login": "synthetic-user-2" },
+  "mergeCommit": { "oid": "1111111111111111111111111111111111111111" },
+  "labels": {
+    "totalCount": 1,
+    "pageInfo": { "hasNextPage": false, "endCursor": "labels-c1" },
+    "nodes": [{ "name": "synthetic-label" }]
+  },
+  "commits": {
+    "totalCount": 2,
+    "pageInfo": { "hasNextPage": false, "endCursor": "commits-c2" },
+    "nodes": [
+      {
+        "commit": {
+          "oid": "2222222222222222222222222222222222222222",
+          "authoredDate": "2026-09-30T20:00:00Z",
+          "committedDate": "2026-10-01T14:55:00Z",
+          "additions": 30,
+          "deletions": 10,
+          "author": { "user": { "login": "synthetic-user-1" } }
+        }
+      },
+      {
+        "commit": {
+          "oid": "3333333333333333333333333333333333333333",
+          "authoredDate": "2026-10-02T16:00:00Z",
+          "committedDate": "2026-10-02T16:00:00Z",
+          "additions": 10,
+          "deletions": 2,
+          "author": { "user": null }
+        }
+      }
+    ]
+  },
+  "reviews": {
+    "totalCount": 2,
+    "pageInfo": { "hasNextPage": false, "endCursor": "reviews-c2" },
+    "nodes": [
+      {
+        "id": "PRR_synthetic_1",
+        "state": "APPROVED",
+        "submittedAt": "2026-10-02T17:00:00Z",
+        "body": "Synthetic review body.",
+        "author": { "login": "synthetic-user-2", "__typename": "User" },
+        "comments": {
+          "totalCount": 1,
+          "pageInfo": { "hasNextPage": false, "endCursor": "review-comments-c1" },
+          "nodes": [
+            {
+              "id": "PRRC_synthetic_1",
+              "createdAt": "2026-10-02T16:55:00Z",
+              "path": "src/synthetic.py",
+              "body": "Synthetic review comment.",
+              "author": { "login": "synthetic-user-2", "__typename": "User" }
+            }
+          ]
+        }
+      },
+      {
+        "id": "PRR_synthetic_2",
+        "state": "PENDING",
+        "submittedAt": null,
+        "body": "",
+        "author": { "login": "synthetic-user-3", "__typename": "User" },
+        "comments": {
+          "totalCount": 0,
+          "pageInfo": { "hasNextPage": false, "endCursor": null },
+          "nodes": []
+        }
+      }
+    ]
+  },
+  "comments": {
+    "totalCount": 1,
+    "pageInfo": { "hasNextPage": false, "endCursor": "comments-c1" },
+    "nodes": [
+      {
+        "id": "IC_synthetic_1",
+        "createdAt": "2026-10-01T15:05:00Z",
+        "body": "Synthetic bot comment.",
+        "author": { "login": "synthetic-bot-1[bot]", "__typename": "Bot" }
+      }
+    ]
+  },
+  "files": {
+    "pageInfo": { "hasNextPage": true, "endCursor": "files-c2" },
+    "nodes": [
+      {
+        "path": "src/synthetic.py",
+        "additions": 35,
+        "deletions": 10,
+        "changeType": "MODIFIED"
+      },
+      {
+        "path": "src/synthetic_test.py",
+        "additions": 5,
+        "deletions": 2,
+        "changeType": "ADDED"
+      }
+    ]
+  },
+  "timelineItems": {
+    "totalCount": 4,
+    "pageInfo": { "hasNextPage": false, "endCursor": "timeline-c4" },
+    "nodes": [
+      {
+        "__typename": "ReadyForReviewEvent",
+        "createdAt": "2026-10-01T15:10:00Z",
+        "actor": { "login": "synthetic-user-1" }
+      },
+      {
+        "__typename": "ReviewRequestedEvent",
+        "createdAt": "2026-10-01T15:11:00Z",
+        "actor": { "login": "synthetic-user-1" },
+        "requestedReviewer": { "slug": "synthetic-team" }
+      },
+      {
+        "__typename": "LabeledEvent",
+        "createdAt": "2026-10-01T15:12:00Z",
+        "actor": { "login": "synthetic-user-1" },
+        "label": { "name": "synthetic-label" }
+      },
+      {
+        "__typename": "MergedEvent",
+        "createdAt": "2026-10-03T18:00:00Z",
+        "actor": { "login": "synthetic-user-2" }
+      }
+    ]
+  }
+}

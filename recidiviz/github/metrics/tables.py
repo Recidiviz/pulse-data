@@ -27,18 +27,28 @@ PULL_REQUESTS_ADDRESS = BigQueryAddress(
     dataset_id=GITHUB_API_RAW_DATASET, table_id="pull_requests"
 )
 
+REVIEWS_ADDRESS = BigQueryAddress(dataset_id=GITHUB_API_RAW_DATASET, table_id="reviews")
+REVIEW_COMMENTS_ADDRESS = BigQueryAddress(
+    dataset_id=GITHUB_API_RAW_DATASET, table_id="review_comments"
+)
+ISSUE_COMMENTS_ADDRESS = BigQueryAddress(
+    dataset_id=GITHUB_API_RAW_DATASET, table_id="issue_comments"
+)
+TIMELINE_ITEMS_ADDRESS = BigQueryAddress(
+    dataset_id=GITHUB_API_RAW_DATASET, table_id="timeline_items"
+)
+COMMITS_ADDRESS = BigQueryAddress(dataset_id=GITHUB_API_RAW_DATASET, table_id="commits")
+FILES_ADDRESS = BigQueryAddress(dataset_id=GITHUB_API_RAW_DATASET, table_id="files")
+
 # The crawl loads these before PULL_REQUESTS_ADDRESS, so a pull_requests row never
 # lands without the child rows from the same crawl.
 CHILD_TABLE_ADDRESSES: list[BigQueryAddress] = [
-    BigQueryAddress(dataset_id=GITHUB_API_RAW_DATASET, table_id=table_id)
-    for table_id in [
-        "reviews",
-        "review_comments",
-        "issue_comments",
-        "timeline_items",
-        "commits",
-        "files",
-    ]
+    REVIEWS_ADDRESS,
+    REVIEW_COMMENTS_ADDRESS,
+    ISSUE_COMMENTS_ADDRESS,
+    TIMELINE_ITEMS_ADDRESS,
+    COMMITS_ADDRESS,
+    FILES_ADDRESS,
 ]
 
 ALL_TABLE_ADDRESSES: list[BigQueryAddress] = [
