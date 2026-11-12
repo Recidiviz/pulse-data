@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=../schema/law_regime_schema.json
+description: >-
+  Arizona Truth in Sentencing, first period: offenses committed from
+  1994-01-01 through 1995-07-12. One day of earned release credit for every six
+  days served, temporary release a full 90 days before the earned release
+  credit date, and community supervision of one seventh of the term kept in
+  exact days.
+effective_date: "1994-01-01"
+# Arizona counts a term in calendar days from the date it starts, which is the
+# method ADCRR's electronic calculation uses rather than the worksheet's 30-day
+# months.
+use_calendar_term_conversion: true
+
+# For a sentence with no discipline, the day-by-day calculation serves
+# ceil(6/7 of the term) days. The engine truncates the multiplied term, and
+# 0.857142857 is just under 6/7, so every release credit date from this
+# stand-in falls one day before the day-by-day date.
+# TODO(OBT-56088): Replace the stand-in with a credit rate of 1 day for every 6 days
+# served once the engine can read one, and confirm with ADCRR whether ACIS rounds
+# the days served up or down.
+term_multipliers:
+  - name: flat_time_no_credits
+    description: >-
+      A flat-time sentence earns no release credits, so the full term is
+      served.
+    when:
+      condition: flat_time
+    multiplier: 1.0
+    applies_to:
+      max_term: always
+      min_term: always
+  - name: one_for_six_release_credits
+    description: >-
+      One day of earned release credit for every six days served. The term is
+      complete once six sevenths of it is served, so the multiplier is 6/7.
+    multiplier: 0.857142857
+    applies_to:
+      max_term: always
+      min_term: always
+    statute: ARS 41-1604.07
+
+# In this period the 90 days of temporary release are taken after the earned
+# release credit date is computed, so there is one earned release credit date
+# and the temporary release date sits a full 90 days before it. The hand
+# worksheet subtracts three calendar months; the electronic method subtracts
+# 90 days.
+# TODO(OBT-56088): The community supervision term is one seventh of the sentence in
+# exact days, and the community supervision end date follows from it. Both wait
+# on the engine producing durations as well as dates.
+projected_dates:
+  sentence_begin_date:
+    description: >-
+      Sentence Begin Date (SBD): the sentencing date less the jail credit the
+      court awarded.
+    formula: earliest_start_date - jail_credit_days
+
+  sentence_expiration_date:
+    description: >-
+      Sentence Expiration Date (SED): the full term counted from the SBD.
+    formula: sentence_begin_date + unadjusted_max_days
+
+  earned_release_credit_date:
+    description: >-
+      Earned Release Credit Date (ERCD): the SBD plus the days served once the
+      release credits are exhausted. Temporary release does not change it.
+    formula: earliest_start_date + adjusted_max_days
+
+  # TODO(OBT-56088): This date applies only when the person is eligible for
+  # temporary release. Until the formulas can read a person-level eligibility
+  # flag, every sentence gets this date.
+  community_supervision_begin_date:
+    description: >-
+      Community Supervision Begin Date (CSBD): the temporary release date, 90
+      days before the ERCD.
+    formula: earned_release_credit_date - 90

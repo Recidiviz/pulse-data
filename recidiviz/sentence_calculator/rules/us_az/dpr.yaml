@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=../schema/law_regime_schema.json
+description: >-
+  Arizona drug possession release: a Truth in Sentencing sentence for personal
+  possession or use of a drug whose release credits accrue at three days for
+  every seven days served. Not an era of its own; the input layer assigns this
+  regime once the person qualifies and ADCRR approves the faster rate.
+# TODO(OBT-56089): The training materials include blank drug possession release
+# forms for 1994 to 1995 offenses, whose dates follow the TIS_A shape. Confirm
+# with the Time Computation Unit whether the faster rate reaches those
+# offenses; this file follows the TIS_B and TIS_C shape.
+effective_date: "1995-07-13"
+# Arizona counts a term in calendar days from the date it starts, which is the
+# method ADCRR's electronic calculation uses rather than the worksheet's 30-day
+# months.
+use_calendar_term_conversion: true
+
+# For a sentence with no discipline, the day-by-day calculation serves
+# ceil(7/10 of the term) days. The engine truncates the multiplied term, so a
+# release credit date from this stand-in falls one day before the day-by-day
+# date unless the term is a multiple of 10 days.
+# TODO(OBT-56088): Replace the stand-in with a credit rate of 3 days for every 7 days
+# served once the engine can read one, and confirm with ADCRR whether ACIS rounds
+# the days served up or down.
+term_multipliers:
+  - name: flat_time_no_credits
+    description: >-
+      A flat-time sentence earns no release credits, so the full term is
+      served.
+    when:
+      condition: flat_time
+    multiplier: 1.0
+    applies_to:
+      max_term: always
+      min_term: always
+  - name: three_for_seven_release_credits
+    description: >-
+      Three days of earned release credit for every seven days served. The
+      term is complete once seven tenths of it is served, so the multiplier is
+      0.7, which ADCRR describes as a 70 percent earned release date.
+    multiplier: 0.7
+    applies_to:
+      max_term: always
+      min_term: always
+    statute: ARS 41-1604.07
+
+# The dates follow the Truth in Sentencing steps with the faster rate, and
+# carry the DP prefix ADCRR gives them. The community supervision term is
+# computed as for Truth in Sentencing.
+# TODO(OBT-56088): The community supervision term and end date wait on the engine
+# producing durations as well as dates.
+projected_dates:
+  sentence_begin_date:
+    description: >-
+      Sentence Begin Date (SBD): the sentencing date less the jail credit the
+      court awarded.
+    formula: earliest_start_date - jail_credit_days
+
+  sentence_expiration_date:
+    description: >-
+      Sentence Expiration Date (SED): the full term counted from the SBD.
+    formula: sentence_begin_date + unadjusted_max_days
+
+  dp_earned_release_credit_date_without_temporary_release:
+    description: >-
+      Variant of the DP Earned Release Credit Date for a person not released
+      early to community supervision: the SBD plus the days served once the
+      release credits are exhausted.
+    formula: earliest_start_date + adjusted_max_days
+
+  # TODO(OBT-56088): This date applies only when the person is eligible for
+  # temporary release. Until the formulas can read a person-level eligibility
+  # flag, every sentence gets this date.
+  dp_community_supervision_begin_date:
+    description: >-
+      DP Community Supervision Begin Date: the temporary release date, 90 days
+      of release credit before the DP ERCD. Release credits stop at release, so
+      this date is 90 times 0.7, or 63 days, before the DP ERCD computed
+      without temporary release.
+    formula: dp_earned_release_credit_date_without_temporary_release - 63
+
+  dp_earned_release_credit_date:
+    description: >-
+      DP Earned Release Credit Date with temporary release: 90 days after the
+      DP CSBD.
+    formula: dp_community_supervision_begin_date + 90
