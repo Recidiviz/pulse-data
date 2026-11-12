@@ -15,8 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """The citation-grounding check: flags a hallucinated citation — a quote the
-model attributes to the source document that appears nowhere near where it says
-it does.
+model attributes to the source document that appears nowhere in it.
 """
 
 from recidiviz.documents.extraction.models.llm_inferred_field_output import (
@@ -26,7 +25,6 @@ from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
 )
 from recidiviz.documents.extraction.validation.citation_matching import (
-    MAX_CITATION_OFFSET_DRIFT,
     SourceDocumentText,
 )
 from recidiviz.documents.extraction.validation.llm_document_validation_result import (
@@ -42,16 +40,13 @@ _MAX_QUOTED_TEXT_CHARS = 100
 
 class CitationGroundingCheck:
     """The citation-grounding check: flags a quote the model attributes to the
-    source document that appears nowhere near where it says, one
-    `ValidationIssue` per ungrounded citation.
+    source document that appears nowhere in it, one ValidationIssue per
+    ungrounded citation.
 
     A fabricated quote is the clearest signal that a value was invented rather
     than extracted, so a document carrying one is discarded and retried. A quote
-    that appears in the document, but only far from its reported offset, is no
-    more trustworthy than one that appears nowhere — the model may have latched
-    onto an unrelated occurrence — so it is failed here too. A quote grounded
-    close to its reported offset is a correctable defect, handled by
-    `CitationOffsetDriftAdjustment` rather than treated as an error.
+    that appears in the document at offsets other than the reported ones is
+    handled by CitationOffsetDriftAdjustment rather than treated as an error.
 
     Every citation is checked, on both branches of an INFERRED field: the null
     branch's citations are quotes offered as evidence that no value was there to
@@ -67,17 +62,14 @@ class CitationGroundingCheck:
         source_document_text: SourceDocumentText,
     ) -> list[ValidationIssue]:
         """Returns one `ValidationIssue` per citation in |output| whose quoted
-        text cannot be found within `MAX_CITATION_OFFSET_DRIFT` characters of its
-        reported start offset in |source_document_text|, or an empty list when
+        text appears nowhere in |source_document_text|, or an empty list when
         every citation is grounded.
         """
         issues: list[ValidationIssue] = []
         for field_output in output.inferred_field_outputs():
             for citation in field_output.citations:
                 span = source_document_text.find_citation_span(
-                    citation_text=citation.text,
-                    reported_start=citation.start,
-                    allowed_actual_start_drift=MAX_CITATION_OFFSET_DRIFT,
+                    citation_text=citation.text
                 )
                 if span is not None:
                     continue
@@ -98,7 +90,5 @@ class CitationGroundingCheck:
         )
         return (
             f"Citation [{citation.index}] on field [{citation.field_display_name}] "
-            f"quotes text that is not grounded within "
-            f"{MAX_CITATION_OFFSET_DRIFT} characters of its reported offset "
-            f"[{citation.start}]: [{quoted_text}]."
+            f"quotes text that does not appear in the document: [{quoted_text}]."
         )

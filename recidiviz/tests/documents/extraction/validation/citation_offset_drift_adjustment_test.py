@@ -63,10 +63,8 @@ from recidiviz.tests.documents.extraction.fake_extractor_result_json import (
 
 _STATE_CODE = StateCode.US_XX
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
-# How far a test drifts a grounded citation's reported start offset — within
-# MAX_CITATION_OFFSET_DRIFT, since a document with drift beyond that window
-# fails CitationGroundingCheck before this adjustment ever runs.
-_DRIFT_WITHIN_WINDOW = 3
+# How far a test drifts a grounded citation's reported offsets.
+_DRIFT_CHARS = 3
 
 
 def _citations(result_json: dict[str, Any], field_name: str) -> list[dict[str, Any]]:
@@ -141,8 +139,8 @@ class CitationOffsetDriftAdjustmentTest(TestCase):
             citation[CITATION_START_FIELD_NAME],
             citation[CITATION_END_FIELD_NAME],
         )
-        drifted_start = correct_start - _DRIFT_WITHIN_WINDOW
-        drifted_end = correct_end - _DRIFT_WITHIN_WINDOW
+        drifted_start = correct_start - _DRIFT_CHARS
+        drifted_end = correct_end - _DRIFT_CHARS
         citation[CITATION_START_FIELD_NAME] = drifted_start
         citation[CITATION_END_FIELD_NAME] = drifted_end
 
@@ -208,8 +206,8 @@ class CitationOffsetDriftAdjustmentTest(TestCase):
         citation = _citations(grounded.result_json, "primary_status")[0]
         correct_start = citation[CITATION_START_FIELD_NAME]
         correct_end = citation[CITATION_END_FIELD_NAME]
-        citation[CITATION_START_FIELD_NAME] = correct_start - _DRIFT_WITHIN_WINDOW
-        citation[CITATION_END_FIELD_NAME] = correct_end - _DRIFT_WITHIN_WINDOW
+        citation[CITATION_START_FIELD_NAME] = correct_start - _DRIFT_CHARS
+        citation[CITATION_END_FIELD_NAME] = correct_end - _DRIFT_CHARS
 
         issues, adjusted_json = self._apply(
             grounded.result_json, source_document_text=uppercase_document
@@ -255,33 +253,60 @@ class CitationOffsetDriftAdjustmentTest(TestCase):
             grounded.result_json, source_document_text=source_document_text
         )
 
-    def test_repeated_quote_corrected_to_nearest_occurrence(self) -> None:
-        # The quote appears twice; the model's offsets are closer to the second,
-        # so that is the occurrence it plausibly meant.
+    def test_far_drifted_offsets_corrected(self) -> None:
+        grounded = ground_citations_in_fake_source_text(
+            fake_minimal_relevant_result_json()
+        )
+        citation = _citations(grounded.result_json, "primary_status")[0]
+        unpadded_start = citation[CITATION_START_FIELD_NAME]
+        unpadded_end = citation[CITATION_END_FIELD_NAME]
+        source_document_text = "x" * 2_000 + grounded.source_document_text
+
+        issues, adjusted_json = self._apply(
+            grounded.result_json, source_document_text=source_document_text
+        )
+
+        self.assertEqual(1, len(issues))
+        self.assertEqual(
+            ValidationCheckType.CITATION_OFFSET_DRIFT, issues[0].check_type
+        )
+        adjusted_citation = _citations(adjusted_json, "primary_status")[0]
+        self.assertEqual(
+            unpadded_start + 2_000, adjusted_citation[CITATION_START_FIELD_NAME]
+        )
+        self.assertEqual(
+            unpadded_end + 2_000, adjusted_citation[CITATION_END_FIELD_NAME]
+        )
+        self._assert_citation_quotes_itself(
+            adjusted_citation, source_document_text=source_document_text
+        )
+
+    def test_repeated_quote_corrected_to_first_occurrence(self) -> None:
         result_json = fake_minimal_relevant_result_json()
         source_document_text = "citation for active. Later: citation for active."
         citation = _citations(result_json, "primary_status")[0]
-        citation[CITATION_START_FIELD_NAME] = 26
-        citation[CITATION_END_FIELD_NAME] = 45
+        citation[CITATION_START_FIELD_NAME] = 28
+        citation[CITATION_END_FIELD_NAME] = 47
 
         issues, adjusted_json = self._apply(
             result_json, source_document_text=source_document_text
         )
 
         self.assertEqual(1, len(issues))
-        adjusted_citation = _citations(adjusted_json, "primary_status")[0]
-        self.assertEqual(28, adjusted_citation[CITATION_START_FIELD_NAME])
-        self._assert_citation_quotes_itself(
-            adjusted_citation, source_document_text=source_document_text
+        self.assertEqual(
+            ValidationCheckType.CITATION_OFFSET_DRIFT, issues[0].check_type
         )
+        adjusted_citation = _citations(adjusted_json, "primary_status")[0]
+        self.assertEqual(0, adjusted_citation[CITATION_START_FIELD_NAME])
+        self.assertEqual(19, adjusted_citation[CITATION_END_FIELD_NAME])
 
     def test_drift_in_array_element_reported_with_index(self) -> None:
         grounded = ground_citations_in_fake_source_text(fake_all_fields_result_json())
         citation = grounded.result_json["result"]["assignments"][0]["rate_amount"][
             CITATIONS_FIELD_NAME
         ][0]
-        citation[CITATION_START_FIELD_NAME] -= _DRIFT_WITHIN_WINDOW
-        citation[CITATION_END_FIELD_NAME] -= _DRIFT_WITHIN_WINDOW
+        citation[CITATION_START_FIELD_NAME] -= _DRIFT_CHARS
+        citation[CITATION_END_FIELD_NAME] -= _DRIFT_CHARS
 
         issues, adjusted_json = self._apply(
             grounded.result_json,
@@ -307,8 +332,8 @@ class CitationOffsetDriftAdjustmentTest(TestCase):
         )
         citations = _citations(grounded.result_json, "primary_status")
         citations.append(copy.deepcopy(citations[0]))
-        citations[1][CITATION_START_FIELD_NAME] -= _DRIFT_WITHIN_WINDOW
-        citations[1][CITATION_END_FIELD_NAME] -= _DRIFT_WITHIN_WINDOW
+        citations[1][CITATION_START_FIELD_NAME] -= _DRIFT_CHARS
+        citations[1][CITATION_END_FIELD_NAME] -= _DRIFT_CHARS
         grounded_citation = copy.deepcopy(citations[0])
 
         issues, adjusted_json = self._apply(
@@ -333,8 +358,8 @@ class CitationOffsetDriftAdjustmentTest(TestCase):
             ][0],
         ]
         for citation in drifted_citations:
-            citation[CITATION_START_FIELD_NAME] -= _DRIFT_WITHIN_WINDOW
-            citation[CITATION_END_FIELD_NAME] -= _DRIFT_WITHIN_WINDOW
+            citation[CITATION_START_FIELD_NAME] -= _DRIFT_CHARS
+            citation[CITATION_END_FIELD_NAME] -= _DRIFT_CHARS
 
         issues, adjusted_json = self._apply(
             grounded.result_json,
@@ -366,7 +391,7 @@ class CitationOffsetDriftAdjustmentTest(TestCase):
         )
         _citations(grounded.result_json, "primary_status")[0][
             CITATION_START_FIELD_NAME
-        ] -= _DRIFT_WITHIN_WINDOW
+        ] -= _DRIFT_CHARS
         raw_output = LLMRequestOutputValues(
             output_schema=self.output_schema, output_json=grounded.result_json
         )

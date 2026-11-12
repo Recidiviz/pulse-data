@@ -124,9 +124,7 @@ _DOCUMENT_CONTENTS_ID = "doc1"
 _VALIDATION_DATETIME = datetime.datetime(2026, 1, 1, 12, 0, tzinfo=pytz.UTC)
 _ADVERSARIAL = "The record might describe a closed matter."
 # How far off a citation's reported start offset is put in the tests that
-# exercise offset drift — close enough to its quoted text that the grounding
-# check still counts it as grounded, so `CitationOffsetDriftAdjustment` is what
-# acts on it.
+# exercise offset drift.
 _CITATION_OFFSET_DRIFT_CHARS = 3
 _NO_REQUIRED_FIELDS_DESCRIPTION = "A description that is long enough to be meaningful."
 _NO_REQUIRED_FIELDS_RELEVANCE_CRITERIA = (
@@ -920,11 +918,33 @@ class LLMRelevanceBearingExtractionResultValidatorTest(_ValidatorTestBase):
             {issue.check_type for issue in validation.audit_issues},
         )
 
+    def test_far_drifted_citation_corrected_without_retry(self) -> None:
+        grounded = ground_citations_in_fake_source_text(
+            fake_minimal_relevant_result_json()
+        )
+        raw_citation = grounded.result_json["result"]["primary_status"][
+            CITATIONS_FIELD_NAME
+        ][0]
+        unpadded_start = raw_citation[CITATION_START_FIELD_NAME]
+        source_document_text = "x" * 2_000 + grounded.source_document_text
+
+        validation = self._validate(
+            grounded.result_json, source_document_text=source_document_text
+        )
+
+        validated_output = self._assert_kept(validation)
+        self.assertEqual(
+            [ValidationCheckType.CITATION_OFFSET_DRIFT],
+            [issue.check_type for issue in validation.audit_issues],
+        )
+        validated_citation = validated_output.output_json["result"]["primary_status"][
+            CITATIONS_FIELD_NAME
+        ][0]
+        self.assertEqual(
+            unpadded_start + 2_000, validated_citation[CITATION_START_FIELD_NAME]
+        )
+
     def test_drifted_citation_corrected_without_retry(self) -> None:
-        # The reported offset lands near the quote rather than on it, which is
-        # drift the grounding check tolerates and this adjustment corrects.
-        # Drift past that tolerance is a hallucinated citation instead, covered
-        # by test_hallucinated_citation_downgrades_result.
         grounded = ground_citations_in_fake_source_text(
             fake_minimal_relevant_result_json()
         )

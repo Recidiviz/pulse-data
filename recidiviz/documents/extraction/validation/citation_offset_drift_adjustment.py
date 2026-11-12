@@ -22,7 +22,6 @@ from recidiviz.documents.extraction.models.llm_request_output_values import (
     LLMRequestOutputValues,
 )
 from recidiviz.documents.extraction.validation.citation_matching import (
-    MAX_CITATION_OFFSET_DRIFT,
     SourceDocumentText,
 )
 from recidiviz.documents.extraction.validation.llm_document_validation_result import (
@@ -43,11 +42,9 @@ class CitationOffsetDriftAdjustment:
     and never retried. Correcting it here means every consumer that highlights a
     citation in the source document can trust `document_text[start:end]`.
 
-    A citation whose quote is not in the document at all — or is only found far
-    from its reported offset — is a hallucination, not drift; `CitationGroundingCheck`
-    fails the document before this adjustment runs, so any citation reaching it
-    is grounded within `MAX_CITATION_OFFSET_DRIFT` of its reported offset — the
-    same window this adjustment searches.
+    A citation whose quote is not in the document at all is a hallucination, not
+    drift. CitationGroundingCheck fails the document before this adjustment runs,
+    so every citation that reaches it appears somewhere in the document.
     """
 
     @classmethod
@@ -66,9 +63,7 @@ class CitationOffsetDriftAdjustment:
         for field_output in adjusted.inferred_field_outputs():
             for citation in field_output.citations:
                 span = source_document_text.find_citation_span(
-                    citation_text=citation.text,
-                    reported_start=citation.start,
-                    allowed_actual_start_drift=MAX_CITATION_OFFSET_DRIFT,
+                    citation_text=citation.text
                 )
                 if span is None:
                     continue

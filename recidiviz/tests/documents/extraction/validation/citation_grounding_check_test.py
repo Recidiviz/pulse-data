@@ -26,7 +26,6 @@ in llm_extraction_result_validator_test.py.
 
 from typing import Any
 from unittest import TestCase
-from unittest.mock import patch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.llm_extractor_config_collectors import (
@@ -62,10 +61,6 @@ from recidiviz.utils.string_formatting import truncate_string_if_necessary
 _STATE_CODE = StateCode.US_XX
 _COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
 
-# Patched over the real MAX_CITATION_OFFSET_DRIFT so tests can exercise offsets
-# just inside and just outside the allowed drift window with small numbers.
-_TEST_MAX_CITATION_OFFSET_DRIFT = 10
-
 
 def _citations(result_json: dict[str, Any], field_name: str) -> list[dict[str, Any]]:
     """Returns the mutable citations array of top-level |field_name|."""
@@ -76,13 +71,6 @@ class CitationGroundingCheckTest(TestCase):
     """Tests for CitationGroundingCheck."""
 
     def setUp(self) -> None:
-        self.enterContext(
-            patch(
-                "recidiviz.documents.extraction.validation."
-                "citation_grounding_check.MAX_CITATION_OFFSET_DRIFT",
-                _TEST_MAX_CITATION_OFFSET_DRIFT,
-            )
-        )
         self.output_schema = get_first_order_llm_extractor_config(
             _STATE_CODE, _COLLECTION_NAME, config_module=fake_config
         ).extractor_collection.output_schema
@@ -141,30 +129,24 @@ class CitationGroundingCheckTest(TestCase):
             fake_minimal_relevant_result_json()
         )
         citation = _citations(grounded.result_json, "primary_status")[0]
-        reported_start = citation["start"]
         citation[CITATION_TEXT_FIELD_NAME] = "a quote the document never contained"
         self._assert_single_issue(
             grounded.result_json,
             source_document_text=grounded.source_document_text,
             expected_field_name="primary_status",
             expected_detail_substring=(
-                f"Citation [0] on field [primary_status] quotes text that is not "
-                f"grounded within {_TEST_MAX_CITATION_OFFSET_DRIFT} characters of "
-                f"its reported offset [{reported_start}]: "
-                f"[a quote the document never contained]."
+                "Citation [0] on field [primary_status] quotes text that does not "
+                "appear in the document: [a quote the document never contained]."
             ),
         )
 
     def test_grounded_at_slightly_wrong_offset_not_flagged(self) -> None:
-        # The quote is in the document, within the allowed drift of its
-        # reported offset — small drift CitationOffsetDriftAdjustment corrects
-        # rather than this check failing the document over.
         grounded = ground_citations_in_fake_source_text(
             fake_minimal_relevant_result_json()
         )
         citation = _citations(grounded.result_json, "primary_status")[0]
-        citation["start"] += _TEST_MAX_CITATION_OFFSET_DRIFT
-        citation["end"] += _TEST_MAX_CITATION_OFFSET_DRIFT
+        citation["start"] += 10
+        citation["end"] += 10
         self.assertEqual(
             [],
             self._issues(
@@ -173,26 +155,20 @@ class CitationGroundingCheckTest(TestCase):
             ),
         )
 
-    def test_grounded_far_from_reported_offset_flagged(self) -> None:
-        # The quote does appear in the document, but nowhere near where the
-        # model said — too far for CitationOffsetDriftAdjustment to be trusted to
-        # correct, so it is failed here instead.
+    def test_grounded_far_from_reported_offset_not_flagged(self) -> None:
+        # The reported offsets lie past the end of the document; the quote is
+        # still grounded because matching ignores them.
         grounded = ground_citations_in_fake_source_text(
             fake_minimal_relevant_result_json()
         )
         citation = _citations(grounded.result_json, "primary_status")[0]
-        reported_start = citation["start"]
-        far_start = reported_start + _TEST_MAX_CITATION_OFFSET_DRIFT + 1
-        citation["start"] = far_start
-        citation["end"] = far_start + 5
-        self._assert_single_issue(
-            grounded.result_json,
-            source_document_text=grounded.source_document_text,
-            expected_field_name="primary_status",
-            expected_detail_substring=(
-                f"Citation [0] on field [primary_status] quotes text that is not "
-                f"grounded within {_TEST_MAX_CITATION_OFFSET_DRIFT} characters of "
-                f"its reported offset [{far_start}]:"
+        citation["start"] += 10_000
+        citation["end"] += 10_000
+        self.assertEqual(
+            [],
+            self._issues(
+                grounded.result_json,
+                source_document_text=grounded.source_document_text,
             ),
         )
 
@@ -221,7 +197,7 @@ class CitationGroundingCheckTest(TestCase):
                 "citation for", "citation\n   for"
             ),
             expected_field_name="primary_status",
-            expected_detail_substring="quotes text that is not grounded within",
+            expected_detail_substring="quotes text that does not appear in the document",
         )
 
     def test_empty_citation_text_flagged(self) -> None:
@@ -237,7 +213,7 @@ class CitationGroundingCheckTest(TestCase):
             grounded.result_json,
             source_document_text=grounded.source_document_text,
             expected_field_name="primary_status",
-            expected_detail_substring="quotes text that is not grounded within",
+            expected_detail_substring="quotes text that does not appear in the document",
         )
 
     def test_fabricated_citation_on_null_branch_flagged(self) -> None:

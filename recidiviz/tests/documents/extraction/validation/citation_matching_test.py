@@ -28,11 +28,6 @@ from recidiviz.documents.extraction.validation.citation_matching import (
 )
 
 _DOCUMENT = "Client reported starting work at the Kitchen on Monday."
-# Larger than any offset gap exercised below, so the matching-behavior tests
-# that use `_find` exercise find_citation_span without its window ever
-# constraining the result; the allowed-drift tests further down call
-# find_citation_span directly with a realistic window instead.
-_FIND_WINDOW = 10_000
 
 
 class CitationSpanTest(TestCase):
@@ -62,12 +57,10 @@ class SourceDocumentTextTest(TestCase):
     """Tests for SourceDocumentText.find_citation_span."""
 
     def _find(
-        self, citation_text: str, *, document: str = _DOCUMENT, reported_start: int = 0
+        self, citation_text: str, *, document: str = _DOCUMENT
     ) -> CitationSpan | None:
         return SourceDocumentText(text=document).find_citation_span(
-            citation_text=citation_text,
-            reported_start=reported_start,
-            allowed_actual_start_drift=_FIND_WINDOW,
+            citation_text=citation_text
         )
 
     def test_exact_quote_found(self) -> None:
@@ -129,79 +122,15 @@ class SourceDocumentTextTest(TestCase):
     def test_quote_differing_in_wording_not_found(self) -> None:
         self.assertIsNone(self._find("Kitchen assignment"))
 
-    def test_repeated_quote_resolves_to_nearest_reported_start(self) -> None:
-        document = "Kitchen. " * 3
-        # Occurrences start at 0, 9, and 18; the reported offset is closest to
-        # the third.
-        self.assertEqual(
-            CitationSpan(start=18, end=25),
-            self._find("Kitchen", document=document, reported_start=17),
-        )
-
-    def test_repeated_quote_resolves_to_exact_occurrence_when_offsets_right(
-        self,
-    ) -> None:
+    def test_repeated_quote_resolves_to_first_occurrence(self) -> None:
         document = "Kitchen. " * 3
         self.assertEqual(
-            CitationSpan(start=9, end=16),
-            self._find("Kitchen", document=document, reported_start=9),
+            CitationSpan(start=0, end=7), self._find("Kitchen", document=document)
         )
 
-    def test_repeated_quote_ties_resolve_to_earlier_occurrence(self) -> None:
-        document = "Kitchen...Kitchen"
-        # Equidistant from the occurrences at 0 and 10 (distance 5 either way):
-        # the earlier one wins, so the choice is deterministic.
+    def test_quote_deep_in_long_document_found(self) -> None:
+        document = "x" * 5_000 + "Kitchen"
         self.assertEqual(
-            CitationSpan(start=0, end=7),
-            self._find("Kitchen", document=document, reported_start=5),
-        )
-
-    def test_overlapping_occurrences_all_considered(self) -> None:
-        document = "abababab"
-        # "abab" occurs at 0, 2, and 4 — overlapping occurrences the naive
-        # non-overlapping scan would miss.
-        self.assertEqual(
-            CitationSpan(start=4, end=8),
-            self._find("abab", document=document, reported_start=5),
-        )
-
-    def test_reported_start_beyond_document_still_matches(self) -> None:
-        # A wildly wrong offset does not stop the quote from being grounded; it
-        # only decides which occurrence is nearest.
-        self.assertEqual(
-            CitationSpan(start=37, end=44), self._find("Kitchen", reported_start=9_999)
-        )
-
-    def test_allowed_drift_finds_occurrence_within_window(self) -> None:
-        self.assertEqual(
-            CitationSpan(start=37, end=44),
-            SourceDocumentText(text=_DOCUMENT).find_citation_span(
-                citation_text="Kitchen",
-                reported_start=40,
-                allowed_actual_start_drift=10,
-            ),
-        )
-
-    def test_allowed_drift_excludes_occurrence_outside_window(self) -> None:
-        # "Kitchen" is grounded, but only far outside the drift window, so it is
-        # treated the same as not appearing in the document at all.
-        self.assertIsNone(
-            SourceDocumentText(text=_DOCUMENT).find_citation_span(
-                citation_text="Kitchen",
-                reported_start=9_999,
-                allowed_actual_start_drift=10,
-            )
-        )
-
-    def test_allowed_drift_picks_nearest_occurrence_within_window(self) -> None:
-        document = "Kitchen. " * 3
-        # Occurrences start at 0, 9, and 18; only 9 and 18 fall within drift 10
-        # of the reported offset 17, and 18 is nearest.
-        self.assertEqual(
-            CitationSpan(start=18, end=25),
-            SourceDocumentText(text=document).find_citation_span(
-                citation_text="Kitchen",
-                reported_start=17,
-                allowed_actual_start_drift=10,
-            ),
+            CitationSpan(start=5_000, end=5_007),
+            self._find("Kitchen", document=document),
         )

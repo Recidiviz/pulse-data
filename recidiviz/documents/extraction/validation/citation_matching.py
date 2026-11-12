@@ -15,21 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Locates an extracted field's cited quote within the document it was extracted
-from — the shared machinery behind both citation checks: the extraction-error
-check that a quote is grounded in the document at all, and the quality
-adjustment that corrects the offsets a grounded quote was reported at.
+from. CitationGroundingCheck uses it to decide whether a quote appears in the
+document at all, and CitationOffsetDriftAdjustment uses it to correct the offsets
+the model reported for the quote.
 """
 import attr
 
 from recidiviz.common import attr_validators
-
-# How far a citation's reported start offset may sit from where its quoted text
-# actually starts and still count as grounded. Counting characters is not
-# something a language model does reliably, so small drift is expected; shared
-# by both citation checks so the window CitationGroundingCheck fails a citation
-# outside of is exactly the window CitationOffsetDriftAdjustment corrects a
-# citation inside of.
-MAX_CITATION_OFFSET_DRIFT = 500
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -62,59 +54,17 @@ class SourceDocumentText:
     text: str = attr.ib(validator=attr_validators.is_str)
     """The document text exactly as it was handed to the model."""
 
-    def find_citation_span(
-        self,
-        *,
-        citation_text: str,
-        reported_start: int,
-        allowed_actual_start_drift: int,
-    ) -> CitationSpan | None:
-        """Returns where |citation_text| appears within |allowed_actual_start_drift|
-        characters of |reported_start| in this document, or None when it appears
-        nowhere in that window (the quote is not grounded near where it was
-        reported).
+    def find_citation_span(self, *, citation_text: str) -> CitationSpan | None:
+        """Returns the span of the first occurrence of |citation_text| in this
+        document, or None when it appears nowhere.
 
-        When the quote appears more than once in the window, the occurrence whose
-        start is nearest |reported_start| — the offset the model reported — wins,
-        so a model that quotes a repeated phrase but drifts on its offsets is
-        corrected toward the occurrence it most plausibly meant, and a model
-        whose offsets are already right is left alone.
-
-        A quote that is empty (or nothing but whitespace) matches nothing: there
-        is no span of the document it could be grounded in.
+        The offsets the model reports for a citation are unreliable, so they play
+        no part in choosing a span. A quote that is empty or nothing but
+        whitespace matches nothing.
         """
         if not citation_text.strip():
             return None
-
-        search_from = max(0, reported_start - allowed_actual_start_drift)
-        search_to = reported_start + allowed_actual_start_drift + len(citation_text)
-
-        spans = [
-            CitationSpan(start=start, end=start + len(citation_text))
-            for start in _all_occurrences(
-                haystack=self.text,
-                needle=citation_text,
-                search_from=search_from,
-                search_to=search_to,
-            )
-        ]
-        if not spans:
+        start = self.text.lower().find(citation_text.lower())
+        if start == -1:
             return None
-        return min(spans, key=lambda span: abs(span.start - reported_start))
-
-
-def _all_occurrences(
-    *, haystack: str, needle: str, search_from: int = 0, search_to: int | None = None
-) -> list[int]:
-    """Returns the start offset of every case-insensitive occurrence of |needle|
-    in |haystack| whose start lies in [|search_from|, |search_to|) — or from
-    |search_from| to the end of |haystack| when |search_to| is None — including
-    overlapping occurrences, in ascending order.
-    """
-    haystack = haystack.lower()
-    needle = needle.lower()
-    offsets: list[int] = []
-    while (found_at := haystack.find(needle, search_from, search_to)) != -1:
-        offsets.append(found_at)
-        search_from = found_at + 1
-    return offsets
+        return CitationSpan(start=start, end=start + len(citation_text))
