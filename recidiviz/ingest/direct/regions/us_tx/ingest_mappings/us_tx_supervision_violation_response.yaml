@@ -61,10 +61,10 @@ output:
                                   - "RETURN FOR CORRECTIONS|"
                                   - "PS RETURN FOR CORRECTIONS|" # This is when a violation is returned to PO so they can fix something. Data entry issue.
                                   - "CONDUCT PROBABLE CAUSE HEARING|" # Procedural step before a revocation hearing
+                                  - "|PROCEED TO REVOCATION HEARING" # Schedules a hearing; the hearing's outcome is a separate, later response.
+                                  - "PROCEED TO REVOCATION HEARING|" # Schedules a hearing; the hearing's outcome is a separate, later response.
                                 # REVOCATION mappings
                                 StateSupervisionViolationResponseDecision.REVOCATION:
-                                  - "|PROCEED TO REVOCATION HEARING"
-                                  - "PROCEED TO REVOCATION HEARING|"
                                   - "|REVOKE"
                                 # NEW_CONDITIONS mapping
                                 StateSupervisionViolationResponseDecision.NEW_CONDITIONS:

@@ -9,6 +9,7 @@ input_columns:
   condition_array: STRING
   VIOLATION_STATUS: STRING
   TYPE_DESCRIPTION: STRING
+  LAST_UPDATED_DATE: DATE
 unused_columns: []
 output:
   StatePerson:
@@ -24,6 +25,7 @@ output:
             $normalized_values_json_dict:
               ViolationStatus: VIOLATION_STATUS
               ViolationTypeDescription: TYPE_DESCRIPTION
+              LastUpdatedDate: LAST_UPDATED_DATE
           supervision_violation_types:
             - $foreach:
                 $iterable: condition_array
