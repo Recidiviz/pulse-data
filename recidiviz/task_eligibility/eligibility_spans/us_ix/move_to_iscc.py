@@ -30,7 +30,7 @@ from recidiviz.task_eligibility.completion_events.general import (
 from recidiviz.task_eligibility.criteria.general import is_male
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     not_in_iscc,
-    not_serving_a_rider_sentence,
+    not_rider_unless_sex_offense_and_detainer,
 )
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -46,7 +46,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         is_male.VIEW_BUILDER,
         not_in_iscc.VIEW_BUILDER,
-        not_serving_a_rider_sentence.VIEW_BUILDER,
+        # TODO(ID-659): Confirm with IDOC that riders with a sex offense and a
+        # detainer can go to ISCI or ISCC.
+        not_rider_unless_sex_offense_and_detainer.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_prison_facility.VIEW_BUILDER,
 )
