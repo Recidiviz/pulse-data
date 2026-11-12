@@ -11,10 +11,22 @@ lede, or framing sentence before it — no "Here's what I found", no "This is
 the smoking gun", no dramatic intros. The very first characters of the output
 must be the TLDR heading.
 
-The **TLDR** is a 2-3 sentence plain-language summary of the diagnosis that
-anyone (including non-engineers) can understand. It should answer: what was
-wrong, why it happened, and whether it's fixed. Avoid jargon, table names,
-or implementation details in the TLDR.
+The **TLDR** opens with the scope line, followed by a 2-3 sentence
+plain-language summary of the diagnosis that anyone (including non-engineers)
+can understand. The summary should answer: what was wrong, why it happened, and
+whether it's fixed. Avoid jargon, table names, or implementation details in the
+TLDR.
+
+The scope line gives the counts from the **Scope** section below, so readers
+can triage without scrolling:
+
+```markdown
+**Scope:** 412 clients across 37 POs in US_XX
+```
+
+Write `n/a` for a count that doesn't apply and `unknown` for one you couldn't
+compute, matching what Scope reports.
+Run the Scope query before writing the TLDR.
 
 Then present the full details in the following format:
 
@@ -63,9 +75,15 @@ Then present the full details in the following format:
   ````
 
 - **Scope**: once you know the root cause, run one query counting how many
-  clients in the state hit the same problem right now, and report that count
-  with the query as SQL evidence. Project only counts, never IDs. If the cause
-  can't be expressed as a query, say so instead of guessing a number.
+  clients in the state hit the same problem right now and how many distinct POs
+  (supervising officers) those clients are assigned to, and report both counts
+  with the query as SQL evidence. For client-level problems, get each client's
+  current PO from `sessions.supervision_officer_sessions` (rows with
+  `end_date_exclusive IS NULL`) and count distinct `staff_id`. For problems that
+  affect officers rather than clients, such as a PO missing from Insights, count
+  the affected POs and report clients as not applicable. Project only counts,
+  never IDs. If the cause can't be expressed as a query, say so instead of
+  guessing a number.
 
 **CRITICAL:** Always run every query using `bq query` BEFORE including it. Never
 infer, guess, or hallucinate SQL syntax. If you're unsure about JSON extraction
