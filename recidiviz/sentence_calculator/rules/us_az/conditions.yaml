@@ -6,3 +6,14 @@
 # never derive it.
 flat_time:
   is_flat: true
+
+# A New Code sentence whose parole eligibility comes at two thirds of the term
+# rather than half. Under ARS 41-1604.10(A) the same fraction decides how fast
+# release credits accrue: a half sentence earns one credit for every two days
+# served, a two-thirds sentence one for every three. Class 2 and class 3
+# felonies are the typical two-thirds sentences.
+# TODO(OBT-56088): TCU marks a two-thirds sentence with an exception flag in ACIS,
+# and the felony class is only a proxy for that flag. Read the flag once the
+# input layer carries it.
+two_thirds_parole:
+  offense_category: { in: [CLASS_2, CLASS_3] }

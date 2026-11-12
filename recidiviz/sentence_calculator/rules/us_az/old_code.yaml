@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=../schema/law_regime_schema.json
+description: >-
+  Arizona Old Code: offenses committed before 1978-10-01. The court set a
+  minimum and a maximum term, the person earned copper time for each year
+  served plus two-for-one credits on time in the institution, and parole was
+  available. This regime has no rules on purpose: the calculator produces no
+  dates for an Old Code sentence, and the release type and date TCU staff
+  enter by hand pass through unchanged. ADCRR's electronic calculation does
+  the same.
+# The schema requires an effective date. Old Code covers every offense before
+# the New Code took effect, so this date is a floor, not the start of a law.
+effective_date: "1900-01-01"
+use_calendar_term_conversion: true
+# TODO(OBT-56089): Only named TCU staff process Old Code cases, and the training
+# materials have no worked answers for them. TCU has not said whether the
+# module must automate Old Code or can rely on manual entry. If it must, the
+# worksheet runs: sentence begin date, maximum term, less 6 months (mandatory
+# release) or 12 months (discretionary release), less copper time and the
+# two-for-one credits earned so far, less half the flat time still to serve.

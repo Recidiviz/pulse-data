@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=../schema/law_regime_schema.json
+description: >-
+  Arizona New Code, earlier period: offenses committed from 1978-10-01 through
+  1986-08-12. The person is eligible for parole at half or two thirds of the
+  term, earns one release credit for every two or three days served, and is
+  released on mandatory release 180 days before the earned sentence expiration
+  date. The math matches the later New Code period; only the names of the
+  release dates differ.
+effective_date: "1978-10-01"
+# Arizona counts a term in calendar days from the date it starts, which is the
+# method ADCRR's electronic calculation uses rather than the worksheet's 30-day
+# months.
+use_calendar_term_conversion: true
+
+# The worksheet for this period, form 1002-14, was not in the training
+# materials. The multipliers and dates follow the later New Code worksheet,
+# which the training says applies the same credit rates.
+# TODO(OBT-56088): Replace the stand-ins with credit rates of 1 day for every 2 days
+# served and 1 day for every 3 days served once the engine can read one.
+term_multipliers:
+  - name: flat_time_no_credits
+    description: >-
+      A flat-time sentence earns no release credits, so the full term is
+      served.
+    when:
+      condition: flat_time
+    multiplier: 1.0
+    applies_to:
+      max_term: always
+      min_term: always
+  - name: one_for_three_release_credits
+    description: >-
+      One day of release credit for every three days served, for a sentence
+      with parole eligibility at two thirds of the term. The term is complete
+      once three quarters of it is served, so the multiplier is 0.75.
+    when:
+      condition: two_thirds_parole
+    multiplier: 0.75
+    applies_to:
+      max_term: always
+      min_term: always
+    statute: ARS 41-1604.10
+  - name: one_for_two_release_credits
+    description: >-
+      One day of release credit for every two days served, for a sentence with
+      parole eligibility at half the term. The term is complete once two
+      thirds of it is served, so the multiplier is 2/3.
+    multiplier: 0.666666667
+    applies_to:
+      max_term: always
+      min_term: always
+    statute: ARS 41-1604.10
+
+# The worksheet sets the 180 days of mandatory release aside before it computes
+# the credits still to be earned, so the mandatory release date is the sentence
+# begin date plus two thirds of the term less 180 days. That is 120 days before
+# the date the credits alone would give. The earned sentence expiration date is
+# 180 days after it.
+# TODO(OBT-56088): The constants below assume the half-rate sentence. A two-thirds
+# sentence serves three quarters of the remaining time, so its mandatory
+# release date is 135 days before the credit date, not 120. Date formulas
+# cannot read the sentence's class yet.
+# TODO(OBT-56088): The worksheet subtracts six calendar months while ADCRR's
+# electronic calculation subtracts 180 days. Confirm which to follow with TCU.
+# TODO(OBT-56089): The sources disagree on whether offenses from 1985-08-07 through
+# 1986-08-12 get mandatory release or provisional release. This file gives them
+# mandatory release. Confirm with TCU.
+projected_dates:
+  sentence_begin_date:
+    description: >-
+      Sentence Begin Date (SBD): the sentencing date less the jail credit the
+      court awarded.
+    formula: earliest_start_date - jail_credit_days
+
+  sentence_expiration_date:
+    description: >-
+      Sentence Expiration Date (SED): the full term counted from the SBD.
+    formula: sentence_begin_date + unadjusted_max_days
+
+  # TODO(OBT-56088): A two-thirds sentence is eligible at two thirds of the term,
+  # not half. Date formulas cannot read the sentence's class yet.
+  # TODO(OBT-56088): Days spent in Parole Class III move this date later day for
+  # day. That waits on the engine reading credit events.
+  parole_eligibility_date:
+    description: >-
+      Parole Eligibility Date (PED): the SBD plus half the term. Release
+      credits do not shorten the time to parole eligibility. The person can be
+      certified for a parole hearing five months before this date.
+    formula: sentence_begin_date + unadjusted_max_days / 2
+    statute: ARS 41-1604.10
+
+  # TODO(OBT-56088): Mandatory release needs at least one calendar year served and
+  # does not apply to a dangerous crime against children or a sentence
+  # consecutive to a life sentence the person has not been paroled from. Those
+  # sentences release on the earned sentence expiration date. Until the
+  # formulas can read those facts, every sentence gets this date.
+  mandatory_release_date:
+    description: >-
+      Mandatory Release Date (MRD): the automatic release 180 days before the
+      earned sentence expiration date.
+    formula: earliest_start_date + adjusted_max_days - 120
+
+  earned_sentence_expiration_date:
+    description: >-
+      Earned Sentence Expiration Date (ESED): the date the release credits
+      bring the sentence to an end, 180 days after the MRD.
+    formula: mandatory_release_date + 180

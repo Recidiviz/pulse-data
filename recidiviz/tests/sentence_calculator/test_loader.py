@@ -24,6 +24,9 @@ from recidiviz.sentence_calculator.models.conditions import (
     ConditionOperator,
     FieldCondition,
 )
+from recidiviz.sentence_calculator.models.state_inputs.inputs_az import (
+    ArizonaOffenseCategory,
+)
 from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import NevadaSentence
 from recidiviz.sentence_calculator.rules.loader import (
     law_regime_yaml_path,
@@ -152,6 +155,14 @@ class TestLoadStateConditions(unittest.TestCase):
                 "flat_time": FieldCondition(
                     field="is_flat", operator=ConditionOperator.EQUALS, value=True
                 ),
+                "two_thirds_parole": FieldCondition(
+                    field="offense_category",
+                    operator=ConditionOperator.IN,
+                    value=[
+                        ArizonaOffenseCategory.CLASS_2,
+                        ArizonaOffenseCategory.CLASS_3,
+                    ],
+                ),
             },
             load_state_conditions(StateCode.US_AZ),
         )
@@ -165,7 +176,16 @@ class TestListLawRegimeNames(unittest.TestCase):
 
     def test_list_arizona_regimes(self) -> None:
         self.assertEqual(
-            ["DPR", "TIS_A", "TIS_B", "TIS_C"], list_law_regime_names(StateCode.US_AZ)
+            [
+                "DPR",
+                "NEW_CODE_A_B",
+                "NEW_CODE_C_D",
+                "OLD_CODE",
+                "TIS_A",
+                "TIS_B",
+                "TIS_C",
+            ],
+            list_law_regime_names(StateCode.US_AZ),
         )
 
     def test_list_regimes_for_state_without_rules(self) -> None:
