@@ -1,0 +1,150 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in
+# `view_custody_classification_assessment` to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  CUSTODYCLASSIFDATE: DATE
+  CLASSIFICATIONTYPEACTIVITY: STRING
+  STAFFMAKINGCUSTODYCLASSIF: STRING
+  TOTALCUSTODYSCORE: INTEGER
+  SUGGESTEDCUSTODYGRADE: STRING
+  MODIFIEDCUSTODYGRADE: STRING
+  CUSTODYCLASSIFICATIONSTAT: STRING
+  CLASSIFICATIONSTATUSDATE: DATE
+  override_reasons: STRING
+  SEVERITYOFOFFENSEPTS: STRING
+  PRIORCONVVIOLPTS: STRING
+  DISCIPLINARYREPORTPOINTS: STRING
+  ESCAPEHISTORYPOINTS: STRING
+  STABILITYPGMPARTICIPPTS: STRING
+  SEXOFFENDERHISTPTS: STRING
+  OUTSTANDINGDETAINERSPTS: STRING
+  TIMEREMAINTILRELEASEPTS: STRING
+  CUSTODYCLASSVERSION: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - $literal("CUSTODYCLASS")
+                - OFFENDERID
+                - CUSTODYCLASSIFDATE
+          assessment_date: CUSTODYCLASSIFDATE
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type: $literal_enum(StateAssessmentType.AR_CUSTODY_CLASS)
+          assessment_subtype:
+            $enum_mapping:
+              $raw_text: CLASSIFICATIONTYPEACTIVITY
+              $mappings:
+                StateAssessmentSubtype.INITIAL:
+                  - "I" # Initial classification
+                StateAssessmentSubtype.REASSESSMENT:
+                  - "R" # Reclassification
+                  - "S" # System-generated (appears to be triggered by changes to SENTENCECREDITDBT)
+          # Status P (pending) means AR has not yet decided, so these rows get no decision.
+          assessment_decision:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: CUSTODYCLASSIFICATIONSTAT
+                    - $not:
+                        $equal:
+                          - CUSTODYCLASSIFICATIONSTAT
+                          - $literal("P")
+                $then:
+                  $enum_mapping:
+                    $raw_text: CUSTODYCLASSIFICATIONSTAT
+                    $mappings:
+                      StateAssessmentDecision.APPROVED:
+                        - "A" # Approved
+          assessment_decision_date:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: CUSTODYCLASSIFICATIONSTAT
+                    - $not:
+                        $equal:
+                          - CUSTODYCLASSIFICATIONSTAT
+                          - $literal("P")
+                $then: CLASSIFICATIONSTATUSDATE
+          conducting_staff_external_id: STAFFMAKINGCUSTODYCLASSIF
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: STAFFMAKINGCUSTODYCLASSIF
+                $then: $literal("US_AR_PARTYID")
+          assessment_score: TOTALCUSTODYSCORE
+          # AR's grade names don't line up with StateAssessmentLevel. AR's C4 is
+          # called "Maximum", but C5 (High Security) is more restrictive, so C4 maps
+          # to HIGH and C5 maps to MAXIMUM. The incarceration period mapping maps the
+          # same grades differently (C4 to MAXIMUM, C5 to CLOSE) because
+          # StateIncarcerationPeriodCustodyLevel has a CLOSE value and
+          # StateAssessmentLevel doesn't.
+
+          # Based on the numbering system, C1 is probably the lowest possible custody level,
+          # but the definition ("Work Release") doesn't provide much information about how it
+          # should be ranked. It hasn't really been used since 2003, so it's just left as INTERNAL_UNKNOWN.
+          assessment_level:
+            $enum_mapping:
+              $raw_text: SUGGESTEDCUSTODYGRADE
+              $mappings:
+                StateAssessmentLevel.MINIMUM:
+                  - "C2" # Minimum (Trusty)
+                StateAssessmentLevel.MEDIUM:
+                  - "C3" # Medium
+                StateAssessmentLevel.HIGH:
+                  - "C4" # Maximum
+                StateAssessmentLevel.MAXIMUM:
+                  - "C5" # High Security
+                StateAssessmentLevel.INTERNAL_UNKNOWN:
+                  - "C1" # Work Release
+                  - "SK" # Safekeeper (Death Row)
+          # MODIFIEDCUSTODYGRADE holds the grade staff assigned, which differs from
+          # the suggested grade only on departures. The level mapping must match
+          # assessment_level above.
+          assessment_override_level:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: MODIFIEDCUSTODYGRADE
+                    - $not:
+                        $equal:
+                          - MODIFIEDCUSTODYGRADE
+                          - SUGGESTEDCUSTODYGRADE
+                $then:
+                  $enum_mapping:
+                    $raw_text: MODIFIEDCUSTODYGRADE
+                    $mappings:
+                      StateAssessmentLevel.MINIMUM:
+                        - "C2" # Minimum (Trusty)
+                      StateAssessmentLevel.MEDIUM:
+                        - "C3" # Medium
+                      StateAssessmentLevel.HIGH:
+                        - "C4" # Maximum
+                      StateAssessmentLevel.MAXIMUM:
+                        - "C5" # High Security
+                      StateAssessmentLevel.INTERNAL_UNKNOWN:
+                        - "C1" # Work Release
+                        - "SK" # Safekeeper (Death Row)
+          assessment_metadata:
+            $normalized_values_json_dict:
+              SUGGESTEDCUSTODYGRADE: SUGGESTEDCUSTODYGRADE
+              MODIFIEDCUSTODYGRADE: MODIFIEDCUSTODYGRADE
+              override_reasons: override_reasons
+              CUSTODYCLASSVERSION: CUSTODYCLASSVERSION
+              SEVERITYOFOFFENSEPTS: SEVERITYOFOFFENSEPTS
+              PRIORCONVVIOLPTS: PRIORCONVVIOLPTS
+              DISCIPLINARYREPORTPOINTS: DISCIPLINARYREPORTPOINTS
+              ESCAPEHISTORYPOINTS: ESCAPEHISTORYPOINTS
+              STABILITYPGMPARTICIPPTS: STABILITYPGMPARTICIPPTS
+              SEXOFFENDERHISTPTS: SEXOFFENDERHISTPTS
+              OUTSTANDINGDETAINERSPTS: OUTSTANDINGDETAINERSPTS
+              TIMEREMAINTILRELEASEPTS: TIMEREMAINTILRELEASEPTS

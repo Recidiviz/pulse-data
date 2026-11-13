@@ -70,6 +70,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ar_identity_fragment.identity_sex",
     "us_ar_identity_rejections.rejected_identity_cluster",
     "us_ar_ingest_view_results.arora_assessment",
+    "us_ar_ingest_view_results.custody_classification_assessment",
     "us_ar_ingest_view_results.employment_period",
     "us_ar_ingest_view_results.incarceration_incident",
     "us_ar_ingest_view_results.incarceration_period",
