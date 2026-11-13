@@ -38,6 +38,7 @@ from recidiviz.sentence_calculator.models.rules import (
     LAW_REGIME_SCHEMA_PATH,
     CreditCapRule,
     CreditRateRule,
+    CreditRateUnit,
     DateFloor,
     DateFormulaRule,
     LawRegime,
@@ -273,6 +274,8 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                             ]
                         ),
                         rate=30.0,
+                        per_unit=1,
+                        unit=CreditRateUnit.MONTH,
                         applies_to=[
                             ReductionTarget(term=TermType.MAX_TERM, when=None),
                             ReductionTarget(term=TermType.MIN_TERM, when=None),
@@ -287,6 +290,8 @@ class TestLawRegimeFromYaml(unittest.TestCase):
                         ),
                         when=None,
                         rate=20.0,
+                        per_unit=1,
+                        unit=CreditRateUnit.MONTH,
                         applies_to=[
                             ReductionTarget(term=TermType.MAX_TERM, when=None),
                             ReductionTarget(
@@ -420,6 +425,45 @@ class TestLawRegimeFromYaml(unittest.TestCase):
         self.assertFalse(regime.use_calendar_term_conversion)
         self.assertEqual(30.0, regime.days_per_month)
         self.assertEqual(365.0, regime.days_per_year)
+
+    def test_parse_daily_credit_regime(self) -> None:
+        regime = LawRegime.from_yaml(
+            fixtures.as_filepath("us_xx_law_regime_daily_credits.yaml"),
+            sentence_class=NevadaSentence,
+            shared_conditions={},
+        )
+
+        self.assertEqual(
+            [
+                CreditRateRule(
+                    name="one_for_six",
+                    description="One day of credit for every six days served",
+                    when=None,
+                    rate=1.0,
+                    per_unit=6,
+                    unit=CreditRateUnit.DAY,
+                    applies_to=[
+                        ReductionTarget(term=TermType.MAX_TERM, when=None),
+                        ReductionTarget(term=TermType.MIN_TERM, when=None),
+                    ],
+                    statute="Test Statute 3",
+                )
+            ],
+            regime.credit_rates,
+        )
+        self.assertEqual(
+            "1.0 days per 6 days served", regime.credit_rates[0].rate_description
+        )
+
+    def test_parse_unknown_credit_unit_fails_schema(self) -> None:
+        with self.assertRaisesRegex(
+            ValidationError, r"^'WEEK' is not one of \['DAY', 'MONTH'\]"
+        ):
+            LawRegime.from_yaml(
+                fixtures.as_filepath("us_xx_law_regime_unknown_credit_unit.yaml"),
+                sentence_class=NevadaSentence,
+                shared_conditions={},
+            )
 
     def test_parse_rule_missing_name_fails_schema(self) -> None:
         with self.assertRaisesRegex(ValidationError, r"^'name' is a required property"):
@@ -726,6 +770,15 @@ term_multipliers:
             schema["$defs"]["credit_cap"]["properties"]["binds"]["items"]["enum"],
         )
 
+    def test_schema_credit_rate_units_match_python_enum(self) -> None:
+        with open(LAW_REGIME_SCHEMA_PATH, encoding="utf-8") as f:
+            schema = json.load(f)
+
+        self.assertEqual(
+            [e.value for e in CreditRateUnit],
+            schema["$defs"]["credit_rate"]["properties"]["unit"]["enum"],
+        )
+
 
 class TestLawRegimeValidation(unittest.TestCase):
     """Tests for the cross-field validation in LawRegime.__attrs_post_init__."""
@@ -801,6 +854,8 @@ class TestLawRegimeValidation(unittest.TestCase):
                         description="Credits for category E offenses",
                         when=_CATEGORY_E,
                         rate=20.0,
+                        per_unit=1,
+                        unit=CreditRateUnit.MONTH,
                         applies_to=[
                             ReductionTarget(term=TermType.MAX_TERM, when=None),
                             ReductionTarget(term=TermType.MIN_TERM, when=None),
@@ -846,6 +901,8 @@ class TestLawRegimeValidation(unittest.TestCase):
                     description="Stat time for every offense",
                     when=None,
                     rate=20.0,
+                    per_unit=1,
+                    unit=CreditRateUnit.MONTH,
                     applies_to=_MAX_AND_MIN_TERMS,
                     statute=None,
                 )
@@ -878,6 +935,8 @@ class TestLawRegimeValidation(unittest.TestCase):
                         description="Stat time for every offense",
                         when=None,
                         rate=20.0,
+                        per_unit=1,
+                        unit=CreditRateUnit.MONTH,
                         applies_to=_MAX_AND_MIN_TERMS,
                         statute=None,
                     )
@@ -935,6 +994,8 @@ class TestLawRegimeValidation(unittest.TestCase):
                 description="Stat time for every offense",
                 when=None,
                 rate=20.0,
+                per_unit=1,
+                unit=CreditRateUnit.MONTH,
                 applies_to=[
                     ReductionTarget(term=TermType.MAX_TERM, when=None),
                     ReductionTarget(term=TermType.MAX_TERM, when=_CATEGORY_E),
@@ -1347,6 +1408,8 @@ class TestSentenceConditionFieldNames(unittest.TestCase):
                         value=True,
                     ),
                     rate=30.0,
+                    per_unit=1,
+                    unit=CreditRateUnit.MONTH,
                     applies_to=[
                         ReductionTarget(term=TermType.MAX_TERM, when=None),
                         ReductionTarget(
@@ -1365,6 +1428,8 @@ class TestSentenceConditionFieldNames(unittest.TestCase):
                     description="Stat time off both terms of every other offense",
                     when=None,
                     rate=20.0,
+                    per_unit=1,
+                    unit=CreditRateUnit.MONTH,
                     applies_to=_MAX_AND_MIN_TERMS,
                     statute=None,
                 ),

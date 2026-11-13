@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
+description: Test regime whose credit rate names a unit the schema does not know.
+effective_date: "2020-01-01"
+use_calendar_term_conversion: true
+
+credit_rates:
+  - name: stat_time
+    description: Stat time for every offense
+    rate: 20
+    per_unit: 1
+    unit: WEEK
+    applies_to:
+      max_term: always
+
+projected_dates:
+  release_date:
+    description: Release once the adjusted max term is served
+    formula: earliest_start_date + adjusted_max_days

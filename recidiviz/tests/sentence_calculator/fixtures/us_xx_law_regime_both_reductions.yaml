@@ -12,6 +12,8 @@ credit_rates:
   - name: stat_time
     description: Stat time for every offense
     rate: 20.0
+    per_unit: 1
+    unit: MONTH
     applies_to:
       max_term: always
       min_term: always

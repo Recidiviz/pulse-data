@@ -84,13 +84,15 @@
     },
     "credit_rate": {
       "type": "object",
-      "required": ["name", "description", "rate", "applies_to"],
+      "required": ["name", "description", "rate", "per_unit", "unit", "applies_to"],
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string" },
         "description": { "type": "string" },
         "when": { "$ref": "#/$defs/sentence_condition" },
         "rate": { "type": "number", "minimum": 0 },
+        "per_unit": { "type": "integer", "minimum": 1 },
+        "unit": { "enum": ["DAY", "MONTH"] },
         "applies_to": { "$ref": "#/$defs/applies_to" },
         "statute": { "type": "string" }
       }

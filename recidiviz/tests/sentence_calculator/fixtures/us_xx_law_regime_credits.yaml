@@ -19,6 +19,8 @@ credit_rates:
       qualified_for_enhanced_good_time: true
       offense_category: { not_in: [A] }
     rate: 30
+    per_unit: 1
+    unit: MONTH
     applies_to:
       max_term: always
       min_term: always
@@ -28,6 +30,8 @@ credit_rates:
       Credits for every other offender, off the max term, and off the min term
       outside these offenses
     rate: 20.0
+    per_unit: 1
+    unit: MONTH
     applies_to:
       max_term: always
       min_term:

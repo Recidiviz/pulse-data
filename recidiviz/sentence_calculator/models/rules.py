@@ -385,6 +385,28 @@ class TermType(Enum):
 _TERM_TYPE_VALUES = [term.value for term in TermType]
 
 
+class CreditRateUnit(Enum):
+    """The unit of served time a credit_rates rate is earned over."""
+
+    DAY = "DAY"
+    """Credits accrue on every day served, at rate / per_unit days of credit per
+    day, so a term is complete once term / (1 + rate / per_unit) days are served,
+    rounded up to a whole day."""
+
+    MONTH = "MONTH"
+    """Credits accrue month by month: every whole month served earns rate /
+    per_unit days of credit, and a partial month earns a prorated share."""
+
+
+def credit_rate_description(*, rate: float, per_unit: int, unit: CreditRateUnit) -> str:
+    """Returns the rate in words for calculation traces, e.g. '20.0 days per
+    month served' or '1.0 days per 6 days served'."""
+    unit_word = unit.value.lower()
+    if per_unit == 1:
+        return f"{rate} days per {unit_word} served"
+    return f"{rate} days per {per_unit} {unit_word}s served"
+
+
 @attr.define(frozen=True, kw_only=True)
 class ReductionTarget:
     """A term that a reduction comes off, and the sentences it comes off for."""
@@ -514,7 +536,7 @@ class TermMultiplierRule:
 
 @attr.define(frozen=True, kw_only=True)
 class CreditRateRule:
-    """Sentence-reducing credits a sentence earns for each month served."""
+    """Sentence-reducing credits a sentence earns for the time it serves."""
 
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     """Identifier for the rule, unique within its regime."""
@@ -527,7 +549,18 @@ class CreditRateRule:
     applies to every sentence."""
 
     rate: float = attr.ib(validator=attr_validators.is_non_negative_float)
-    """Credit days earned per month served."""
+    """Credit days earned after serving the specified number of units - e.g. if
+    per_unit is 6 and unit is DAY, this would be the number of credits earned per
+    6 days served."""
+
+    per_unit: int = attr.ib(validator=attr_validators.is_positive_int)
+    """The denominator in a credit rate: the number of 'units' (days, months)
+    that must be served before earning the credits. E.g. if the unit is days and
+    the rate is "1 credit per 6 days", per_unit would be 6."""
+
+    unit: CreditRateUnit = attr.ib(validator=attr.validators.in_(CreditRateUnit))
+    """The unit of served time, DAY or MONTH, that is used for the credit rate,
+    e.g. '20 credits per MONTH'."""
 
     applies_to: list[ReductionTarget] = attr.ib(
         validator=[
@@ -546,6 +579,14 @@ class CreditRateRule:
             rule_label=f"Credit rate [{self.name}]", applies_to=self.applies_to
         )
 
+    @property
+    def rate_description(self) -> str:
+        """Returns the rate in words for calculation traces, e.g. '20.0 days per
+        month served'."""
+        return credit_rate_description(
+            rate=self.rate, per_unit=self.per_unit, unit=self.unit
+        )
+
     @classmethod
     def from_yaml_dict(
         cls, yaml_dict: YAMLDict, *, parser: ConditionParser
@@ -558,6 +599,8 @@ class CreditRateRule:
             description=yaml_dict.pop("description", str),
             when=_pop_when(yaml_dict, parser=parser, location=location),
             rate=_pop_number(yaml_dict, "rate"),
+            per_unit=yaml_dict.pop("per_unit", int),
+            unit=CreditRateUnit(yaml_dict.pop("unit", str)),
             applies_to=_pop_applies_to(
                 yaml_dict, parser=parser, rule_location=location
             ),

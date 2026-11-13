@@ -39,6 +39,7 @@ from recidiviz.sentence_calculator.models.outputs import (
 from recidiviz.sentence_calculator.models.rules import (
     CreditCapRule,
     CreditRateRule,
+    CreditRateUnit,
     LawRegime,
     ReductionTarget,
     TermMultiplierRule,
@@ -117,6 +118,8 @@ _STAT_TIME = CreditRateRule(
     ),
     when=None,
     rate=20.0,
+    per_unit=1,
+    unit=CreditRateUnit.MONTH,
     applies_to=[
         ReductionTarget(term=TermType.MAX_TERM, when=None),
         ReductionTarget(term=TermType.MIN_TERM, when=_IS_NOT_VIOLENT),
@@ -467,12 +470,14 @@ class TestGetCreditRate(unittest.TestCase):
                     label="S1.credit_rate",
                     rule_name="stat_time",
                     formula=(
-                        "rate=20.0 days/month because stat_time applies to every "
+                        "rate=20.0 days per month served because stat_time applies to every "
                         "sentence; doesn't reduce min_term because applies_to min_term "
                         "doesn't match offense_group=VIOLENCE; reduces max_term "
                         "because applies_to lists max_term with no conditions"
                     ),
                 ),
+                per_unit=1,
+                unit=CreditRateUnit.MONTH,
                 reduced_terms=frozenset({TermType.MAX_TERM}),
             ),
             engine.get_credit_rate(_VIOLENT_SENTENCE),
@@ -488,12 +493,14 @@ class TestGetCreditRate(unittest.TestCase):
                     label="S2.credit_rate",
                     rule_name="stat_time",
                     formula=(
-                        "rate=20.0 days/month because stat_time applies to every "
+                        "rate=20.0 days per month served because stat_time applies to every "
                         "sentence; reduces min_term because applies_to min_term "
                         "matches offense_group=OTHER; reduces max_term because "
                         "applies_to lists max_term with no conditions"
                     ),
                 ),
+                per_unit=1,
+                unit=CreditRateUnit.MONTH,
                 reduced_terms=frozenset({TermType.MIN_TERM, TermType.MAX_TERM}),
             ),
             engine.get_credit_rate(_NONVIOLENT_SENTENCE),
@@ -508,6 +515,8 @@ class TestGetCreditRate(unittest.TestCase):
                     description="Lower credits for violent offenses",
                     when=_IS_VIOLENT,
                     rate=10.0,
+                    per_unit=1,
+                    unit=CreditRateUnit.MONTH,
                     applies_to=[
                         ReductionTarget(term=TermType.MAX_TERM, when=None),
                         ReductionTarget(term=TermType.MIN_TERM, when=None),
@@ -535,8 +544,10 @@ class TestGetCreditRate(unittest.TestCase):
                 rate=TrackedValue(
                     value=0.0,
                     label="S2.credit_rate",
-                    formula="No credit_rates rule; default 0.0 days/month",
+                    formula="No credit_rates rule; default 0.0 days per month served",
                 ),
+                per_unit=1,
+                unit=CreditRateUnit.MONTH,
                 reduced_terms=frozenset(),
             ),
             engine.get_credit_rate(_NONVIOLENT_SENTENCE),

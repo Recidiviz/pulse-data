@@ -25,7 +25,7 @@ from recidiviz.sentence_calculator.models.inputs import (
     SentenceCalculationInput,
     SentenceType,
 )
-from recidiviz.sentence_calculator.models.rules import TermType
+from recidiviz.sentence_calculator.models.rules import CreditRateUnit, TermType
 from recidiviz.sentence_calculator.models.tracked import TrackedValue
 from recidiviz.utils.types import assert_type
 
@@ -77,7 +77,18 @@ class ProjectedCreditRate:
     rate: TrackedValue[float] = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)
     )
-    """Credit days earned per month served."""
+    """Credit days earned after serving the specified number of units - e.g. if
+    per_unit is 6 and unit is DAY, this would be the number of credits earned per
+    6 days served."""
+
+    per_unit: int = attr.ib(validator=attr_validators.is_positive_int)
+    """The denominator in a credit rate: the number of 'units' (days, months)
+    that must be served before earning the credits. E.g. if the unit is days and
+    the rate is "1 credit per 6 days", per_unit would be 6."""
+
+    unit: CreditRateUnit = attr.ib(validator=attr.validators.in_(CreditRateUnit))
+    """The unit of served time, DAY or MONTH, that is used for the credit rate,
+    e.g. '20 credits per MONTH'."""
 
     reduced_terms: frozenset[TermType] = attr.ib(
         validator=attr_validators.is_frozenset_of(TermType)

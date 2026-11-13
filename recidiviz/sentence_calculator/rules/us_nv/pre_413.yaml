@@ -55,6 +55,8 @@ credit_rates:
     when:
       qualified_for_enhanced_good_time: true
     rate: 30
+    per_unit: 1
+    unit: MONTH
     applies_to:
       max_term: always
       min_term:
@@ -66,6 +68,8 @@ credit_rates:
       20 days of stat time per month served, which NRS 209.4465(1) grants to
       every offender.
     rate: 20
+    per_unit: 1
+    unit: MONTH
     applies_to:
       max_term: always
       min_term:

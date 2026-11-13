@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=../../../sentence_calculator/rules/schema/law_regime_schema.json
+description: Test regime whose credits accrue by the day served.
+effective_date: "2020-01-01"
+use_calendar_term_conversion: true
+
+credit_rates:
+  - name: one_for_six
+    description: One day of credit for every six days served
+    rate: 1
+    per_unit: 6
+    unit: DAY
+    applies_to:
+      max_term: always
+      min_term: always
+    statute: Test Statute 3
+
+projected_dates:
+  release_date:
+    description: Release once the adjusted max term is served
+    formula: earliest_start_date + adjusted_max_days

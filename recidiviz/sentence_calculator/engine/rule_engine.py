@@ -35,6 +35,7 @@ from recidiviz.sentence_calculator.models.rules import (
     SENTENCE_LENGTH_DAYS_VARIABLE,
     CreditCapRule,
     CreditRateRule,
+    CreditRateUnit,
     LawRegime,
     TermMultiplierRule,
     TermType,
@@ -235,8 +236,10 @@ class RuleEngine:
                 rate=TrackedValue(
                     value=0.0,
                     label=f"{sentence.sentence_id}.credit_rate",
-                    formula="No credit_rates rule; default 0.0 days/month",
+                    formula="No credit_rates rule; default 0.0 days per month served",
                 ),
+                per_unit=1,
+                unit=CreditRateUnit.MONTH,
                 reduced_terms=frozenset(),
             )
         reduced_terms, term_reasons = _reduced_terms(rule=rule, sentence=sentence)
@@ -247,12 +250,14 @@ class RuleEngine:
                 rule_name=rule.name,
                 formula="; ".join(
                     [
-                        f"rate={rule.rate} days/month because "
+                        f"rate={rule.rate_description} because "
                         f"{_rule_match_reason(rule, sentence)}"
                     ]
                     + term_reasons
                 ),
             ),
+            per_unit=rule.per_unit,
+            unit=rule.unit,
             reduced_terms=reduced_terms,
         )
 

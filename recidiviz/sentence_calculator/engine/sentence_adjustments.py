@@ -34,6 +34,12 @@ The 30 days of jail credit earn int(30 / 30 * 20) = 20 days of credit, leaving
 (30 served plus 20 credit), so 35 months cover 1750 and serve 1050 days. The last
 25 days take 15 more days of serving, which earn a prorated 15 / 30 * 20 = 10 days
 of credit, for 1050 + 15 = 1065 days served.
+
+Under a regime whose credit_rates earn 1 day for every 6 days served (unit DAY),
+credits accrue on every day rather than month by month, so the same sentence's
+max term is served in ceil(1790 / (1 + 1/6)) = 1535 days: the 30 days of jail
+credit earn 30 / 6 = 5 days of credit, leaving 1825 - 30 - 5 = 1790 days to
+cover, and each day served covers 1 + 1/6 of them.
 """
 
 import calendar
@@ -50,7 +56,12 @@ from recidiviz.sentence_calculator.models.outputs import (
     TermMultiplier,
     TrackedSentenceAdjustment,
 )
-from recidiviz.sentence_calculator.models.rules import LawRegime, TermType
+from recidiviz.sentence_calculator.models.rules import (
+    CreditRateUnit,
+    LawRegime,
+    TermType,
+    credit_rate_description,
+)
 from recidiviz.sentence_calculator.models.tracked import TrackedValue
 
 # Labels naming which of a sentence's two terms is being calculated. They are
@@ -386,12 +397,19 @@ def _apply_credit_rate(
     isn't one of credit_rate's reduced_terms, it returns the term minus only jail
     credit, and 0 credits.
 
-    Credits accrue on the jail credit time at the regime's days_per_month, then
-    month by month while the term is served: each whole month earns credit_rate
-    days, and a partial month earns credit prorated by the share of it served.
-    Under calendar term conversion the months are calendar months, so the first
-    and last months are partial. The total is capped if the regime's CREDIT_CAP
-    rule binds this term.
+    Credits accrue on the jail credit time first:
+
+    Under a MONTH rate they accrue at the regime's days_per_month, then month by
+    month while the term is served: each whole month earns the rate, and a
+    partial month earns credit prorated by the share of it served. Under
+    calendar term conversion the months are calendar months, so the first and
+    last months are partial.
+
+    Under a DAY rate every day served, jail credit included, earns rate / per_unit
+    days of credit, so the term is complete once the days left after jail credit
+    divided by 1 + rate / per_unit are served, rounded up to a whole day.
+
+    The total is capped if the regime's CREDIT_CAP rule binds this term.
 
     TODO(NV-44): Use the credits a person has actually earned for time already
     served, and project credits only for the time not yet served. Today every
@@ -406,32 +424,35 @@ def _apply_credit_rate(
             unapplied_reduction=tracked_rate,
             term_label=term_label,
         )
-    regime = engine.regime
-    rate = _to_fraction(tracked_rate.value)
-    # TODO(NV-61): Use the credits NDOC recorded for jail credit time. This is the
-    # only use of days_per_month under calendar term conversion, so it goes away
-    # with this projection.
-    jail_credit_credit_days = int(
-        Fraction(jail_credit.value) / _to_fraction(regime.days_per_month) * rate
+    rate_description = credit_rate_description(
+        rate=tracked_rate.value, per_unit=credit_rate.per_unit, unit=credit_rate.unit
     )
-    days_to_cover = original_days.value - jail_credit.value - jail_credit_credit_days
-    served_days = _days_served_while_earning_credits(
-        days_to_cover=days_to_cover,
-        start_date=start_date,
-        rate=rate,
-        days_per_month=(
-            None
-            if regime.use_calendar_term_conversion
-            else _to_fraction(regime.days_per_month)
-        ),
-    )
+    rate_per_unit = _to_fraction(tracked_rate.value) / credit_rate.per_unit
+    if credit_rate.unit is CreditRateUnit.DAY:
+        served_days = _days_served_at_daily_rate(
+            original_days=original_days.value,
+            jail_credit_days=jail_credit.value,
+            rate_per_day=rate_per_unit,
+        )
+        accrual = f"on every day served from {start_date}"
+    elif credit_rate.unit is CreditRateUnit.MONTH:
+        served_days = _days_served_at_monthly_rate(
+            original_days=original_days.value,
+            jail_credit_days=jail_credit.value,
+            rate_per_month=rate_per_unit,
+            start_date=start_date,
+            regime=engine.regime,
+        )
+        accrual = f"month by month from {start_date}"
+    else:
+        raise ValueError(f"Unexpected credit rate unit: [{credit_rate.unit}]")
     # Jail credit can be longer than the term, when someone arrives with more
     # jail credit than days to serve and is released right away. The term then
     # needs no credits, rather than negative ones.
     uncapped_credit_days = max(0, original_days.value - jail_credit.value - served_days)
     uncapped_credits_formula = (
-        f"{tracked_rate.value} days/month on {jail_credit.value} days of jail credit "
-        f"and month by month from {start_date} = {uncapped_credit_days}"
+        f"{rate_description}, earned on {jail_credit.value} days of jail credit "
+        f"and {accrual} = {uncapped_credit_days}"
     )
     credits_label = f"{sentence.sentence_id}.good_time_credits_{term_label}"
 
@@ -476,6 +497,55 @@ def _apply_credit_rate(
             other_sources=[jail_credit, good_time_credits],
         ),
         good_time_credits,
+    )
+
+
+def _days_served_at_daily_rate(
+    *, original_days: int, jail_credit_days: int, rate_per_day: Fraction
+) -> int:
+    """Returns how many days must be served to cover original_days when every day
+    served, jail credit included, earns rate_per_day days of credit. The jail
+    credit and its credits come off first, and the rest is covered at 1 +
+    rate_per_day days per day served, rounded up to the whole day on which the
+    term is complete. Because jail credit is a whole number of days, the result
+    equals ceil(original_days / (1 + rate_per_day)) - jail_credit_days, which is
+    why the jail credit must earn at the same ratio as the days served."""
+    jail_credit_credit_days = Fraction(jail_credit_days) * rate_per_day
+    days_to_cover = original_days - jail_credit_days - jail_credit_credit_days
+    if days_to_cover <= 0:
+        return 0
+    return math.ceil(days_to_cover / (1 + rate_per_day))
+
+
+def _days_served_at_monthly_rate(
+    *,
+    original_days: int,
+    jail_credit_days: int,
+    rate_per_month: Fraction,
+    start_date: date,
+    regime: LawRegime,
+) -> int:
+    """Returns how many days from start_date must be served to cover
+    original_days when each month served earns rate_per_month days of credit.
+    The jail credit earns credit at the regime's days_per_month and comes off
+    first with its credits."""
+    # TODO(NV-61): Use the credits NDOC recorded for jail credit time. This is the
+    # only use of days_per_month under calendar term conversion, so it goes away
+    # with this projection.
+    jail_credit_credit_days = math.ceil(
+        Fraction(jail_credit_days)
+        / _to_fraction(regime.days_per_month)
+        * rate_per_month
+    )
+    return _days_served_while_earning_credits(
+        days_to_cover=original_days - jail_credit_days - jail_credit_credit_days,
+        start_date=start_date,
+        rate=rate_per_month,
+        days_per_month=(
+            None
+            if regime.use_calendar_term_conversion
+            else _to_fraction(regime.days_per_month)
+        ),
     )
 
 

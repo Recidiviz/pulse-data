@@ -24,7 +24,7 @@ from recidiviz.sentence_calculator.models.outputs import (
     TermMultiplier,
     TrackedSentenceAdjustment,
 )
-from recidiviz.sentence_calculator.models.rules import TermType
+from recidiviz.sentence_calculator.models.rules import CreditRateUnit, TermType
 from recidiviz.sentence_calculator.models.tracked import TrackedValue
 
 # Term lengths shared by every adjustment below. The tests only vary which
@@ -71,6 +71,8 @@ class TestTrackedSentenceAdjustment(unittest.TestCase):
             term_multiplier=None,
             credit_rate=ProjectedCreditRate(
                 rate=TrackedValue.input(20.0, "S1.credit_rate"),
+                per_unit=1,
+                unit=CreditRateUnit.MONTH,
                 reduced_terms=frozenset({TermType.MIN_TERM, TermType.MAX_TERM}),
             ),
             jail_credit=_JAIL_CREDIT,
@@ -122,6 +124,8 @@ class TestTrackedSentenceAdjustment(unittest.TestCase):
                 ),
                 credit_rate=ProjectedCreditRate(
                     rate=TrackedValue.input(20.0, "S1.credit_rate"),
+                    per_unit=1,
+                    unit=CreditRateUnit.MONTH,
                     reduced_terms=frozenset({TermType.MAX_TERM}),
                 ),
                 jail_credit=_JAIL_CREDIT,

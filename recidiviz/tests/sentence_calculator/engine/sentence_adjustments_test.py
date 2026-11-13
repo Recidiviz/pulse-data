@@ -33,6 +33,7 @@ from recidiviz.sentence_calculator.models.inputs import Term
 from recidiviz.sentence_calculator.models.rules import (
     CreditCapRule,
     CreditRateRule,
+    CreditRateUnit,
     LawRegime,
     ReductionTarget,
     TermMultiplierRule,
@@ -102,7 +103,22 @@ _STAT_TIME = CreditRateRule(
     ),
     when=None,
     rate=20.0,
+    per_unit=1,
+    unit=CreditRateUnit.MONTH,
     applies_to=_MAX_TERM_AND_NONVIOLENT_MIN_TERM,
+    statute=None,
+)
+_ONE_FOR_SIX = CreditRateRule(
+    name="one_for_six",
+    description="One day of credit for every six days served, off both terms",
+    when=None,
+    rate=1.0,
+    per_unit=6,
+    unit=CreditRateUnit.DAY,
+    applies_to=[
+        ReductionTarget(term=TermType.MAX_TERM, when=None),
+        ReductionTarget(term=TermType.MIN_TERM, when=None),
+    ],
     statute=None,
 )
 _MIN_TERM_CREDIT_CAP = CreditCapRule(
@@ -598,7 +614,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
                         "label": "S1.credit_rate",
                         "value": 20.0,
                         "formula": (
-                            "rate=20.0 days/month because stat_time applies to "
+                            "rate=20.0 days per month served because stat_time applies to "
                             "every sentence; doesn't reduce min_term because "
                             "applies_to min_term doesn't match "
                             "offense_group=VIOLENCE; reduces max_term because "
@@ -729,7 +745,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
                                 "label": "S2.uncapped_good_time_credits_min",
                                 "value": 292,
                                 "formula": (
-                                    "20.0 days/month on 30 days of jail credit and "
+                                    "20.0 days per month served, earned on 30 days of jail credit and "
                                     "month by month from 2025-01-01 = 292"
                                 ),
                                 "derived_from": [
@@ -738,7 +754,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
                                         "label": "S2.credit_rate",
                                         "value": 20.0,
                                         "formula": (
-                                            "rate=20.0 days/month because stat_time "
+                                            "rate=20.0 days per month served because stat_time "
                                             "applies to every sentence; reduces "
                                             "min_term because applies_to min_term "
                                             "matches offense_group=OTHER; reduces "
@@ -867,7 +883,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
                         "label": "S4.good_time_credits_max",
                         "value": 0,
                         "formula": (
-                            "20.0 days/month on 30 days of jail credit and month "
+                            "20.0 days per month served, earned on 30 days of jail credit and month "
                             "by month from 2025-01-01 = 0"
                         ),
                         "derived_from": [
@@ -880,7 +896,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
                                 "label": "S4.credit_rate",
                                 "value": 20.0,
                                 "formula": (
-                                    "rate=20.0 days/month because stat_time "
+                                    "rate=20.0 days per month served because stat_time "
                                     "applies to every sentence; reduces min_term "
                                     "because applies_to min_term matches "
                                     "offense_group=OTHER; reduces max_term because "
@@ -900,6 +916,133 @@ class TestCreditRateAdjustment(unittest.TestCase):
             adjustment.adjusted_max_days.to_derivation_tree(),
         )
         self.assertEqual(0, adjustment.adjusted_min_days.value)
+        self.assertEqual(0, adjustment.max_term_reduction_days.value)
+
+
+class TestDailyCreditRateAdjustment(unittest.TestCase):
+    """Tests for calculate_sentence_adjustment under a regime whose credit_rates
+    accrue by the day served."""
+
+    def _daily_engine(self) -> RuleEngine:
+        return RuleEngine(
+            _regime(
+                term_multipliers=[],
+                credit_rates=[_ONE_FOR_SIX],
+                credit_caps=[],
+                use_calendar_term_conversion=True,
+            )
+        )
+
+    def test_credits_accrue_on_every_day_served(self) -> None:
+        # A three year term with 35 days of jail credit, as a TIS C worksheet
+        # exercise lays it out.
+        sentence = NevadaSentence(  # pylint: disable=abstract-class-instantiated
+            sentence_id="S5",
+            offense_id=9999,
+            min_term=Term(years=3),
+            max_term=Term(years=3),
+            initial_time_served=Term(days=35),
+            offense_category=NevadaOffenseCategory.CATEGORY_C,
+            offense_group=NevadaOffenseGroup.OTHER,
+        )
+
+        adjustment = calculate_sentence_adjustment(
+            sentence=sentence,
+            start_date=TrackedValue.input(date(2019, 7, 13), "S1.start_date"),
+            engine=self._daily_engine(),
+        )
+
+        # The term counts from the RETRO date, 2019-06-08, and spans the 2020
+        # leap day: 1096 days. The jail credit earns 35 / 6 days of credit,
+        # leaving 1096 - 35 - 35 / 6 = 1055 + 1/6 days to cover at 7/6 of a day
+        # per day served: ceil(904.43) = 905 days.
+        self.assertEqual(1096, adjustment.original_max_days.value)
+        self.assertEqual(905, adjustment.adjusted_max_days.value)
+        self.assertEqual(905, adjustment.adjusted_min_days.value)
+        # 1096 - 35 - 905
+        self.assertEqual(156, adjustment.max_term_reduction_days.value)
+        self.assertEqual(
+            "1.0 days per 6 days served, earned on 35 days of jail credit and on every day "
+            "served from 2019-07-13 = 156",
+            adjustment.max_term_reduction_days.formula,
+        )
+        self.assertEqual(
+            frozenset({TermType.MIN_TERM, TermType.MAX_TERM}),
+            adjustment.reduced_terms,
+        )
+
+    def test_no_jail_credit_serves_six_sevenths_rounded_up(self) -> None:
+        sentence = NevadaSentence(  # pylint: disable=abstract-class-instantiated
+            sentence_id="S6",
+            offense_id=9999,
+            min_term=Term(days=100),
+            max_term=Term(days=100),
+            offense_category=NevadaOffenseCategory.CATEGORY_C,
+            offense_group=NevadaOffenseGroup.OTHER,
+        )
+
+        adjustment = calculate_sentence_adjustment(
+            sentence=sentence,
+            start_date=TrackedValue.input(_START_DATE, "S1.start_date"),
+            engine=self._daily_engine(),
+        )
+
+        # 100 / (7/6) = 85.71, so the term is complete on the 86th day served.
+        self.assertEqual(86, adjustment.adjusted_max_days.value)
+        self.assertEqual(14, adjustment.max_term_reduction_days.value)
+
+    def test_jail_credit_longer_than_term_earns_no_credits(self) -> None:
+        sentence = NevadaSentence(  # pylint: disable=abstract-class-instantiated
+            sentence_id="S7",
+            offense_id=9999,
+            min_term=Term(days=10),
+            max_term=Term(days=20),
+            initial_time_served=Term(days=30),
+            offense_category=NevadaOffenseCategory.CATEGORY_C,
+            offense_group=NevadaOffenseGroup.OTHER,
+        )
+
+        adjustment = calculate_sentence_adjustment(
+            sentence=sentence,
+            start_date=TrackedValue.input(_START_DATE, "S1.start_date"),
+            engine=self._daily_engine(),
+        )
+
+        self.assertEqual(0, adjustment.adjusted_max_days.value)
+        self.assertEqual(0, adjustment.max_term_reduction_days.value)
+
+    def test_zero_rate_subtracts_only_jail_credit(self) -> None:
+        engine = RuleEngine(
+            _regime(
+                term_multipliers=[],
+                credit_rates=[
+                    CreditRateRule(
+                        name="flat_time",
+                        description="No credits",
+                        when=None,
+                        rate=0.0,
+                        per_unit=1,
+                        unit=CreditRateUnit.DAY,
+                        applies_to=[
+                            ReductionTarget(term=TermType.MAX_TERM, when=None),
+                            ReductionTarget(term=TermType.MIN_TERM, when=None),
+                        ],
+                        statute=None,
+                    )
+                ],
+                credit_caps=[],
+                use_calendar_term_conversion=False,
+            )
+        )
+
+        adjustment = calculate_sentence_adjustment(
+            sentence=_NONVIOLENT_SENTENCE,
+            start_date=TrackedValue.input(_START_DATE, "S1.start_date"),
+            engine=engine,
+        )
+
+        # 1825 - 30 days of jail credit, and no credits.
+        self.assertEqual(1795, adjustment.adjusted_max_days.value)
         self.assertEqual(0, adjustment.max_term_reduction_days.value)
 
 
@@ -994,6 +1137,8 @@ class TestReductionReachingNoTerms(unittest.TestCase):
                         description="Stat time off every offense's min term",
                         when=None,
                         rate=20.0,
+                        per_unit=1,
+                        unit=CreditRateUnit.MONTH,
                         applies_to=[ReductionTarget(term=TermType.MIN_TERM, when=None)],
                         statute=None,
                     )
