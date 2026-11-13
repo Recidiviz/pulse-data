@@ -16,16 +16,21 @@
 # =============================================================================
 """US_TN contact note writeback implementation."""
 import json
+import logging
 import re
+import unicodedata
 from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Literal
 
+import requests
+from google.cloud.firestore_v1 import transforms
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
 from recidiviz.case_triage.workflows.writeback.base import (
     WritebackExecutorInterface,
+    WritebackRejectedError,
     WritebackRequestData,
     WritebackStatusTracker,
 )
@@ -45,10 +50,37 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.environment import in_gcp_production
 from recidiviz.utils.secrets import get_secret
+from recidiviz.utils.types import assert_type
 
 COMPLIANT_REPORTING_STATUS_DOC_ID = "usTnCompliantReporting2025Policy"
 EXPIRATION_STATUS_DOC_ID = "usTnExpiration"
 CONTACT_NOTE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
+
+TOMIS_A001_ERROR_MARKER = "A001 MISSING REQUIRED PARM FOR FUNC"
+
+# TOMIS can reject lines with non-ASCII characters. Each replacement is a single
+# character so a line never grows past the 70 character limit.
+_TOMIS_ASCII_REPLACEMENTS = str.maketrans(
+    {
+        "\u2022": "-",  # bullet
+        "\u25cf": "-",  # black circle
+        "\u25aa": "-",  # small black square
+        "\u2013": "-",  # en dash
+        "\u2014": "-",  # em dash
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201c": '"',
+        "\u201d": '"',
+        "\u00a0": " ",  # non-breaking space
+    }
+)
+
+
+def to_tomis_ascii(line: str) -> str:
+    """Returns line with common punctuation mapped to ASCII, accents stripped from
+    letters, and any other non-ASCII character removed."""
+    decomposed = unicodedata.normalize("NFD", line.translate(_TOMIS_ASCII_REPLACEMENTS))
+    return decomposed.encode("ascii", "ignore").decode("ascii")
 
 
 class UsTnContactTypeCode(Enum):
@@ -204,6 +236,7 @@ class UsTnContactNoteRequestData(ContactNoteRequestData):
         - Pages must be numbered 1-10.
         - Each page can have a maximum of 10 lines.
         - Each line must be <= 70 characters.
+        - Lines are reduced to ASCII with to_tomis_ascii.
 
         Since we might receive a subset of pages for a note, i.e. if some pages failed and others succeeded, the
         dictionary structure enables us to specify the page number.
@@ -223,7 +256,10 @@ class UsTnContactNoteRequestData(ContactNoteRequestData):
                     f"Line in page {page_num} has too many characters, maximum is 70"
                 )
 
-        return v
+        return {
+            page_num: [to_tomis_ascii(line) for line in lines]
+            for page_num, lines in v.items()
+        }
 
     @model_validator(mode="after")
     def validate_contact_note_id(self) -> "UsTnContactNoteRequestData":
@@ -302,6 +338,7 @@ TOMIS_TRANSPORT_CONFIG = RestTransportConfig(
     credential_secret="workflows_us_tn_insert_contact_note_key",
     test_url_secret="workflows_us_tn_insert_contact_note_test_url",
     auth_strategy=BasicAuth(),
+    caller_logged_error_markers=(TOMIS_A001_ERROR_MARKER,),
 )
 
 
@@ -360,9 +397,14 @@ class UsTnContactNoteStatusTracker(WritebackStatusTracker):
         return {"contactNote": {self.contact_note_id: contact_note_update}}
 
     def set_status(self, status: ExternalSystemRequestStatus) -> None:
+        update: dict[str, object] = {"status": status.value}
+        if status is ExternalSystemRequestStatus.IN_PROGRESS:
+            # A merge write keeps the error from a previous attempt unless we
+            # delete it, and TEPE notes for a person all share one document.
+            update["error"] = transforms.DELETE_FIELD
         self.firestore_client.set_document(
             self._firestore_path(),
-            self._contact_note_update({"status": status.value}),
+            self._contact_note_update(update),
             merge=True,
         )
 
@@ -372,6 +414,13 @@ class UsTnContactNoteStatusTracker(WritebackStatusTracker):
         self.firestore_client.set_document(
             self._firestore_path(),
             self._contact_note_update({"noteStatus": {str(page_number): status.value}}),
+            merge=True,
+        )
+
+    def set_error(self, error: str) -> None:
+        self.firestore_client.set_document(
+            self._firestore_path(),
+            self._contact_note_update({"error": error}),
             merge=True,
         )
 
@@ -415,6 +464,25 @@ class UsTnContactNoteWritebackExecutor(
                 self._tracker.set_page_status(
                     page_number, ExternalSystemRequestStatus.SUCCESS
                 )
+            except requests.exceptions.HTTPError as e:
+                self._tracker.set_page_status(
+                    page_number, ExternalSystemRequestStatus.FAILURE
+                )
+                if (
+                    TOMIS_A001_ERROR_MARKER
+                    not in assert_type(e.response, requests.Response).text
+                ):
+                    raise
+                self._tracker.set_error(TOMIS_A001_ERROR_MARKER)
+                logging.error(
+                    "TOMIS rejected contact note page %s with codes %s with A001 "
+                    "(missing required parameter)",
+                    page_number,
+                    [code.value for code in self.request.contact_type_codes],
+                )
+                raise WritebackRejectedError(
+                    f"TOMIS rejected contact note page [{page_number}] with A001"
+                ) from e
             except Exception:
                 self._tracker.set_page_status(
                     page_number, ExternalSystemRequestStatus.FAILURE

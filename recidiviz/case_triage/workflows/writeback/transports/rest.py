@@ -91,6 +91,10 @@ class RestTransportConfig:
     # application/json; use text/xml for systems that require XML bodies.
     content_type: str = attr.ib(default="application/json")
 
+    # Error response substrings the caller logs itself, so send skips its generic
+    # failure log for them.
+    caller_logged_error_markers: tuple[str, ...] = attr.ib(default=())
+
 
 class RestTransport:
     """Resolves secrets and sends HTTP requests to an external system.
@@ -141,6 +145,11 @@ class RestTransport:
             if response.status_code != requests.codes.ok:
                 response.raise_for_status()
         except requests.exceptions.HTTPError:
+            if any(
+                marker in response.text
+                for marker in self._config.caller_logged_error_markers
+            ):
+                raise
             duration = round(time.perf_counter() - start_time, 2)
             logging.error(
                 "Request to %s%s failed with code %s in %s seconds: %s",

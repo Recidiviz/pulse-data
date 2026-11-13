@@ -50,6 +50,15 @@ TOKEN_CONFIG = RestTransportConfig(
     auth_strategy=TokenHeaderAuth("X-Api-Key"),
 )
 
+CALLER_LOGGED_ERROR_CONFIG = RestTransportConfig(
+    system_name="TEST_SYSTEM",
+    url_secret="test_url",
+    credential_secret="test_key",
+    test_url_secret="test_url_test",
+    auth_strategy=BasicAuth(),
+    caller_logged_error_markers=("A001",),
+)
+
 
 class TestBasicAuth(TestCase):
     def test_headers(self) -> None:
@@ -106,6 +115,38 @@ class TestRestTransport(TestCase):
             rsps.add(responses.PUT, FAKE_URL, status=500)
             with self.assertRaises(requests.exceptions.HTTPError):
                 transport.send('{"key": "value"}')
+
+    @patch(f"{MODULE}.get_secret")
+    def test_send_http_error_logs_generic_failure(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = FAKE_URL
+        transport = RestTransport(CALLER_LOGGED_ERROR_CONFIG, use_test_url=False)
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.PUT, FAKE_URL, status=500, body="Fail : D005 timeout")
+            with self.assertLogs(level="ERROR") as logs:
+                with self.assertRaises(requests.exceptions.HTTPError):
+                    transport.send('{"key": "value"}')
+        self.assertEqual(1, len(logs.output))
+        self.assertRegex(
+            logs.output[0],
+            r"^ERROR:root:Request to TEST_SYSTEM failed with code 500 in [0-9.]+ "
+            r"seconds: Fail : D005 timeout$",
+        )
+
+    @patch(f"{MODULE}.get_secret")
+    def test_send_http_error_with_caller_logged_marker_skips_log(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = FAKE_URL
+        transport = RestTransport(CALLER_LOGGED_ERROR_CONFIG, use_test_url=False)
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(
+                responses.PUT, FAKE_URL, status=404, body="Fail : A001 missing parm"
+            )
+            with self.assertNoLogs(level="ERROR"):
+                with self.assertRaises(requests.exceptions.HTTPError):
+                    transport.send('{"key": "value"}')
 
     @patch(f"{MODULE}.get_secret")
     def test_send_connection_error(self, mock_get_secret: MagicMock) -> None:

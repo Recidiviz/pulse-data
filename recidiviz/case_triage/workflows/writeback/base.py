@@ -40,6 +40,11 @@ class WritebackRequestData(BaseModel):
 RequestDataT = TypeVar("RequestDataT", bound=WritebackRequestData)
 
 
+class WritebackRejectedError(Exception):
+    """Raised when the external system rejects a request for a reason the
+    executor has already logged."""
+
+
 class WritebackStatusTracker(abc.ABC):
     @abc.abstractmethod
     def set_status(self, status: ExternalSystemRequestStatus) -> None:

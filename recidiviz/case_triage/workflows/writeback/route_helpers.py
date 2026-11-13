@@ -24,6 +24,7 @@ from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatu
 from recidiviz.case_triage.workflows.writeback.base import (
     RequestDataT,
     WritebackExecutorInterface,
+    WritebackRejectedError,
 )
 from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     CloudTaskQueueInfo,
@@ -48,6 +49,12 @@ def handle_writeback(
 
     try:
         writeback_executor.execute()
+    except WritebackRejectedError:
+        status_tracker.set_status(ExternalSystemRequestStatus.FAILURE)
+        return jsonify_response(
+            f"'{writeback_executor.operation_action_description}' failed",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
     except Exception as e:
         logging.error(
             "'%s' failed: %s", writeback_executor.operation_action_description, e

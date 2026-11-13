@@ -22,19 +22,23 @@ from unittest import TestCase
 
 import freezegun
 import pytest
+import requests
 import responses
 from flask import Flask
-from mock import MagicMock, patch
+from google.cloud.firestore_v1 import transforms
+from mock import ANY, MagicMock, call, patch
 from pydantic import ValidationError
 from pydantic_core import TzInfo
 
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
+from recidiviz.case_triage.workflows.writeback.base import WritebackRejectedError
 from recidiviz.case_triage.workflows.writeback.us_tn_contact_note import (
     TomisContactNoteRequest,
     UsTnContactNoteRequestData,
     UsTnContactNoteStatusTracker,
     UsTnContactNoteWritebackExecutor,
     UsTnContactTypeCode,
+    to_tomis_ascii,
 )
 from recidiviz.common.constants.state.external_id_types import (
     US_TN_DOC,
@@ -208,6 +212,107 @@ class TestUsTnContactNoteWritebackExecutor(TestCase):
             # page 1 in_progress, page 1 failure
             self.assertEqual(mock_client.set_document.call_count, 2)
 
+    @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
+    @patch(f"{MODULE}.FirestoreClientImpl")
+    def test_execute_a001_rejection_records_error(
+        self,
+        mock_client: MagicMock,
+        mock_get_secret: MagicMock,
+        mock_interface_get_secret: MagicMock,
+    ) -> None:
+        mock_interface_get_secret.return_value = "test-id"
+        mock_get_secret.return_value = self.fake_url
+        mock_client = mock_client.return_value
+        mock_client.timestamp_key = "serverTimestamp"
+        request_data = UsTnContactNoteRequestData(
+            person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
+            staff_id=STAFF_ID,
+            staff_id_type=US_TN_STAFF_TOMIS,
+            contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+            contact_type_codes=[UsTnContactTypeCode.DEIO],
+            contact_note={1: ["Denied for ineligible offense"]},
+            contact_note_id=CONTACT_NOTE_ID,
+        )
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(
+                responses.PUT,
+                self.fake_url,
+                status=404,
+                json={
+                    "ClassName": "System.Exception",
+                    "Message": "Fail : A001 MISSING REQUIRED PARM FOR FUNC SQL CODE: +00000",
+                },
+            )
+            with self.assertLogs(level="ERROR") as logs:
+                with self.assertRaisesRegex(
+                    WritebackRejectedError,
+                    r"^TOMIS rejected contact note page \[1\] with A001$",
+                ):
+                    UsTnContactNoteWritebackExecutor(request_data).execute()
+
+        self.assertEqual(
+            [
+                "ERROR:root:TOMIS rejected contact note page 1 with codes ['DEIO'] "
+                "with A001 (missing required parameter)"
+            ],
+            logs.output,
+        )
+        # page 1 in_progress, page 1 failure, error
+        self.assertEqual(mock_client.set_document.call_count, 3)
+        self.assertEqual(
+            call(
+                "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnCompliantReporting2025Policy",
+                {
+                    "contactNote": {
+                        CONTACT_NOTE_ID: {
+                            "submitted": {"date": CONTACT_NOTE_DATE_TIME},
+                            "serverTimestamp": ANY,
+                            "error": "A001 MISSING REQUIRED PARM FOR FUNC",
+                        }
+                    }
+                },
+                merge=True,
+            ),
+            mock_client.set_document.call_args,
+        )
+
+    @patch(f"{MODULE}.get_secret")
+    @patch(f"{TRANSPORT_MODULE}.get_secret")
+    @patch(f"{MODULE}.FirestoreClientImpl")
+    def test_execute_other_http_error_reraised(
+        self,
+        mock_client: MagicMock,
+        mock_get_secret: MagicMock,
+        mock_interface_get_secret: MagicMock,
+    ) -> None:
+        mock_interface_get_secret.return_value = "test-id"
+        mock_get_secret.return_value = self.fake_url
+        mock_client = mock_client.return_value
+        request_data = UsTnContactNoteRequestData(
+            person_external_id=PERSON_EXTERNAL_ID,
+            person_external_id_type=US_TN_DOC,
+            staff_id=STAFF_ID,
+            staff_id_type=US_TN_STAFF_TOMIS,
+            contact_note_date_time=CONTACT_NOTE_DATE_TIME,
+            contact_type_codes=[UsTnContactTypeCode.DEIO],
+            contact_note={1: ["Denied for ineligible offense"]},
+            contact_note_id=CONTACT_NOTE_ID,
+        )
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(
+                responses.PUT,
+                self.fake_url,
+                status=500,
+                json={"Message": "Invalid Input for inserting Contact Notes to DB2."},
+            )
+            with self.assertRaises(requests.exceptions.HTTPError):
+                UsTnContactNoteWritebackExecutor(request_data).execute()
+
+        # page 1 in_progress, page 1 failure
+        self.assertEqual(mock_client.set_document.call_count, 2)
+
     @patch("requests.put")
     @patch(f"{TRANSPORT_MODULE}.get_secret")
     @patch(f"{MODULE}.FirestoreClientImpl")
@@ -368,6 +473,30 @@ class TestUsTnContactNoteRequestData(TestCase):
                     },
                 }
             )
+
+    def test_contact_note_lines_reduced_to_ascii(self) -> None:
+        data = UsTnContactNoteRequestData.model_validate(
+            {
+                "personExternalId": PERSON_EXTERNAL_ID,
+                "personExternalIdType": "US_TN_DOC",
+                "staffId": STAFF_ID,
+                "staffIdType": "US_TN_STAFF_TOMIS",
+                "contactNoteDateTime": "2000-12-30T00:00:00",
+                "contactTypeCodes": ["DEIO"],
+                "contactNoteId": "contact-note-123",
+                "contactNote": {
+                    "1": ["Reviewed eligibility:", "\u2022\tFines paid \u2013 in full"],
+                    "2": ["\u2022 Client\u2019s \u201cplan\u201d noted at Caf\u00e9"],
+                },
+            }
+        )
+        self.assertEqual(
+            {
+                1: ["Reviewed eligibility:", "-\tFines paid - in full"],
+                2: ['- Client\'s "plan" noted at Cafe'],
+            },
+            data.contact_note,
+        )
 
     def test_invalid_page_number(self) -> None:
         with self.assertRaises(ValidationError):
@@ -598,6 +727,22 @@ class TestContactTypeCodeValidation(TestCase):
             self._make_request([UsTnContactTypeCode.DEIO] * 11)
 
 
+class TestToTomisAscii(TestCase):
+    """Tests for to_tomis_ascii"""
+
+    def test_ascii_line_unchanged(self) -> None:
+        self.assertEqual(
+            "Client paid fines in full on 10/01; see case #4521.",
+            to_tomis_ascii("Client paid fines in full on 10/01; see case #4521."),
+        )
+
+    def test_unmapped_non_ascii_characters_removed(self) -> None:
+        self.assertEqual(
+            "Met at office  next visit in 30 days",
+            to_tomis_ascii("Met at office \u2705 next visit in 30 days\u2026"),
+        )
+
+
 class TestTomisContactNoteRequestToJson(TestCase):
     """Tests for TomisContactNoteRequest.to_json() serialization."""
 
@@ -799,7 +944,35 @@ class TestUsTnContactNoteStatusTracker(TestCase):
             CONTACT_NOTE_DATE_TIME,
         )
         self.assertIn("serverTimestamp", call_args[0][1]["contactNote"])
+        self.assertIs(call_args[0][1]["contactNote"]["error"], transforms.DELETE_FIELD)
         self.assertTrue(call_args[1]["merge"])
+
+    def test_set_status_failure_keeps_error(self) -> None:
+        mock_firestore = MagicMock()
+        mock_firestore.timestamp_key = "serverTimestamp"
+        tracker = UsTnContactNoteStatusTracker(
+            "123",
+            CONTACT_NOTE_DATE_TIME,
+            [UsTnContactTypeCode.TEPE],
+            None,
+            mock_firestore,
+        )
+        tracker.set_status(ExternalSystemRequestStatus.FAILURE)
+
+        self.assertEqual(
+            call(
+                "clientUpdatesV2/us_tn_123/clientOpportunityUpdates/usTnExpiration",
+                {
+                    "contactNote": {
+                        "submitted": {"date": CONTACT_NOTE_DATE_TIME},
+                        "serverTimestamp": ANY,
+                        "status": ExternalSystemRequestStatus.FAILURE.value,
+                    }
+                },
+                merge=True,
+            ),
+            mock_firestore.set_document.call_args,
+        )
 
     def test_set_status_updates_firestore_reio(self) -> None:
         mock_firestore = MagicMock()
@@ -829,6 +1002,10 @@ class TestUsTnContactNoteStatusTracker(TestCase):
         )
         self.assertIn(
             "serverTimestamp", call_args[0][1]["contactNote"][CONTACT_NOTE_ID]
+        )
+        self.assertIs(
+            call_args[0][1]["contactNote"][CONTACT_NOTE_ID]["error"],
+            transforms.DELETE_FIELD,
         )
         self.assertTrue(call_args[1]["merge"])
 
