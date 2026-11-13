@@ -1,0 +1,94 @@
+address:
+  dataset_id: meetings_dashboards_db_us_ix
+  table_id: MeetingReviewOutcome
+description: >
+  Outcomes recorded by Recidiviz reviewers for flagged meetings, synced from the
+  meetings backend database. Append-only audit log with one row per review of
+  one section of a meeting's generated outputs; rows are kept after the meeting
+  is reprocessed or deleted.
+schema:
+  - name: id
+    description: Unique identifier for this review outcome.
+    type: STRING
+    mode: NULLABLE
+  - name: createdAt
+    description: Timestamp when this review outcome was recorded.
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: meetingId
+    description: Meeting.id of the meeting this review outcome belongs to.
+    type: STRING
+    mode: NULLABLE
+  - name: section
+    description: >
+      The section of the meeting's outputs that was reviewed (CASE_NOTE,
+      ACTION_ITEMS, or OVERALL).
+    type: STRING
+    mode: NULLABLE
+  - name: pipelineRunId
+    description: >
+      NotetakingPipelineRun.id of the run whose outputs the reviewer was
+      looking at, used to tell whether the outputs have since been
+      regenerated.
+    type: STRING
+    mode: NULLABLE
+  - name: outcome
+    description: >
+      The reviewer's verdict on the flagged section (CONFIRMED_BAD, NOT_BAD,
+      or OTHER).
+    type: STRING
+    mode: NULLABLE
+  - name: followUp
+    description: >
+      The follow-up the reviewer chose (NO_ACTION, USER_CAUGHT_IT, or
+      EMAIL_STAFF), if any.
+    type: STRING
+    mode: NULLABLE
+  - name: correctedGrade
+    description: >
+      For a NOT_BAD outcome, the grade the reviewer says the section deserves
+      (GOOD or PARTIAL).
+    type: STRING
+    mode: NULLABLE
+  - name: overriddenSources
+    description: >
+      For a NOT_BAD outcome, the rating sources the reviewer replaced with
+      correctedGrade (LLM_JUDGE, LABEL_STUDIO), encoded as a Postgres array
+      literal (e.g. {LLM_JUDGE,LABEL_STUDIO}).
+    type: STRING
+    mode: NULLABLE
+  - name: appliesTo
+    description: >
+      For an OVERALL review, the sections the problem applies to, encoded as a
+      Postgres array literal (e.g. {CASE_NOTE,ACTION_ITEMS}).
+    type: STRING
+    mode: NULLABLE
+  - name: notes
+    description: Free-text notes the reviewer added, if any.
+    type: STRING
+    mode: NULLABLE
+  - name: reviewerEmail
+    description: Email of the reviewer who recorded this outcome.
+    type: STRING
+    mode: NULLABLE
+  - name: notetakingPromptFollowUp
+    description: Whether the reviewer thinks the notetaking prompt may need an update.
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: judgePromptFollowUp
+    description: Whether the reviewer thinks the LLM judge prompt may need an update.
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: staffEmailSentAt
+    description: >
+      For an EMAIL_STAFF follow-up, the timestamp when the email to the
+      meeting's staff member was marked as sent.
+    type: TIMESTAMP
+    mode: NULLABLE
+  - name: staffEmailSentBy
+    description: >
+      For an EMAIL_STAFF follow-up, the email of the user who marked the email
+      to the meeting's staff member as sent.
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
