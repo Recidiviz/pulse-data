@@ -32,7 +32,11 @@ from recidiviz.documents.dataset_config import (
     document_extraction_validated_results_dataset_for_region,
     document_extraction_validation_audit_dataset_for_region,
 )
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
+)
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
+    GoldenEvalCompositeDocumentsBQTable,
     GoldenEvalDocumentsBQTable,
 )
 from recidiviz.documents.extraction.eval.golden_eval_results_table import (
@@ -229,6 +233,40 @@ def collect_golden_eval_documents_source_table_collection(
                 collection_name=collection_name
             ),
             schema_fields=GoldenEvalDocumentsBQTable.schema(),
+        )
+
+    return collection
+
+
+def collect_golden_eval_composite_documents_source_table_collection(
+    *, er_collections: Sequence[EntityResolutionDocumentCollectionConfig]
+) -> SourceTableCollection:
+    """Collects the golden eval composite documents source table collection, one
+    `document_extraction_golden_eval_results.{state}_{er_collection}__composite_documents`
+    table per collection in |er_collections|. An entity-resolution golden eval run
+    materializes its composites into the sandbox copy, so the collection is only
+    ever created via `.as_sandbox_collection(prefix)`.
+    """
+    collection = SourceTableCollection(
+        update_groups=LLM_EXTRACTION_UPDATE_GROUPS,
+        dataset_id=document_extraction_golden_eval_results_dataset(),
+        labels=[],
+        update_config=SourceTableCollectionUpdateConfig.regenerable(),
+        description=(
+            "Composite documents built by entity-resolution golden eval runs, one "
+            "table per entity-resolution collection and state. Each run replaces "
+            "the rows."
+        ),
+    )
+    for er_collection in er_collections:
+        collection.add_source_table(
+            table_id=GoldenEvalCompositeDocumentsBQTable.table_id(er_collection),
+            description=GoldenEvalCompositeDocumentsBQTable.description(
+                er_collection=er_collection
+            ),
+            schema_fields=GoldenEvalCompositeDocumentsBQTable.schema(
+                er_collection=er_collection
+            ),
         )
 
     return collection

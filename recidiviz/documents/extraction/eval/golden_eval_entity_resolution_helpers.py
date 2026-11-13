@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers that move entity-resolution golden eval data between the eval sheet
-and the BigQuery tables the production entity-resolution SQL reads: the
-first-order collection's document contents table and its __pre_resolution tables.
+and the BigQuery tables the production entity-resolution SQL reads and writes:
+the first-order collection's document contents table, its __pre_resolution
+tables, the composite documents the SQL builds from them, and the entry→source
+map rebuilt from those composites.
 """
 import datetime
 from collections.abc import Sequence
@@ -35,6 +37,7 @@ from recidiviz.documents.extraction.eval.golden_eval_document import (
     GoldenEvalEntityResolutionDocument,
 )
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
+    GoldenEvalCompositeDocumentsBQTable,
     GoldenEvalDocumentsBQTable,
     GoldenEvalPreResolutionBQTable,
 )
@@ -53,6 +56,9 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     IS_RELEVANT_FIELD_NAME,
 )
+from recidiviz.documents.store.document_generation_output_materializer import (
+    DocumentGenerationOutputMaterializer,
+)
 from recidiviz.documents.store.document_generation_query_builder import (
     DocumentGenerationQueryBuilder,
 )
@@ -62,6 +68,10 @@ from recidiviz.documents.store.document_store_columns import (
     DOCUMENT_TEXT_COLUMN_NAME,
     ROW_CREATE_DATETIME_COLUMN_NAME,
 )
+from recidiviz.documents.store.document_store_sandbox_context import (
+    DocumentCollectionSandboxLocation,
+    DocumentStoreSandboxContext,
+)
 from recidiviz.documents.store.document_text_normalization import (
     build_normalized_document_text_sql,
 )
@@ -69,18 +79,108 @@ from recidiviz.utils.string_formatting import fix_indent
 from recidiviz.utils.types import assert_type
 
 
-def first_order_config_for(config: LLMExtractorConfig) -> LLMExtractorConfig:
-    """Returns the first-order extractor config that entity-resolution extractor
-    |config| was generated from.
+def entity_resolution_collection_for(
+    config: LLMExtractorConfig,
+) -> EntityResolutionDocumentCollectionConfig:
+    """Returns the composite-document collection that entity-resolution extractor
+    |config| reads.
     """
     if config.extraction_stage != LLMExtractionViewGraphStage.ENTITY_RESOLUTION:
         raise ValueError(
             f"Extractor [{config.extractor_id}] is not an entity-resolution "
-            f"extractor, so it has no parent first-order extractor."
+            f"extractor, so it reads no composite-document collection."
         )
     return assert_type(
         config.input_document_collection, EntityResolutionDocumentCollectionConfig
-    ).first_order_config
+    )
+
+
+def first_order_config_for(config: LLMExtractorConfig) -> LLMExtractorConfig:
+    """Returns the first-order extractor config that entity-resolution extractor
+    |config| was generated from.
+    """
+    return entity_resolution_collection_for(config).first_order_config
+
+
+def seed_entity_resolution_golden_eval_tables(
+    *,
+    bq_client: BigQueryClient,
+    sandbox_prefix: str,
+    config: LLMExtractorConfig,
+    documents: Sequence[GoldenEvalEntityResolutionDocument],
+    validation_datetime_utc: datetime.datetime,
+) -> None:
+    """Seeds every sandbox table an entity-resolution golden eval run of |config|
+    reads or writes before extraction: the first-order document contents table and
+    __pre_resolution tables from |documents|, then the composite documents table
+    and the entry→source map that the production composite SQL builds from them.
+    """
+    first_order_config = first_order_config_for(config)
+    document_contents_id_by_golden_document_id = seed_golden_eval_document_contents(
+        bq_client=bq_client,
+        sandbox_prefix=sandbox_prefix,
+        first_order_config=first_order_config,
+        documents=documents,
+    )
+    seed_golden_eval_pre_resolution_tables(
+        bq_client=bq_client,
+        sandbox_prefix=sandbox_prefix,
+        first_order_config=first_order_config,
+        documents=documents,
+        document_contents_id_by_golden_document_id=document_contents_id_by_golden_document_id,
+        validation_datetime_utc=validation_datetime_utc,
+    )
+    materialize_golden_eval_composite_documents(
+        bq_client=bq_client, sandbox_prefix=sandbox_prefix, config=config
+    )
+
+
+def golden_eval_document_store_sandbox_context(
+    *, config: LLMExtractorConfig, sandbox_prefix: str
+) -> DocumentStoreSandboxContext:
+    """Returns the document store sandbox an entity-resolution golden eval run of
+    |config| operates in: every table the composite SQL reads or writes lives under
+    |sandbox_prefix|.
+    """
+    er_collection = entity_resolution_collection_for(config)
+    first_order_document_collection = (
+        er_collection.first_order_config.input_document_collection
+    )
+    return DocumentStoreSandboxContext(
+        document_collection_locations={
+            first_order_document_collection.name: DocumentCollectionSandboxLocation(
+                output_prefix=sandbox_prefix, diff_read_prefix=None
+            ),
+            er_collection.name: DocumentCollectionSandboxLocation(
+                output_prefix=sandbox_prefix, diff_read_prefix=sandbox_prefix
+            ),
+        },
+        extractor_collection_read_prefixes={
+            er_collection.first_order_extractor_collection_name: sandbox_prefix
+        },
+    )
+
+
+def materialize_golden_eval_composite_documents(
+    *, bq_client: BigQueryClient, sandbox_prefix: str, config: LLMExtractorConfig
+) -> BigQueryAddress:
+    """Runs the production composite SQL of |config|'s collection over the seeded
+    sandbox tables into the sandbox composite documents table, rebuilds the sandbox
+    entry→source map from it, and returns the composites table's address.
+    """
+    er_collection = entity_resolution_collection_for(config)
+    composites_address = GoldenEvalCompositeDocumentsBQTable.address(
+        er_collection=er_collection, sandbox_prefix=sandbox_prefix
+    )
+    DocumentGenerationOutputMaterializer(
+        config=er_collection,
+        project_id=bq_client.project_id,
+        big_query_client=bq_client,
+        sandbox_context=golden_eval_document_store_sandbox_context(
+            config=config, sandbox_prefix=sandbox_prefix
+        ),
+    ).materialize(output_address=composites_address)
+    return composites_address
 
 
 def seed_golden_eval_document_contents(
@@ -250,7 +350,6 @@ def seed_golden_eval_pre_resolution_tables(
     sandbox_prefix: str,
     first_order_config: LLMExtractorConfig,
     documents: Sequence[GoldenEvalEntityResolutionDocument],
-    first_order_values_by_golden_document_id: dict[str, dict[str, Any]],
     document_contents_id_by_golden_document_id: dict[str, str],
     validation_datetime_utc: datetime.datetime,
 ) -> None:
@@ -258,6 +357,9 @@ def seed_golden_eval_pre_resolution_tables(
     process expects. Creates one __pre_resolution table per level the collection's
     entity groups are sourced from.
     """
+    first_order_values_by_golden_document_id = {
+        document.golden_document_id: document.expected_values for document in documents
+    }
     for (
         array_field
     ) in first_order_config.extractor_collection.entity_group_source_array_fields():

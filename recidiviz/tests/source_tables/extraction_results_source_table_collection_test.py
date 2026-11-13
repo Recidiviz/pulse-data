@@ -30,6 +30,7 @@ from recidiviz.documents.dataset_config import (
     document_extraction_validation_audit_dataset_for_region,
 )
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
+    GoldenEvalCompositeDocumentsBQTable,
     GoldenEvalDocumentsBQTable,
 )
 from recidiviz.documents.extraction.eval.golden_eval_results_table import (
@@ -45,6 +46,7 @@ from recidiviz.documents.extraction.llm_extractor_config_collectors import (
 )
 from recidiviz.source_tables.extraction_results_source_table_collection import (
     collect_extraction_results_source_table_collections,
+    collect_golden_eval_composite_documents_source_table_collection,
     collect_golden_eval_documents_source_table_collection,
     collect_golden_eval_results_source_table_collection,
 )
@@ -54,6 +56,10 @@ from recidiviz.source_tables.source_table_config import (
     StateSpecificSourceTableLabel,
 )
 from recidiviz.tests.documents import fake_config
+from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_entity_resolution_document_collection_config,
+    patch_fake_entity_resolution_model_config_name,
+)
 
 _GOLDEN_EVAL_DATASET_ID = "document_extraction_golden_eval_results"
 _GOLDEN_EVAL_COLLECTION_NAME = "FAKE_EXTRACTOR_COLLECTION"
@@ -195,4 +201,39 @@ class CollectGoldenEvalDocumentsSourceTableCollectionTest(unittest.TestCase):
                 sandbox_prefix="my_prefix",
             ),
             one(collection.source_tables).address,
+        )
+
+
+class CollectGoldenEvalCompositeDocumentsSourceTableCollectionTest(unittest.TestCase):
+    """Tests for collect_golden_eval_composite_documents_source_table_collection."""
+
+    def setUp(self) -> None:
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+        self.er_collection = fake_entity_resolution_document_collection_config(
+            "location"
+        )
+
+    def test_one_table_per_entity_resolution_collection(self) -> None:
+        collection = collect_golden_eval_composite_documents_source_table_collection(
+            er_collections=[self.er_collection]
+        )
+
+        self.assertEqual(_GOLDEN_EVAL_DATASET_ID, collection.dataset_id)
+        table = one(collection.source_tables)
+        self.assertEqual(
+            "us_xx_fake_extractor_collection_location_entity_resolution"
+            "__composite_documents",
+            table.address.table_id,
+        )
+        self.assertEqual(
+            GoldenEvalCompositeDocumentsBQTable.schema(
+                er_collection=self.er_collection
+            ),
+            table.schema_fields,
+        )
+        self.assertEqual(
+            GoldenEvalCompositeDocumentsBQTable.description(
+                er_collection=self.er_collection
+            ),
+            table.description,
         )

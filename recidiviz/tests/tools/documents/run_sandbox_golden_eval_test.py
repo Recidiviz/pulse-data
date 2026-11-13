@@ -64,7 +64,9 @@ from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_te
 )
 from recidiviz.tools.documents.run_sandbox_golden_eval import (
     DEFAULT_TABLE_EXPIRATION_HOURS,
+    composite_documents_sandbox_source_table_collection,
     document_contents_sandbox_source_table_collection,
+    entry_source_map_sandbox_source_table_collection,
     golden_eval_documents_sandbox_source_table_collection,
     golden_eval_sandbox_source_table_collection,
     main,
@@ -529,3 +531,60 @@ class TestParseArguments(TestCase):
                         "US_XX",
                     ]
                 )
+
+
+class TestCompositeDocumentsSandboxSourceTableCollection(TestCase):
+    """Tests for the sandbox composite documents collection an entity-resolution
+    run materializes.
+    """
+
+    def setUp(self) -> None:
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+
+    def test_holds_only_the_evaluated_collections_composites_table(self) -> None:
+        collection = composite_documents_sandbox_source_table_collection(
+            config=fake_entity_resolution_extractor_config("location"),
+            sandbox_prefix=_SANDBOX_PREFIX,
+            table_expiration_ms=72 * _ONE_HOUR_MS,
+        )
+
+        self.assertEqual(
+            [
+                BigQueryAddress(
+                    dataset_id="my_prefix_document_extraction_golden_eval_results",
+                    table_id=(
+                        "us_xx_fake_extractor_collection_location_entity_resolution"
+                        "__composite_documents"
+                    ),
+                )
+            ],
+            [table.address for table in collection.source_tables],
+        )
+        self.assertEqual(72 * _ONE_HOUR_MS, collection.table_expiration_ms)
+
+
+class TestEntrySourceMapSandboxSourceTableCollection(TestCase):
+    """Tests for the sandbox entry→source map collection an entity-resolution run
+    rebuilds from its composites.
+    """
+
+    def setUp(self) -> None:
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+
+    def test_holds_only_the_map_table(self) -> None:
+        collection = entry_source_map_sandbox_source_table_collection(
+            config=fake_entity_resolution_extractor_config("location"),
+            sandbox_prefix=_SANDBOX_PREFIX,
+            table_expiration_ms=72 * _ONE_HOUR_MS,
+        )
+
+        self.assertEqual(
+            [
+                BigQueryAddress(
+                    dataset_id="my_prefix_us_xx_document_store_metadata",
+                    table_id="fake_extractor_collection_location_entry_source_map",
+                )
+            ],
+            [table.address for table in collection.source_tables],
+        )
+        self.assertEqual(72 * _ONE_HOUR_MS, collection.table_expiration_ms)

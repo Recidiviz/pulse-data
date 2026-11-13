@@ -30,6 +30,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.dataset_config import (
     document_extraction_golden_eval_results_dataset,
 )
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
+)
 from recidiviz.documents.extraction.eval.golden_eval_results_table import (
     GOLDEN_DOCUMENT_ID_COLUMN_NAME,
     STATE_CODE_COLUMN_NAME,
@@ -139,6 +142,54 @@ class GoldenEvalDocumentsBQTable:
             GOLDEN_DOCUMENT_ID_COLUMN_NAME: golden_document_id,
             DOCUMENT_TEXT_COLUMN_NAME: document_text,
         }
+
+
+class GoldenEvalCompositeDocumentsBQTable:
+    """The composite documents table of one entity-resolution golden eval run: the
+    full generation output of the ER collection's composite SQL over the seeded
+    sandbox tables, one row per test group. Each run replaces the rows.
+
+    For example, test group 1 with two relevant documents produces (text abridged):
+
+        person_id,document_contents_id,document_text,entry_source_map
+        1,3f9c...,"=== Source document — 2026-03-01 === [Entry 1] ...",[{entry_num: 1, ...}, {entry_num: 2, ...}]
+    """
+
+    @staticmethod
+    def table_id(er_collection: EntityResolutionDocumentCollectionConfig) -> str:
+        return (
+            f"{er_collection.state_code.value}_{er_collection.name}"
+            "__composite_documents"
+        ).lower()
+
+    @classmethod
+    def address(
+        cls,
+        *,
+        er_collection: EntityResolutionDocumentCollectionConfig,
+        sandbox_prefix: str | None,
+    ) -> BigQueryAddress:
+        return BigQueryAddress(
+            dataset_id=document_extraction_golden_eval_results_dataset(sandbox_prefix),
+            table_id=cls.table_id(er_collection),
+        )
+
+    @staticmethod
+    def description(*, er_collection: EntityResolutionDocumentCollectionConfig) -> str:
+        return (
+            f"Composite documents the [{er_collection.name}] collection's generation "
+            f"query built from golden first-order values during an entity-resolution "
+            f"golden eval run in [{er_collection.state_code.value}]. One row per "
+            f"test group, with person_id holding the test_group_id. Each run "
+            f"replaces the rows."
+        )
+
+    @staticmethod
+    def schema(
+        *, er_collection: EntityResolutionDocumentCollectionConfig
+    ) -> list[SchemaField]:
+        """Returns the schema of the collection's generation output."""
+        return er_collection.build_bq_document_generation_output_schema()
 
 
 class GoldenEvalPreResolutionBQTable:

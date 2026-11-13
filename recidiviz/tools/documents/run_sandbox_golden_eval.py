@@ -58,6 +58,7 @@ from recidiviz.documents.extraction.eval.golden_eval_console_summary import (
     render_golden_eval_console_summary,
 )
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_helpers import (
+    entity_resolution_collection_for,
     first_order_config_for,
 )
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
@@ -82,6 +83,7 @@ from recidiviz.source_tables.document_store_source_table_collection import (
 from recidiviz.source_tables.extraction_results_source_table_collection import (
     LLM_EXTRACTION_UPDATE_GROUPS,
     collect_extraction_results_source_table_collections,
+    collect_golden_eval_composite_documents_source_table_collection,
     collect_golden_eval_documents_source_table_collection,
     collect_golden_eval_results_source_table_collection,
 )
@@ -189,6 +191,20 @@ def _sandbox_source_table_collections(
         )
         collections.append(
             pre_resolution_sandbox_source_table_collection(
+                config=config,
+                sandbox_prefix=sandbox_prefix,
+                table_expiration_ms=table_expiration_ms,
+            )
+        )
+        collections.append(
+            composite_documents_sandbox_source_table_collection(
+                config=config,
+                sandbox_prefix=sandbox_prefix,
+                table_expiration_ms=table_expiration_ms,
+            )
+        )
+        collections.append(
+            entry_source_map_sandbox_source_table_collection(
                 config=config,
                 sandbox_prefix=sandbox_prefix,
                 table_expiration_ms=table_expiration_ms,
@@ -315,6 +331,40 @@ def pre_resolution_sandbox_source_table_collection(
         )
     return collection.as_sandbox_collection(
         sandbox_prefix, table_expiration_ms=table_expiration_ms
+    )
+
+
+def composite_documents_sandbox_source_table_collection(
+    *, config: LLMExtractorConfig, sandbox_prefix: str, table_expiration_ms: int
+) -> SourceTableCollection:
+    """Returns the sandbox collection holding just the composite documents table an
+    entity-resolution golden eval run of |config| materializes.
+    """
+    return collect_golden_eval_composite_documents_source_table_collection(
+        er_collections=[entity_resolution_collection_for(config)]
+    ).as_sandbox_collection(sandbox_prefix, table_expiration_ms=table_expiration_ms)
+
+
+def entry_source_map_sandbox_source_table_collection(
+    *, config: LLMExtractorConfig, sandbox_prefix: str, table_expiration_ms: int
+) -> SourceTableCollection:
+    """Returns the sandbox collection holding just the entry→source map table an
+    entity-resolution golden eval run of |config| rebuilds from its composites.
+    """
+    er_collection = entity_resolution_collection_for(config)
+    address = er_collection.entry_source_map_table_address(sandbox_dataset_prefix=None)
+    (collection,) = [
+        collection
+        for collection in collect_document_store_source_tables_for_configs(
+            [er_collection]
+        )
+        if address in collection.source_tables_by_address
+    ]
+    return _narrowed_sandbox_collection(
+        collection=collection,
+        address=address,
+        sandbox_prefix=sandbox_prefix,
+        table_expiration_ms=table_expiration_ms,
     )
 
 

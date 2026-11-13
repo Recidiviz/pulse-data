@@ -21,6 +21,7 @@ from unittest import TestCase
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
+    GoldenEvalCompositeDocumentsBQTable,
     GoldenEvalDocumentsBQTable,
     GoldenEvalPreResolutionBQTable,
 )
@@ -28,6 +29,7 @@ from recidiviz.documents.extraction.models.llm_request_output_schema_field impor
     ArrayOfStructLLMRequestOutputSchemaField,
 )
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    fake_entity_resolution_document_collection_config,
     fake_first_order_extractor_config,
     patch_fake_entity_resolution_model_config_name,
 )
@@ -295,3 +297,44 @@ class GoldenEvalPreResolutionBQTableTest(TestCase):
                 source_array_index=0,
                 field_values={},
             )
+
+
+class GoldenEvalCompositeDocumentsBQTableTest(TestCase):
+    """Tests for GoldenEvalCompositeDocumentsBQTable"""
+
+    def setUp(self) -> None:
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+        self.er_collection = fake_entity_resolution_document_collection_config(
+            "location"
+        )
+
+    def test_address_carries_state_and_collection(self) -> None:
+        self.assertEqual(
+            BigQueryAddress(
+                dataset_id="my_prefix_document_extraction_golden_eval_results",
+                table_id=(
+                    "us_xx_fake_extractor_collection_location_entity_resolution"
+                    "__composite_documents"
+                ),
+            ),
+            GoldenEvalCompositeDocumentsBQTable.address(
+                er_collection=self.er_collection, sandbox_prefix="my_prefix"
+            ),
+        )
+
+    def test_schema_is_the_generation_output_schema(self) -> None:
+        self.assertEqual(
+            [
+                "person_id",
+                "document_contents_id",
+                "document_text",
+                "document_update_datetime",
+                "entry_source_map",
+            ],
+            [
+                field.name
+                for field in GoldenEvalCompositeDocumentsBQTable.schema(
+                    er_collection=self.er_collection
+                )
+            ],
+        )

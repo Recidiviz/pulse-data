@@ -39,8 +39,7 @@ from recidiviz.documents.extraction.eval.golden_eval_document_reader import (
 )
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_helpers import (
     first_order_config_for,
-    seed_golden_eval_document_contents,
-    seed_golden_eval_pre_resolution_tables,
+    seed_entity_resolution_golden_eval_tables,
 )
 from recidiviz.documents.extraction.eval.golden_eval_result import (
     GoldenEvalFieldScore,
@@ -191,32 +190,13 @@ class GoldenEvalRunner:
         job_id = self.build_run_job_id(config=config, run_datetime_utc=run_datetime_utc)
 
         if config.extraction_stage == LLMExtractionViewGraphStage.ENTITY_RESOLUTION:
-            first_order_config = first_order_config_for(config)
-            entity_resolution_documents = (
-                self._read_entity_resolution_golden_eval_documents(
-                    first_order_config=first_order_config
-                )
-            )
-
-            # Seed the pre-resolution tables with golden documents and expected values
-            document_contents_id_by_golden_document_id = (
-                seed_golden_eval_document_contents(
-                    bq_client=self.bq_client,
-                    sandbox_prefix=self.sandbox_prefix,
-                    first_order_config=first_order_config,
-                    documents=entity_resolution_documents,
-                )
-            )
-            seed_golden_eval_pre_resolution_tables(
+            seed_entity_resolution_golden_eval_tables(
                 bq_client=self.bq_client,
                 sandbox_prefix=self.sandbox_prefix,
-                first_order_config=first_order_config,
-                documents=entity_resolution_documents,
-                first_order_values_by_golden_document_id={
-                    document.golden_document_id: document.expected_values
-                    for document in entity_resolution_documents
-                },
-                document_contents_id_by_golden_document_id=document_contents_id_by_golden_document_id,
+                config=config,
+                documents=self._read_entity_resolution_golden_eval_documents(
+                    first_order_config=first_order_config_for(config)
+                ),
                 validation_datetime_utc=run_datetime_utc,
             )
             # TODO(OBT-53823): Build the composite documents and run them through

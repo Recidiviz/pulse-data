@@ -19,7 +19,12 @@ import datetime
 from typing import Any
 from unittest import TestCase
 
+import attr
+
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
+)
 from recidiviz.documents.extraction.eval.golden_eval_document import (
     GoldenEvalDocument,
     GoldenEvalEntityResolutionDocument,
@@ -27,12 +32,15 @@ from recidiviz.documents.extraction.eval.golden_eval_document import (
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_helpers import (
     build_pre_resolution_rows,
     first_order_config_for,
+    golden_eval_document_store_sandbox_context,
     load_golden_eval_documents,
     normalize_golden_eval_documents,
+    seed_entity_resolution_golden_eval_tables,
     seed_golden_eval_document_contents,
     seed_golden_eval_pre_resolution_tables,
 )
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
+    GoldenEvalCompositeDocumentsBQTable,
     GoldenEvalDocumentsBQTable,
     GoldenEvalPreResolutionBQTable,
 )
@@ -53,11 +61,14 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.documents.extraction.entity_resolution.entity_resolution_test_utils import (
+    build_fake_composite_generation_output_row,
+    build_fake_entry_source_map_entry,
     fake_entity_resolution_extractor_config,
     fake_first_order_extractor_config,
     patch_fake_entity_resolution_model_config_name,
 )
 from recidiviz.tools.documents.run_sandbox_golden_eval import (
+    entry_source_map_sandbox_source_table_collection,
     pre_resolution_sandbox_source_table_collection,
 )
 from recidiviz.utils.types import assert_type
@@ -520,17 +531,26 @@ class GoldenEvalEntityResolutionHelpersEmulatorTestCase(BigQueryEmulatorTestCase
     wipe_emulator_data_on_teardown = False
 
     def tearDown(self) -> None:
+        self.bq_client.delete_table(self.composites_address, not_found_ok=True)
         self._clear_emulator_table_data()
         super().tearDown()
 
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
         with patch_fake_entity_resolution_model_config_name():
-            pre_resolution_collection = pre_resolution_sandbox_source_table_collection(
-                config=fake_entity_resolution_extractor_config("location"),
-                sandbox_prefix=_SANDBOX_PREFIX,
-                table_expiration_ms=60 * 60 * 1000,
-            )
+            er_config = fake_entity_resolution_extractor_config("location")
+            er_collections = [
+                pre_resolution_sandbox_source_table_collection(
+                    config=er_config,
+                    sandbox_prefix=_SANDBOX_PREFIX,
+                    table_expiration_ms=60 * 60 * 1000,
+                ),
+                entry_source_map_sandbox_source_table_collection(
+                    config=er_config,
+                    sandbox_prefix=_SANDBOX_PREFIX,
+                    table_expiration_ms=60 * 60 * 1000,
+                ),
+            ]
         return [
             collect_golden_eval_documents_source_table_collection(
                 extractor_collection_names=["FAKE_EXTRACTOR_COLLECTION"]
@@ -541,13 +561,29 @@ class GoldenEvalEntityResolutionHelpersEmulatorTestCase(BigQueryEmulatorTestCase
                     [fake_first_order_extractor_config().input_document_collection]
                 )
             ],
-            pre_resolution_collection,
+            *er_collections,
         ]
 
     def setUp(self) -> None:
         super().setUp()
         self.enterContext(patch_fake_entity_resolution_model_config_name())
         self.config = fake_first_order_extractor_config()
+        self.er_config = fake_entity_resolution_extractor_config("location")
+        er_collection = assert_type(
+            self.er_config.input_document_collection,
+            EntityResolutionDocumentCollectionConfig,
+        )
+        self.composites_address = GoldenEvalCompositeDocumentsBQTable.address(
+            er_collection=er_collection, sandbox_prefix=_SANDBOX_PREFIX
+        )
+        # Created here rather than seeded at emulator boot: the emulator cannot
+        # load the nested entry_source_map column from its schema JSON.
+        self.create_mock_table(
+            self.composites_address,
+            schema=GoldenEvalCompositeDocumentsBQTable.schema(
+                er_collection=er_collection
+            ),
+        )
         self.assignments = assert_type(
             self.config.extractor_collection.output_schema.get_field("assignments"),
             ArrayOfStructLLMRequestOutputSchemaField,
@@ -849,9 +885,6 @@ class SeedGoldenEvalPreResolutionTablesTest(
             sandbox_prefix=_SANDBOX_PREFIX,
             first_order_config=self.config,
             documents=documents,
-            first_order_values_by_golden_document_id={
-                d.golden_document_id: d.expected_values for d in documents
-            },
             document_contents_id_by_golden_document_id={
                 "unit_1": "abc",
                 "unit_2": "def",
@@ -976,3 +1009,160 @@ class SeedGoldenEvalPreResolutionTablesTest(
             f"FROM `{self.project_id}.{self.doc_level_address.to_str()}`",
             [{"person_id": 1, "document_contents_id": "def", "location": "Yard"}],
         )
+
+
+class GoldenEvalDocumentStoreSandboxContextTest(TestCase):
+    """Tests for golden_eval_document_store_sandbox_context."""
+
+    def setUp(self) -> None:
+        self.enterContext(patch_fake_entity_resolution_model_config_name())
+
+    def test_scopes_every_read_and_write_to_the_sandbox(self) -> None:
+        er_config = fake_entity_resolution_extractor_config("location")
+        first_order_document_collection = (
+            fake_first_order_extractor_config().input_document_collection
+        )
+
+        context = golden_eval_document_store_sandbox_context(
+            config=er_config, sandbox_prefix=_SANDBOX_PREFIX
+        )
+
+        self.assertEqual(
+            "my_prefix",
+            context.source_read_prefix_for_document_collection(
+                first_order_document_collection.name
+            ),
+        )
+        self.assertEqual(
+            "my_prefix",
+            context.read_prefix_for_extractor_collection("FAKE_EXTRACTOR_COLLECTION"),
+        )
+        self.assertEqual(
+            "my_prefix",
+            context.output_prefix_for_writing(er_config.input_document_collection.name),
+        )
+
+
+class SeedEntityResolutionGoldenEvalTablesTest(
+    GoldenEvalEntityResolutionHelpersEmulatorTestCase
+):
+    """Tests for seed_entity_resolution_golden_eval_tables."""
+
+    def test_seeds_contents_pre_resolution_composites_and_map(self) -> None:
+        seed_entity_resolution_golden_eval_tables(
+            bq_client=self.bq_client,
+            sandbox_prefix=_SANDBOX_PREFIX,
+            config=self.er_config,
+            documents=[
+                attr.evolve(
+                    _er_document(
+                        golden_document_id="unit_1",
+                        test_group_id=1,
+                        document_date=datetime.date(2026, 3, 1),
+                        expected_values={
+                            "is_relevant": True,
+                            "primary_status": "active",
+                            "status_note": "Currently active.",
+                            "location": "Kitchen",
+                            "assignments": None,
+                        },
+                    ),
+                    document_text=_DISH_DUTY_HTML_TEXT,
+                ),
+                attr.evolve(
+                    _er_document(
+                        golden_document_id="unit_2",
+                        test_group_id=1,
+                        document_date=datetime.date(2026, 3, 15),
+                        expected_values={
+                            "is_relevant": False,
+                            "primary_status": None,
+                            "status_note": None,
+                            "location": None,
+                            "assignments": None,
+                        },
+                    ),
+                    document_text=_NO_ASSIGNMENT_TEXT,
+                ),
+            ],
+            validation_datetime_utc=_RUN_DATETIME_UTC,
+        )
+
+        self._assert_contents_rows(
+            [
+                {
+                    "document_contents_id": _DISH_DUTY_DOCUMENT_CONTENTS_ID,
+                    "document_text": _DISH_DUTY_TEXT,
+                    "document_length_bytes": 44,
+                },
+                {
+                    "document_contents_id": _NO_ASSIGNMENT_DOCUMENT_CONTENTS_ID,
+                    "document_text": _NO_ASSIGNMENT_TEXT,
+                    "document_length_bytes": 26,
+                },
+            ]
+        )
+        # unit_2 is not relevant, so only unit_1 has a __pre_resolution row.
+        self.run_query_test(
+            f"SELECT person_id, document_contents_id, location "
+            f"FROM `{self.project_id}.{self.doc_level_address.to_str()}`",
+            [
+                {
+                    "person_id": 1,
+                    "document_contents_id": _DISH_DUTY_DOCUMENT_CONTENTS_ID,
+                    "location": "Kitchen",
+                }
+            ],
+        )
+        self.run_query_test(
+            f"SELECT person_id, document_contents_id, document_text "
+            f"FROM `{self.project_id}.{self.composites_address.to_str()}`",
+            [
+                {
+                    "person_id": 1,
+                    "document_contents_id": _DISH_DUTY_COMPOSITE_ID,
+                    "document_text": _DISH_DUTY_COMPOSITE_TEXT,
+                }
+            ],
+        )
+        map_address = assert_type(
+            self.er_config.input_document_collection,
+            EntityResolutionDocumentCollectionConfig,
+        ).entry_source_map_table_address(sandbox_dataset_prefix=_SANDBOX_PREFIX)
+        self.run_query_test(
+            f"SELECT document_contents_id, entry_num "
+            f"FROM `{self.project_id}.{map_address.to_str()}`",
+            [{"document_contents_id": _DISH_DUTY_COMPOSITE_ID, "entry_num": 1}],
+        )
+
+
+def _entry(
+    *,
+    entry_num: int,
+    source_document_contents_id: str,
+    source_document_update_datetime: datetime.datetime,
+) -> dict[str, Any]:
+    """Returns one top-level (non-array) entry of a composite's entry_source_map."""
+    return build_fake_entry_source_map_entry(
+        entry_num=entry_num,
+        source_document_contents_id=source_document_contents_id,
+        source_document_update_datetime=source_document_update_datetime,
+        source_array_index=None,
+    )
+
+
+def _composite_row(
+    *, test_group_id: int, document_contents_id: str, entries: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Returns one composites table row for |test_group_id|, dated by its last
+    entry.
+    """
+    return build_fake_composite_generation_output_row(
+        root_entity_id_column="person_id",
+        root_entity_id=test_group_id,
+        document_contents_id=document_contents_id,
+        document_update_datetime=datetime.datetime.fromisoformat(
+            entries[-1]["source_document_update_datetime"]
+        ),
+        entries=entries,
+    )

@@ -43,6 +43,9 @@ from recidiviz.common.constants.operations.llm_extraction_job import (
     LLMExtractionJobDocumentResultType,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.documents.extraction.entity_resolution.entity_resolution_document_collection_config import (
+    EntityResolutionDocumentCollectionConfig,
+)
 from recidiviz.documents.extraction.eval.golden_eval_document_parser import (
     DOCUMENT_TEXT_COLUMN_NAME,
     GOLDEN_DOCUMENT_ID_COLUMN_NAME,
@@ -51,6 +54,7 @@ from recidiviz.documents.extraction.eval.golden_eval_document_parser import (
     expected_value_column_name,
 )
 from recidiviz.documents.extraction.eval.golden_eval_entity_resolution_tables import (
+    GoldenEvalCompositeDocumentsBQTable,
     GoldenEvalDocumentsBQTable,
     GoldenEvalPreResolutionBQTable,
 )
@@ -94,9 +98,6 @@ from recidiviz.documents.extraction.models.llm_extractor_config import (
     LLMExtractorConfig,
 )
 from recidiviz.documents.extraction.models.llm_model_registry import LLMModelConfig
-from recidiviz.documents.extraction.models.llm_request_output_schema_field import (
-    ArrayOfStructLLMRequestOutputSchemaField,
-)
 from recidiviz.documents.extraction.models.llm_request_output_schema_field_names import (
     IS_RELEVANT_FIELD_NAME,
 )
@@ -127,6 +128,7 @@ from recidiviz.tests.documents.extraction.llm_client.fake_sync_llm_client import
     FakeSyncLLMClient,
 )
 from recidiviz.tools.documents.run_sandbox_golden_eval import (
+    entry_source_map_sandbox_source_table_collection,
     pre_resolution_sandbox_source_table_collection,
 )
 from recidiviz.utils import metadata
@@ -966,21 +968,33 @@ class GoldenEvalRunnerEmulatorTest(BigQueryEmulatorTestCase):
 
 class GoldenEvalRunnerEntityResolutionEmulatorTest(BigQueryEmulatorTestCase):
     """Tests the part of an entity-resolution golden eval run that exists so far:
-    seeding the sandbox document contents and __pre_resolution tables from the
-    ER sheet tab.
+    seeding the sandbox tables the composite SQL reads and building the composites
+    and the entry→source map from them.
     """
+
+    # The seeded tables are created once in setUpClass; keep them across tests and
+    # only clear their rows between tests.
+    wipe_emulator_data_on_teardown = False
 
     @classmethod
     def get_source_tables(cls) -> list[SourceTableCollection]:
         with patch_fake_entity_resolution_model_config_name():
-            pre_resolution_collection = pre_resolution_sandbox_source_table_collection(
-                config=fake_entity_resolution_extractor_config("location"),
-                sandbox_prefix=_SANDBOX_PREFIX,
-                table_expiration_ms=60 * 60 * 1000,
-            )
+            er_config = fake_entity_resolution_extractor_config("location")
+            er_collections = [
+                pre_resolution_sandbox_source_table_collection(
+                    config=er_config,
+                    sandbox_prefix=_SANDBOX_PREFIX,
+                    table_expiration_ms=_ONE_HOUR_MS,
+                ),
+                entry_source_map_sandbox_source_table_collection(
+                    config=er_config,
+                    sandbox_prefix=_SANDBOX_PREFIX,
+                    table_expiration_ms=_ONE_HOUR_MS,
+                ),
+            ]
         return [
             collect_golden_eval_documents_source_table_collection(
-                extractor_collection_names=["FAKE_EXTRACTOR_COLLECTION"]
+                extractor_collection_names=[_COLLECTION_NAME]
             ).as_sandbox_collection(_SANDBOX_PREFIX),
             *[
                 collection.as_sandbox_collection(_SANDBOX_PREFIX)
@@ -988,25 +1002,55 @@ class GoldenEvalRunnerEntityResolutionEmulatorTest(BigQueryEmulatorTestCase):
                     [_config().input_document_collection]
                 )
             ],
-            pre_resolution_collection,
+            *er_collections,
         ]
 
     def setUp(self) -> None:
         super().setUp()
         self.enterContext(patch_fake_entity_resolution_model_config_name())
         self.config = fake_entity_resolution_extractor_config("location")
+        er_collection = assert_type(
+            self.config.input_document_collection,
+            EntityResolutionDocumentCollectionConfig,
+        )
+        self.composites_address = GoldenEvalCompositeDocumentsBQTable.address(
+            er_collection=er_collection, sandbox_prefix=_SANDBOX_PREFIX
+        )
+        # Created here rather than seeded at emulator boot: the emulator cannot
+        # load the nested entry_source_map column from its schema JSON.
+        self.create_mock_table(
+            self.composites_address,
+            schema=GoldenEvalCompositeDocumentsBQTable.schema(
+                er_collection=er_collection
+            ),
+        )
+        self.enterContext(
+            patch.object(
+                GoogleSheetReader,
+                "read_tab_as_table",
+                return_value=GoogleSheetTable(
+                    title=f"{_STATE_CODE.value}__ER",
+                    column_names=list(_ER_CELLS_UNIT_1),
+                    rows=[
+                        GoogleSheetTableRow(
+                            row_number=2, values_by_column=_ER_CELLS_UNIT_1
+                        ),
+                        GoogleSheetTableRow(
+                            row_number=3, values_by_column=_ER_CELLS_UNIT_2
+                        ),
+                    ],
+                ),
+            )
+        )
 
-    def test_entity_resolution_config_seeds_contents_and_pre_resolution_then_raises(
+    def tearDown(self) -> None:
+        self.bq_client.delete_table(self.composites_address, not_found_ok=True)
+        self._clear_emulator_table_data()
+        super().tearDown()
+
+    def test_run_eval_seeds_tables_and_builds_composites_then_raises(
         self,
     ) -> None:
-        sheet = GoogleSheetTable(
-            title=f"{_STATE_CODE.value}__ER",
-            column_names=list(_ER_CELLS_UNIT_1),
-            rows=[
-                GoogleSheetTableRow(row_number=2, values_by_column=_ER_CELLS_UNIT_1),
-                GoogleSheetTableRow(row_number=3, values_by_column=_ER_CELLS_UNIT_2),
-            ],
-        )
         runner = GoldenEvalRunner(
             sandbox_prefix=_SANDBOX_PREFIX,
             requester=_REQUESTER,
@@ -1015,9 +1059,8 @@ class GoldenEvalRunnerEntityResolutionEmulatorTest(BigQueryEmulatorTestCase):
             bq_client=self.bq_client,
         )
 
-        with patch.object(GoogleSheetReader, "read_tab_as_table", return_value=sheet):
-            with self.assertRaisesRegex(ValueError, r"not supported yet"):
-                runner.run_eval(config=self.config)
+        with self.assertRaisesRegex(ValueError, r"not supported yet"):
+            runner.run_eval(config=self.config)
 
         documents_address = GoldenEvalDocumentsBQTable.address(
             collection_name=_config().extractor_collection.name,
@@ -1097,31 +1140,30 @@ class GoldenEvalRunnerEntityResolutionEmulatorTest(BigQueryEmulatorTestCase):
                 }
             ],
         )
-        assignments_address = GoldenEvalPreResolutionBQTable.address(
-            first_order_config=first_order_config,
-            array_field=assert_type(
-                first_order_config.extractor_collection.output_schema.get_field(
-                    "assignments"
-                ),
-                ArrayOfStructLLMRequestOutputSchemaField,
-            ),
-            sandbox_prefix=_SANDBOX_PREFIX,
-        )
+        map_address = assert_type(
+            self.config.input_document_collection,
+            EntityResolutionDocumentCollectionConfig,
+        ).entry_source_map_table_address(sandbox_dataset_prefix=_SANDBOX_PREFIX)
         self.run_query_test(
-            f"SELECT source_array_index, assignment_name, assignment_type, "
-            f"rate_amount, rate_period "
-            f"FROM `{self.project_id}.{assignments_address.to_str()}`",
-            [
-                {
-                    "source_array_index": 0,
-                    "assignment_name": "Dish duty",
-                    "assignment_type": "internal",
-                    "rate_amount": 12.5,
-                    "rate_period": "hourly",
-                }
-            ],
+            f"SELECT document_contents_id, entry_num "
+            f"FROM `{self.project_id}.{map_address.to_str()}`",
+            [{"document_contents_id": _COMPOSITE_ID, "entry_num": 1}],
         )
 
+
+_ONE_HOUR_MS = 60 * 60 * 1000
+
+# The composite the ER collection's generation query builds from unit_1, the only
+# relevant document in test group 1.
+_COMPOSITE_TEXT = (
+    "=== Source document — 2026-03-01 ===\n"
+    "document_text: The record is active. Assigned to dish duty at $12.50/hour.\n"
+    "\n"
+    "[Entry 1]\n"
+    "location: Kitchen"
+)
+# sha256("US_XX|" + _COMPOSITE_TEXT)
+_COMPOSITE_ID = "a9abe39c7b04d682ae4f850a6461c6e99c021aa79e17dc558b187429495cb19a"
 
 _ER_CELLS_UNIT_1 = {
     TEST_TYPE_COLUMN_NAME: "unit",
