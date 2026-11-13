@@ -142,35 +142,62 @@ class TrackedValue(Generic[T_co]):
         )
 
     def to_derivation_tree(self) -> dict[str, Any]:
-        """Serialize to nested dict for JSON/UI.
+        """Returns this value and its sources as a nested dict for JSON and the UI,
+        expanding each derived value only the first time it appears.
 
-        Returns:
-            Dictionary representation with nested sources forming a tree structure
+        For example, with calendar term conversion a sentence's jail credit feeds
+        both its RETRO date and its adjusted max term, so the adjusted max term
+        serializes as (formulas and some sources abridged):
+
+            {"label": "S1.adjusted_max_days", "value": 335, "formula": ...,
+             "derived_from": [
+                {"label": "S1.original_max_days", "value": 365, "formula": ...,
+                 "derived_from": [
+                    ...,
+                    {"label": "S1.retro_date", "value": "2024-01-01",
+                     "formula": ...,
+                     "derived_from": [
+                        {"label": "S1.start_date", "value": "2024-01-31"},
+                        {"label": "S1.jail_credit", "value": 30,
+                         "formula": ..., "derived_from": [...]}]}]},
+                {"label": "S1.term_multiplier", "value": 1.0, "formula": ...},
+                {"label": "S1.jail_credit", "value": 30, "shown_above": True}]}
+
+        A repeated value keeps its label and value but drops its formula, rule,
+        and sources. Expanding every appearance would multiply a consecutive
+        sentence's tree by the number of times its parent's term reaches the
+        parent's start date, once per sentence in the chain. Leaves repeat in
+        full, since they have nothing to expand.
         """
+        expanded_value_ids: set[int] = set()
 
         def serialize_value(value: Any) -> Any:
-            """Convert value to JSON-serializable format."""
             if isinstance(value, date):
                 return str(value)
             return value
 
-        result: dict[str, Any] = {
-            "label": self.label,
-            "value": serialize_value(self.value),
-        }
+        def to_tree(tracked: TrackedValue[Any]) -> dict[str, Any]:
+            result: dict[str, Any] = {
+                "label": tracked.label,
+                "value": serialize_value(tracked.value),
+            }
+            # Compares by identity because attrs hashes a TrackedValue by
+            # recursing through all of its sources.
+            if tracked.sources and id(tracked) in expanded_value_ids:
+                result["shown_above"] = True
+                return result
+            if tracked.formula:
+                result["formula"] = tracked.formula
+            if tracked.rule_name:
+                result["rule"] = tracked.rule_name
+            if not tracked.sources:
+                return result
 
-        if self.formula:
-            result["formula"] = self.formula
+            expanded_value_ids.add(id(tracked))
+            result["derived_from"] = [to_tree(source) for source in tracked.sources]
+            return result
 
-        if self.rule_name:
-            result["rule"] = self.rule_name
-
-        if self.sources:
-            result["derived_from"] = [
-                source.to_derivation_tree() for source in self.sources
-            ]
-
-        return result
+        return to_tree(self)
 
 
 def tracked_sum(values: list[TrackedValue[int]], label: str) -> TrackedValue[int]:

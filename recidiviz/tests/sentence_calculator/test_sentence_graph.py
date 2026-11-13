@@ -51,6 +51,20 @@ _NO_ADJUSTMENT_ENGINE = RuleEngine(
         projected_dates={},
     )
 )
+_CALENDAR_NO_ADJUSTMENT_ENGINE = RuleEngine(
+    LawRegime(
+        name="CALENDAR_NO_ADJUSTMENT",
+        description="Regime that counts terms by calendar and leaves them unchanged",
+        effective_date=date(2020, 1, 1),
+        use_calendar_term_conversion=True,
+        days_per_month=30.0,
+        days_per_year=365.0,
+        term_multipliers=[],
+        credit_rates=[],
+        credit_caps=[],
+        projected_dates={},
+    )
+)
 
 
 def _sentence(
@@ -657,6 +671,138 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         assert result is not None
         self.assertEqual(result.path_sentence_ids, ["C1a", "C2b"])
 
+    def test_consecutive_start_date_derives_from_parent_end_date(self) -> None:
+        graph = SentenceGraph(
+            [
+                _sentence(
+                    "S1",
+                    start_date=date(2024, 1, 1),
+                    min_term=Term(days=50),
+                    max_term=Term(days=100),
+                ),
+                _sentence(
+                    "S2",
+                    parent_sentence_id="S1",
+                    min_term=Term(days=20),
+                    max_term=Term(days=40),
+                ),
+            ]
+        )
+
+        result = graph.longest_path(engine=_NO_ADJUSTMENT_ENGINE)
+
+        assert result is not None
+        self.assertEqual(
+            {
+                "label": "S2.start_date",
+                "value": "2024-04-10",
+                "formula": "S1.end_date + 1 day",
+                "derived_from": [
+                    {
+                        "label": "S1.end_date",
+                        "value": "2024-04-09",
+                        "formula": "S1.start_date + S1.adjusted_max_days - 1 day",
+                        "derived_from": [
+                            {"label": "S1.start_date", "value": "2024-01-01"},
+                            {
+                                "label": "S1.adjusted_max_days",
+                                "value": 100,
+                                "formula": (
+                                    "max(0, 100 - 0) = 100 "
+                                    "(S1.term_multiplier not applied)"
+                                ),
+                                "derived_from": [
+                                    {
+                                        "label": "S1.original_max_days",
+                                        "value": 100,
+                                        "formula": (
+                                            "0y × 365.0 + 0m × 30.0 + 100d = 100 days"
+                                        ),
+                                        "derived_from": [
+                                            {
+                                                "label": "S1.original_max_days.years",
+                                                "value": 0,
+                                            },
+                                            {
+                                                "label": "S1.original_max_days.months",
+                                                "value": 0,
+                                            },
+                                            {
+                                                "label": "S1.original_max_days.days",
+                                                "value": 100,
+                                            },
+                                        ],
+                                    },
+                                    {
+                                        "label": "S1.term_multiplier",
+                                        "value": 1.0,
+                                        "formula": (
+                                            "No term_multipliers rule; default 1.0"
+                                        ),
+                                    },
+                                    {
+                                        "label": "S1.jail_credit",
+                                        "value": 0,
+                                        "formula": (
+                                            "0y × 365.0 + 0m × 30.0 + 0d = 0 days"
+                                        ),
+                                        "derived_from": [
+                                            {
+                                                "label": "S1.jail_credit.years",
+                                                "value": 0,
+                                            },
+                                            {
+                                                "label": "S1.jail_credit.months",
+                                                "value": 0,
+                                            },
+                                            {
+                                                "label": "S1.jail_credit.days",
+                                                "value": 0,
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+            result.sentence_terms["S2"].start_date.to_derivation_tree(),
+        )
+
+    def test_consecutive_sentence_terms_count_from_traced_start_date(self) -> None:
+        """With calendar conversion, a consecutive sentence's terms count from the
+        start date traced through its parent's term, so the term derivations show
+        where that start date came from."""
+        graph = SentenceGraph(
+            [
+                _sentence(
+                    "S1",
+                    start_date=date(2024, 1, 1),
+                    min_term=Term(months=2),
+                    max_term=Term(months=4),
+                ),
+                _sentence(
+                    "S2",
+                    parent_sentence_id="S1",
+                    min_term=Term(months=1),
+                    max_term=Term(months=3),
+                ),
+            ]
+        )
+
+        result = graph.longest_path(engine=_CALENDAR_NO_ADJUSTMENT_ENGINE)
+
+        assert result is not None
+        s2_terms = result.sentence_terms["S2"]
+        # S2's original max term is derived from its years, months, days, and the
+        # RETRO date it counts from, which is derived from its start date and jail
+        # credit.
+        [_, _, _, s2_retro_date] = s2_terms.adjustment.original_max_days.sources
+        [s2_retro_start_date, _] = s2_retro_date.sources
+        self.assertEqual(s2_terms.start_date, s2_retro_start_date)
+        self.assertEqual("S1.end_date + 1 day", s2_retro_start_date.formula)
+
     def test_max_ped_for_single_sentence_is_start_date_plus_min_term(self) -> None:
         graph = SentenceGraph(
             [
@@ -775,18 +921,15 @@ class TestSentenceGraphLongestPath(unittest.TestCase):
         # test_max_ped_for_single_sentence_is_start_date_plus_min_term.
         self.assertEqual("C1c.ped", result.max_ped.label)
         self.assertEqual(date(2029, 2, 2), result.max_ped.value)
+        # The full shape of a consecutive sentence's start date derivation tree is
+        # checked in test_consecutive_start_date_derives_from_parent_end_date.
         self.assertEqual(
-            {
-                "label": "C1c.start_date",
-                "value": "2027-12-31",
-                "formula": "C1b.end_date + 1 day",
-                "derived_from": [
-                    # C1b starts 2024-12-31, the day after C1a ends, and runs
-                    # 1095 days.
-                    {"label": "C1b.end_date", "value": "2027-12-30"},
-                ],
-            },
-            result.sentence_terms["C1c"].start_date.to_derivation_tree(),
+            "C1c.start_date", result.sentence_terms["C1c"].start_date.label
+        )
+        # C1b starts 2024-12-31, the day after C1a ends, and runs 1095 days, through
+        # 2027-12-30.
+        self.assertEqual(
+            date(2027, 12, 31), result.sentence_terms["C1c"].start_date.value
         )
 
     def test_max_ped_from_only_sentence_on_late_starting_chain(self) -> None:
@@ -872,7 +1015,7 @@ class TestSentenceGraphAdjustments(unittest.TestCase):
         # 100 + 40 adjusted days.
         self.assertEqual(140, result.total_days.value)
         # S1 runs 100 adjusted days, 2024-01-01 through 2024-04-09.
-        self.assertEqual(date(2024, 4, 9), result.sentence_terms["S1"].end_date)
+        self.assertEqual(date(2024, 4, 9), result.sentence_terms["S1"].end_date.value)
         self.assertEqual(
             date(2024, 4, 10), result.sentence_terms["S2"].start_date.value
         )

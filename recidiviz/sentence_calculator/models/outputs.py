@@ -195,7 +195,7 @@ class SentenceTermCalculation:
         return self.adjustment.adjusted_max_days
 
     @property
-    def end_date(self) -> date:
+    def end_date(self) -> TrackedValue[date]:
         """Last day served on the sentence's term (inclusive). A consecutive
         sentence starts the day after. The start date is the first day served, so
         a term of n days ends n - 1 days after the start."""
@@ -204,7 +204,12 @@ class SentenceTermCalculation:
         # puts end_date the day before start_date, so a Nevada sentence can end the day
         # before it begins. Revisit once we better understand how this case should
         # be handled for different start dates.
-        return self.start_date.value + timedelta(days=self.total_days.value - 1)
+        return self.start_date.derive(
+            new_value=self.start_date.value + timedelta(days=self.total_days.value - 1),
+            label=f"{self.adjustment.sentence_id}.end_date",
+            formula=f"{self.start_date.label} + {self.total_days.label} - 1 day",
+            other_sources=[self.total_days],
+        )
 
 
 @attr.define(frozen=True, kw_only=True)

@@ -186,13 +186,7 @@ class SentenceGraph:
                     f"{sentence.sentence_id}.start_date",
                 )
             parent = self._sentences_by_id[sentence.parent_sentence_id]
-            # TODO(NV-9): Make SentenceTermCalculation.end_date a TrackedValue so the
-            # derivation tree traces the parent's end date back to its start date and
-            # term instead of stopping here.
-            parent_end_date = TrackedValue.input(
-                get_sentence_term_calculation(parent).end_date,
-                f"{parent.sentence_id}.end_date",
-            )
+            parent_end_date = get_sentence_term_calculation(parent).end_date
             return parent_end_date.derive(
                 new_value=parent_end_date.value + timedelta(days=1),
                 label=f"{sentence.sentence_id}.start_date",
@@ -213,7 +207,7 @@ class SentenceGraph:
             # not positive it needs to, given the 40% requirement, but should check.
             start_date = get_start_date(sentence)
             adjustment = calculate_sentence_adjustment(
-                sentence=sentence, start_date=start_date.value, engine=engine
+                sentence=sentence, start_date=start_date, engine=engine
             )
             min_term_days = adjustment.adjusted_min_days
             return SentenceTermCalculation(
@@ -250,7 +244,7 @@ class SentenceGraph:
             sentence_term = get_sentence_term_calculation(sentence)
             active_sentences.append(
                 NvSentenceWithSortableEndDate.from_sentence(
-                    sentence, sentence_term.end_date
+                    sentence, sentence_term.end_date.value
                 )
             )
 

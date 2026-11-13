@@ -46,6 +46,9 @@ from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import (
 from recidiviz.sentence_calculator.models.tracked import TrackedValue
 
 _START_DATE = date(2025, 1, 1)
+_S1_START_DATE = TrackedValue.input(_START_DATE, "S1.start_date")
+_S2_START_DATE = TrackedValue.input(_START_DATE, "S2.start_date")
+_S3_START_DATE = TrackedValue.input(_START_DATE, "S3.start_date")
 
 # The two sentences differ only in offense_group, the field the min term's
 # reduction condition checks.
@@ -257,7 +260,9 @@ class TestCalendarTermConversion(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=sentence, start_date=date(2024, 3, 15), engine=engine
+            sentence=sentence,
+            start_date=TrackedValue.input(date(2024, 3, 15), "S1.start_date"),
+            engine=engine,
         )
 
         # The terms count from the RETRO date, 2024-02-14, so both span February
@@ -319,7 +324,7 @@ class TestTermMultiplierAdjustment(unittest.TestCase):
 
     def test_reduction_applies_to_both_terms(self) -> None:
         adjustment = calculate_sentence_adjustment(
-            sentence=_NONVIOLENT_SENTENCE, start_date=_START_DATE, engine=self.engine
+            sentence=_NONVIOLENT_SENTENCE, start_date=_S2_START_DATE, engine=self.engine
         )
 
         self.assertEqual(730, adjustment.original_min_days.value)
@@ -340,7 +345,7 @@ class TestTermMultiplierAdjustment(unittest.TestCase):
 
     def test_unmet_min_term_condition_reduces_max_term_only(self) -> None:
         adjustment = calculate_sentence_adjustment(
-            sentence=_VIOLENT_SENTENCE, start_date=_START_DATE, engine=self.engine
+            sentence=_VIOLENT_SENTENCE, start_date=_S1_START_DATE, engine=self.engine
         )
 
         # 730 - 30, with no reduction
@@ -350,7 +355,7 @@ class TestTermMultiplierAdjustment(unittest.TestCase):
 
     def test_adjusted_min_derivation_tree(self) -> None:
         adjustment = calculate_sentence_adjustment(
-            sentence=_VIOLENT_SENTENCE, start_date=_START_DATE, engine=self.engine
+            sentence=_VIOLENT_SENTENCE, start_date=_S1_START_DATE, engine=self.engine
         )
 
         self.assertEqual(
@@ -398,7 +403,7 @@ class TestTermMultiplierAdjustment(unittest.TestCase):
 
     def test_reduced_min_derivation_tree(self) -> None:
         adjustment = calculate_sentence_adjustment(
-            sentence=_NONVIOLENT_SENTENCE, start_date=_START_DATE, engine=self.engine
+            sentence=_NONVIOLENT_SENTENCE, start_date=_S2_START_DATE, engine=self.engine
         )
 
         self.assertEqual(
@@ -476,7 +481,7 @@ class TestTermMultiplierAdjustment(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=sentence, start_date=_START_DATE, engine=engine
+            sentence=sentence, start_date=_S3_START_DATE, engine=engine
         )
 
         # 90 × 0.7 and 170 × 0.7 are exactly 63 and 119. Multiplying the floats
@@ -497,7 +502,7 @@ class TestTermMultiplierAdjustment(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=sentence, start_date=_START_DATE, engine=self.engine
+            sentence=sentence, start_date=_S3_START_DATE, engine=self.engine
         )
 
         self.assertEqual(0, adjustment.adjusted_min_days.value)
@@ -520,7 +525,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=_NONVIOLENT_SENTENCE, start_date=_START_DATE, engine=engine
+            sentence=_NONVIOLENT_SENTENCE, start_date=_S2_START_DATE, engine=engine
         )
 
         # The jail credit earns int(30 / 30 * 20) = 20 days, leaving 730 - 30 - 20
@@ -551,7 +556,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=_VIOLENT_SENTENCE, start_date=_START_DATE, engine=engine
+            sentence=_VIOLENT_SENTENCE, start_date=_S1_START_DATE, engine=engine
         )
 
         self.assertEqual(700, adjustment.adjusted_min_days.value)
@@ -569,7 +574,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=_VIOLENT_SENTENCE, start_date=_START_DATE, engine=engine
+            sentence=_VIOLENT_SENTENCE, start_date=_S1_START_DATE, engine=engine
         )
 
         self.assertEqual(
@@ -626,7 +631,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=_NONVIOLENT_SENTENCE, start_date=_START_DATE, engine=engine
+            sentence=_NONVIOLENT_SENTENCE, start_date=_S2_START_DATE, engine=engine
         )
 
         # Credits capped at int(730 * 0.1) = 73, so 730 - 30 - 73.
@@ -654,7 +659,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=_NONVIOLENT_SENTENCE, start_date=_START_DATE, engine=engine
+            sentence=_NONVIOLENT_SENTENCE, start_date=_S2_START_DATE, engine=engine
         )
 
         # The 730 - 30 - 408 = 292 days of credits fall below the int(730 * 0.9) =
@@ -673,7 +678,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=_NONVIOLENT_SENTENCE, start_date=_START_DATE, engine=engine
+            sentence=_NONVIOLENT_SENTENCE, start_date=_S2_START_DATE, engine=engine
         )
 
         original_min_days = {
@@ -696,6 +701,16 @@ class TestCreditRateAdjustment(unittest.TestCase):
                 {"label": "S2.jail_credit.days", "value": 30},
             ],
         }
+        original_min_days_shown_above = {
+            "label": "S2.original_min_days",
+            "value": 730,
+            "shown_above": True,
+        }
+        jail_credit_shown_above = {
+            "label": "S2.jail_credit",
+            "value": 30,
+            "shown_above": True,
+        }
         self.assertEqual(
             {
                 "label": "S2.adjusted_min_days",
@@ -717,7 +732,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
                                     "month by month from 2025-01-01 = 292"
                                 ),
                                 "derived_from": [
-                                    original_min_days,
+                                    original_min_days_shown_above,
                                     {
                                         "label": "S2.credit_rate",
                                         "value": 20.0,
@@ -731,7 +746,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
                                         ),
                                         "rule": "stat_time",
                                     },
-                                    jail_credit,
+                                    jail_credit_shown_above,
                                 ],
                             },
                             {
@@ -739,7 +754,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
                                 "value": 73,
                                 "formula": "sentence_length_days * 0.1",
                                 "rule": "min_term_credit_cap",
-                                "derived_from": [original_min_days],
+                                "derived_from": [original_min_days_shown_above],
                             },
                         ],
                     },
@@ -776,10 +791,14 @@ class TestCreditRateAdjustment(unittest.TestCase):
         )
 
         calendar_adjustment = calculate_sentence_adjustment(
-            sentence=sentence, start_date=date(2023, 2, 1), engine=calendar_engine
+            sentence=sentence,
+            start_date=TrackedValue.input(date(2023, 2, 1), "S3.start_date"),
+            engine=calendar_engine,
         )
         flat_adjustment = calculate_sentence_adjustment(
-            sentence=sentence, start_date=date(2023, 2, 1), engine=flat_engine
+            sentence=sentence,
+            start_date=TrackedValue.input(date(2023, 2, 1), "S3.start_date"),
+            engine=flat_engine,
         )
 
         # February 2023 (28 days) covers 48 of the 99 days, and March (31 days)
@@ -812,7 +831,9 @@ class TestCreditRateAdjustment(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=sentence, start_date=_START_DATE, engine=engine
+            sentence=sentence,
+            start_date=TrackedValue.input(_START_DATE, "S4.start_date"),
+            engine=engine,
         )
 
         self.assertEqual(
@@ -852,21 +873,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
                             {
                                 "label": "S4.original_max_days",
                                 "value": 20,
-                                "formula": "0y × 365.0 + 0m × 30.0 + 20d = 20 days",
-                                "derived_from": [
-                                    {
-                                        "label": "S4.original_max_days.years",
-                                        "value": 0,
-                                    },
-                                    {
-                                        "label": "S4.original_max_days.months",
-                                        "value": 0,
-                                    },
-                                    {
-                                        "label": "S4.original_max_days.days",
-                                        "value": 20,
-                                    },
-                                ],
+                                "shown_above": True,
                             },
                             {
                                 "label": "S4.credit_rate",
@@ -883,12 +890,7 @@ class TestCreditRateAdjustment(unittest.TestCase):
                             {
                                 "label": "S4.jail_credit",
                                 "value": 30,
-                                "formula": "0y × 365.0 + 0m × 30.0 + 30d = 30 days",
-                                "derived_from": [
-                                    {"label": "S4.jail_credit.years", "value": 0},
-                                    {"label": "S4.jail_credit.months", "value": 0},
-                                    {"label": "S4.jail_credit.days", "value": 30},
-                                ],
+                                "shown_above": True,
                             },
                         ],
                     },
@@ -924,7 +926,7 @@ class TestReductionOffMinTermOnly(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=_NONVIOLENT_SENTENCE, start_date=_START_DATE, engine=engine
+            sentence=_NONVIOLENT_SENTENCE, start_date=_S2_START_DATE, engine=engine
         )
 
         # int(730 * 0.65) - 30
@@ -970,7 +972,7 @@ class TestReductionReachingNoTerms(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=_VIOLENT_SENTENCE, start_date=_START_DATE, engine=engine
+            sentence=_VIOLENT_SENTENCE, start_date=_S1_START_DATE, engine=engine
         )
 
         # The rule matched, so its multiplier is reported, but it reduced no terms.
@@ -1001,7 +1003,7 @@ class TestReductionReachingNoTerms(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=_NONVIOLENT_SENTENCE, start_date=_START_DATE, engine=engine
+            sentence=_NONVIOLENT_SENTENCE, start_date=_S2_START_DATE, engine=engine
         )
 
         # 1825 - 30, with no credits
@@ -1024,7 +1026,7 @@ class TestNoReduction(unittest.TestCase):
         )
 
         adjustment = calculate_sentence_adjustment(
-            sentence=_NONVIOLENT_SENTENCE, start_date=_START_DATE, engine=engine
+            sentence=_NONVIOLENT_SENTENCE, start_date=_S2_START_DATE, engine=engine
         )
 
         assert adjustment.term_multiplier is not None

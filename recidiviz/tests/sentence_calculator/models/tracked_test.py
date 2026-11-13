@@ -188,6 +188,56 @@ class TestToDerivationTree(unittest.TestCase):
             adjusted.to_derivation_tree(),
         )
 
+    def test_repeated_derived_value_is_expanded_once(self) -> None:
+        start_date = TrackedValue.input(date(2024, 1, 31), "S1.start_date")
+        jail_credit_days = TrackedValue.input(30, "S1.jail_credit.days")
+        jail_credit = jail_credit_days.derive(
+            new_value=30, label="S1.jail_credit", formula="30d = 30 days"
+        )
+        retro_date = start_date.derive(
+            new_value=date(2024, 1, 1),
+            label="S1.retro_date",
+            formula="2024-01-31 - 30 days = 2024-01-01",
+            other_sources=[jail_credit],
+        )
+        end_date = retro_date.derive(
+            new_value=date(2024, 12, 31),
+            label="S1.end_date",
+            formula="S1.retro_date + 365 days - 1 day",
+            other_sources=[jail_credit, start_date],
+        )
+
+        self.assertEqual(
+            {
+                "label": "S1.end_date",
+                "value": "2024-12-31",
+                "formula": "S1.retro_date + 365 days - 1 day",
+                "derived_from": [
+                    {
+                        "label": "S1.retro_date",
+                        "value": "2024-01-01",
+                        "formula": "2024-01-31 - 30 days = 2024-01-01",
+                        "derived_from": [
+                            {"label": "S1.start_date", "value": "2024-01-31"},
+                            {
+                                "label": "S1.jail_credit",
+                                "value": 30,
+                                "formula": "30d = 30 days",
+                                "derived_from": [
+                                    {"label": "S1.jail_credit.days", "value": 30},
+                                ],
+                            },
+                        ],
+                    },
+                    # A repeated derived value drops its formula and sources.
+                    {"label": "S1.jail_credit", "value": 30, "shown_above": True},
+                    # A repeated leaf has nothing to drop, so it repeats in full.
+                    {"label": "S1.start_date", "value": "2024-01-31"},
+                ],
+            },
+            end_date.to_derivation_tree(),
+        )
+
 
 class TestTrackedSum(unittest.TestCase):
     """Tests for tracked_sum."""

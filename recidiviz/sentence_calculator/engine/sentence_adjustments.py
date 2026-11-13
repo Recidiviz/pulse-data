@@ -162,7 +162,7 @@ def _retro_date(
 
 
 def calculate_sentence_adjustment(
-    *, sentence: Sentence, start_date: date, engine: RuleEngine
+    *, sentence: Sentence, start_date: TrackedValue[date], engine: RuleEngine
 ) -> TrackedSentenceAdjustment:
     """Returns sentence's original and adjusted terms in days.
 
@@ -185,20 +185,20 @@ def calculate_sentence_adjustment(
 
     Args:
         sentence: The sentence to adjust.
-        start_date: The date the sentence starts, used for calendar conversion.
+        start_date: The date the sentence starts, used for calendar conversion,
+            tracked back to the values it was computed from.
         engine: Rule engine for the regime that governs the sentence.
     """
     regime = engine.regime
     sentence_id = sentence.sentence_id
-    tracked_start_date = TrackedValue.input(start_date, f"{sentence_id}.start_date")
     jail_credit = _jail_credit_to_days(
         term=sentence.initial_time_served,
         label=f"{sentence_id}.jail_credit",
-        start_date=tracked_start_date,
+        start_date=start_date,
         regime=regime,
     )
     retro_date = _retro_date(
-        start_date=tracked_start_date,
+        start_date=start_date,
         jail_credit=jail_credit,
         label=f"{sentence_id}.retro_date",
     )
@@ -219,7 +219,7 @@ def calculate_sentence_adjustment(
         credit_rate = engine.get_credit_rate(sentence)
         adjusted_min_days, _ = _apply_credit_rate(
             sentence=sentence,
-            start_date=start_date,
+            start_date=start_date.value,
             engine=engine,
             original_days=original_min_days,
             jail_credit=jail_credit,
@@ -229,7 +229,7 @@ def calculate_sentence_adjustment(
         )
         adjusted_max_days, max_term_reduction_days = _apply_credit_rate(
             sentence=sentence,
-            start_date=start_date,
+            start_date=start_date.value,
             engine=engine,
             original_days=original_max_days,
             jail_credit=jail_credit,
