@@ -303,6 +303,7 @@ class TestCalendarTermConversion(unittest.TestCase):
             adjustment.original_min_days.to_derivation_tree(),
         )
         self.assertEqual(1096, adjustment.original_max_days.value)
+        self.assertEqual(date(2024, 2, 14), adjustment.retro_date.value)
         # 366 - 30 and 1096 - 30
         self.assertEqual(336, adjustment.adjusted_min_days.value)
         self.assertEqual(1066, adjustment.adjusted_max_days.value)

@@ -247,6 +247,7 @@ def calculate_sentence_adjustment(
             term_multiplier=None,
             credit_rate=credit_rate,
             jail_credit=jail_credit,
+            retro_date=retro_date,
         )
 
     term_multiplier = engine.get_term_multiplier(sentence)
@@ -276,6 +277,7 @@ def calculate_sentence_adjustment(
         term_multiplier=term_multiplier,
         credit_rate=None,
         jail_credit=jail_credit,
+        retro_date=retro_date,
     )
 
 

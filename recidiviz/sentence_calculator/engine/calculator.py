@@ -146,16 +146,10 @@ def _calculate_projected_dates(
         [a.max_term_reduction_days for a in path_adjustments], "good_time_days"
     )
     # The terms count from the RETRO date, so their whole years do too.
-    # TODO(NV-9): This uses only the first path sentence's jail credit, which is
+    # TODO(NV-9): This uses only the first path sentence's RETRO date, which is
     # right for one consecutive chain. A path that picks up a later chain whose
     # root has its own jail credit needs that chain's RETRO date too.
-    first_jail_credit = path_adjustments[0].jail_credit
-    retro_date = earliest_start_date.derive(
-        new_value=earliest_start_date.value - timedelta(days=first_jail_credit.value),
-        label="retro_date",
-        formula=f"{earliest_start_date.label} - {first_jail_credit.label}",
-        other_sources=[first_jail_credit],
-    )
+    retro_date = path_adjustments[0].retro_date
     context = DateCalculationContext(
         earliest_start_date=earliest_start_date,
         unadjusted_min_days=tracked_sum(

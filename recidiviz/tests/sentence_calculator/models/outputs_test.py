@@ -17,6 +17,7 @@
 """Tests for recidiviz/sentence_calculator/models/outputs.py."""
 
 import unittest
+from datetime import date
 
 from recidiviz.sentence_calculator.models.outputs import (
     ProjectedCreditRate,
@@ -34,6 +35,7 @@ _ADJUSTED_MIN_DAYS = TrackedValue.input(700, "S1.adjusted_min_days")
 _ADJUSTED_MAX_DAYS = TrackedValue.input(1156, "S1.adjusted_max_days")
 _MAX_TERM_REDUCTION_DAYS = TrackedValue.input(639, "S1.max_term_reduction_days")
 _JAIL_CREDIT = TrackedValue.input(30, "S1.jail_credit")
+_RETRO_DATE = TrackedValue.input(date(2024, 2, 14), "S1.retro_date")
 
 
 class TestTrackedSentenceAdjustment(unittest.TestCase):
@@ -53,6 +55,7 @@ class TestTrackedSentenceAdjustment(unittest.TestCase):
             ),
             credit_rate=None,
             jail_credit=_JAIL_CREDIT,
+            retro_date=_RETRO_DATE,
         )
 
         self.assertEqual(frozenset({TermType.MAX_TERM}), adjustment.reduced_terms)
@@ -71,6 +74,7 @@ class TestTrackedSentenceAdjustment(unittest.TestCase):
                 reduced_terms=frozenset({TermType.MIN_TERM, TermType.MAX_TERM}),
             ),
             jail_credit=_JAIL_CREDIT,
+            retro_date=_RETRO_DATE,
         )
 
         self.assertEqual(
@@ -95,6 +99,7 @@ class TestTrackedSentenceAdjustment(unittest.TestCase):
                 term_multiplier=None,
                 credit_rate=None,
                 jail_credit=_JAIL_CREDIT,
+                retro_date=_RETRO_DATE,
             )
 
     def test_rejects_both_term_multiplier_and_credit_rate(self) -> None:
@@ -120,6 +125,7 @@ class TestTrackedSentenceAdjustment(unittest.TestCase):
                     reduced_terms=frozenset({TermType.MAX_TERM}),
                 ),
                 jail_credit=_JAIL_CREDIT,
+                retro_date=_RETRO_DATE,
             )
 
 

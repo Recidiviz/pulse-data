@@ -148,6 +148,11 @@ class TrackedSentenceAdjustment:
     jail_credit: "TrackedValue[int]" = attr.ib(
         validator=attr.validators.instance_of(TrackedValue)
     )
+    # The RETRO date, the start date minus jail credit. With calendar term conversion,
+    # the min and max terms count from this date.
+    retro_date: "TrackedValue[date]" = attr.ib(
+        validator=attr.validators.instance_of(TrackedValue)
+    )
 
     def __attrs_post_init__(self) -> None:
         if (self.term_multiplier is None) == (self.credit_rate is None):
