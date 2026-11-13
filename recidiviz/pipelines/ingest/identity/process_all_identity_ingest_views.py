@@ -57,7 +57,12 @@ from recidiviz.pipelines.ingest.identity.types import SourcedIdentityFragment
 from recidiviz.pipelines.ingest.raw_data_upper_bound_dates import (
     validate_and_backfill_raw_data_upper_bound_dates,
 )
-from recidiviz.pipelines.ingest.transforms.process_ingest_view import ProcessIngestView
+from recidiviz.pipelines.ingest.transforms.generate_ingest_view_root_entities import (
+    GenerateIngestViewRootEntities,
+)
+from recidiviz.pipelines.ingest.transforms.merge_root_entity_trees import (
+    MergeIngestViewRootEntityTrees,
+)
 from recidiviz.pipelines.ingest.types import ExternalIdKey, IngestViewName
 
 
@@ -143,56 +148,59 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
             raw_data_upper_bound_dates=raw_data_upper_bound_dates,
         )
 
-        merged_fragments_per_view: dict[
+        merged_fragments_with_dates_per_ingest_view: dict[
             IngestViewName,
             beam.PCollection[tuple[ExternalIdKey, SourcedIdentityFragment]],
         ] = {}
         for view_name in identity_view_names:
-            view_query_builder = view_collector.get_query_builder_by_view_name(
-                view_name
-            )
-            raw_data_tables_to_upperbound_dates = {
-                file_tag: raw_data_upper_bound_dates[file_tag]
-                for file_tag in view_query_builder.raw_data_table_dependency_file_tags
-            }
             manifest = ingest_manifest_collector.ingest_view_to_manifest[view_name]
-            merged_fragments_per_view[
-                view_name
-            ] = input_or_inputs | view_name >> ProcessIngestView(
-                state_code=state_code,
+            fragments_with_dates = input_or_inputs | view_name >> GenerateIngestViewRootEntities(
                 ingest_view_name=view_name,
-                ingest_view_query_builder=view_query_builder,
-                raw_data_upper_bound_dates=raw_data_tables_to_upperbound_dates,
+                ingest_view_query_builder=view_collector.get_query_builder_by_view_name(
+                    view_name
+                ),
+                raw_data_upper_bound_dates=raw_data_upper_bound_dates,
                 raw_data_source_instance=raw_data_source_instance,
                 ingest_view_manifest=manifest,
                 ingest_view_context=ingest_view_context,
                 expected_root_entity_types=(IdentityFragment,),
-                entities_module=identity_fragment_entities,
                 output_dataset=self.pipeline_parameters.ingest_view_results_output_dataset,
                 ingest_view_results_only=False,
-                should_throw_on_conflicts=True,
                 resource_labels=self.pipeline_parameters.resource_labels,
-                pre_merge_transform=FilterSentinelExternalIds(
+            )
+            stripped_fragments_with_dates = (
+                fragments_with_dates
+                | f"Strip sentinel external ids from {view_name} fragments"
+                >> FilterSentinelExternalIds(
                     ingest_view_name=view_name,
                     tenant=tenant,
                     person_type=get_view_person_type(manifest),
                     pipeline_config=self.identity_config,
-                ),
+                )
+            )
+            merged_fragments_with_dates_per_ingest_view[view_name] = (
+                stripped_fragments_with_dates
+                | f"Merge {view_name} fragments"
+                >> MergeIngestViewRootEntityTrees(
+                    ingest_view_name=view_name,
+                    entities_module=identity_fragment_entities,
+                    should_throw_on_conflicts=True,
+                )
             )
 
-        merged_fragments: beam.PCollection[
+        merged_fragments_with_dates: beam.PCollection[
             tuple[ExternalIdKey, SourcedIdentityFragment]
         ] = (
-            merged_fragments_per_view.values()
+            merged_fragments_with_dates_per_ingest_view.values()
             | "Flatten merged fragments" >> beam.Flatten()
         )
 
         attach_enum_mapping_heartbeats(
-            merged_results=merged_fragments,
+            merged_results=merged_fragments_with_dates,
             is_sandbox_pipeline=self.pipeline_parameters.is_sandbox_pipeline,
             state_code=state_code.value,
             ingest_manifest_collector=ingest_manifest_collector,
             view_names=identity_view_names,
         )
 
-        return merged_fragments
+        return merged_fragments_with_dates

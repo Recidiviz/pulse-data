@@ -14,13 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a PTransform that processes a single ingest view."""
-from types import ModuleType
-
+"""PTransform that generates root entity trees from a single ingest view."""
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContext,
 )
@@ -36,24 +33,17 @@ from recidiviz.pipelines.ingest.transforms.generate_entities import GenerateEnti
 from recidiviz.pipelines.ingest.transforms.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
-from recidiviz.pipelines.ingest.transforms.merge_root_entity_trees import (
-    MergeIngestViewRootEntityTrees,
-)
-from recidiviz.pipelines.ingest.types import (
-    ExternalIdKey,
-    IngestViewName,
-    UpperBoundDate,
-)
+from recidiviz.pipelines.ingest.types import UpperBoundDate
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
 
-class ProcessIngestView(beam.PTransform):
-    """PTransform that processes a single ingest view."""
+class GenerateIngestViewRootEntities(beam.PTransform):
+    """PTransform that materializes a single ingest view and parses its rows into
+    root entity trees."""
 
     def __init__(
         self,
         *,
-        state_code: StateCode,
         ingest_view_name: str,
         ingest_view_query_builder: DirectIngestViewQueryBuilder,
         raw_data_upper_bound_dates: dict[str, str],
@@ -61,17 +51,9 @@ class ProcessIngestView(beam.PTransform):
         ingest_view_manifest: IngestViewManifest,
         ingest_view_context: IngestViewContentsContext,
         expected_root_entity_types: tuple[type[RootEntity], ...],
-        entities_module: ModuleType,
         output_dataset: str | None,
         ingest_view_results_only: bool,
-        should_throw_on_conflicts: bool,
         resource_labels: dict[str, str],
-        # Optional transform applied to the generated
-        # (upper_bound_date, root_entity) tuples after entity generation but
-        # before the per-view merge (e.g. the identity pipeline's sentinel
-        # external ID filtering). When None, generated entities flow directly
-        # into the merge.
-        pre_merge_transform: beam.PTransform | None = None,
     ):
         super().__init__()
         if ingest_view_results_only and output_dataset is None:
@@ -79,7 +61,6 @@ class ProcessIngestView(beam.PTransform):
                 f"`ingest_view_results_only=True` requires `output_dataset` to be "
                 f"set (view [{ingest_view_name}])."
             )
-        self.state_code = state_code
         self.ingest_view_name = ingest_view_name
         self.ingest_view_query_builder = ingest_view_query_builder
         self.raw_data_upper_bound_dates = raw_data_upper_bound_dates
@@ -87,45 +68,40 @@ class ProcessIngestView(beam.PTransform):
         self.ingest_view_manifest = ingest_view_manifest
         self.ingest_view_context = ingest_view_context
         self.expected_root_entity_types = expected_root_entity_types
-        self.entities_module = entities_module
         self.output_dataset = output_dataset
         self.ingest_view_results_only = ingest_view_results_only
-        self.should_throw_on_conflicts = should_throw_on_conflicts
         self.resource_labels = resource_labels
-        self.pre_merge_transform = pre_merge_transform
 
     def expand(
         self, input_or_inputs: PBegin
-    ) -> beam.PCollection[
-        tuple[ExternalIdKey, tuple[UpperBoundDate, IngestViewName, RootEntity]]
-    ]:
+    ) -> beam.PCollection[tuple[UpperBoundDate, RootEntity]]:
         """Materializes the view's query against raw data, optionally persists
-        the raw query rows to ``output_dataset``, parses rows into root entity
-        trees, applies ``pre_merge_transform`` (if any) to the generated trees,
-        and merges trees that share an external ID key within the same
-        ``update_datetime``.
+        the raw query rows to ``output_dataset``, and parses rows into root
+        entity trees tagged with the snapshot date they came from.
 
         When ``output_dataset is None`` the intermediate landing-table write is
         skipped. When ``ingest_view_results_only=True`` parsing is skipped and
-        an empty PCollection is returned.
+        the returned collection is empty (the landing-table write still runs).
 
-        Example output element::
+        Example element::
 
             (
-                ExternalIdKey(external_id="123", id_type="US_XX_DOC"),
-                (
-                    UpperBoundDate("2024-07-04T00:00:00.000000"),
-                    IngestViewName("state_person"),
-                    StatePerson(...),
-                ),
+                UpperBoundDate("2024-07-04T00:00:00.000000"),
+                StatePerson(...),
             )
         """
+        raw_data_tables_to_upperbound_dates = {
+            # Narrow the pipeline's upper bound dates to only the tags this view
+            # reads.
+            file_tag: self.raw_data_upper_bound_dates[file_tag]
+            for file_tag in self.ingest_view_query_builder.raw_data_table_dependency_file_tags
+        }
         ingest_view_results = (
             input_or_inputs
             | f"Materialize {self.ingest_view_name} results"
             >> GenerateIngestViewResults(
                 ingest_view_builder=self.ingest_view_query_builder,
-                raw_data_tables_to_upperbound_dates=self.raw_data_upper_bound_dates,
+                raw_data_tables_to_upperbound_dates=raw_data_tables_to_upperbound_dates,
                 raw_data_source_instance=self.raw_data_source_instance,
                 resource_labels=self.resource_labels,
             )
@@ -145,27 +121,12 @@ class ProcessIngestView(beam.PTransform):
         if self.ingest_view_results_only:
             return input_or_inputs | "Skip entity generation" >> beam.Create([])
 
-        entities_with_dates = (
+        return (
             ingest_view_results
             | f"Generate {self.ingest_view_name} entities"
             >> GenerateEntities(
                 ingest_view_manifest=self.ingest_view_manifest,
                 ingest_view_context=self.ingest_view_context,
                 expected_root_entity_types=self.expected_root_entity_types,
-            )
-        )
-
-        if self.pre_merge_transform is not None:
-            entities_with_dates = (
-                entities_with_dates
-                | f"Apply pre-merge transform to {self.ingest_view_name} entities"
-                >> self.pre_merge_transform
-            )
-
-        return entities_with_dates | f"Merge {self.ingest_view_name} entities" >> (
-            MergeIngestViewRootEntityTrees(
-                ingest_view_name=self.ingest_view_name,
-                entities_module=self.entities_module,
-                should_throw_on_conflicts=self.should_throw_on_conflicts,
             )
         )

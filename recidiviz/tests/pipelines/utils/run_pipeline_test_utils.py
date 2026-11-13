@@ -152,12 +152,10 @@ def run_test_pipeline(
             f"recidiviz.pipelines.supplemental.{class_name}.pipeline.WriteToBigQuery"
         )
     elif issubclass(pipeline_cls, (StateIngestPipeline, IdentityIngestPipeline)):
-        # Both ingest pipelines share `ProcessIngestView`; identity passes
-        # `output_dataset=None` so the patched class is never invoked, but
-        # patching it is harmless.
-        write_to_bq_class = (
-            "recidiviz.pipelines.ingest.transforms.process_ingest_view.WriteToBigQuery"
-        )
+        # Both ingest pipelines run `GenerateIngestViewRootEntities`, which uses
+        # `WriteToBigQuery` to persist ingest view results; patch it here so the
+        # test doesn't write to real BigQuery.
+        write_to_bq_class = "recidiviz.pipelines.ingest.transforms.generate_ingest_view_root_entities.WriteToBigQuery"
     else:
         raise ValueError(f"Pipeline class not recognized: {pipeline_cls}")
 

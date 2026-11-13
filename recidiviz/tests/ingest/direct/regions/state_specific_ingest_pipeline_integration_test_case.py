@@ -201,7 +201,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(ActivityIngestPipelineTestC
         passed in directly.
         """
         with patch(
-            "recidiviz.pipelines.ingest.transforms.process_ingest_view.GenerateIngestViewResults",
+            "recidiviz.pipelines.ingest.transforms.generate_ingest_view_root_entities.GenerateIngestViewResults",
             self.legacy_generate_ingest_view_results_for_one_date,
         ):
             self.run_test_activity_ingest_pipeline(
@@ -219,7 +219,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(ActivityIngestPipelineTestC
         the results of individual ingest view tests.
         """
         with patch(
-            "recidiviz.pipelines.ingest.transforms.process_ingest_view.GenerateIngestViewResults",
+            "recidiviz.pipelines.ingest.transforms.generate_ingest_view_root_entities.GenerateIngestViewResults",
             self.generate_ingest_view_results_for_one_date,
         ):
             self.run_test_activity_ingest_pipeline(

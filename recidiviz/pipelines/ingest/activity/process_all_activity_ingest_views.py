@@ -52,7 +52,12 @@ from recidiviz.pipelines.ingest.enum_mapping_heartbeats import (
 from recidiviz.pipelines.ingest.raw_data_upper_bound_dates import (
     validate_and_backfill_raw_data_upper_bound_dates,
 )
-from recidiviz.pipelines.ingest.transforms.process_ingest_view import ProcessIngestView
+from recidiviz.pipelines.ingest.transforms.generate_ingest_view_root_entities import (
+    GenerateIngestViewRootEntities,
+)
+from recidiviz.pipelines.ingest.transforms.merge_root_entity_trees import (
+    MergeIngestViewRootEntityTrees,
+)
 from recidiviz.pipelines.ingest.types import (
     ExternalIdKey,
     IngestViewName,
@@ -142,41 +147,23 @@ class ProcessAllActivityIngestViews(beam.PTransform):
 
         merged_root_entities_with_dates_per_ingest_view: Dict[
             IngestViewName,
-            beam.PCollection[Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]],
+            beam.PCollection[
+                Tuple[ExternalIdKey, Tuple[UpperBoundDate, IngestViewName, RootEntity]]
+            ],
         ] = {}
         for ingest_view_name in ingest_views_to_run:
-            ingest_view_query_builder = view_collector.get_query_builder_by_view_name(
-                ingest_view_name
-            )
-            raw_data_tables_to_upperbound_dates = {
-                # Filter down to only the tags referenced by this view.
-                file_tag: raw_data_upper_bound_dates[file_tag]
-                for file_tag in ingest_view_query_builder.raw_data_table_dependency_file_tags
-            }
-
-            root_entities_with_dates = input_or_inputs | ingest_view_name >> ProcessIngestView(
-                state_code=state_code,
-                ingest_view_name=ingest_view_name,
-                ingest_view_query_builder=ingest_view_query_builder,
-                raw_data_upper_bound_dates=raw_data_tables_to_upperbound_dates,
-                raw_data_source_instance=raw_data_source_instance,
-                ingest_view_manifest=ingest_manifest_collector.ingest_view_to_manifest[
-                    ingest_view_name
-                ],
-                ingest_view_context=ingest_view_context,
-                expected_root_entity_types=(StatePerson, StateStaff),
-                entities_module=state_entities,
-                output_dataset=self.pipeline_parameters.ingest_view_results_output,
-                ingest_view_results_only=self.pipeline_parameters.ingest_view_results_only,
-                should_throw_on_conflicts=(
-                    ingest_view_name
-                    not in INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS.get(state_code, {})
-                ),
-                resource_labels=self.pipeline_parameters.resource_labels,
-            )
             merged_root_entities_with_dates_per_ingest_view[
                 ingest_view_name
-            ] = root_entities_with_dates
+            ] = self._merged_root_entities_for_view(
+                pipeline_begin=input_or_inputs,
+                ingest_view_name=ingest_view_name,
+                state_code=state_code,
+                view_collector=view_collector,
+                ingest_manifest_collector=ingest_manifest_collector,
+                ingest_view_context=ingest_view_context,
+                raw_data_source_instance=raw_data_source_instance,
+                raw_data_upper_bound_dates=raw_data_upper_bound_dates,
+            )
 
         merged_root_entities_with_dates: beam.PCollection[
             Tuple[ExternalIdKey, Tuple[UpperBoundDate, IngestViewName, RootEntity]]
@@ -191,6 +178,51 @@ class ProcessAllActivityIngestViews(beam.PTransform):
         )
 
         return merged_root_entities_with_dates
+
+    def _merged_root_entities_for_view(
+        self,
+        *,
+        pipeline_begin: PBegin,
+        ingest_view_name: str,
+        state_code: StateCode,
+        view_collector: DirectIngestViewQueryBuilderCollector,
+        ingest_manifest_collector: IngestViewManifestCollector,
+        ingest_view_context: IngestViewContentsContext,
+        raw_data_source_instance: DirectIngestInstance,
+        raw_data_upper_bound_dates: Dict[str, str],
+    ) -> beam.PCollection[
+        Tuple[ExternalIdKey, Tuple[UpperBoundDate, IngestViewName, RootEntity]]
+    ]:
+        """Returns a single ingest view's root entity trees, merged within the
+        view and date."""
+        root_entities_with_dates = pipeline_begin | ingest_view_name >> GenerateIngestViewRootEntities(
+            ingest_view_name=ingest_view_name,
+            ingest_view_query_builder=view_collector.get_query_builder_by_view_name(
+                ingest_view_name
+            ),
+            raw_data_upper_bound_dates=raw_data_upper_bound_dates,
+            raw_data_source_instance=raw_data_source_instance,
+            ingest_view_manifest=ingest_manifest_collector.ingest_view_to_manifest[
+                ingest_view_name
+            ],
+            ingest_view_context=ingest_view_context,
+            expected_root_entity_types=(StatePerson, StateStaff),
+            output_dataset=self.pipeline_parameters.ingest_view_results_output,
+            ingest_view_results_only=self.pipeline_parameters.ingest_view_results_only,
+            resource_labels=self.pipeline_parameters.resource_labels,
+        )
+        return (
+            root_entities_with_dates
+            | f"Merge {ingest_view_name} entities"
+            >> MergeIngestViewRootEntityTrees(
+                ingest_view_name=ingest_view_name,
+                entities_module=state_entities,
+                should_throw_on_conflicts=(
+                    ingest_view_name
+                    not in INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS.get(state_code, {})
+                ),
+            )
+        )
 
 
 class _ClearAllSkippedIngestViews(beam.PTransform):
