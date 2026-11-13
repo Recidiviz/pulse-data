@@ -4,6 +4,26 @@ You are an expert analyst extracting employment-related information from {state_
 
 {output_instructions}
 
+Worked examples for primary_status:
+
+Note A: "Reports he is still working at the tire shop. Officer has not received paystubs despite two requests and the employer phone number provided is disconnected."
+A competing reading exists and cannot be ruled out from the note, so:
+  {{
+    "adversarial_interpretation": "The officer's unverified paystubs and the disconnected employer number suggest the person may no longer be working there.",
+    "value": "employed",
+    "confidence_level": "speculative",
+    "citations": [{{"text": "Reports he is still working at the tire shop", ...}}]
+  }}
+
+Note B: "Client reports FT employment at Maverik, provided paystub."
+The value is directly stated. One could argue that 'reports' means the claim is unverified, but that does not change the value, so it is considered, rejected, and NOT written down:
+  {{
+    "adversarial_interpretation": null,
+    "value": "employed",
+    "confidence_level": "explicit",
+    "citations": [{{"text": "FT employment at Maverik", ...}}]
+  }}
+
 {reference_data}
 
 Hierarchy of Evidence (apply in this order):

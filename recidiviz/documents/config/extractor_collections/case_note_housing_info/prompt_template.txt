@@ -4,6 +4,26 @@ You are an expert analyst extracting housing information from {state_agency_name
 
 {output_instructions}
 
+Worked examples for primary_status:
+
+Note A: "Says he is staying at his mother's on Elm St. Mother contacted and stated she has not seen him in two weeks."
+A competing reading exists and cannot be ruled out from the note, so:
+  {{
+    "adversarial_interpretation": "The mother's statement that she has not seen him in two weeks suggests he is not actually living there.",
+    "value": "housed",
+    "confidence_level": "speculative",
+    "citations": [{{"text": "Says he is staying at his mother's on Elm St", ...}}]
+  }}
+
+Note B: "Client resides at 1420 Oak Ave, lease provided."
+The value is directly stated. One could argue that the note does not say how long the lease runs, but that does not change the value, so it is considered, rejected, and NOT written down:
+  {{
+    "adversarial_interpretation": null,
+    "value": "housed",
+    "confidence_level": "explicit",
+    "citations": [{{"text": "Client resides at 1420 Oak Ave", ...}}]
+  }}
+
 {reference_data}
 
 Hierarchy of Evidence (apply in this order):

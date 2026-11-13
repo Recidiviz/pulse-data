@@ -4,6 +4,26 @@ You are an expert analyst extracting financial payment information from {state_a
 
 {output_instructions}
 
+Worked examples for payments[].payment_status:
+
+Note A: "Offender states he paid off his court costs last week. No receipt provided; court portal still shows a $340 balance."
+A competing reading exists and cannot be ruled out from the note, so:
+  {{
+    "adversarial_interpretation": "The $340 balance still showing on the court portal suggests the court costs have not been paid.",
+    "value": "paid",
+    "confidence_level": "speculative",
+    "citations": [{{"text": "states he paid off his court costs last week", ...}}]
+  }}
+
+Note B: "Client made a $100 payment toward restitution; balance remaining $1,900."
+The value is directly stated. One could argue that the note does not say whether the payment has posted, but that does not change the value, so it is considered, rejected, and NOT written down:
+  {{
+    "adversarial_interpretation": null,
+    "value": "partial",
+    "confidence_level": "explicit",
+    "citations": [{{"text": "made a $100 payment toward restitution; balance remaining $1,900", ...}}]
+  }}
+
 {reference_data}
 
 If there are multiple payment obligations mentioned (e.g., court costs and restitution),
