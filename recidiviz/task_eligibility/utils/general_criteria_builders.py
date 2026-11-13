@@ -826,10 +826,12 @@ def _scope_assessment_sessions_to_state_prison_custody_stay_cte() -> str:
             assessment.state_code,
             assessment.person_id,
             assessment.start_date,
-            LEAST(
-                assessment.end_date,
-                {nonnull_end_date_clause('custody.end_date_exclusive')}
-            ) AS end_date,
+            -- LEAST returns NULL if any argument is NULL, so both sides need a
+            -- non-null end date for the stay's end to cut an open assessment span.
+            {revert_nonnull_end_date_clause(
+                f"LEAST({nonnull_end_date_clause('assessment.end_date')}, "
+                f"{nonnull_end_date_clause('custody.end_date_exclusive')})"
+            )} AS end_date,
             assessment.meets_criteria,
             assessment.classification_decision_date,
             assessment.assessment_date,
