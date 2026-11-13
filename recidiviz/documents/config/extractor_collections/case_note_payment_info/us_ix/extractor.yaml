@@ -1,6 +1,6 @@
 extractor_collection_name: CASE_NOTE_PAYMENT_INFO
 
-launch_env: LOCAL_ONLY
+launch_env: PRODUCTION
 
 input_document_collection_name: SUPERVISION_CASE_NOTES
 
