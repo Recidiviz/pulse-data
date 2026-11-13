@@ -195,19 +195,25 @@ function next_alpha_version {
 # entitlement/lane so the caller holds elevated permissions only for the
 # duration of the operation, rather than relying on standing access.
 #
-# Deliberately non-fatal: if the entitlement isn't reachable or the user isn't
-# eligible yet (mid-rollout), it logs and returns so callers still on standing
-# access are unaffected.
+# By default this is non-fatal: if the entitlement isn't reachable, the user isn't
+# eligible, or the grant can't be created or activated, it logs a warning and
+# returns 0 so the caller continues with standing access. Pass "true" as the sixth
+# argument to make those failures return 1 instead.
+#
 # Returns 0 if the caller can request a grant on ENTITLEMENT_ID in PROJECT_ID.
 # Checks reachability from the REQUESTER's view (privilegedaccessmanager.entitlements.search),
 # not entitlements.describe. Eligible requesters hold grants.create and entitlements.search but
 # NOT entitlements.get, so a describe-based gate fails for every eligible-but-non-admin requester.
 function pam_entitlement_reachable {  # PROJECT_ID ENTITLEMENT_ID
-    gcloud pam entitlements search \
+    # Capture the full output before matching. Piping into grep -q can close the pipe
+    # early, and under pipefail the resulting SIGPIPE would report a found entitlement
+    # as unreachable. A gcloud failure still returns 1, so required mode fails closed.
+    local ENTITLEMENTS
+    ENTITLEMENTS=$(gcloud pam entitlements search \
         --project="$1" --location="global" \
         --caller-access-type=grant-requester \
-        --format="value(name)" 2>/dev/null \
-        | grep -q "/entitlements/$2$"
+        --format="value(name)" 2>/dev/null) || return 1
+    grep -q "/entitlements/$2$" <<< "${ENTITLEMENTS}"
 }
 
 function request_pam_grant {
@@ -219,6 +225,10 @@ function request_pam_grant {
     # operation might need undoing, not for the operation itself: the earlier 2h covered
     # deploys comfortably but had lapsed by the time on-call needed to roll one back.
     local DURATION=${5:-"28800s"}
+    local REQUIRED=${6:-"false"}
+    # Exit status for every path where no active grant is obtained.
+    local NO_GRANT_STATUS=0
+    [[ "${REQUIRED}" == "true" ]] && NO_GRANT_STATUS=1
     local LOCATION="global"
     local GCLOUD_USER
     GCLOUD_USER=$(gcloud config get-value account 2>/dev/null)
@@ -226,9 +236,9 @@ function request_pam_grant {
     echo "Requesting just-in-time Privileged Access Manager (PAM) access [${ENTITLEMENT_ID}] on [${PROJECT_ID}]..."
 
     if ! pam_entitlement_reachable "${PROJECT_ID}" "${ENTITLEMENT_ID}"; then
-        echo "⚠️  Not eligible for PAM entitlement [${ENTITLEMENT_ID}] on [${PROJECT_ID}] as [${GCLOUD_USER}] — skipping JIT elevation."
+        echo "⚠️  Not eligible for PAM entitlement [${ENTITLEMENT_ID}] on [${PROJECT_ID}] as [${GCLOUD_USER}]."
         echo "    (Confirm you're in ${GROUP_HINT}.)"
-        return 0
+        return "${NO_GRANT_STATUS}"
     fi
 
     # Reuse an existing active grant rather than stacking a new one every request.
@@ -247,8 +257,8 @@ function request_pam_grant {
             --entitlement="${ENTITLEMENT_ID}" --project="${PROJECT_ID}" --location="${LOCATION}" \
             --requested-duration="${DURATION}" \
             --justification="${JUSTIFICATION}" >/dev/null 2>&1; then
-        echo "⚠️  Could not create a PAM grant (are you in ${GROUP_HINT}?). Continuing with existing access."
-        return 0
+        echo "⚠️  Could not create a PAM grant (are you in ${GROUP_HINT}?)."
+        return "${NO_GRANT_STATUS}"
     fi
 
     # Wait for the grant to activate and its IAM bindings to be written.
@@ -264,32 +274,35 @@ function request_pam_grant {
         sleep 5
     done
     if [[ -z "${ACTIVE_GRANT}" ]]; then
-        echo "⚠️  PAM grant did not reach ACTIVE in time — continuing with existing access."
-        return 0
+        echo "⚠️  PAM grant did not reach ACTIVE in time."
+        return "${NO_GRANT_STATUS}"
     fi
     # Give IAM a moment to propagate the freshly-written bindings before use.
     sleep 20
     echo "PAM access granted (auto-expires in ${DURATION})."
 }
 
-# Requests a just-in-time PAM grant for the deploy lane so the
-# deploying engineer holds deploy permissions only for the duration of the
-# deploy, rather than relying on standing access. This is the first step in
-# migrating deploys off go/jit onto PAM. Scoped to staging alpha deploys for
-# now.
+# Requests a just-in-time PAM grant for the deploy lane so the deploying
+# engineer holds deploy permissions only for the duration of the deploy, rather
+# than relying on standing access. Called by the staging alpha, release candidate,
+# and production deploy scripts.
 #
-# TODO(AUR-240): once go/jit is deprecated, remove the go/jit references in this
-# comment; and once the PAM rollout is complete and all deployers are eligible,
-# make this fatal (fail the deploy rather than warning) so a deploy can no longer
-# silently fall back to standing access.
+# Fatal: if no active grant is obtained, this exits the calling script so a deploy
+# can never fall back to standing access.
 #
-# The lane is `pam-engineering` (Terraform-managed in Recidiviz/recidiviz-iam;
+# The lane is pam-engineering (Terraform-managed in Recidiviz/recidiviz-iam;
 # requesters are s-polaris@ and s-doppler@).
 function request_pam_deploy_grant {
     local PROJECT_ID=$1
     local VERSION_TAG=$2
-    request_pam_grant "${PROJECT_ID}" "pam-engineering" "s-polaris@ or s-doppler@" \
-        "Alpha deploy of ${VERSION_TAG} to ${PROJECT_ID}"
+    # The grant request needs an active gcloud session, and this runs before the
+    # auth check in verify_can_deploy, so log the user in first if needed.
+    check_gcloud_authed
+    if ! request_pam_grant "${PROJECT_ID}" "pam-engineering" "s-polaris@ or s-doppler@" \
+        "Deploy of ${VERSION_TAG} to ${PROJECT_ID}" "28800s" "true"; then
+        echo_error "Could not obtain a PAM grant for the deploy. Aborting."
+        exit 1
+    fi
 }
 
 # Helper for deploying any infrastructure changes before we deploy a new version of the application. Requires that we

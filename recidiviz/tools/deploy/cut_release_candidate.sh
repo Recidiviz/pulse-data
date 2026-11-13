@@ -105,7 +105,7 @@ COMMIT_HASH_SHORT=${COMMIT_HASH:0:7}
 # Elevate to the deploy-app lane via PAM before anything that needs deploy
 # access (cutting an RC deploys to staging), so access is just-in-time rather
 # than standing. Must come before the release-notes step below, which reads a
-# deploy secret. Non-fatal if the deployer isn't onboarded to PAM yet.
+# deploy secret. Exits the script if no grant is obtained.
 request_pam_deploy_grant recidiviz-staging "${RELEASE_VERSION_TAG}"
 
 echo "Generating release notes."
