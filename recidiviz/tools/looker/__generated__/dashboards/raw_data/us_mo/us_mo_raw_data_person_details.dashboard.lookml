@@ -1505,7 +1505,7 @@
       us_mo_MASTER_PDB_LOCATIONS.is_deleted]
     sorts: [us_mo_MASTER_PDB_LOCATIONS.LOC_REF_ID]
     note_display: hover
-    note_text: "XXX # TODO(#17289): fill in once we have documentation"
+    note_text: "XXX # TODO(MO-10120): fill in once we have documentation"
     listen: 
       View Type: us_mo_LBAKRDTA_TAK001.view_type
       US_MO_DOC: us_mo_LBAKRDTA_TAK001.EK_DOC
