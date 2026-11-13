@@ -104,6 +104,7 @@ output:
                 StateIncarcerationPeriodHousingUnitType.GENERAL: "GNP"
                 StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT:
                   - "DIS"
+                  - "RH"
                   - "ADS-T" # The ADS housing type is disciplinary, not administrative, if it's flagged as temporary.
                 StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY: "PRC"
                 StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
@@ -114,11 +115,8 @@ output:
                   - "INF"
                 StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT:
                   - "ADS"
-                  - "NOC"
-                StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT:
                   - "ERH"
-                StateIncarcerationPeriodHousingUnitType.OTHER_SOLITARY_CONFINEMENT:
-                  - "RH"
+                  - "NOC"
                 StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN:
                   - "***"
           custody_level:
