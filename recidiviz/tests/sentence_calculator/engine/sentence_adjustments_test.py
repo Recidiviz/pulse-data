@@ -1038,5 +1038,87 @@ class TestNoReduction(unittest.TestCase):
         self.assertEqual(1795, adjustment.adjusted_max_days.value)
 
 
+def _calendar_adjusted_max_days(*, start_date: date, term_days: int) -> int:
+    """Returns the adjusted max term days of a sentence with a max term of
+    term_days, under a calendar regime that earns 20 days of credit a month."""
+    sentence = NevadaSentence(  # pylint: disable=abstract-class-instantiated
+        sentence_id="S1",
+        offense_id=9999,
+        min_term=Term(days=term_days),
+        max_term=Term(days=term_days),
+        initial_time_served=Term(),
+        offense_category=NevadaOffenseCategory.CATEGORY_C,
+        offense_group=NevadaOffenseGroup.OTHER,
+    )
+    engine = RuleEngine(
+        _regime(
+            term_multipliers=[],
+            credit_rates=[_STAT_TIME],
+            credit_caps=[],
+            use_calendar_term_conversion=True,
+        )
+    )
+    return calculate_sentence_adjustment(
+        sentence=sentence,
+        start_date=TrackedValue.input(start_date, "S1.start_date"),
+        engine=engine,
+    ).adjusted_max_days.value
+
+
+class TestCalendarMonthCreditAccrual(unittest.TestCase):
+    """Tests for how credits accrue by calendar month: a partial first month, whole
+    calendar months, then a partial last month. A partial month earns the credit
+    prorated by the days served in it, rounded up."""
+
+    def test_start_on_first_of_month_has_no_partial_first_month(self) -> None:
+        # February's 28 days earn the whole 20 days of credit and cover 48, so a
+        # 48-day term ends on the last day of February.
+        self.assertEqual(
+            28, _calendar_adjusted_max_days(start_date=date(2025, 2, 1), term_days=48)
+        )
+
+    def test_term_ending_in_the_partial_first_month(self) -> None:
+        # March 20 through 31 is 12 possible days to serve in March. Serving 9 of them
+        # earns ceil(20 * 9 / 31) = 6 days of credit, covering 15. Serving 8 earns 6
+        # and covers only 14.
+        self.assertEqual(
+            9, _calendar_adjusted_max_days(start_date=date(2025, 3, 20), term_days=15)
+        )
+
+    def test_partial_first_month_then_whole_and_partial_months(self) -> None:
+        # March 20-31 serves 12 days and earns ceil(20 * 12 / 31) = 8 credit,
+        # covering 20. April's 30 days cover 50 and May's 31 cover 51, leaving 9 for
+        # June. Serving 5 June days earns ceil(20 * 5 / 30) = 4 credit and covers 9,
+        # while 4 days cover only 7. 12 + 30 + 31 + 5 = 78.
+        self.assertEqual(
+            78,
+            _calendar_adjusted_max_days(start_date=date(2025, 3, 20), term_days=130),
+        )
+
+    def test_start_on_the_31st_does_not_shorten_later_months(self) -> None:
+        # January 31 serves 1 day and earns ceil(20 / 31) = 1 credit, covering 2.
+        # February covers 48, March 51 and April 50, leaving 49 for May, which takes
+        # 30 days (29 days cover only 48). Every month is a calendar month, so none
+        # starts on the 28th. 1 + 28 + 31 + 30 + 30 = 120.
+        self.assertEqual(
+            120,
+            _calendar_adjusted_max_days(start_date=date(2025, 1, 31), term_days=200),
+        )
+
+    def test_start_on_the_31st_with_term_ending_in_march(self) -> None:
+        # January 31 covers 2, February 48, leaving 49 for March, which takes 30
+        # days. 1 + 28 + 30 = 59.
+        self.assertEqual(
+            59, _calendar_adjusted_max_days(start_date=date(2025, 1, 31), term_days=99)
+        )
+
+    def test_start_on_leap_day(self) -> None:
+        # February 29, 2024 serves 1 day of 29 and earns 1 credit, covering 2. March
+        # takes 23 days to cover the other 38. 1 + 23 = 24.
+        self.assertEqual(
+            24, _calendar_adjusted_max_days(start_date=date(2024, 2, 29), term_days=40)
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

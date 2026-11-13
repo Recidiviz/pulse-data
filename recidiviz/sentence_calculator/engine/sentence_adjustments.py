@@ -36,6 +36,7 @@ The 30 days of jail credit earn int(30 / 30 * 20) = 20 days of credit, leaving
 of credit, for 1050 + 15 = 1065 days served.
 """
 
+import calendar
 import math
 from datetime import date, timedelta
 from fractions import Fraction
@@ -386,9 +387,11 @@ def _apply_credit_rate(
     credit, and 0 credits.
 
     Credits accrue on the jail credit time at the regime's days_per_month, then
-    month by month while the term is served: each full month earns credit_rate
-    days, and the final, partial month earns credit prorated by the share of it
-    served. The total is capped if the regime's CREDIT_CAP rule binds this term.
+    month by month while the term is served: each whole month earns credit_rate
+    days, and a partial month earns credit prorated by the share of it served.
+    Under calendar term conversion the months are calendar months, so the first
+    and last months are partial. The total is capped if the regime's CREDIT_CAP
+    rule binds this term.
 
     TODO(NV-44): Use the credits a person has actually earned for time already
     served, and project credits only for the time not yet served. Today every
@@ -483,45 +486,109 @@ def _days_served_while_earning_credits(
     rate: Fraction,
     days_per_month: Fraction | None,
 ) -> int:
-    """Returns how many days starting at start_date must be served to cover
-    days_to_cover, when each day served also earns credit.
+    """Returns how many days starting at start_date must be served so that the
+    total number of days served plus the projected credit (from serving those
+    days) equals days_to_cover.
 
-    Each full month served covers its own days plus rate days of credit. In the
-    final month, serving d days earns rate * d / (days in that month) of credit,
-    so it ends on the first whole day where d plus that credit covers what is
-    left.
+    With days_per_month, every month has that many days and earns rate days of
+    credit. With None, months are calendar months, counted as in
+    _days_served_through_calendar_months.
 
     Args:
         days_to_cover: Days of the term left after jail credit and its credits.
         start_date: The first day served.
         rate: Credit days earned per full month served.
-        days_per_month: Days in every month, or None to step through calendar
-            months from start_date.
+        days_per_month: Days in every month, or None to count calendar months from
+            start_date.
     """
     if days_to_cover <= 0:
         return 0
+    if days_per_month is None:
+        return _days_served_through_calendar_months(
+            days_to_cover=days_to_cover, start_date=start_date, rate=rate
+        )
     remaining = Fraction(days_to_cover)
     served_days = Fraction(0)
-    # TODO(NV-63): OSM counts credits by calendar month, from the 1st to the end of
-    # each month, and prorates the first and last months by the days served in
-    # them, rounding each prorated credit up. This loop steps months from
-    # start_date instead, so a projected date can be a day off from OSM's.
-    # Stepping from each month_end also clamps the day of the month for good: a
-    # sentence starting January 31 steps to February 28, then to March 28 and
-    # the 28th of every month after.
-    month_start = start_date
     while True:
-        month_end = month_start + relativedelta(months=1)
-        days_in_month = (
-            days_per_month
-            if days_per_month is not None
-            else Fraction((month_end - month_start).days)
+        if remaining <= days_per_month + rate:
+            return math.ceil(served_days + remaining / (1 + rate / days_per_month))
+        remaining -= days_per_month + rate
+        served_days += days_per_month
+
+
+def _days_served_through_calendar_months(
+    *, days_to_cover: int, start_date: date, rate: Fraction
+) -> int:
+    """Returns how many days starting at start_date must be served so that the
+    total number of days served plus the projected credit (from serving those
+    days) equals days_to_cover -- specifically for the case where credits accrue
+    per whole calendar months,.
+
+    Serving starts in a partial month unless start_date is the 1st, runs through
+    whole calendar months, and ends in a partial month unless it ends on the last
+    day of one. A whole month earns rate days of credit. A partial month earns
+    rate times the share of the month served, rounded up to a whole day. The
+    last month ends on the first day where the days served and the credit earned
+    cover what is left.
+
+    Args:
+        days_to_cover: Days of the term left after jail credit and its credits.
+        start_date: The first day served.
+        rate: Credit days earned per whole month served.
+    """
+    remaining = Fraction(days_to_cover)
+    served_days = 0
+    first_served_day = start_date
+    while True:
+        days_in_month = calendar.monthrange(
+            first_served_day.year, first_served_day.month
+        )[1]
+        days_available = days_in_month - first_served_day.day + 1
+        days_and_credit_available = days_available + _month_credit(
+            rate=rate, days_served=days_available, days_in_month=days_in_month
         )
-        if remaining <= days_in_month + rate:
-            return math.ceil(served_days + remaining / (1 + rate / days_in_month))
-        remaining -= days_in_month + rate
-        served_days += days_in_month
-        month_start = month_end
+        if remaining <= days_and_credit_available:
+            return served_days + _days_to_cover_in_month(
+                remaining=remaining,
+                rate=rate,
+                days_available=days_available,
+                days_in_month=days_in_month,
+            )
+        remaining -= days_and_credit_available
+        served_days += days_available
+        first_served_day = date(
+            first_served_day.year, first_served_day.month, 1
+        ) + relativedelta(months=1)
+
+
+def _days_to_cover_in_month(
+    *, remaining: Fraction, rate: Fraction, days_available: int, days_in_month: int
+) -> int:
+    """Returns the fewest days of a month that cover 'remaining', accounting for the
+    credits those days earn. days_available is the number of days until the end of the
+    mont - equal to days_in_month if the start date is the first of the month.
+    This should only be called when the 'remaining' days to cover is less than the
+    available days to serve; it will raise otherwise.
+    """
+    for days_served in range(1, days_available + 1):
+        credit = _month_credit(
+            rate=rate, days_served=days_served, days_in_month=days_in_month
+        )
+        if days_served + credit >= remaining:
+            return days_served
+    raise ValueError(
+        f"Serving all [{days_available}] available days of a [{days_in_month}]-day "
+        f"month does not cover [{remaining}] days."
+    )
+
+
+def _month_credit(*, rate: Fraction, days_served: int, days_in_month: int) -> Fraction:
+    """Returns the credit earned by serving days_served days of a month that has
+    days_in_month days: equal to 'rate' for the whole month, otherwise the prorated
+    credit rounded up to a whole day."""
+    if days_served == days_in_month:
+        return rate
+    return Fraction(math.ceil(rate * days_served / days_in_month))
 
 
 def _to_fraction(value: float) -> Fraction:
