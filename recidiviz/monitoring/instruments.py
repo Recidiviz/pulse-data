@@ -18,7 +18,7 @@
 from typing import Any, overload
 
 from opentelemetry.metrics import Counter, Histogram, ObservableGauge
-from opentelemetry.sdk.metrics._internal.instrument import _Gauge as Gauge
+from opentelemetry.metrics import _Gauge as Gauge
 
 from recidiviz.monitoring.configs import (
     RECIDIVIZ_METER_NAME,

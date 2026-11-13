@@ -25,9 +25,8 @@ from typing import Dict, List, Literal, Optional, Union
 import attr
 import cattrs
 import yaml
-from opentelemetry.metrics import Counter, Histogram, ObservableGauge
-from opentelemetry.sdk.metrics import Meter
-from opentelemetry.sdk.metrics._internal.instrument import _Gauge as Gauge
+from opentelemetry.metrics import Counter, Histogram, Meter, ObservableGauge
+from opentelemetry.metrics import _Gauge as Gauge
 
 from recidiviz.monitoring.keys import (
     CounterInstrumentKey,
@@ -184,8 +183,7 @@ class GaugeInstrumentConfig(InstrumentConfig):
     instrument_key: GaugeInstrumentKey = attr.ib()
 
     def create_instrument(self, meter: Meter) -> Gauge:
-        # mypy doesn't recognize meter.create_gauge() returns _Gauge which we alias as Gauge
-        return meter.create_gauge(**self.common_kwargs)  # type: ignore[return-value]
+        return meter.create_gauge(**self.common_kwargs)
 
 
 @attr.s(auto_attribs=True, kw_only=True)

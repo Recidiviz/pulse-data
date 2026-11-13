@@ -16,9 +16,8 @@ dependencies = [
     "dateparser==1.2.0",
     "pandas",
     "more-itertools",
-    # TODO(#43270): Un-pin opentelemetry-* packages once resolved
-    "opentelemetry-api<1.34.0",
-    "opentelemetry-sdk<1.34.0",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
     "opentelemetry-exporter-gcp-monitoring",
     "opentelemetry-exporter-gcp-trace",
     "opentelemetry-resourcedetector-gcp",
@@ -314,10 +313,9 @@ exclude-newer = "7 days"
 # has moved past them.
 exclude-newer-package = { certifi = "2026-10-22T00:00:00Z", brotli = "2026-10-23T00:00:00Z", brotlicffi = "2026-10-23T00:00:00Z" }
 
-# Override wrapt to >=2.4.0 to fix AIKIDO-2026-418522. opentelemetry-instrumentation
-# (<=0.54b1) pins wrapt<2.0.0, but upgrading it requires opentelemetry-api>=1.34.0
-# which conflicts with the intentional opentelemetry-api<1.34.0 pin. The override
-# relaxes the transitive bound so the resolver can select a patched wrapt release.
+# Override wrapt to >=2.4.0 to fix AIKIDO-2026-418522. Nothing in the graph pins
+# wrapt<2 anymore (opentelemetry-instrumentation 0.66b2 allows wrapt<3.0.0), so this
+# is now just a floor guaranteeing the resolver never selects a vulnerable release.
 # Override pillow to >=13.0.0 to fix the Pillow CVEs that are fixed only in 13
 # (tracked in security-operations-automation#17783). apache-beam 2.77.0 declares
 # pillow<13, but Beam only uses Pillow in its ML and interactive modules, which this
