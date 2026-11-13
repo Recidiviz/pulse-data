@@ -70,6 +70,9 @@ from recidiviz.pipelines.ingest.identity.build_identity_clusters import (
 from recidiviz.pipelines.ingest.identity.expected_output_helpers import (
     get_valid_external_id_types,
 )
+from recidiviz.pipelines.ingest.identity.filter_sentinel_external_ids import (
+    STRIPPED_FRAGMENT_RECORDS,
+)
 from recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config import (
     IdentityIngestPipelineConfig,
 )
@@ -77,6 +80,7 @@ from recidiviz.pipelines.ingest.identity.pipeline_parameters import (
     IdentityIngestPipelineParameters,
 )
 from recidiviz.pipelines.ingest.identity.process_all_identity_ingest_views import (
+    MERGED_FRAGMENTS_WITH_DATES,
     ProcessAllIdentityIngestViews,
 )
 from recidiviz.pipelines.ingest.identity.read_identity_cluster_overrides import (
@@ -88,6 +92,9 @@ from recidiviz.pipelines.ingest.identity.validate_identity_cluster_collection im
 )
 from recidiviz.pipelines.ingest.identity.write_rejected_clusters_to_bq import (
     WriteRejectedIdentityClustersToBQ,
+)
+from recidiviz.pipelines.ingest.identity.write_sentinel_stripped_fragments_to_bq import (
+    WriteSentinelStrippedFragmentsToBQ,
 )
 from recidiviz.pipelines.ingest.transforms.cluster_root_external_ids import (
     ClusterRootExternalIds,
@@ -121,6 +128,9 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
         return {}
 
     def run_pipeline(self, p: Pipeline) -> None:
+        # Single timestamp stamped on both rejections-dataset tables, so rows
+        # from one run can be correlated across them.
+        run_timestamp = datetime.datetime.now(tz=datetime.UTC)
         tenant = Tenant(self.pipeline_parameters.tenant)
         # v1 only supports tenants that are state codes;
         # IdentityIngestPipelineParameters.raw_data_input_dataset rejects
@@ -156,18 +166,20 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
             tenant=tenant,
         )
 
-        # Assign each fragment its content-hash identity_fragment_id once, before
-        # the fragments fan out to the clustering, cluster-build, and debug
-        # branches, so every branch reads the same id.
-        merged_identity_fragments = (
-            p
-            | "Process identity views"
-            >> ProcessAllIdentityIngestViews(
+        process_all_identity_views_outputs = p | "Process identity views" >> (
+            ProcessAllIdentityIngestViews(
                 pipeline_parameters=self.pipeline_parameters,
                 identity_config=identity_config,
             )
-            | "Assign identity fragment ids"
-            >> beam.MapTuple(_assign_id_to_sourced_fragment)
+        )
+
+        # Assign each fragment its content-hash identity_fragment_id once, before
+        # the fragments fan out to the clustering, cluster-build, and debug
+        # branches, so every branch reads the same id.
+        merged_fragments = process_all_identity_views_outputs[
+            MERGED_FRAGMENTS_WITH_DATES
+        ] | "Assign identity fragment ids" >> beam.MapTuple(
+            _assign_id_to_sourced_fragment
         )
 
         # The pre-clustering fragments feed clustering (below), the cluster-build
@@ -177,7 +189,7 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
         # Silence No value for argument 'pcoll' in function call (no-value-for-parameter)
         # pylint: disable=E1120
         fragments: beam.PCollection[IdentityFragment] = (
-            merged_identity_fragments
+            merged_fragments
             | "Drop external_id keys" >> beam.Values()
             | "Drop dates and view names from fragments"
             >> beam.Map(lambda item: item[2])
@@ -200,9 +212,9 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
             ingest_view_names=identity_view_names,
         )
 
-        build_outputs = {
+        build_identity_clusters_outputs = {
             CLUSTER_MEMBERSHIPS: cluster_memberships,
-            FRAGMENTS_WITH_DATES: merged_identity_fragments,
+            FRAGMENTS_WITH_DATES: merged_fragments,
         } | "Build IdentityClusters" >> BuildIdentityClusters(
             tenant=tenant,
             valid_id_types=valid_id_types,
@@ -211,19 +223,29 @@ class IdentityIngestPipeline(BasePipeline[IdentityIngestPipelineParameters]):
         )
 
         identity_clusters: beam.PCollection[IdentityCluster] = (
-            build_outputs[KEPT_CLUSTERS]
+            build_identity_clusters_outputs[KEPT_CLUSTERS]
             | "Validate IdentityClusterCollection"
             >> ValidateIdentityClusterCollection()
+        )
+
+        # Write every view's stripped-fragment audit records to the single
+        # sentinel_stripped_identity_fragment table in one truncating write, so
+        # the table always reflects exactly what the latest run stripped.
+        _ = process_all_identity_views_outputs[
+            STRIPPED_FRAGMENT_RECORDS
+        ] | f"Write stripped fragment records to {self.pipeline_parameters.rejections_output_dataset}" >> WriteSentinelStrippedFragmentsToBQ(
+            output_dataset=self.pipeline_parameters.rejections_output_dataset,
+            stripped_at=run_timestamp,
         )
 
         # Write each rejected cluster to the rejected_identity_cluster table for
         # review. The kept-cluster tables never see these clusters, so a
         # rejection is visible only here.
-        _ = build_outputs[
+        _ = build_identity_clusters_outputs[
             REJECTED_CLUSTERS
         ] | f"Write RejectedIdentityClusters to {self.pipeline_parameters.rejections_output_dataset}" >> WriteRejectedIdentityClustersToBQ(
             output_dataset=self.pipeline_parameters.rejections_output_dataset,
-            rejected_at=datetime.datetime.now(tz=datetime.UTC),
+            rejected_at=run_timestamp,
         )
 
         # Write each IdentityCluster's serialized rows to the per-tenant

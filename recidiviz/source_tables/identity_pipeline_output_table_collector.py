@@ -47,6 +47,11 @@ from recidiviz.pipelines.ingest.identity.rejected_identity_cluster import (
     REJECTED_IDENTITY_CLUSTER_TABLE_ID,
     rejected_identity_cluster_schema_fields,
 )
+from recidiviz.pipelines.ingest.identity.sentinel_stripped_identity_fragment import (
+    PRESTRIPPED_IDENTITY_FRAGMENT_ID_COL,
+    SENTINEL_STRIPPED_IDENTITY_FRAGMENT_TABLE_ID,
+    sentinel_stripped_identity_fragment_schema_fields,
+)
 from recidiviz.pipelines.pipeline_names import IDENTITY_INGEST_PIPELINE_NAME
 from recidiviz.source_tables.ingest_pipeline_output_helpers import (
     build_ingest_view_results_source_table_collection_from_manifests,
@@ -186,9 +191,21 @@ def build_identity_rejections_source_table_collection(
         description=(
             "Records each cluster the identity ingest pipeline rejected "
             "because its fragments have conflicting attributes, one "
-            "self-contained row per rejection per run."
+            "self-contained row per rejection. The pipeline replaces the table "
+            "in full each run, so it reflects only the latest run."
         ),
         clustering_fields=[IDENTITY_CLUSTER_ID_COL],
+    )
+    collection.add_source_table(
+        table_id=SENTINEL_STRIPPED_IDENTITY_FRAGMENT_TABLE_ID,
+        schema_fields=sentinel_stripped_identity_fragment_schema_fields(),
+        description=(
+            "Records each identity fragment the identity ingest pipeline "
+            "stripped sentinel external ids from, including fragments dropped "
+            "entirely. The pipeline replaces the table in full each run, so it "
+            "reflects only the latest run."
+        ),
+        clustering_fields=[PRESTRIPPED_IDENTITY_FRAGMENT_ID_COL],
     )
     return collection
 

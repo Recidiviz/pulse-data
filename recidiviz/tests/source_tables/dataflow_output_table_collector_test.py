@@ -198,7 +198,8 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
     def test_identity_rejections(self) -> None:
         """Tests the expected output schema of the identity ingest pipeline's
         rejections output, one regenerable collection per tenant holding the
-        rejected_identity_cluster table."""
+        rejected_identity_cluster and sentinel_stripped_identity_fragment
+        tables."""
         identity_collections = self._identity_collections_with_dataset_suffix(
             "_identity_rejections"
         )
@@ -221,7 +222,8 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
             self.assert_source_tables_match(
                 collection,
                 expected_addresses=[
-                    f"{collection.dataset_id}.rejected_identity_cluster"
+                    f"{collection.dataset_id}.rejected_identity_cluster",
+                    f"{collection.dataset_id}.sentinel_stripped_identity_fragment",
                 ],
             )
 

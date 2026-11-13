@@ -214,11 +214,32 @@ class TestBuildIdentityRejectionsSourceTableCollection(unittest.TestCase):
             collection.labels,
         )
 
-    def test_emits_the_rejected_identity_cluster_table(self) -> None:
+    def test_emits_the_rejections_tables(self) -> None:
         collection = build_identity_rejections_source_table_collection(_TENANT)
-        source_table = one(collection.source_tables)
-        self.assertEqual(source_table.address.table_id, "rejected_identity_cluster")
+        self.assertEqual(
+            {t.address.table_id for t in collection.source_tables},
+            {"rejected_identity_cluster", "sentinel_stripped_identity_fragment"},
+        )
+
+    def test_rejected_identity_cluster_clusters_on_identity_cluster_id(self) -> None:
+        collection = build_identity_rejections_source_table_collection(_TENANT)
+        source_table = one(
+            t
+            for t in collection.source_tables
+            if t.address.table_id == "rejected_identity_cluster"
+        )
         self.assertEqual(source_table.clustering_fields, ["identity_cluster_id"])
+
+    def test_sentinel_stripped_fragment_clusters_on_prestripped_id(self) -> None:
+        collection = build_identity_rejections_source_table_collection(_TENANT)
+        source_table = one(
+            t
+            for t in collection.source_tables
+            if t.address.table_id == "sentinel_stripped_identity_fragment"
+        )
+        self.assertEqual(
+            source_table.clustering_fields, ["prestripped_identity_fragment_id"]
+        )
 
 
 class TestBuildIdentityPipelineOutputSourceTableCollections(unittest.TestCase):

@@ -27,6 +27,11 @@ from recidiviz.pipelines.ingest.identity.rejected_identity_cluster import (
     REJECTED_AT_COL,
     REJECTED_IDENTITY_CLUSTER_TABLE_ID,
 )
+from recidiviz.pipelines.ingest.identity.sentinel_stripped_identity_fragment import (
+    SENTINEL_STRIPPED_IDENTITY_FRAGMENT_TABLE_ID,
+    STRIPPED_AT_COL,
+    UPPER_BOUND_DATE_COL,
+)
 from recidiviz.source_tables.identity_pipeline_input_table_collector import (
     build_identity_overrides_source_table_collection,
 )
@@ -138,21 +143,39 @@ class IdentityIngestPipelineTestCase(
                     self.state_code(), fixture_address, test_name
                 )
                 # The ingest_view_results tables have a materialization-time
-                # column and the rejected_identity_cluster table a rejected_at
-                # column, both populated with datetime.now() at pipeline run
-                # time; exclude them from fixture comparison so runs are
-                # deterministic. The rejected_identity_cluster table's repeated
+                # column, the rejected_identity_cluster table a rejected_at
+                # column, and the sentinel_stripped_identity_fragment table a
+                # stripped_at column, all populated with datetime.now() at
+                # pipeline run time; exclude them from fixture comparison so
+                # runs are deterministic. The rejections tables' repeated
                 # columns are excluded because the fixture comparison cannot
                 # serialize them; their contents are covered by
-                # RejectedIdentityCluster's unit tests.
+                # RejectedIdentityCluster's and
+                # SentinelStrippedIdentityFragment's unit tests.
+                # The sentinel_stripped_identity_fragment table's upper_bound_date
+                # is also excluded: the pipeline derives it from a naive datetime
+                # parse (isoparse(...).timestamp() in generate_entities.py), so
+                # its absolute value depends on the machine's local timezone and a
+                # fixture generated on a developer laptop will not match CI. In
+                # production Dataflow workers run in UTC, so the stored values
+                # are consistent there.
                 columns_to_ignore = [
                     field.name
                     for field in source_table.schema_fields
-                    if field.name in (MATERIALIZATION_TIME_COL_NAME, REJECTED_AT_COL)
+                    if field.name
+                    in (MATERIALIZATION_TIME_COL_NAME, REJECTED_AT_COL, STRIPPED_AT_COL)
                     or (
                         source_table.address.table_id
-                        == REJECTED_IDENTITY_CLUSTER_TABLE_ID
+                        in (
+                            REJECTED_IDENTITY_CLUSTER_TABLE_ID,
+                            SENTINEL_STRIPPED_IDENTITY_FRAGMENT_TABLE_ID,
+                        )
                         and field.mode == "REPEATED"
+                    )
+                    or (
+                        source_table.address.table_id
+                        == SENTINEL_STRIPPED_IDENTITY_FRAGMENT_TABLE_ID
+                        and field.name == UPPER_BOUND_DATE_COL
                     )
                 ]
 

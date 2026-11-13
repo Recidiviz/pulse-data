@@ -32,14 +32,23 @@ from recidiviz.persistence.entity.identity.identity_fragment_entities import (
     IdentityName,
 )
 from recidiviz.pipelines.ingest.identity import filter_sentinel_external_ids
+from recidiviz.pipelines.ingest.identity.assign_identity_fragment_ids import (
+    assign_identity_fragment_id,
+)
 from recidiviz.pipelines.ingest.identity.filter_sentinel_external_ids import (
+    ENTITIES_TO_MERGE,
+    STRIPPED_FRAGMENT_RECORDS,
     FilterSentinelExternalIds,
 )
 from recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config import (
     IdentityIngestPipelineConfig,
     IdentityIngestPipelineTenantConfig,
 )
+from recidiviz.pipelines.ingest.identity.sentinel_stripped_identity_fragment import (
+    SentinelStrippedIdentityFragment,
+)
 from recidiviz.tests.pipelines.beam_test_utils import create_test_pipeline
+from recidiviz.utils.types import assert_type
 
 _TENANT = Tenant.US_XX
 _VIEW_NAME = "eg_person"
@@ -122,7 +131,7 @@ class TestFilterSentinelExternalIds(unittest.TestCase):
                 p
                 | beam.Create([(_UPPER_BOUND_TS, frag1), (_UPPER_BOUND_TS, frag2)])
                 | _make_transform(_DEFAULT_ONLY_CONFIG)
-            )
+            )[ENTITIES_TO_MERGE]
             assert_that(
                 result,
                 equal_to(
@@ -159,7 +168,7 @@ class TestFilterSentinelExternalIds(unittest.TestCase):
                     ]
                 )
                 | _make_transform(_DEFAULT_ONLY_CONFIG)
-            )
+            )[ENTITIES_TO_MERGE]
             assert_that(
                 result,
                 equal_to(
@@ -185,7 +194,7 @@ class TestFilterSentinelExternalIds(unittest.TestCase):
                 p
                 | beam.Create([(_UPPER_BOUND_TS, frag1), (_UPPER_BOUND_TS, frag2)])
                 | _make_transform(_DEFAULT_ONLY_CONFIG)
-            )
+            )[ENTITIES_TO_MERGE]
             assert_that(
                 result,
                 equal_to([(_UPPER_BOUND_TS, frag1), (_UPPER_BOUND_TS, frag2)]),
@@ -255,7 +264,7 @@ class TestFilterSentinelExternalIds(unittest.TestCase):
                     ]
                 )
                 | _make_transform(_CONFIG_WITH_BOOKING_OVERRIDE)
-            )
+            )[ENTITIES_TO_MERGE]
             assert_that(
                 result,
                 equal_to(
@@ -279,7 +288,7 @@ class TestFilterSentinelExternalIds(unittest.TestCase):
                 p
                 | beam.Create([(_UPPER_BOUND_TS, frag1), (_UPPER_BOUND_TS, frag2)])
                 | _make_transform(_DEFAULT_ONLY_CONFIG)
-            )
+            )[ENTITIES_TO_MERGE]
             assert_that(
                 result,
                 equal_to(
@@ -326,6 +335,131 @@ class TestFilterSentinelExternalIds(unittest.TestCase):
                         | _make_transform(_DEFAULT_ONLY_CONFIG)
                     )
 
+    def test_stripped_fragment_records_emitted(self) -> None:
+        """Each fragment that had a sentinel stripped produces one audit record
+        carrying the stripped and surviving external IDs and the pre-strip
+        content hash."""
+        frag1 = _make_fragment(
+            [(_SENTINEL_EID, _DOC_TYPE), ("S1", _SID_TYPE)], _make_attrs("DOROTHY")
+        )
+        frag2 = _make_fragment(
+            [(_SENTINEL_EID, _DOC_TYPE), ("S2", _SID_TYPE)], _make_attrs("TOTO")
+        )
+        transform = _make_transform(_DEFAULT_ONLY_CONFIG)
+
+        with create_test_pipeline() as p:
+            outputs = (
+                p
+                | beam.Create([(_UPPER_BOUND_TS, frag1), (_UPPER_BOUND_TS, frag2)])
+                | transform
+            )
+            assert_that(
+                outputs[STRIPPED_FRAGMENT_RECORDS],
+                equal_to(
+                    [
+                        SentinelStrippedIdentityFragment(
+                            tenant=_TENANT,
+                            ingest_view_name=_VIEW_NAME,
+                            upper_bound_date=_UPPER_BOUND_TS,
+                            prestripped_identity_fragment_id=assert_type(
+                                assign_identity_fragment_id(frag1).identity_fragment_id,
+                                str,
+                            ),
+                            stripped_external_ids=((_SENTINEL_EID, _DOC_TYPE),),
+                            surviving_external_ids=(("S1", _SID_TYPE),),
+                        ),
+                        SentinelStrippedIdentityFragment(
+                            tenant=_TENANT,
+                            ingest_view_name=_VIEW_NAME,
+                            upper_bound_date=_UPPER_BOUND_TS,
+                            prestripped_identity_fragment_id=assert_type(
+                                assign_identity_fragment_id(frag2).identity_fragment_id,
+                                str,
+                            ),
+                            stripped_external_ids=((_SENTINEL_EID, _DOC_TYPE),),
+                            surviving_external_ids=(("S2", _SID_TYPE),),
+                        ),
+                    ]
+                ),
+                label="assert stripped records",
+            )
+
+    def test_fully_dropped_fragment_produces_record_with_no_survivors(self) -> None:
+        """A fragment dropped entirely because its only external ID is a
+        sentinel still produces an audit record; that record is its only trace."""
+        only_sentinel_frag = _make_fragment(
+            [(_SENTINEL_EID, _DOC_TYPE)], _make_attrs("DOROTHY")
+        )
+        multi_eid_frag = _make_fragment(
+            [(_SENTINEL_EID, _DOC_TYPE), ("S2", _SID_TYPE)], _make_attrs("TOTO")
+        )
+        transform = _make_transform(_DEFAULT_ONLY_CONFIG)
+
+        with create_test_pipeline() as p:
+            outputs = (
+                p
+                | beam.Create(
+                    [
+                        (_UPPER_BOUND_TS, only_sentinel_frag),
+                        (_UPPER_BOUND_TS, multi_eid_frag),
+                    ]
+                )
+                | transform
+            )
+            assert_that(
+                outputs[STRIPPED_FRAGMENT_RECORDS],
+                equal_to(
+                    [
+                        SentinelStrippedIdentityFragment(
+                            tenant=_TENANT,
+                            ingest_view_name=_VIEW_NAME,
+                            upper_bound_date=_UPPER_BOUND_TS,
+                            prestripped_identity_fragment_id=assert_type(
+                                assign_identity_fragment_id(
+                                    only_sentinel_frag
+                                ).identity_fragment_id,
+                                str,
+                            ),
+                            stripped_external_ids=((_SENTINEL_EID, _DOC_TYPE),),
+                            surviving_external_ids=(),
+                        ),
+                        SentinelStrippedIdentityFragment(
+                            tenant=_TENANT,
+                            ingest_view_name=_VIEW_NAME,
+                            upper_bound_date=_UPPER_BOUND_TS,
+                            prestripped_identity_fragment_id=assert_type(
+                                assign_identity_fragment_id(
+                                    multi_eid_frag
+                                ).identity_fragment_id,
+                                str,
+                            ),
+                            stripped_external_ids=((_SENTINEL_EID, _DOC_TYPE),),
+                            surviving_external_ids=(("S2", _SID_TYPE),),
+                        ),
+                    ]
+                ),
+                label="assert stripped records",
+            )
+
+    def test_no_stripped_fragment_records_when_nothing_stripped(self) -> None:
+        frag1 = _make_fragment(
+            [("D1", _DOC_TYPE), ("S1", _SID_TYPE)], _make_attrs("DOROTHY")
+        )
+        frag2 = _make_fragment([("S2", _SID_TYPE)], _make_attrs("TOTO"))
+        transform = _make_transform(_DEFAULT_ONLY_CONFIG)
+
+        with create_test_pipeline() as p:
+            outputs = (
+                p
+                | beam.Create([(_UPPER_BOUND_TS, frag1), (_UPPER_BOUND_TS, frag2)])
+                | transform
+            )
+            assert_that(
+                outputs[STRIPPED_FRAGMENT_RECORDS],
+                equal_to([]),
+                label="assert no stripped records",
+            )
+
     def test_same_external_id_across_dates_not_sentinel(self) -> None:
         """Fragment counts are computed per upper-bound date, so the same
         external ID appearing once per date (the same person present in
@@ -343,7 +477,7 @@ class TestFilterSentinelExternalIds(unittest.TestCase):
                     ]
                 )
                 | _make_transform(_DEFAULT_ONLY_CONFIG)
-            )
+            )[ENTITIES_TO_MERGE]
             assert_that(
                 result,
                 equal_to(

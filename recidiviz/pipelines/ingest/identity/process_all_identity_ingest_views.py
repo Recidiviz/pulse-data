@@ -42,6 +42,8 @@ from recidiviz.pipelines.ingest.enum_mapping_heartbeats import (
     attach_enum_mapping_heartbeats,
 )
 from recidiviz.pipelines.ingest.identity.filter_sentinel_external_ids import (
+    ENTITIES_TO_MERGE,
+    STRIPPED_FRAGMENT_RECORDS,
     FilterSentinelExternalIds,
 )
 from recidiviz.pipelines.ingest.identity.identity_ingest_pipeline_config import (
@@ -52,6 +54,9 @@ from recidiviz.pipelines.ingest.identity.identity_manifest_utils import (
 )
 from recidiviz.pipelines.ingest.identity.pipeline_parameters import (
     IdentityIngestPipelineParameters,
+)
+from recidiviz.pipelines.ingest.identity.sentinel_stripped_identity_fragment import (
+    SentinelStrippedIdentityFragment,
 )
 from recidiviz.pipelines.ingest.identity.types import SourcedIdentityFragment
 from recidiviz.pipelines.ingest.raw_data_upper_bound_dates import (
@@ -64,6 +69,11 @@ from recidiviz.pipelines.ingest.transforms.merge_root_entity_trees import (
     MergeIngestViewRootEntityTrees,
 )
 from recidiviz.pipelines.ingest.types import ExternalIdKey, IngestViewName
+
+# Key of the expand output carrying the merged fragments. The
+# stripped-fragment-records output reuses the filter's
+# STRIPPED_FRAGMENT_RECORDS key.
+MERGED_FRAGMENTS_WITH_DATES = "merged_fragments_with_dates"
 
 
 class ProcessAllIdentityIngestViews(beam.PTransform):
@@ -83,15 +93,24 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
 
     def expand(
         self, input_or_inputs: PBegin
-    ) -> beam.PCollection[tuple[ExternalIdKey, SourcedIdentityFragment]]:
+    ) -> dict[
+        str,
+        beam.PCollection[tuple[ExternalIdKey, SourcedIdentityFragment]]
+        | beam.PCollection[SentinelStrippedIdentityFragment],
+    ]:
         """Discovers launchable identity views for the pipeline's tenant,
         materializes each view against raw data, parses rows into
         `IdentityFragment` trees, strips sentinel external IDs (see
-        `FilterSentinelExternalIds`), merges fragments sharing an external ID
-        key and date within the same view, and flattens the per-view results
-        into a single PCollection.
+        `FilterSentinelExternalIds`), and merges fragments sharing an external
+        ID key and date within the same view.
 
-        Example output element::
+        Returns two named outputs, each combining every view's results into one
+        collection:
+
+        * MERGED_FRAGMENTS_WITH_DATES: tuple[ExternalIdKey, SourcedIdentityFragment], the
+          merged fragments. MergeIngestViewRootEntityTrees is shared with the
+          activity pipeline so it calls these root entities, and in the identity
+          pipeline every root entity is an IdentityFragment. Example element::
 
             (
                 ExternalIdKey(external_id="123", id_type="US_XX_DOC"),
@@ -102,8 +121,13 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
                 ),
             )
 
-        Returns an empty PCollection when the tenant has no launchable identity
-        views in the current project.
+        * STRIPPED_FRAGMENT_RECORDS: SentinelStrippedIdentityFragment, one audit
+          record per fragment the sentinel filter stripped anything from, for
+          the pipeline to write to the sentinel_stripped_identity_fragment
+          table.
+
+        Both outputs are empty when the tenant has no launchable identity views
+        in the current project.
         """
         tenant = Tenant(self.pipeline_parameters.tenant)
         # v1 only supports tenants that are state codes; non-state tenants are
@@ -132,7 +156,12 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
         )
 
         if not identity_view_names:
-            return input_or_inputs | "No identity views to process" >> beam.Create([])
+            return {
+                MERGED_FRAGMENTS_WITH_DATES: input_or_inputs
+                | "No identity views to process" >> beam.Create([]),
+                STRIPPED_FRAGMENT_RECORDS: input_or_inputs
+                | "No stripped fragment records" >> beam.Create([]),
+            }
 
         view_collector = DirectIngestViewQueryBuilderCollector(
             region=region,
@@ -152,12 +181,17 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
             IngestViewName,
             beam.PCollection[tuple[ExternalIdKey, SourcedIdentityFragment]],
         ] = {}
-        for view_name in identity_view_names:
-            manifest = ingest_manifest_collector.ingest_view_to_manifest[view_name]
-            fragments_with_dates = input_or_inputs | view_name >> GenerateIngestViewRootEntities(
-                ingest_view_name=view_name,
+        stripped_fragment_records_per_view: list[
+            beam.PCollection[SentinelStrippedIdentityFragment]
+        ] = []
+        for ingest_view_name in identity_view_names:
+            manifest = ingest_manifest_collector.ingest_view_to_manifest[
+                ingest_view_name
+            ]
+            fragments_with_dates = input_or_inputs | ingest_view_name >> GenerateIngestViewRootEntities(
+                ingest_view_name=ingest_view_name,
                 ingest_view_query_builder=view_collector.get_query_builder_by_view_name(
-                    view_name
+                    ingest_view_name
                 ),
                 raw_data_upper_bound_dates=raw_data_upper_bound_dates,
                 raw_data_source_instance=raw_data_source_instance,
@@ -168,25 +202,35 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
                 ingest_view_results_only=False,
                 resource_labels=self.pipeline_parameters.resource_labels,
             )
-            stripped_fragments_with_dates = (
+            filter_outputs = (
                 fragments_with_dates
-                | f"Strip sentinel external ids from {view_name} fragments"
+                | f"Strip sentinel external ids from {ingest_view_name} fragments"
                 >> FilterSentinelExternalIds(
-                    ingest_view_name=view_name,
+                    ingest_view_name=ingest_view_name,
                     tenant=tenant,
                     person_type=get_view_person_type(manifest),
                     pipeline_config=self.identity_config,
                 )
             )
-            merged_fragments_with_dates_per_ingest_view[view_name] = (
-                stripped_fragments_with_dates
-                | f"Merge {view_name} fragments"
-                >> MergeIngestViewRootEntityTrees(
-                    ingest_view_name=view_name,
-                    entities_module=identity_fragment_entities,
-                    should_throw_on_conflicts=True,
-                )
+            merged_fragments_with_dates_per_ingest_view[
+                ingest_view_name
+            ] = filter_outputs[
+                ENTITIES_TO_MERGE
+            ] | f"Merge {ingest_view_name} fragments" >> MergeIngestViewRootEntityTrees(
+                ingest_view_name=ingest_view_name,
+                entities_module=identity_fragment_entities,
+                should_throw_on_conflicts=True,
             )
+            stripped_fragment_records_per_view.append(
+                filter_outputs[STRIPPED_FRAGMENT_RECORDS]
+            )
+
+        stripped_fragment_records: beam.PCollection[
+            SentinelStrippedIdentityFragment
+        ] = (
+            stripped_fragment_records_per_view
+            | "Flatten stripped fragment records" >> beam.Flatten()
+        )
 
         merged_fragments_with_dates: beam.PCollection[
             tuple[ExternalIdKey, SourcedIdentityFragment]
@@ -203,4 +247,7 @@ class ProcessAllIdentityIngestViews(beam.PTransform):
             view_names=identity_view_names,
         )
 
-        return merged_fragments_with_dates
+        return {
+            MERGED_FRAGMENTS_WITH_DATES: merged_fragments_with_dates,
+            STRIPPED_FRAGMENT_RECORDS: stripped_fragment_records,
+        }
