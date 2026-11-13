@@ -34,6 +34,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tx import (
     at_least_30_days_since_last_rejection_for_em_removal,
     at_least_60_days_since_facility_or_temporary_housing_ended,
     electronic_monitoring_for_at_least_60_days,
+    no_pending_charges,
     not_interstate_compact_in,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -61,6 +62,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         at_least_3_months_since_most_recent_positive_drug_test.VIEW_BUILDER,
         no_supervision_violation_within_30_days.VIEW_BUILDER,
         not_interstate_compact_in.VIEW_BUILDER,
+        no_pending_charges.VIEW_BUILDER,
     ],
     completion_event_builder=case_type_downgrade_from_electronic_monitoring.VIEW_BUILDER,
     # Two criteria resolve purely by waiting: the electronic monitoring duration and the
