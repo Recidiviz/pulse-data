@@ -34,6 +34,7 @@ from recidiviz.sentence_calculator.models.conditions import (
     ConditionOperator,
     FieldCondition,
 )
+from recidiviz.sentence_calculator.models.inputs import TermType
 from recidiviz.sentence_calculator.models.rules import (
     LAW_REGIME_SCHEMA_PATH,
     CreditCapRule,
@@ -45,7 +46,6 @@ from recidiviz.sentence_calculator.models.rules import (
     ProjectedDateCondition,
     ReductionTarget,
     TermMultiplierRule,
-    TermType,
     expression_variable_names,
     parse_state_conditions,
 )

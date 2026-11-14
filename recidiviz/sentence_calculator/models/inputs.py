@@ -84,6 +84,14 @@ class SentenceType(Enum):
     OTHER = "OTHER"  # A determinate or indeterminate sentence shorter than life
 
 
+class TermType(Enum):
+    """A sentence term that a reduction can come off. The values match the
+    Sentence fields that hold the terms."""
+
+    MIN_TERM = "min_term"
+    MAX_TERM = "max_term"
+
+
 @attr.define(frozen=True, kw_only=True)
 class Sentence(abc.ABC):
     """A single sentence node in a sentence calculation DAG.

@@ -25,7 +25,7 @@ from recidiviz.sentence_calculator.models.conditions import (
     Condition,
     condition_field_names,
 )
-from recidiviz.sentence_calculator.models.inputs import Sentence
+from recidiviz.sentence_calculator.models.inputs import Sentence, TermType
 from recidiviz.sentence_calculator.models.outputs import (
     CreditCap,
     ProjectedCreditRate,
@@ -38,7 +38,6 @@ from recidiviz.sentence_calculator.models.rules import (
     CreditRateUnit,
     LawRegime,
     TermMultiplierRule,
-    TermType,
 )
 from recidiviz.sentence_calculator.models.tracked import TrackedValue
 

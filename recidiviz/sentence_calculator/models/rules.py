@@ -76,7 +76,7 @@ from recidiviz.sentence_calculator.models.conditions import (
     sentence_condition_field_types,
     sentence_nullable_field_names,
 )
-from recidiviz.sentence_calculator.models.inputs import Sentence
+from recidiviz.sentence_calculator.models.inputs import Sentence, TermType
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.utils.yaml_dict_validator import validate_yaml_matches_schema
 
@@ -371,14 +371,6 @@ def expression_variable_names(*, expression: str, rule_name: str) -> set[str]:
         for node in ast.walk(tree)
         if isinstance(node, ast.Name) and node not in duration_function_nodes
     }
-
-
-class TermType(Enum):
-    """A sentence term that a reduction can come off. The values match the
-    Sentence fields that hold the terms."""
-
-    MIN_TERM = "min_term"
-    MAX_TERM = "max_term"
 
 
 # The TermType values, as error messages list them, e.g. ['min_term', 'max_term'].

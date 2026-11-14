@@ -33,9 +33,9 @@ from recidiviz.sentence_calculator.models.inputs import (
     SentenceCalculationInput,
     SentenceType,
     Term,
+    TermType,
 )
 from recidiviz.sentence_calculator.models.outputs import TrackedSentenceAdjustment
-from recidiviz.sentence_calculator.models.rules import TermType
 from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import (
     NevadaOffenseCategory,
     NevadaOffenseGroup,

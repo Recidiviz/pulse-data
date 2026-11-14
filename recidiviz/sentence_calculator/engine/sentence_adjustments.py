@@ -50,7 +50,7 @@ from fractions import Fraction
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.sentence_calculator.engine.rule_engine import RuleEngine
-from recidiviz.sentence_calculator.models.inputs import Sentence, Term
+from recidiviz.sentence_calculator.models.inputs import Sentence, Term, TermType
 from recidiviz.sentence_calculator.models.outputs import (
     ProjectedCreditRate,
     TermMultiplier,
@@ -59,7 +59,6 @@ from recidiviz.sentence_calculator.models.outputs import (
 from recidiviz.sentence_calculator.models.rules import (
     CreditRateUnit,
     LawRegime,
-    TermType,
     credit_rate_description,
 )
 from recidiviz.sentence_calculator.models.tracked import TrackedValue

@@ -19,12 +19,13 @@
 import unittest
 from datetime import date
 
+from recidiviz.sentence_calculator.models.inputs import TermType
 from recidiviz.sentence_calculator.models.outputs import (
     ProjectedCreditRate,
     TermMultiplier,
     TrackedSentenceAdjustment,
 )
-from recidiviz.sentence_calculator.models.rules import CreditRateUnit, TermType
+from recidiviz.sentence_calculator.models.rules import CreditRateUnit
 from recidiviz.sentence_calculator.models.tracked import TrackedValue
 
 # Term lengths shared by every adjustment below. The tests only vary which

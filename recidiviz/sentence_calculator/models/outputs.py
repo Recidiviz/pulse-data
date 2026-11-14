@@ -24,8 +24,9 @@ from recidiviz.common import attr_validators
 from recidiviz.sentence_calculator.models.inputs import (
     SentenceCalculationInput,
     SentenceType,
+    TermType,
 )
-from recidiviz.sentence_calculator.models.rules import CreditRateUnit, TermType
+from recidiviz.sentence_calculator.models.rules import CreditRateUnit
 from recidiviz.sentence_calculator.models.tracked import TrackedValue
 from recidiviz.utils.types import assert_type
 

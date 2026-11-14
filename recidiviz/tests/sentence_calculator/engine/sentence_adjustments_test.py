@@ -29,7 +29,7 @@ from recidiviz.sentence_calculator.models.conditions import (
     ConditionOperator,
     FieldCondition,
 )
-from recidiviz.sentence_calculator.models.inputs import Term
+from recidiviz.sentence_calculator.models.inputs import Term, TermType
 from recidiviz.sentence_calculator.models.rules import (
     CreditCapRule,
     CreditRateRule,
@@ -37,7 +37,6 @@ from recidiviz.sentence_calculator.models.rules import (
     LawRegime,
     ReductionTarget,
     TermMultiplierRule,
-    TermType,
 )
 from recidiviz.sentence_calculator.models.state_inputs.inputs_nv import (
     NevadaOffenseCategory,
